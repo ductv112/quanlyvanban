@@ -11,15 +11,66 @@ import { rightRepository } from '../repositories/right.repository.js';
 const router = Router();
 
 // ============================================================
+// UTILITY: Build tree from flat list
+// ============================================================
+function buildTree<T extends { id: number; parent_id: number | null }>(flatList: T[]): (T & { children?: T[] })[] {
+  const map = new Map<number, T & { children?: T[] }>();
+  const roots: (T & { children?: T[] })[] = [];
+
+  for (const item of flatList) {
+    map.set(item.id, { ...item, children: [] });
+  }
+
+  for (const item of flatList) {
+    const node = map.get(item.id)!;
+    const parentId = item.parent_id;
+    if (parentId && map.has(parentId)) {
+      map.get(parentId)!.children!.push(node);
+    } else {
+      roots.push(node);
+    }
+  }
+
+  // Remove empty children arrays
+  const clean = (nodes: (T & { children?: T[] })[]) => {
+    for (const node of nodes) {
+      if (node.children && node.children.length === 0) {
+        delete node.children;
+      } else if (node.children) {
+        clean(node.children);
+      }
+    }
+  };
+  clean(roots);
+
+  return roots;
+}
+
+// ============================================================
 // DEPARTMENT (Đơn vị / Phòng ban)
 // ============================================================
 
-// GET /don-vi/tree
+// GET /don-vi/tree — trả về cây phân cấp (cho Tree component)
 router.get('/don-vi/tree', async (req: Request, res: Response) => {
   try {
     const unitId = req.query.unit_id ? Number(req.query.unit_id) : null;
+    const flatList = await departmentRepository.getTree(unitId);
+    const tree = buildTree(flatList);
+    res.json({ success: true, data: tree });
+  } catch (error) {
+    res.status(500).json({ success: false, message: (error as Error).message });
+  }
+});
+
+// GET /don-vi — trả về flat list (cho Table component)
+router.get('/don-vi', async (req: Request, res: Response) => {
+  try {
+    const unitId = req.query.unit_id ? Number(req.query.unit_id) : null;
     const data = await departmentRepository.getTree(unitId);
-    res.json({ success: true, data });
+    // Filter by parent_id if provided
+    const parentId = req.query.parent_id ? Number(req.query.parent_id) : null;
+    const filtered = parentId ? data.filter(d => d.parent_id === parentId) : data;
+    res.json({ success: true, data: filtered });
   } catch (error) {
     res.status(500).json({ success: false, message: (error as Error).message });
   }
@@ -498,11 +549,12 @@ router.put('/nhom-quyen/:id/quyen', async (req: Request, res: Response) => {
 // RIGHT (Chức năng / Quyền)
 // ============================================================
 
-// GET /chuc-nang/tree
+// GET /chuc-nang/tree — trả về cây phân cấp
 router.get('/chuc-nang/tree', async (_req: Request, res: Response) => {
   try {
-    const data = await rightRepository.getTree();
-    res.json({ success: true, data });
+    const flatList = await rightRepository.getTree();
+    const tree = buildTree(flatList);
+    res.json({ success: true, data: tree });
   } catch (error) {
     res.status(500).json({ success: false, message: (error as Error).message });
   }

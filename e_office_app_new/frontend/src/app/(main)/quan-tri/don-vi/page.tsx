@@ -52,17 +52,27 @@ export default function DepartmentPage() {
   const [saving, setSaving] = useState(false);
   const [form] = Form.useForm();
 
+  // Map API tree (id/name/children) → Ant Design Tree (key/title/children)
+  const mapTree = useCallback((nodes: any[]): TreeNode[] => {
+    return nodes.map((n) => ({
+      key: n.id,
+      title: n.name,
+      is_unit: n.is_unit,
+      children: n.children ? mapTree(n.children) : undefined,
+    }));
+  }, []);
+
   const fetchTree = useCallback(async () => {
     setTreeLoading(true);
     try {
       const { data: res } = await api.get('/quan-tri/don-vi/tree');
-      setTreeData(res.data || []);
+      setTreeData(mapTree(res.data || []));
     } catch (err: any) {
       message.error(err?.response?.data?.message || 'Lỗi tải dữ liệu đơn vị');
     } finally {
       setTreeLoading(false);
     }
-  }, [message]);
+  }, [message, mapTree]);
 
   const fetchDepartments = useCallback(async (parentId?: number | null) => {
     setLoading(true);

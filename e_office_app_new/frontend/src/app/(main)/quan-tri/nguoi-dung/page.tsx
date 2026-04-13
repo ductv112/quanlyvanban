@@ -79,17 +79,25 @@ export default function StaffPage() {
   const [departments, setDepartments] = useState<DeptOption[]>([]);
   const [selectedUnit, setSelectedUnit] = useState<number | null>(null);
 
+  const mapTree = useCallback((nodes: any[]): any[] => {
+    return nodes.map((n: any) => ({
+      key: n.id,
+      title: n.name,
+      children: n.children ? mapTree(n.children) : undefined,
+    }));
+  }, []);
+
   const fetchTree = useCallback(async () => {
     setTreeLoading(true);
     try {
       const { data: res } = await api.get('/quan-tri/don-vi/tree');
-      setTreeData(res.data || []);
+      setTreeData(mapTree(res.data || []));
     } catch (err: any) {
       message.error(err?.response?.data?.message || 'Lỗi tải cây đơn vị');
     } finally {
       setTreeLoading(false);
     }
-  }, [message]);
+  }, [message, mapTree]);
 
   const fetchStaff = useCallback(async () => {
     setLoading(true);

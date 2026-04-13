@@ -113,6 +113,15 @@ export default function RolePage() {
     }
   };
 
+  // Map API tree → Ant Design Tree format
+  const mapRightTree = (nodes: any[]): any[] => {
+    return nodes.map((n: any) => ({
+      key: n.id,
+      title: n.name_of_menu || n.name,
+      children: n.children ? mapRightTree(n.children) : undefined,
+    }));
+  };
+
   // Permissions
   const handleOpenPermissions = async (record: Role) => {
     setPermRole(record);
@@ -123,7 +132,7 @@ export default function RolePage() {
         api.get('/quan-tri/chuc-nang/tree'),
         api.get(`/quan-tri/nhom-quyen/${record.id}/quyen`),
       ]);
-      setRightTree(treeRes.data?.data || []);
+      setRightTree(mapRightTree(treeRes.data?.data || []));
       const ids = (rolePermsRes.data?.data || []).map((r: any) => r.right_id || r.id);
       setCheckedKeys(ids);
     } catch (err: any) {
