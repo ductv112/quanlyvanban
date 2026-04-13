@@ -520,7 +520,7 @@ export default function StaffPage() {
         {/* Left: Tree */}
         <Col xs={24} lg={7}>
           <Card
-            bordered={false}
+            variant="borderless"
             style={{ borderRadius: 12, boxShadow: '0 2px 8px rgba(27,58,92,0.06)', minHeight: 500 }}
             title={
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -561,7 +561,7 @@ export default function StaffPage() {
         {/* Right: Table */}
         <Col xs={24} lg={17}>
           <Card
-            bordered={false}
+            variant="borderless"
             style={{ borderRadius: 12, boxShadow: '0 2px 8px rgba(27,58,92,0.06)' }}
             title={
               <span style={{ fontWeight: 600, color: '#1B3A5C' }}>Danh sách người dùng</span>
@@ -617,11 +617,11 @@ export default function StaffPage() {
       {/* Drawer add/edit */}
       <Drawer
         title={<span style={{ color: '#fff', fontWeight: 600 }}>{editingRecord ? `Sửa người dùng — ${editingRecord.code || ''}` : 'Thêm người dùng mới'}</span>}
-        width={720}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         destroyOnClose
         styles={{
+          wrapper: { width: 720 },
           header: {
             background: 'linear-gradient(135deg, #1B3A5C 0%, #0891B2 100%)',
             borderBottom: 'none',
@@ -752,11 +752,11 @@ export default function StaffPage() {
             <span style={{ fontWeight: 700, color: '#e0f2fe' }}>{roleStaff?.full_name}</span>
           </div>
         }
-        width={480}
         open={roleDrawerOpen}
         onClose={() => setRoleDrawerOpen(false)}
         destroyOnClose
         styles={{
+          wrapper: { width: 480 },
           header: {
             background: 'linear-gradient(135deg, #1B3A5C 0%, #0891B2 100%)',
             borderBottom: 'none',
@@ -793,7 +793,7 @@ export default function StaffPage() {
                   <Card
                     key={role.id}
                     size="small"
-                    bordered
+                    variant="outlined"
                     style={{
                       borderRadius: 8,
                       borderColor: staffRoleIds.includes(role.id) ? '#0891B2' : '#e8ecf1',

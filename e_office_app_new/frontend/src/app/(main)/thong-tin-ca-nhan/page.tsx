@@ -57,7 +57,7 @@ export default function ProfilePage() {
         {/* Left: Profile info */}
         <Col xs={24} lg={14}>
           <Card
-            bordered={false}
+            variant="borderless"
             style={{ borderRadius: 12, boxShadow: '0 2px 8px rgba(27,58,92,0.06)' }}
           >
             {/* Profile header */}
@@ -132,7 +132,7 @@ export default function ProfilePage() {
         {/* Right: Change password */}
         <Col xs={24} lg={10}>
           <Card
-            bordered={false}
+            variant="borderless"
             style={{ borderRadius: 12, boxShadow: '0 2px 8px rgba(27,58,92,0.06)' }}
             title={
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

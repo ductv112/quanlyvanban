@@ -311,7 +311,7 @@ export default function DepartmentPage() {
         {/* Left: Tree */}
         <Col xs={24} lg={7}>
           <Card
-            bordered={false}
+            variant="borderless"
             style={{ borderRadius: 12, boxShadow: '0 2px 8px rgba(27,58,92,0.06)', minHeight: 500 }}
             title={
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -352,7 +352,7 @@ export default function DepartmentPage() {
         {/* Right: Table */}
         <Col xs={24} lg={17}>
           <Card
-            bordered={false}
+            variant="borderless"
             style={{ borderRadius: 12, boxShadow: '0 2px 8px rgba(27,58,92,0.06)' }}
             title={
               <span style={{ fontWeight: 600, color: '#1B3A5C' }}>
@@ -387,11 +387,11 @@ export default function DepartmentPage() {
       {/* Drawer add/edit */}
       <Drawer
         title={<span style={{ color: '#fff', fontWeight: 600 }}>{editingRecord ? 'Cập nhật đơn vị' : 'Thêm đơn vị mới'}</span>}
-        width={720}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         destroyOnClose
         styles={{
+          wrapper: { width: 720 },
           header: {
             background: 'linear-gradient(135deg, #1B3A5C 0%, #0891B2 100%)',
             borderBottom: 'none',

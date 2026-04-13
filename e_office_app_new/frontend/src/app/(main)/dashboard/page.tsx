@@ -63,7 +63,7 @@ export default function DashboardPage() {
         {statCards.map((card, index) => (
           <Col xs={24} sm={12} lg={6} key={index}>
             <Card
-              bordered={false}
+              variant="borderless"
               style={{
                 borderRadius: 12,
                 boxShadow: `0 4px 16px ${card.shadowColor}`,
@@ -127,7 +127,7 @@ export default function DashboardPage() {
                 <Tag color="blue">Hôm nay</Tag>
               </div>
             }
-            bordered={false}
+            variant="borderless"
             style={{ borderRadius: 12, boxShadow: '0 2px 8px rgba(27,58,92,0.06)' }}
           >
             <div style={{ textAlign: 'center', padding: '40px 0', color: '#94a3b8' }}>
@@ -156,7 +156,7 @@ export default function DashboardPage() {
                 <span style={{ fontWeight: 600, color: '#1B3A5C' }}>Việc sắp tới hạn</span>
               </div>
             }
-            bordered={false}
+            variant="borderless"
             style={{ borderRadius: 12, boxShadow: '0 2px 8px rgba(27,58,92,0.06)' }}
           >
             <div style={{ textAlign: 'center', padding: '40px 0', color: '#94a3b8' }}>

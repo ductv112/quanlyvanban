@@ -3,54 +3,59 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Card, Table, Button, Input, Space, Drawer, Form, Switch, InputNumber,
-  Tag, Dropdown, Modal, App,
+  Tag, Dropdown, Modal, Tabs, App,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
-  PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined, IdcardOutlined,
-  MoreOutlined,
+  PlusOutlined, EditOutlined, DeleteOutlined, BookOutlined,
+  MoreOutlined, StarOutlined,
 } from '@ant-design/icons';
 import { api } from '@/lib/api';
+import { useAuthStore } from '@/stores/auth.store';
 
-interface Position {
+interface DocBook {
   id: number;
-  code: string;
+  unit_id: number;
+  type_id: number;
   name: string;
-  sort_order: number;
   description: string;
-  is_active: boolean;
-  is_leader: boolean;
-  is_handle_document: boolean;
-  staff_count: number;
+  sort_order: number;
+  is_default: boolean;
+  created_by: number;
+  created_at: string;
 }
 
-export default function PositionPage() {
+const TAB_ITEMS = [
+  { key: '1', label: 'Văn bản đến' },
+  { key: '2', label: 'Văn bản đi' },
+  { key: '3', label: 'Văn bản dự thảo' },
+];
+
+export default function DocBookPage() {
   const { message } = App.useApp();
+  const user = useAuthStore((s) => s.user);
   const [loading, setLoading] = useState(false);
-  const [data, setData] = useState<Position[]>([]);
-  const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(20);
-  const [keyword, setKeyword] = useState('');
+  const [data, setData] = useState<DocBook[]>([]);
+  const [activeTab, setActiveTab] = useState('1');
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [editingRecord, setEditingRecord] = useState<Position | null>(null);
+  const [editingRecord, setEditingRecord] = useState<DocBook | null>(null);
   const [saving, setSaving] = useState(false);
   const [form] = Form.useForm();
 
   const fetchData = useCallback(async () => {
+    if (!user?.unitId) return;
     setLoading(true);
     try {
-      const { data: res } = await api.get('/quan-tri/chuc-vu', {
-        params: { keyword, page, pageSize },
+      const { data: res } = await api.get('/quan-tri/so-van-ban', {
+        params: { type_id: activeTab, unit_id: user.unitId },
       });
       setData(res.data || []);
-      setTotal(res.total || 0);
     } catch (err: any) {
       message.error(err?.response?.data?.message || 'Lỗi tải dữ liệu');
     } finally {
       setLoading(false);
     }
-  }, [keyword, page, pageSize, message]);
+  }, [activeTab, user?.unitId, message]);
 
   useEffect(() => {
     fetchData();
@@ -59,11 +64,11 @@ export default function PositionPage() {
   const handleAdd = () => {
     setEditingRecord(null);
     form.resetFields();
-    form.setFieldsValue({ is_active: true, sort_order: 0, is_leader: false, is_handle_document: true });
+    form.setFieldsValue({ is_default: false, sort_order: 0 });
     setDrawerOpen(true);
   };
 
-  const handleEdit = (record: Position) => {
+  const handleEdit = (record: DocBook) => {
     setEditingRecord(record);
     form.setFieldsValue(record);
     setDrawerOpen(true);
@@ -71,7 +76,7 @@ export default function PositionPage() {
 
   const handleDelete = async (id: number) => {
     try {
-      await api.delete(`/quan-tri/chuc-vu/${id}`);
+      await api.delete(`/quan-tri/so-van-ban/${id}`);
       message.success('Xóa thành công');
       fetchData();
     } catch (err: any) {
@@ -79,10 +84,26 @@ export default function PositionPage() {
     }
   };
 
+  const handleSetDefault = async (record: DocBook) => {
+    try {
+      await api.patch(`/quan-tri/so-van-ban/${record.id}/mac-dinh`, {
+        type_id: Number(activeTab),
+        unit_id: user?.unitId,
+      });
+      message.success('Đặt mặc định thành công');
+      fetchData();
+    } catch (err: any) {
+      message.error(err?.response?.data?.message || 'Lỗi khi đặt mặc định');
+    }
+  };
+
   const setBackendFieldError = (errorMessage: string): boolean => {
     const fieldErrorMap: Record<string, string> = {
-      'Mã chức vụ đã tồn tại': 'code',
-      'Tên chức vụ là bắt buộc': 'name',
+      'Tên sổ văn bản là bắt buộc': 'name',
+      'Tên sổ văn bản không được để trống': 'name',
+      'Tên sổ văn bản không được vượt quá 200 ký tự': 'name',
+      'Tên sổ văn bản đã tồn tại trong đơn vị': 'name',
+      'Loại văn bản là bắt buộc': 'type_id',
     };
     const fieldName = fieldErrorMap[errorMessage];
     if (fieldName) {
@@ -97,10 +118,14 @@ export default function PositionPage() {
       const values = await form.validateFields();
       setSaving(true);
       if (editingRecord) {
-        await api.put(`/quan-tri/chuc-vu/${editingRecord.id}`, values);
+        await api.put(`/quan-tri/so-van-ban/${editingRecord.id}`, values);
         message.success('Cập nhật thành công');
       } else {
-        await api.post('/quan-tri/chuc-vu', values);
+        await api.post('/quan-tri/so-van-ban', {
+          ...values,
+          type_id: Number(activeTab),
+          unit_id: user?.unitId,
+        });
         message.success('Thêm thành công');
       }
       setDrawerOpen(false);
@@ -117,23 +142,18 @@ export default function PositionPage() {
     }
   };
 
-  const handleSearch = (value: string) => {
-    setKeyword(value);
-    setPage(1);
-  };
-
-  const columns: ColumnsType<Position> = [
+  const columns: ColumnsType<DocBook> = [
     {
-      title: 'Mã',
-      dataIndex: 'code',
-      key: 'code',
-      width: 120,
+      title: 'Tên sổ',
+      dataIndex: 'name',
+      key: 'name',
+      ellipsis: true,
       render: (v) => <span style={{ fontWeight: 600, color: '#1B3A5C' }}>{v}</span>,
     },
     {
-      title: 'Tên chức vụ',
-      dataIndex: 'name',
-      key: 'name',
+      title: 'Mô tả',
+      dataIndex: 'description',
+      key: 'description',
       ellipsis: true,
     },
     {
@@ -144,39 +164,13 @@ export default function PositionPage() {
       align: 'center',
     },
     {
-      title: 'Số NV',
-      dataIndex: 'staff_count',
-      key: 'staff_count',
-      width: 80,
-      align: 'center',
-    },
-    {
-      title: 'Lãnh đạo',
-      dataIndex: 'is_leader',
-      key: 'is_leader',
-      width: 100,
-      align: 'center',
-      render: (v) => (
-        <Tag color={v ? 'success' : 'default'}>{v ? 'Có' : 'Không'}</Tag>
-      ),
-    },
-    {
-      title: 'XL Văn bản',
-      dataIndex: 'is_handle_document',
-      key: 'is_handle_document',
+      title: 'Mặc định',
+      dataIndex: 'is_default',
+      key: 'is_default',
       width: 110,
       align: 'center',
       render: (v) => (
-        <Tag color={v ? 'success' : 'default'}>{v ? 'Có' : 'Không'}</Tag>
-      ),
-    },
-    {
-      title: 'Trạng thái',
-      dataIndex: 'is_active',
-      key: 'is_active',
-      width: 120,
-      render: (v) => (
-        <Tag color={v ? 'success' : 'error'}>{v ? 'Hoạt động' : 'Ngừng'}</Tag>
+        <Tag color={v ? 'success' : 'default'}>{v ? 'Mặc định' : 'Không'}</Tag>
       ),
     },
     {
@@ -193,8 +187,14 @@ export default function PositionPage() {
               {
                 key: 'edit',
                 icon: <EditOutlined />,
-                label: 'Sửa thông tin',
+                label: 'Sửa',
                 onClick: () => handleEdit(record),
+              },
+              {
+                key: 'set-default',
+                icon: <StarOutlined />,
+                label: 'Đặt mặc định',
+                onClick: () => handleSetDefault(record),
               },
               { type: 'divider' },
               {
@@ -205,7 +205,7 @@ export default function PositionPage() {
                 onClick: () => {
                   Modal.confirm({
                     title: 'Xác nhận xóa',
-                    content: 'Bạn có chắc chắn muốn xóa chức vụ này?',
+                    content: 'Bạn có chắc chắn muốn xóa sổ văn bản này?',
                     okText: 'Xóa',
                     cancelText: 'Hủy',
                     okButtonProps: { danger: true },
@@ -226,10 +226,10 @@ export default function PositionPage() {
     <div>
       <div style={{ marginBottom: 20 }}>
         <h2 style={{ fontSize: 22, fontWeight: 700, color: '#1B3A5C', margin: '0 0 4px 0' }}>
-          Quản lý chức vụ
+          Quản lý sổ văn bản
         </h2>
         <p style={{ fontSize: 14, color: '#64748b', margin: 0 }}>
-          Danh mục chức vụ trong hệ thống
+          Danh mục sổ văn bản trong hệ thống
         </p>
       </div>
 
@@ -238,30 +238,27 @@ export default function PositionPage() {
         style={{ borderRadius: 12, boxShadow: '0 2px 8px rgba(27,58,92,0.06)' }}
         title={
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <IdcardOutlined style={{ color: '#0891B2' }} />
-            <span style={{ fontWeight: 600, color: '#1B3A5C' }}>Danh sách chức vụ</span>
+            <BookOutlined style={{ color: '#0891B2' }} />
+            <span style={{ fontWeight: 600, color: '#1B3A5C' }}>Danh sách sổ văn bản</span>
           </div>
         }
         extra={
-          <Space>
-            <Input.Search
-              placeholder="Tìm kiếm..."
-              allowClear
-              onSearch={handleSearch}
-              style={{ width: 240, borderRadius: 8 }}
-              prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
-            />
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={handleAdd}
-              style={{ borderRadius: 8 }}
-            >
-              Thêm chức vụ
-            </Button>
-          </Space>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={handleAdd}
+            style={{ borderRadius: 8 }}
+          >
+            Thêm sổ văn bản
+          </Button>
         }
       >
+        <Tabs
+          activeKey={activeTab}
+          onChange={(key) => setActiveTab(key)}
+          items={TAB_ITEMS}
+          style={{ marginBottom: 16 }}
+        />
         <Table
           columns={columns}
           dataSource={data}
@@ -270,23 +267,12 @@ export default function PositionPage() {
           size="middle"
           sticky
           scroll={{ x: 600 }}
-          pagination={{
-            current: page,
-            pageSize,
-            total,
-            showSizeChanger: true,
-            showTotal: (t) => `Tổng ${t}`,
-            onChange: (p, ps) => {
-              setPage(p);
-              setPageSize(ps);
-            },
-          }}
+          pagination={false}
         />
       </Card>
 
-      {/* Drawer add/edit */}
       <Drawer
-        title={<span style={{ color: '#fff', fontWeight: 600 }}>{editingRecord ? 'Cập nhật chức vụ' : 'Thêm chức vụ mới'}</span>}
+        title={<span style={{ color: '#fff', fontWeight: 600 }}>{editingRecord ? 'Cập nhật sổ văn bản' : 'Thêm sổ văn bản mới'}</span>}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         destroyOnClose
@@ -309,32 +295,20 @@ export default function PositionPage() {
         }
       >
         <Form form={form} layout="vertical" autoComplete="off" validateTrigger="onSubmit">
-          <Form.Item label="Tên chức vụ" name="name" rules={[{ required: true, message: 'Nhập tên chức vụ' }]}>
-            <Input placeholder="VD: Giám đốc" maxLength={100} style={{ borderRadius: 8 }} />
-          </Form.Item>
-
-          <Form.Item label="Mã" name="code" rules={[{ required: true, message: 'Nhập mã' }]}>
-            <Input placeholder="VD: GD" maxLength={20} style={{ borderRadius: 8 }} />
-          </Form.Item>
-
-          <Form.Item label="Thứ tự" name="sort_order" initialValue={0}>
-            <InputNumber min={0} style={{ width: '100%', borderRadius: 8 }} />
+          <Form.Item label="Tên sổ" name="name" rules={[{ required: true, message: 'Nhập tên sổ văn bản' }]}>
+            <Input placeholder="VD: Sổ văn bản đến" maxLength={200} style={{ borderRadius: 8 }} />
           </Form.Item>
 
           <Form.Item label="Mô tả" name="description">
             <Input.TextArea rows={3} maxLength={500} style={{ borderRadius: 8 }} />
           </Form.Item>
 
-          <Form.Item label="Chức vụ lãnh đạo" name="is_leader" valuePropName="checked" initialValue={false}>
-            <Switch checkedChildren="Có" unCheckedChildren="Không" />
+          <Form.Item label="Thứ tự" name="sort_order" initialValue={0}>
+            <InputNumber min={0} style={{ width: '100%', borderRadius: 8 }} />
           </Form.Item>
 
-          <Form.Item label="Được xử lý văn bản" name="is_handle_document" valuePropName="checked" initialValue={true}>
+          <Form.Item label="Sổ mặc định" name="is_default" valuePropName="checked" initialValue={false}>
             <Switch checkedChildren="Có" unCheckedChildren="Không" />
-          </Form.Item>
-
-          <Form.Item label="Trạng thái" name="is_active" valuePropName="checked" initialValue={true}>
-            <Switch checkedChildren="Hoạt động" unCheckedChildren="Ngừng" />
           </Form.Item>
         </Form>
       </Drawer>

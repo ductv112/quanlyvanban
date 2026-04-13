@@ -201,7 +201,7 @@ export default function RightsPage() {
         {/* Left: Tree */}
         <Col xs={24} lg={10}>
           <Card
-            bordered={false}
+            variant="borderless"
             style={{ borderRadius: 12, boxShadow: '0 2px 8px rgba(27,58,92,0.06)', minHeight: 500 }}
             title={
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -249,7 +249,7 @@ export default function RightsPage() {
         {/* Right: Detail form */}
         <Col xs={24} lg={14}>
           <Card
-            bordered={false}
+            variant="borderless"
             style={{ borderRadius: 12, boxShadow: '0 2px 8px rgba(27,58,92,0.06)', minHeight: 500 }}
             title={
               <span style={{ fontWeight: 600, color: '#1B3A5C' }}>

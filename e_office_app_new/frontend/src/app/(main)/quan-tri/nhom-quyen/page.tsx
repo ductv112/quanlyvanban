@@ -266,7 +266,7 @@ export default function RolePage() {
       </div>
 
       <Card
-        bordered={false}
+        variant="borderless"
         style={{ borderRadius: 12, boxShadow: '0 2px 8px rgba(27,58,92,0.06)' }}
         title={
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -311,11 +311,11 @@ export default function RolePage() {
       {/* Drawer add/edit */}
       <Drawer
         title={<span style={{ color: '#fff', fontWeight: 600 }}>{editingRecord ? 'Cập nhật nhóm quyền' : 'Thêm nhóm quyền mới'}</span>}
-        width={720}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         destroyOnClose
         styles={{
+          wrapper: { width: 720 },
           header: {
             background: 'linear-gradient(135deg, #1B3A5C 0%, #0891B2 100%)',
             borderBottom: 'none',
@@ -350,11 +350,11 @@ export default function RolePage() {
             <span style={{ color: '#e0f2fe', fontWeight: 700 }}>{permRole?.name}</span>
           </div>
         }
-        width={720}
         open={permDrawerOpen}
         onClose={() => setPermDrawerOpen(false)}
         destroyOnClose
         styles={{
+          wrapper: { width: 720 },
           header: {
             background: 'linear-gradient(135deg, #1B3A5C 0%, #0891B2 100%)',
             borderBottom: 'none',
