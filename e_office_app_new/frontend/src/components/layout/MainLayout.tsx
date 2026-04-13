@@ -21,6 +21,19 @@ import {
   ApartmentOutlined,
   IdcardOutlined,
   AppstoreOutlined,
+  BookOutlined,
+  TagsOutlined,
+  ClusterOutlined,
+  TableOutlined,
+  BankOutlined,
+  SolutionOutlined,
+  TeamOutlined,
+  SwapOutlined,
+  EnvironmentOutlined,
+  CalendarOutlined,
+  MailOutlined,
+  ToolOutlined,
+  StarOutlined,
 } from '@ant-design/icons';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
@@ -41,9 +54,10 @@ const menuItems: MenuItem[] = [
     icon: <FileTextOutlined />,
     label: 'Văn bản',
     children: [
-      { key: '/van-ban/den', icon: <InboxOutlined />, label: 'Văn bản đến' },
-      { key: '/van-ban/di', icon: <SendOutlined />, label: 'Văn bản đi' },
-      { key: '/van-ban/du-thao', icon: <EditOutlined />, label: 'Văn bản dự thảo' },
+      { key: '/van-ban-den', icon: <InboxOutlined />, label: 'Văn bản đến' },
+      { key: '/van-ban-di', icon: <SendOutlined />, label: 'Văn bản đi' },
+      { key: '/van-ban-du-thao', icon: <EditOutlined />, label: 'Văn bản dự thảo' },
+      { key: '/van-ban-danh-dau', icon: <StarOutlined />, label: 'Đánh dấu cá nhân' },
     ],
   },
   {
@@ -66,15 +80,34 @@ const menuItems: MenuItem[] = [
       { key: '/quan-tri/chuc-nang', icon: <AppstoreOutlined />, label: 'Chức năng' },
     ],
   },
+  {
+    key: 'danh-muc',
+    icon: <BookOutlined />,
+    label: 'Danh mục',
+    children: [
+      { key: '/quan-tri/so-van-ban', icon: <BookOutlined />, label: 'Sổ văn bản' },
+      { key: '/quan-tri/loai-van-ban', icon: <TagsOutlined />, label: 'Loại văn bản' },
+      { key: '/quan-tri/linh-vuc', icon: <ClusterOutlined />, label: 'Lĩnh vực' },
+      { key: '/quan-tri/thuoc-tinh-van-ban', icon: <TableOutlined />, label: 'Thuộc tính VB' },
+      { key: '/quan-tri/co-quan', icon: <BankOutlined />, label: 'Cơ quan' },
+      { key: '/quan-tri/nguoi-ky', icon: <SolutionOutlined />, label: 'Người ký' },
+      { key: '/quan-tri/nhom-lam-viec', icon: <TeamOutlined />, label: 'Nhóm làm việc' },
+      { key: '/quan-tri/uy-quyen', icon: <SwapOutlined />, label: 'Ủy quyền' },
+      { key: '/quan-tri/dia-ban', icon: <EnvironmentOutlined />, label: 'Địa bàn' },
+      { key: '/quan-tri/lich-lam-viec', icon: <CalendarOutlined />, label: 'Lịch làm việc' },
+      { key: '/quan-tri/mau-thong-bao', icon: <MailOutlined />, label: 'Mẫu thông báo' },
+      { key: '/quan-tri/cau-hinh', icon: <ToolOutlined />, label: 'Cấu hình' },
+    ],
+  },
 ];
 
 // Map pathname to breadcrumb labels
 const breadcrumbMap: Record<string, string> = {
   '/dashboard': 'Tổng quan',
-  '/van-ban': 'Văn bản',
-  '/van-ban/den': 'Văn bản đến',
-  '/van-ban/di': 'Văn bản đi',
-  '/van-ban/du-thao': 'Văn bản dự thảo',
+  '/van-ban-den': 'Văn bản đến',
+  '/van-ban-danh-dau': 'Đánh dấu cá nhân',
+  '/van-ban-di': 'Văn bản đi',
+  '/van-ban-du-thao': 'Văn bản dự thảo',
   '/ho-so-cong-viec': 'Hồ sơ công việc',
   '/quan-tri': 'Quản trị',
   '/quan-tri/don-vi': 'Đơn vị',
@@ -82,6 +115,18 @@ const breadcrumbMap: Record<string, string> = {
   '/quan-tri/nguoi-dung': 'Người dùng',
   '/quan-tri/nhom-quyen': 'Nhóm quyền',
   '/quan-tri/chuc-nang': 'Chức năng',
+  '/quan-tri/so-van-ban': 'Sổ văn bản',
+  '/quan-tri/loai-van-ban': 'Loại văn bản',
+  '/quan-tri/linh-vuc': 'Lĩnh vực',
+  '/quan-tri/thuoc-tinh-van-ban': 'Thuộc tính văn bản',
+  '/quan-tri/co-quan': 'Cơ quan',
+  '/quan-tri/nguoi-ky': 'Người ký',
+  '/quan-tri/nhom-lam-viec': 'Nhóm làm việc',
+  '/quan-tri/uy-quyen': 'Ủy quyền',
+  '/quan-tri/dia-ban': 'Địa bàn',
+  '/quan-tri/lich-lam-viec': 'Lịch làm việc',
+  '/quan-tri/mau-thong-bao': 'Mẫu thông báo',
+  '/quan-tri/cau-hinh': 'Cấu hình',
   '/thong-tin-ca-nhan': 'Thông tin cá nhân',
 };
 
@@ -107,6 +152,9 @@ function buildBreadcrumbs(pathname: string) {
       } else {
         items.push({ title: <Link href={path}>{label}</Link> });
       }
+    } else if (/^\d+$/.test(segment)) {
+      // Dynamic ID segment — show "Chi tiết"
+      items.push({ title: 'Chi tiết' });
     }
   }
 
@@ -207,32 +255,18 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
           )}
         </div>
 
-        {/* Menu */}
-        <Menu
-          theme="dark"
-          mode="inline"
-          selectedKeys={[pathname]}
-          defaultOpenKeys={openKeys}
-          items={menuItems}
-          onClick={handleMenuClick}
-          style={{ border: 'none', marginTop: 8 }}
-        />
-
-        {/* User card at bottom */}
-        {!collapsed && user && (
-          <div style={styles.siderUserCard}>
-            <Avatar
-              size={36}
-              src={user.image || undefined}
-              icon={!user.image ? <UserOutlined /> : undefined}
-              style={{ background: '#1B3A5C', flexShrink: 0 }}
-            />
-            <div style={styles.siderUserInfo}>
-              <div style={styles.siderUserName}>{user.fullName}</div>
-              <div style={styles.siderUserRole}>{user.positionName || 'Nhân viên'}</div>
-            </div>
-          </div>
-        )}
+        {/* Menu — calc height = 100vh minus logo (~65px) */}
+        <div style={{ height: 'calc(100vh - 65px)', overflowY: 'auto', overflowX: 'hidden' }}>
+          <Menu
+            theme="dark"
+            mode="inline"
+            selectedKeys={[pathname]}
+            defaultOpenKeys={openKeys}
+            items={menuItems}
+            onClick={handleMenuClick}
+            style={{ border: 'none', marginTop: 8 }}
+          />
+        </div>
       </Sider>
 
       {/* MAIN AREA */}
@@ -292,8 +326,9 @@ const styles: Record<string, React.CSSProperties> = {
     left: 0,
     top: 0,
     bottom: 0,
+    height: '100vh',
     zIndex: 100,
-    overflow: 'auto',
+    overflow: 'hidden',
     borderRight: '1px solid rgba(255,255,255,0.06)',
   },
   logo: {
@@ -328,36 +363,6 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 11,
     color: 'rgba(255,255,255,0.45)',
     letterSpacing: '0.3px',
-  },
-  siderUserCard: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    display: 'flex',
-    alignItems: 'center',
-    gap: 10,
-    padding: '14px 16px',
-    borderTop: '1px solid rgba(255,255,255,0.08)',
-    background: 'rgba(0,0,0,0.15)',
-  },
-  siderUserInfo: {
-    overflow: 'hidden',
-  },
-  siderUserName: {
-    fontSize: 13,
-    fontWeight: 600,
-    color: '#ffffff',
-    whiteSpace: 'nowrap',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-  },
-  siderUserRole: {
-    fontSize: 11,
-    color: 'rgba(255,255,255,0.5)',
-    whiteSpace: 'nowrap',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
   },
   // Header
   header: {
