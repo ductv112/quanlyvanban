@@ -2,6 +2,7 @@ import { Router } from 'express';
 import type { Request, Response } from 'express';
 import type { AuthRequest } from '../middleware/auth.js';
 import { hashPassword, verifyPassword } from '../lib/auth/password.js';
+import { pool } from '../lib/db/pool.js';
 import { departmentRepository } from '../repositories/department.repository.js';
 import { positionRepository } from '../repositories/position.repository.js';
 import { staffRepository } from '../repositories/staff.repository.js';
@@ -9,6 +10,45 @@ import { roleRepository } from '../repositories/role.repository.js';
 import { rightRepository } from '../repositories/right.repository.js';
 
 const router = Router();
+
+// Map PostgreSQL constraint names to user-friendly Vietnamese messages
+function handleDbError(error: unknown, res: Response): void {
+  const err = error as any;
+
+  // PostgreSQL unique violation (error code 23505)
+  if (err?.code === '23505') {
+    const constraint = err?.constraint || '';
+    const messageMap: Record<string, string> = {
+      'uq_departments_code': 'Mã đơn vị đã tồn tại',
+      'uq_positions_code': 'Mã chức vụ đã tồn tại',
+      'uq_roles_name': 'Tên nhóm quyền đã tồn tại',
+      'staff_username_key': 'Tên đăng nhập đã tồn tại',
+    };
+    const msg = messageMap[constraint] || 'Dữ liệu đã tồn tại, vui lòng kiểm tra lại';
+    res.status(409).json({ success: false, message: msg });
+    return;
+  }
+
+  // PostgreSQL foreign key violation (error code 23503)
+  if (err?.code === '23503') {
+    res.status(400).json({ success: false, message: 'Không thể thực hiện: dữ liệu đang được tham chiếu' });
+    return;
+  }
+
+  // PostgreSQL not null violation (error code 23502)
+  if (err?.code === '23502') {
+    const column = err?.column || '';
+    res.status(400).json({ success: false, message: `Trường "${column}" là bắt buộc` });
+    return;
+  }
+
+  // Default — hide raw error in production
+  const isDev = process.env.NODE_ENV !== 'production';
+  res.status(500).json({
+    success: false,
+    message: isDev ? (err as Error).message : 'Có lỗi xảy ra, vui lòng thử lại sau'
+  });
+}
 
 // ============================================================
 // UTILITY: Build tree from flat list
@@ -58,7 +98,7 @@ router.get('/don-vi/tree', async (req: Request, res: Response) => {
     const tree = buildTree(flatList);
     res.json({ success: true, data: tree });
   } catch (error) {
-    res.status(500).json({ success: false, message: (error as Error).message });
+    handleDbError(error, res);
   }
 });
 
@@ -72,7 +112,7 @@ router.get('/don-vi', async (req: Request, res: Response) => {
     const filtered = parentId ? data.filter(d => d.parent_id === parentId) : data;
     res.json({ success: true, data: filtered });
   } catch (error) {
-    res.status(500).json({ success: false, message: (error as Error).message });
+    handleDbError(error, res);
   }
 });
 
@@ -87,7 +127,7 @@ router.get('/don-vi/:id', async (req: Request, res: Response) => {
     }
     res.json({ success: true, data });
   } catch (error) {
-    res.status(500).json({ success: false, message: (error as Error).message });
+    handleDbError(error, res);
   }
 });
 
@@ -101,6 +141,22 @@ router.post('/don-vi', async (req: Request, res: Response) => {
       allow_doc_book, description,
     } = req.body;
 
+    if (!name?.trim()) {
+      res.status(400).json({ success: false, message: 'Tên đơn vị là bắt buộc' });
+      return;
+    }
+
+    if (code?.trim()) {
+      const existing = await pool.query(
+        'SELECT id FROM departments WHERE LOWER(code) = LOWER($1) AND is_deleted = FALSE',
+        [code.trim()]
+      );
+      if (existing.rows.length > 0) {
+        res.status(409).json({ success: false, message: 'Mã đơn vị đã tồn tại' });
+        return;
+      }
+    }
+
     const id = await departmentRepository.create(
       parent_id ?? null, code, name, name_en ?? '', short_name ?? '', abb_name ?? '',
       is_unit ?? false, level ?? 0, sort_order ?? 0, phone ?? '', fax ?? '',
@@ -108,9 +164,13 @@ router.post('/don-vi', async (req: Request, res: Response) => {
       staffId,
     );
 
+    if (!id) {
+      res.status(500).json({ success: false, message: 'Không thể tạo đơn vị' });
+      return;
+    }
     res.status(201).json({ success: true, data: { id } });
   } catch (error) {
-    res.status(500).json({ success: false, message: (error as Error).message });
+    handleDbError(error, res);
   }
 });
 
@@ -125,6 +185,22 @@ router.put('/don-vi/:id', async (req: Request, res: Response) => {
       allow_doc_book, description,
     } = req.body;
 
+    if (!name?.trim()) {
+      res.status(400).json({ success: false, message: 'Tên đơn vị là bắt buộc' });
+      return;
+    }
+
+    if (code?.trim()) {
+      const existing = await pool.query(
+        'SELECT id FROM departments WHERE LOWER(code) = LOWER($1) AND is_deleted = FALSE AND id != $2',
+        [code.trim(), id]
+      );
+      if (existing.rows.length > 0) {
+        res.status(409).json({ success: false, message: 'Mã đơn vị đã tồn tại' });
+        return;
+      }
+    }
+
     const updated = await departmentRepository.update(
       id, parent_id ?? null, code, name, name_en ?? '', short_name ?? '', abb_name ?? '',
       is_unit ?? false, level ?? 0, sort_order ?? 0, phone ?? '', fax ?? '',
@@ -138,7 +214,7 @@ router.put('/don-vi/:id', async (req: Request, res: Response) => {
     }
     res.json({ success: true, data: { updated: true } });
   } catch (error) {
-    res.status(500).json({ success: false, message: (error as Error).message });
+    handleDbError(error, res);
   }
 });
 
@@ -153,7 +229,7 @@ router.delete('/don-vi/:id', async (req: Request, res: Response) => {
     }
     res.json({ success: true, data: { message: result.message } });
   } catch (error) {
-    res.status(500).json({ success: false, message: (error as Error).message });
+    handleDbError(error, res);
   }
 });
 
@@ -168,7 +244,7 @@ router.patch('/don-vi/:id/lock', async (req: Request, res: Response) => {
     }
     res.json({ success: true, data: { toggled: true } });
   } catch (error) {
-    res.status(500).json({ success: false, message: (error as Error).message });
+    handleDbError(error, res);
   }
 });
 
@@ -189,7 +265,7 @@ router.get('/chuc-vu', async (req: Request, res: Response) => {
 
     res.json({ success: true, data: rows, total, page, pageSize, totalPages });
   } catch (error) {
-    res.status(500).json({ success: false, message: (error as Error).message });
+    handleDbError(error, res);
   }
 });
 
@@ -197,10 +273,31 @@ router.get('/chuc-vu', async (req: Request, res: Response) => {
 router.post('/chuc-vu', async (req: Request, res: Response) => {
   try {
     const { name, code, sort_order, description, is_leader, is_handle_document } = req.body;
+
+    if (!name?.trim()) {
+      res.status(400).json({ success: false, message: 'Tên chức vụ là bắt buộc' });
+      return;
+    }
+
+    if (code?.trim()) {
+      const existing = await pool.query(
+        'SELECT id FROM positions WHERE LOWER(code) = LOWER($1)',
+        [code.trim()]
+      );
+      if (existing.rows.length > 0) {
+        res.status(409).json({ success: false, message: 'Mã chức vụ đã tồn tại' });
+        return;
+      }
+    }
+
     const id = await positionRepository.create(name, code ?? '', sort_order ?? 0, description ?? '', is_leader ?? false, is_handle_document ?? false);
+    if (!id) {
+      res.status(500).json({ success: false, message: 'Không thể tạo chức vụ' });
+      return;
+    }
     res.status(201).json({ success: true, data: { id } });
   } catch (error) {
-    res.status(500).json({ success: false, message: (error as Error).message });
+    handleDbError(error, res);
   }
 });
 
@@ -209,6 +306,23 @@ router.put('/chuc-vu/:id', async (req: Request, res: Response) => {
   try {
     const id = Number(req.params.id);
     const { name, code, sort_order, description, is_active, is_leader, is_handle_document } = req.body;
+
+    if (!name?.trim()) {
+      res.status(400).json({ success: false, message: 'Tên chức vụ là bắt buộc' });
+      return;
+    }
+
+    if (code?.trim()) {
+      const existing = await pool.query(
+        'SELECT id FROM positions WHERE LOWER(code) = LOWER($1) AND id != $2',
+        [code.trim(), id]
+      );
+      if (existing.rows.length > 0) {
+        res.status(409).json({ success: false, message: 'Mã chức vụ đã tồn tại' });
+        return;
+      }
+    }
+
     const updated = await positionRepository.update(id, name, code ?? '', sort_order ?? 0, description ?? '', is_active ?? true, is_leader ?? false, is_handle_document ?? false);
     if (!updated) {
       res.status(404).json({ success: false, message: 'Không tìm thấy chức vụ' });
@@ -216,7 +330,7 @@ router.put('/chuc-vu/:id', async (req: Request, res: Response) => {
     }
     res.json({ success: true, data: { updated: true } });
   } catch (error) {
-    res.status(500).json({ success: false, message: (error as Error).message });
+    handleDbError(error, res);
   }
 });
 
@@ -231,7 +345,7 @@ router.delete('/chuc-vu/:id', async (req: Request, res: Response) => {
     }
     res.json({ success: true, data: { message: result.message } });
   } catch (error) {
-    res.status(500).json({ success: false, message: (error as Error).message });
+    handleDbError(error, res);
   }
 });
 
@@ -255,7 +369,7 @@ router.get('/nguoi-dung', async (req: Request, res: Response) => {
 
     res.json({ success: true, data: rows, total, page, pageSize, totalPages });
   } catch (error) {
-    res.status(500).json({ success: false, message: (error as Error).message });
+    handleDbError(error, res);
   }
 });
 
@@ -270,7 +384,7 @@ router.get('/nguoi-dung/:id', async (req: Request, res: Response) => {
     }
     res.json({ success: true, data });
   } catch (error) {
-    res.status(500).json({ success: false, message: (error as Error).message });
+    handleDbError(error, res);
   }
 });
 
@@ -285,9 +399,61 @@ router.post('/nguoi-dung', async (req: Request, res: Response) => {
       is_admin, is_represent_unit, is_represent_department,
     } = req.body;
 
-    if (!username) {
-      res.status(400).json({ success: false, message: 'Tên đăng nhập là bắt buộc' });
+    // Password policy (only on create, when password is provided)
+    if (password) {
+      if (password.length < 6) {
+        res.status(400).json({ success: false, message: 'Mật khẩu phải có ít nhất 6 ký tự' });
+        return;
+      }
+      if (!/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password)) {
+        res.status(400).json({ success: false, message: 'Mật khẩu phải chứa chữ hoa, chữ thường và số' });
+        return;
+      }
+    }
+
+    // Username validation
+    if (!username || username.trim().length < 3) {
+      res.status(400).json({ success: false, message: 'Tên đăng nhập phải có ít nhất 3 ký tự' });
       return;
+    }
+    if (!/^[a-zA-Z0-9._-]+$/.test(username.trim())) {
+      res.status(400).json({ success: false, message: 'Tên đăng nhập chỉ chứa chữ cái, số, dấu chấm, gạch ngang' });
+      return;
+    }
+
+    // Required fields
+    if (!last_name?.trim() || !first_name?.trim()) {
+      res.status(400).json({ success: false, message: 'Họ và tên là bắt buộc' });
+      return;
+    }
+    if (!department_id || !unit_id) {
+      res.status(400).json({ success: false, message: 'Đơn vị và phòng ban là bắt buộc' });
+      return;
+    }
+
+    // Email validation (if provided)
+    if (email && email.trim()) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email.trim())) {
+        res.status(400).json({ success: false, message: 'Email không đúng định dạng' });
+        return;
+      }
+    }
+
+    // Phone validation (if provided)
+    if (phone && phone.trim()) {
+      const phoneRegex = /^[0-9+\-\s()]{8,15}$/;
+      if (!phoneRegex.test(phone.trim())) {
+        res.status(400).json({ success: false, message: 'Số điện thoại không đúng định dạng' });
+        return;
+      }
+    }
+    if (mobile && mobile.trim()) {
+      const phoneRegex = /^[0-9+\-\s()]{8,15}$/;
+      if (!phoneRegex.test(mobile.trim())) {
+        res.status(400).json({ success: false, message: 'Số di động không đúng định dạng' });
+        return;
+      }
     }
 
     const normalizedUsername = username.trim().toLowerCase().replace(/\s+/g, '');
@@ -302,14 +468,14 @@ router.post('/nguoi-dung', async (req: Request, res: Response) => {
       staffId,
     );
 
-    if (!result) {
-      res.status(400).json({ success: false, message: 'Không thể tạo người dùng' });
+    if (!result || result.id === 0) {
+      res.status(409).json({ success: false, message: result?.message || 'Không thể tạo người dùng' });
       return;
     }
 
-    res.status(201).json({ success: true, data: result });
+    res.status(201).json({ success: true, data: { id: result.id }, message: 'Thêm thành công' });
   } catch (error) {
-    res.status(500).json({ success: false, message: (error as Error).message });
+    handleDbError(error, res);
   }
 });
 
@@ -324,6 +490,41 @@ router.put('/nguoi-dung/:id', async (req: Request, res: Response) => {
       address, id_card, id_card_date, id_card_place,
       is_admin, is_represent_unit, is_represent_department,
     } = req.body;
+
+    // Required fields
+    if (!last_name?.trim() || !first_name?.trim()) {
+      res.status(400).json({ success: false, message: 'Họ và tên là bắt buộc' });
+      return;
+    }
+    if (!department_id || !unit_id) {
+      res.status(400).json({ success: false, message: 'Đơn vị và phòng ban là bắt buộc' });
+      return;
+    }
+
+    // Email validation (if provided)
+    if (email && email.trim()) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email.trim())) {
+        res.status(400).json({ success: false, message: 'Email không đúng định dạng' });
+        return;
+      }
+    }
+
+    // Phone validation (if provided)
+    if (phone && phone.trim()) {
+      const phoneRegex = /^[0-9+\-\s()]{8,15}$/;
+      if (!phoneRegex.test(phone.trim())) {
+        res.status(400).json({ success: false, message: 'Số điện thoại không đúng định dạng' });
+        return;
+      }
+    }
+    if (mobile && mobile.trim()) {
+      const phoneRegex = /^[0-9+\-\s()]{8,15}$/;
+      if (!phoneRegex.test(mobile.trim())) {
+        res.status(400).json({ success: false, message: 'Số di động không đúng định dạng' });
+        return;
+      }
+    }
 
     const updated = await staffRepository.update(
       id, department_id, unit_id, position_id,
@@ -340,7 +541,7 @@ router.put('/nguoi-dung/:id', async (req: Request, res: Response) => {
     }
     res.json({ success: true, data: { updated: true } });
   } catch (error) {
-    res.status(500).json({ success: false, message: (error as Error).message });
+    handleDbError(error, res);
   }
 });
 
@@ -355,7 +556,7 @@ router.delete('/nguoi-dung/:id', async (req: Request, res: Response) => {
     }
     res.json({ success: true, data: { deleted: true } });
   } catch (error) {
-    res.status(500).json({ success: false, message: (error as Error).message });
+    handleDbError(error, res);
   }
 });
 
@@ -370,7 +571,7 @@ router.patch('/nguoi-dung/:id/lock', async (req: Request, res: Response) => {
     }
     res.json({ success: true, data: { toggled: true } });
   } catch (error) {
-    res.status(500).json({ success: false, message: (error as Error).message });
+    handleDbError(error, res);
   }
 });
 
@@ -378,22 +579,16 @@ router.patch('/nguoi-dung/:id/lock', async (req: Request, res: Response) => {
 router.patch('/nguoi-dung/:id/reset-password', async (req: Request, res: Response) => {
   try {
     const id = Number(req.params.id);
-    const { password } = req.body;
 
-    if (!password) {
-      res.status(400).json({ success: false, message: 'Mật khẩu mới là bắt buộc' });
-      return;
-    }
-
-    const passwordHash = hashPassword(password);
+    const passwordHash = hashPassword('Admin@123');
     const reset = await staffRepository.resetPassword(id, passwordHash);
     if (!reset) {
       res.status(404).json({ success: false, message: 'Không tìm thấy người dùng' });
       return;
     }
-    res.json({ success: true, data: { reset: true } });
+    res.json({ success: true, message: 'Đã reset mật khẩu về mặc định (Admin@123)' });
   } catch (error) {
-    res.status(500).json({ success: false, message: (error as Error).message });
+    handleDbError(error, res);
   }
 });
 
@@ -413,15 +608,19 @@ router.patch('/nguoi-dung/:id/change-password', async (req: Request, res: Respon
       return;
     }
 
-    const staff = await staffRepository.getById(id);
+    if (newPassword.length < 6 || !/[A-Z]/.test(newPassword) || !/[a-z]/.test(newPassword) || !/[0-9]/.test(newPassword)) {
+      res.status(400).json({ success: false, message: 'Mật khẩu mới phải có ít nhất 6 ký tự, chứa chữ hoa, chữ thường và số' });
+      return;
+    }
+
+    const result = await pool.query('SELECT password_hash FROM public.staff WHERE id = $1 AND is_deleted = FALSE', [id]);
+    const staff = result.rows[0];
     if (!staff) {
       res.status(404).json({ success: false, message: 'Không tìm thấy người dùng' });
       return;
     }
 
-    // Verify old password — staff detail should have password_hash via a separate query if needed
-    // For now we use the verifyPassword with the stored hash
-    const isValid = verifyPassword(oldPassword, (staff as any).password_hash);
+    const isValid = verifyPassword(oldPassword, staff.password_hash);
     if (!isValid) {
       res.status(400).json({ success: false, message: 'Mật khẩu hiện tại không đúng' });
       return;
@@ -435,7 +634,7 @@ router.patch('/nguoi-dung/:id/change-password', async (req: Request, res: Respon
     }
     res.json({ success: true, data: { changed: true } });
   } catch (error) {
-    res.status(500).json({ success: false, message: (error as Error).message });
+    handleDbError(error, res);
   }
 });
 
@@ -446,7 +645,7 @@ router.get('/nguoi-dung/:id/nhom-quyen', async (req: Request, res: Response) => 
     const data = await roleRepository.getStaffRoles(staffId);
     res.json({ success: true, data });
   } catch (error) {
-    res.status(500).json({ success: false, message: (error as Error).message });
+    handleDbError(error, res);
   }
 });
 
@@ -458,7 +657,7 @@ router.put('/nguoi-dung/:id/nhom-quyen', async (req: Request, res: Response) => 
     await roleRepository.assignStaffRoles(staffId, roleIds ?? []);
     res.json({ success: true, data: { assigned: true } });
   } catch (error) {
-    res.status(500).json({ success: false, message: (error as Error).message });
+    handleDbError(error, res);
   }
 });
 
@@ -474,7 +673,7 @@ router.get('/nhom-quyen', async (req: Request, res: Response) => {
     const data = await roleRepository.getList(unitId, keyword);
     res.json({ success: true, data });
   } catch (error) {
-    res.status(500).json({ success: false, message: (error as Error).message });
+    handleDbError(error, res);
   }
 });
 
@@ -483,10 +682,29 @@ router.post('/nhom-quyen', async (req: Request, res: Response) => {
   try {
     const { staffId, unitId } = (req as AuthRequest).user;
     const { name, description, unit_id } = req.body;
+
+    if (!name?.trim()) {
+      res.status(400).json({ success: false, message: 'Tên nhóm quyền là bắt buộc' });
+      return;
+    }
+
+    const existing = await pool.query(
+      'SELECT id FROM roles WHERE LOWER(name) = LOWER($1)',
+      [name.trim()]
+    );
+    if (existing.rows.length > 0) {
+      res.status(409).json({ success: false, message: 'Tên nhóm quyền đã tồn tại' });
+      return;
+    }
+
     const id = await roleRepository.create(unit_id ?? unitId, name, description ?? '', staffId);
+    if (!id) {
+      res.status(500).json({ success: false, message: 'Không thể tạo nhóm quyền' });
+      return;
+    }
     res.status(201).json({ success: true, data: { id } });
   } catch (error) {
-    res.status(500).json({ success: false, message: (error as Error).message });
+    handleDbError(error, res);
   }
 });
 
@@ -496,6 +714,21 @@ router.put('/nhom-quyen/:id', async (req: Request, res: Response) => {
     const { staffId } = (req as AuthRequest).user;
     const id = Number(req.params.id);
     const { name, description } = req.body;
+
+    if (!name?.trim()) {
+      res.status(400).json({ success: false, message: 'Tên nhóm quyền là bắt buộc' });
+      return;
+    }
+
+    const existing = await pool.query(
+      'SELECT id FROM roles WHERE LOWER(name) = LOWER($1) AND id != $2',
+      [name.trim(), id]
+    );
+    if (existing.rows.length > 0) {
+      res.status(409).json({ success: false, message: 'Tên nhóm quyền đã tồn tại' });
+      return;
+    }
+
     const updated = await roleRepository.update(id, name, description ?? '', staffId);
     if (!updated) {
       res.status(404).json({ success: false, message: 'Không tìm thấy nhóm quyền' });
@@ -503,7 +736,7 @@ router.put('/nhom-quyen/:id', async (req: Request, res: Response) => {
     }
     res.json({ success: true, data: { updated: true } });
   } catch (error) {
-    res.status(500).json({ success: false, message: (error as Error).message });
+    handleDbError(error, res);
   }
 });
 
@@ -518,7 +751,7 @@ router.delete('/nhom-quyen/:id', async (req: Request, res: Response) => {
     }
     res.json({ success: true, data: { message: result.message } });
   } catch (error) {
-    res.status(500).json({ success: false, message: (error as Error).message });
+    handleDbError(error, res);
   }
 });
 
@@ -529,7 +762,7 @@ router.get('/nhom-quyen/:id/quyen', async (req: Request, res: Response) => {
     const data = await roleRepository.getRights(roleId);
     res.json({ success: true, data });
   } catch (error) {
-    res.status(500).json({ success: false, message: (error as Error).message });
+    handleDbError(error, res);
   }
 });
 
@@ -541,7 +774,7 @@ router.put('/nhom-quyen/:id/quyen', async (req: Request, res: Response) => {
     await roleRepository.assignRights(roleId, rightIds ?? []);
     res.json({ success: true, data: { assigned: true } });
   } catch (error) {
-    res.status(500).json({ success: false, message: (error as Error).message });
+    handleDbError(error, res);
   }
 });
 
@@ -556,7 +789,7 @@ router.get('/chuc-nang/tree', async (_req: Request, res: Response) => {
     const tree = buildTree(flatList);
     res.json({ success: true, data: tree });
   } catch (error) {
-    res.status(500).json({ success: false, message: (error as Error).message });
+    handleDbError(error, res);
   }
 });
 
@@ -567,7 +800,7 @@ router.get('/chuc-nang/menu', async (req: Request, res: Response) => {
     const data = await rightRepository.getByStaff(staffId);
     res.json({ success: true, data });
   } catch (error) {
-    res.status(500).json({ success: false, message: (error as Error).message });
+    handleDbError(error, res);
   }
 });
 
@@ -579,15 +812,24 @@ router.post('/chuc-nang', async (req: Request, res: Response) => {
       sort_order, show_menu, default_page, show_in_app, description,
     } = req.body;
 
+    if (!name?.trim()) {
+      res.status(400).json({ success: false, message: 'Tên chức năng là bắt buộc' });
+      return;
+    }
+
     const id = await rightRepository.create(
       parent_id ?? null, name, name_of_menu ?? '', action_link ?? '',
       icon ?? '', sort_order ?? 0, show_menu ?? true, default_page ?? false,
       show_in_app ?? false, description ?? '',
     );
 
+    if (!id) {
+      res.status(500).json({ success: false, message: 'Không thể tạo chức năng' });
+      return;
+    }
     res.status(201).json({ success: true, data: { id } });
   } catch (error) {
-    res.status(500).json({ success: false, message: (error as Error).message });
+    handleDbError(error, res);
   }
 });
 
@@ -599,6 +841,11 @@ router.put('/chuc-nang/:id', async (req: Request, res: Response) => {
       parent_id, name, name_of_menu, action_link, icon,
       sort_order, show_menu, default_page, show_in_app, description,
     } = req.body;
+
+    if (!name?.trim()) {
+      res.status(400).json({ success: false, message: 'Tên chức năng là bắt buộc' });
+      return;
+    }
 
     const updated = await rightRepository.update(
       id, parent_id ?? null, name, name_of_menu ?? '', action_link ?? '',
@@ -612,7 +859,7 @@ router.put('/chuc-nang/:id', async (req: Request, res: Response) => {
     }
     res.json({ success: true, data: { updated: true } });
   } catch (error) {
-    res.status(500).json({ success: false, message: (error as Error).message });
+    handleDbError(error, res);
   }
 });
 
@@ -627,7 +874,7 @@ router.delete('/chuc-nang/:id', async (req: Request, res: Response) => {
     }
     res.json({ success: true, data: { message: result.message } });
   } catch (error) {
-    res.status(500).json({ success: false, message: (error as Error).message });
+    handleDbError(error, res);
   }
 });
 

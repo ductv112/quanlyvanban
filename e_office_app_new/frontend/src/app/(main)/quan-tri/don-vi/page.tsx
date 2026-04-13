@@ -3,12 +3,13 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Card, Row, Col, Table, Button, Input, Tree, Tag, Space, Drawer,
-  Form, TreeSelect, Radio, Switch, InputNumber, Popconfirm, Skeleton, Tooltip, App,
+  Form, TreeSelect, Radio, Switch, InputNumber, Skeleton, Tooltip, Dropdown, Modal, App,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
   PlusOutlined, EditOutlined, LockOutlined, UnlockOutlined,
   DeleteOutlined, SearchOutlined, ApartmentOutlined, ReloadOutlined,
+  MoreOutlined,
 } from '@ant-design/icons';
 import { api } from '@/lib/api';
 
@@ -231,43 +232,50 @@ export default function DepartmentPage() {
       ),
     },
     {
-      title: 'Thao tác',
+      title: '',
       key: 'actions',
-      width: 130,
+      width: 50,
       align: 'center',
+      fixed: 'right',
       render: (_, record) => (
-        <Space size={4}>
-          <Tooltip title="Sửa">
-            <Button
-              type="text"
-              size="small"
-              icon={<EditOutlined />}
-              onClick={() => handleEdit(record)}
-              style={{ color: '#0891B2' }}
-            />
-          </Tooltip>
-          <Tooltip title={record.is_locked ? 'Mở khóa' : 'Khóa'}>
-            <Button
-              type="text"
-              size="small"
-              icon={record.is_locked ? <UnlockOutlined /> : <LockOutlined />}
-              onClick={() => handleLockToggle(record)}
-              style={{ color: record.is_locked ? '#059669' : '#D97706' }}
-            />
-          </Tooltip>
-          <Popconfirm
-            title="Xác nhận xóa"
-            description="Bạn có chắc chắn muốn xóa đơn vị này?"
-            onConfirm={() => handleDelete(record.id)}
-            okText="Xóa"
-            cancelText="Hủy"
-            okButtonProps={{ danger: true }}
-          >
-            <Tooltip title="Xóa">
-              <Button type="text" size="small" icon={<DeleteOutlined />} danger />
-            </Tooltip>
-          </Popconfirm>
-        </Space>
+        <Dropdown
+          trigger={['click']}
+          menu={{
+            items: [
+              {
+                key: 'edit',
+                icon: <EditOutlined />,
+                label: 'Sửa thông tin',
+                onClick: () => handleEdit(record),
+              },
+              {
+                key: 'lock',
+                icon: record.is_locked ? <UnlockOutlined /> : <LockOutlined />,
+                label: record.is_locked ? 'Mở khóa' : 'Khóa',
+                onClick: () => handleLockToggle(record),
+              },
+              { type: 'divider' },
+              {
+                key: 'delete',
+                icon: <DeleteOutlined />,
+                label: 'Xóa',
+                danger: true,
+                onClick: () => {
+                  Modal.confirm({
+                    title: 'Xác nhận xóa',
+                    content: 'Bạn có chắc chắn muốn xóa đơn vị này?',
+                    okText: 'Xóa',
+                    cancelText: 'Hủy',
+                    okButtonProps: { danger: true },
+                    onOk: () => handleDelete(record.id),
+                  });
+                },
+              },
+            ],
+          }}
+        >
+          <Button type="text" size="small" icon={<MoreOutlined style={{ fontSize: 18 }} />} style={{ color: '#64748b' }} />
+        </Dropdown>
       ),
     },
   ];
@@ -362,21 +370,29 @@ export default function DepartmentPage() {
 
       {/* Drawer add/edit */}
       <Drawer
-        title={editingRecord ? 'Cập nhật đơn vị' : 'Thêm đơn vị mới'}
+        title={<span style={{ color: '#fff', fontWeight: 600 }}>{editingRecord ? 'Cập nhật đơn vị' : 'Thêm đơn vị mới'}</span>}
         width={720}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         destroyOnClose
+        styles={{
+          header: {
+            background: 'linear-gradient(135deg, #1B3A5C 0%, #0891B2 100%)',
+            borderBottom: 'none',
+            padding: '16px 24px',
+          },
+          body: { padding: 24 },
+        }}
         extra={
           <Space>
-            <Button onClick={() => setDrawerOpen(false)}>Hủy</Button>
-            <Button type="primary" loading={saving} onClick={handleSave} style={{ borderRadius: 8 }}>
+            <Button onClick={() => setDrawerOpen(false)} style={{ borderRadius: 8, borderColor: 'rgba(255,255,255,0.5)', color: '#fff' }} ghost>Hủy</Button>
+            <Button type="primary" loading={saving} onClick={handleSave} style={{ borderRadius: 8, background: '#fff', color: '#1B3A5C', borderColor: '#fff', fontWeight: 600 }}>
               {editingRecord ? 'Cập nhật' : 'Thêm mới'}
             </Button>
           </Space>
         }
       >
-        <Form form={form} layout="vertical" autoComplete="off">
+        <Form form={form} layout="vertical" autoComplete="off" validateTrigger="onSubmit">
           <Form.Item label="Đơn vị cha" name="parent_id">
             <TreeSelect
               treeData={flattenTreeForSelect(treeData)}
@@ -390,12 +406,12 @@ export default function DepartmentPage() {
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item label="Mã" name="code" rules={[{ required: true, message: 'Nhập mã' }]}>
-                <Input placeholder="VD: PB01" style={{ borderRadius: 8 }} />
+                <Input placeholder="VD: PB01" maxLength={20} style={{ borderRadius: 8 }} />
               </Form.Item>
             </Col>
             <Col span={12}>
               <Form.Item label="Tên" name="name" rules={[{ required: true, message: 'Nhập tên' }]}>
-                <Input placeholder="Tên đơn vị / phòng ban" style={{ borderRadius: 8 }} />
+                <Input placeholder="Tên đơn vị / phòng ban" maxLength={200} style={{ borderRadius: 8 }} />
               </Form.Item>
             </Col>
           </Row>
@@ -403,12 +419,12 @@ export default function DepartmentPage() {
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item label="Tên tiếng Anh" name="name_en">
-                <Input placeholder="English name" style={{ borderRadius: 8 }} />
+                <Input placeholder="English name" maxLength={200} style={{ borderRadius: 8 }} />
               </Form.Item>
             </Col>
             <Col span={12}>
               <Form.Item label="Tên viết tắt" name="short_name">
-                <Input placeholder="VD: CNTT" style={{ borderRadius: 8 }} />
+                <Input placeholder="VD: CNTT" maxLength={50} style={{ borderRadius: 8 }} />
               </Form.Item>
             </Col>
           </Row>
@@ -428,12 +444,12 @@ export default function DepartmentPage() {
             </Col>
             <Col span={8}>
               <Form.Item label="SDT" name="phone">
-                <Input style={{ borderRadius: 8 }} />
+                <Input maxLength={20} style={{ borderRadius: 8 }} />
               </Form.Item>
             </Col>
             <Col span={8}>
               <Form.Item label="Fax" name="fax">
-                <Input style={{ borderRadius: 8 }} />
+                <Input maxLength={20} style={{ borderRadius: 8 }} />
               </Form.Item>
             </Col>
           </Row>
@@ -441,12 +457,12 @@ export default function DepartmentPage() {
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item label="Email" name="email">
-                <Input type="email" style={{ borderRadius: 8 }} />
+                <Input type="email" maxLength={100} style={{ borderRadius: 8 }} />
               </Form.Item>
             </Col>
             <Col span={12}>
               <Form.Item label="Địa chỉ" name="address">
-                <Input style={{ borderRadius: 8 }} />
+                <Input maxLength={500} style={{ borderRadius: 8 }} />
               </Form.Item>
             </Col>
           </Row>
@@ -456,7 +472,7 @@ export default function DepartmentPage() {
           </Form.Item>
 
           <Form.Item label="Mô tả" name="description">
-            <Input.TextArea rows={3} style={{ borderRadius: 8 }} />
+            <Input.TextArea rows={3} maxLength={500} style={{ borderRadius: 8 }} />
           </Form.Item>
         </Form>
       </Drawer>

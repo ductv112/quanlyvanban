@@ -3,11 +3,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Card, Table, Button, Input, Space, Drawer, Form, Switch, InputNumber,
-  Popconfirm, Tag, Tooltip, App,
+  Tag, Dropdown, Modal, App,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
   PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined, IdcardOutlined,
+  MoreOutlined,
 } from '@ant-design/icons';
 import { api } from '@/lib/api';
 
@@ -42,8 +43,8 @@ export default function PositionPage() {
       const { data: res } = await api.get('/quan-tri/chuc-vu', {
         params: { keyword, page, pageSize },
       });
-      setData(res.data?.items || res.data || []);
-      setTotal(res.data?.total || 0);
+      setData(res.data || []);
+      setTotal(res.total || 0);
     } catch (err: any) {
       message.error(err?.response?.data?.message || 'Lỗi tải dữ liệu');
     } finally {
@@ -163,34 +164,44 @@ export default function PositionPage() {
       ),
     },
     {
-      title: 'Thao tác',
+      title: '',
       key: 'actions',
-      width: 100,
+      width: 50,
       align: 'center',
+      fixed: 'right',
       render: (_, record) => (
-        <Space size={4}>
-          <Tooltip title="Sửa">
-            <Button
-              type="text"
-              size="small"
-              icon={<EditOutlined />}
-              onClick={() => handleEdit(record)}
-              style={{ color: '#0891B2' }}
-            />
-          </Tooltip>
-          <Popconfirm
-            title="Xác nhận xóa"
-            description="Bạn có chắc chắn muốn xóa chức vụ này?"
-            onConfirm={() => handleDelete(record.id)}
-            okText="Xóa"
-            cancelText="Hủy"
-            okButtonProps={{ danger: true }}
-          >
-            <Tooltip title="Xóa">
-              <Button type="text" size="small" icon={<DeleteOutlined />} danger />
-            </Tooltip>
-          </Popconfirm>
-        </Space>
+        <Dropdown
+          trigger={['click']}
+          menu={{
+            items: [
+              {
+                key: 'edit',
+                icon: <EditOutlined />,
+                label: 'Sửa thông tin',
+                onClick: () => handleEdit(record),
+              },
+              { type: 'divider' },
+              {
+                key: 'delete',
+                icon: <DeleteOutlined />,
+                label: 'Xóa',
+                danger: true,
+                onClick: () => {
+                  Modal.confirm({
+                    title: 'Xác nhận xóa',
+                    content: 'Bạn có chắc chắn muốn xóa chức vụ này?',
+                    okText: 'Xóa',
+                    cancelText: 'Hủy',
+                    okButtonProps: { danger: true },
+                    onOk: () => handleDelete(record.id),
+                  });
+                },
+              },
+            ],
+          }}
+        >
+          <Button type="text" size="small" icon={<MoreOutlined style={{ fontSize: 18 }} />} style={{ color: '#64748b' }} />
+        </Dropdown>
       ),
     },
   ];
@@ -259,27 +270,35 @@ export default function PositionPage() {
 
       {/* Drawer add/edit */}
       <Drawer
-        title={editingRecord ? 'Cập nhật chức vụ' : 'Thêm chức vụ mới'}
+        title={<span style={{ color: '#fff', fontWeight: 600 }}>{editingRecord ? 'Cập nhật chức vụ' : 'Thêm chức vụ mới'}</span>}
         width={720}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         destroyOnClose
+        styles={{
+          header: {
+            background: 'linear-gradient(135deg, #1B3A5C 0%, #0891B2 100%)',
+            borderBottom: 'none',
+            padding: '16px 24px',
+          },
+          body: { padding: 24 },
+        }}
         extra={
           <Space>
-            <Button onClick={() => setDrawerOpen(false)}>Hủy</Button>
-            <Button type="primary" loading={saving} onClick={handleSave} style={{ borderRadius: 8 }}>
+            <Button onClick={() => setDrawerOpen(false)} style={{ borderRadius: 8, borderColor: 'rgba(255,255,255,0.5)', color: '#fff' }} ghost>Hủy</Button>
+            <Button type="primary" loading={saving} onClick={handleSave} style={{ borderRadius: 8, background: '#fff', color: '#1B3A5C', borderColor: '#fff', fontWeight: 600 }}>
               {editingRecord ? 'Cập nhật' : 'Thêm mới'}
             </Button>
           </Space>
         }
       >
-        <Form form={form} layout="vertical" autoComplete="off">
+        <Form form={form} layout="vertical" autoComplete="off" validateTrigger="onSubmit">
           <Form.Item label="Tên chức vụ" name="name" rules={[{ required: true, message: 'Nhập tên chức vụ' }]}>
-            <Input placeholder="VD: Giám đốc" style={{ borderRadius: 8 }} />
+            <Input placeholder="VD: Giám đốc" maxLength={100} style={{ borderRadius: 8 }} />
           </Form.Item>
 
           <Form.Item label="Mã" name="code" rules={[{ required: true, message: 'Nhập mã' }]}>
-            <Input placeholder="VD: GD" style={{ borderRadius: 8 }} />
+            <Input placeholder="VD: GD" maxLength={20} style={{ borderRadius: 8 }} />
           </Form.Item>
 
           <Form.Item label="Thứ tự" name="sort_order" initialValue={0}>
@@ -287,7 +306,7 @@ export default function PositionPage() {
           </Form.Item>
 
           <Form.Item label="Mô tả" name="description">
-            <Input.TextArea rows={3} style={{ borderRadius: 8 }} />
+            <Input.TextArea rows={3} maxLength={500} style={{ borderRadius: 8 }} />
           </Form.Item>
 
           <Form.Item label="Chức vụ lãnh đạo" name="is_leader" valuePropName="checked" initialValue={false}>

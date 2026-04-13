@@ -43,7 +43,12 @@ app.use('/api/quan-tri', authenticate, adminRoutes);
 // --- Error handler ---
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   logger.error(err);
-  res.status(500).json({ success: false, message: err.message || 'Internal Server Error' });
+  // NEVER expose raw DB errors to client
+  const isDev = process.env.NODE_ENV !== 'production';
+  res.status(500).json({
+    success: false,
+    message: isDev ? err.message : 'Có lỗi xảy ra, vui lòng thử lại sau'
+  });
 });
 
 // --- Start ---

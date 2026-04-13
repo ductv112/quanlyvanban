@@ -12,6 +12,7 @@ export interface RightTreeRow {
   default_page: boolean;
   show_in_app: boolean;
   description: string;
+  is_locked: boolean;
 }
 
 export interface RightMenuRow {

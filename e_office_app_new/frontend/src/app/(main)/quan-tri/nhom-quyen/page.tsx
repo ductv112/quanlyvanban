@@ -2,13 +2,13 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  Card, Table, Button, Input, Space, Drawer, Form, Tree, Popconfirm,
-  Tag, Tooltip, Spin, App,
+  Card, Table, Button, Input, Space, Drawer, Form, Tree,
+  Tag, Spin, Dropdown, Modal, App,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
   PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined,
-  SafetyCertificateOutlined, KeyOutlined, SaveOutlined,
+  SafetyCertificateOutlined, KeyOutlined, SaveOutlined, MoreOutlined,
 } from '@ant-design/icons';
 import { api } from '@/lib/api';
 import dayjs from 'dayjs';
@@ -56,8 +56,8 @@ export default function RolePage() {
       const { data: res } = await api.get('/quan-tri/nhom-quyen', {
         params: { keyword, page, pageSize },
       });
-      setData(res.data?.items || res.data || []);
-      setTotal(res.data?.total || 0);
+      setData(res.data || []);
+      setTotal(res.total || 0);
     } catch (err: any) {
       message.error(err?.response?.data?.message || 'Lỗi tải dữ liệu');
     } finally {
@@ -190,31 +190,50 @@ export default function RolePage() {
       render: (v) => v ? dayjs(v).format('DD/MM/YYYY') : '-',
     },
     {
-      title: 'Thao tác',
+      title: '',
       key: 'actions',
-      width: 140,
+      width: 50,
       align: 'center',
+      fixed: 'right',
       render: (_, record) => (
-        <Space size={4}>
-          <Tooltip title="Sửa">
-            <Button type="text" size="small" icon={<EditOutlined />} onClick={() => handleEdit(record)} style={{ color: '#0891B2' }} />
-          </Tooltip>
-          <Tooltip title="Phân quyền">
-            <Button type="text" size="small" icon={<KeyOutlined />} onClick={() => handleOpenPermissions(record)} style={{ color: '#1B3A5C' }} />
-          </Tooltip>
-          <Popconfirm
-            title="Xác nhận xóa"
-            description="Bạn có chắc chắn muốn xóa nhóm quyền này?"
-            onConfirm={() => handleDelete(record.id)}
-            okText="Xóa"
-            cancelText="Hủy"
-            okButtonProps={{ danger: true }}
-          >
-            <Tooltip title="Xóa">
-              <Button type="text" size="small" icon={<DeleteOutlined />} danger />
-            </Tooltip>
-          </Popconfirm>
-        </Space>
+        <Dropdown
+          trigger={['click']}
+          menu={{
+            items: [
+              {
+                key: 'edit',
+                icon: <EditOutlined />,
+                label: 'Sửa thông tin',
+                onClick: () => handleEdit(record),
+              },
+              {
+                key: 'permissions',
+                icon: <KeyOutlined />,
+                label: 'Phân quyền',
+                onClick: () => handleOpenPermissions(record),
+              },
+              { type: 'divider' },
+              {
+                key: 'delete',
+                icon: <DeleteOutlined />,
+                label: 'Xóa',
+                danger: true,
+                onClick: () => {
+                  Modal.confirm({
+                    title: 'Xác nhận xóa',
+                    content: 'Bạn có chắc chắn muốn xóa nhóm quyền này?',
+                    okText: 'Xóa',
+                    cancelText: 'Hủy',
+                    okButtonProps: { danger: true },
+                    onOk: () => handleDelete(record.id),
+                  });
+                },
+              },
+            ],
+          }}
+        >
+          <Button type="text" size="small" icon={<MoreOutlined style={{ fontSize: 18 }} />} style={{ color: '#64748b' }} />
+        </Dropdown>
       ),
     },
   ];
@@ -275,26 +294,34 @@ export default function RolePage() {
 
       {/* Drawer add/edit */}
       <Drawer
-        title={editingRecord ? 'Cập nhật nhóm quyền' : 'Thêm nhóm quyền mới'}
+        title={<span style={{ color: '#fff', fontWeight: 600 }}>{editingRecord ? 'Cập nhật nhóm quyền' : 'Thêm nhóm quyền mới'}</span>}
         width={720}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         destroyOnClose
+        styles={{
+          header: {
+            background: 'linear-gradient(135deg, #1B3A5C 0%, #0891B2 100%)',
+            borderBottom: 'none',
+            padding: '16px 24px',
+          },
+          body: { padding: 24 },
+        }}
         extra={
           <Space>
-            <Button onClick={() => setDrawerOpen(false)}>Hủy</Button>
-            <Button type="primary" loading={saving} onClick={handleSave} style={{ borderRadius: 8 }}>
+            <Button onClick={() => setDrawerOpen(false)} style={{ borderRadius: 8, borderColor: 'rgba(255,255,255,0.5)', color: '#fff' }} ghost>Hủy</Button>
+            <Button type="primary" loading={saving} onClick={handleSave} style={{ borderRadius: 8, background: '#fff', color: '#1B3A5C', borderColor: '#fff', fontWeight: 600 }}>
               {editingRecord ? 'Cập nhật' : 'Thêm mới'}
             </Button>
           </Space>
         }
       >
-        <Form form={form} layout="vertical" autoComplete="off">
+        <Form form={form} layout="vertical" autoComplete="off" validateTrigger="onSubmit">
           <Form.Item label="Tên nhóm quyền" name="name" rules={[{ required: true, message: 'Nhập tên nhóm quyền' }]}>
-            <Input placeholder="VD: Quản trị hệ thống" style={{ borderRadius: 8 }} />
+            <Input placeholder="VD: Quản trị hệ thống" maxLength={100} style={{ borderRadius: 8 }} />
           </Form.Item>
           <Form.Item label="Mô tả" name="description">
-            <Input.TextArea rows={4} placeholder="Mô tả vai trò của nhóm quyền" style={{ borderRadius: 8 }} />
+            <Input.TextArea rows={4} maxLength={500} placeholder="Mô tả vai trò của nhóm quyền" style={{ borderRadius: 8 }} />
           </Form.Item>
         </Form>
       </Drawer>
@@ -303,21 +330,29 @@ export default function RolePage() {
       <Drawer
         title={
           <div>
-            <span>Phân quyền: </span>
-            <span style={{ color: '#0891B2', fontWeight: 700 }}>{permRole?.name}</span>
+            <span style={{ color: '#fff' }}>Phân quyền: </span>
+            <span style={{ color: '#e0f2fe', fontWeight: 700 }}>{permRole?.name}</span>
           </div>
         }
         width={720}
         open={permDrawerOpen}
         onClose={() => setPermDrawerOpen(false)}
         destroyOnClose
+        styles={{
+          header: {
+            background: 'linear-gradient(135deg, #1B3A5C 0%, #0891B2 100%)',
+            borderBottom: 'none',
+            padding: '16px 24px',
+          },
+          body: { padding: 24 },
+        }}
         extra={
           <Button
             type="primary"
             icon={<SaveOutlined />}
             loading={permSaving}
             onClick={handleSavePermissions}
-            style={{ borderRadius: 8 }}
+            style={{ borderRadius: 8, background: '#fff', color: '#1B3A5C', borderColor: '#fff', fontWeight: 600 }}
           >
             Lưu phân quyền
           </Button>

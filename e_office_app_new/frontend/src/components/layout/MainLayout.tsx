@@ -82,6 +82,7 @@ const breadcrumbMap: Record<string, string> = {
   '/quan-tri/nguoi-dung': 'Người dùng',
   '/quan-tri/nhom-quyen': 'Nhóm quyền',
   '/quan-tri/chuc-nang': 'Chức năng',
+  '/thong-tin-ca-nhan': 'Thông tin cá nhân',
 };
 
 function buildBreadcrumbs(pathname: string) {
@@ -159,6 +160,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       key: 'profile',
       icon: <UserOutlined />,
       label: 'Thông tin cá nhân',
+      onClick: () => router.push('/thong-tin-ca-nhan'),
     },
     { type: 'divider' },
     {

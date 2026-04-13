@@ -15,13 +15,13 @@ interface RightNode {
   id: number;
   parent_id: number | null;
   name: string;
-  menu_name: string;
+  name_of_menu: string;
   action_link: string;
   icon: string;
   sort_order: number;
-  show_on_menu: boolean;
-  is_default: boolean;
-  show_on_mobile: boolean;
+  show_menu: boolean;
+  default_page: boolean;
+  show_in_app: boolean;
   description: string;
 }
 
@@ -129,7 +129,7 @@ export default function RightsPage() {
     try {
       await api.post('/quan-tri/chuc-nang', {
         name: 'Chức năng mới',
-        menu_name: 'Menu mới',
+        name_of_menu: 'Menu mới',
         parent_id: null,
         sort_order: 0,
       });
@@ -145,7 +145,7 @@ export default function RightsPage() {
     try {
       await api.post('/quan-tri/chuc-nang', {
         name: 'Chức năng con mới',
-        menu_name: 'Menu con',
+        name_of_menu: 'Menu con',
         parent_id: selectedNode.id,
         sort_order: 0,
       });
@@ -273,16 +273,16 @@ export default function RightsPage() {
                 <Empty description="Chọn một chức năng từ cây bên trái để xem chi tiết" />
               </div>
             ) : (
-              <Form form={form} layout="vertical" autoComplete="off">
+              <Form form={form} layout="vertical" autoComplete="off" validateTrigger="onSubmit">
                 <Row gutter={16}>
                   <Col span={12}>
                     <Form.Item label="Tên chức năng" name="name" rules={[{ required: true, message: 'Nhập tên' }]}>
-                      <Input style={{ borderRadius: 8 }} />
+                      <Input maxLength={200} style={{ borderRadius: 8 }} />
                     </Form.Item>
                   </Col>
                   <Col span={12}>
-                    <Form.Item label="Tên menu" name="menu_name">
-                      <Input style={{ borderRadius: 8 }} />
+                    <Form.Item label="Tên menu" name="name_of_menu">
+                      <Input maxLength={200} style={{ borderRadius: 8 }} />
                     </Form.Item>
                   </Col>
                 </Row>
@@ -290,12 +290,12 @@ export default function RightsPage() {
                 <Row gutter={16}>
                   <Col span={12}>
                     <Form.Item label="URL (action_link)" name="action_link">
-                      <Input placeholder="/quan-tri/..." style={{ borderRadius: 8 }} />
+                      <Input placeholder="/quan-tri/..." maxLength={500} style={{ borderRadius: 8 }} />
                     </Form.Item>
                   </Col>
                   <Col span={12}>
                     <Form.Item label="Icon" name="icon">
-                      <Input placeholder="VD: SettingOutlined" style={{ borderRadius: 8 }} />
+                      <Input placeholder="VD: SettingOutlined" maxLength={100} style={{ borderRadius: 8 }} />
                     </Form.Item>
                   </Col>
                 </Row>
@@ -306,24 +306,24 @@ export default function RightsPage() {
 
                 <Row gutter={24}>
                   <Col span={8}>
-                    <Form.Item label="Hiện trên menu" name="show_on_menu" valuePropName="checked">
+                    <Form.Item label="Hiện trên menu" name="show_menu" valuePropName="checked">
                       <Switch />
                     </Form.Item>
                   </Col>
                   <Col span={8}>
-                    <Form.Item label="Trang mặc định" name="is_default" valuePropName="checked">
+                    <Form.Item label="Trang mặc định" name="default_page" valuePropName="checked">
                       <Switch />
                     </Form.Item>
                   </Col>
                   <Col span={8}>
-                    <Form.Item label="Hiện trên mobile" name="show_on_mobile" valuePropName="checked">
+                    <Form.Item label="Hiện trên mobile" name="show_in_app" valuePropName="checked">
                       <Switch />
                     </Form.Item>
                   </Col>
                 </Row>
 
                 <Form.Item label="Mô tả" name="description">
-                  <Input.TextArea rows={3} style={{ borderRadius: 8 }} />
+                  <Input.TextArea rows={3} maxLength={500} style={{ borderRadius: 8 }} />
                 </Form.Item>
               </Form>
             )}

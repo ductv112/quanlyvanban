@@ -2,11 +2,12 @@ import { callFunction, callFunctionOne } from '../lib/db/query.js';
 
 export interface RoleRow {
   id: number;
-  unit_id: number;
   name: string;
   description: string;
+  unit_id: number;
+  is_locked: boolean;
+  staff_count: number;
   created_at: string;
-  updated_at: string;
 }
 
 export interface RoleRightRow {

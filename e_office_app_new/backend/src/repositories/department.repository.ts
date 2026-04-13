@@ -16,9 +16,8 @@ export interface DepartmentTreeRow {
   email: string;
   address: string;
   allow_doc_book: boolean;
-  description: string;
   is_locked: boolean;
-  created_at: string;
+  staff_count: number;
 }
 
 export interface DepartmentDetailRow extends DepartmentTreeRow {

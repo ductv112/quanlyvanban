@@ -46,6 +46,36 @@ body {
   box-shadow: 0 6px 20px rgba(27, 58, 92, 0.12) !important;
 }
 
+/* Form validation — prevent layout shift when error message appears */
+.ant-form-item-explain {
+  min-height: 0 !important;
+  position: absolute;
+  bottom: -18px;
+  font-size: 12px !important;
+}
+
+.ant-form-item {
+  position: relative;
+  margin-bottom: 20px !important;
+}
+
+/* Override browser autofill background (Chrome xanh nhạt) */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px #fff inset !important;
+  -webkit-text-fill-color: #1a1a2e !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+.ant-input-affix-wrapper input:-webkit-autofill,
+.ant-input-affix-wrapper input:-webkit-autofill:hover,
+.ant-input-affix-wrapper input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 30px #fff inset !important;
+  -webkit-text-fill-color: #1a1a2e !important;
+}
+
 /* Breadcrumb styling */
 .ant-breadcrumb a:hover {
   color: #0891B2 !important;

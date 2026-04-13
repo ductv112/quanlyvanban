@@ -3,14 +3,15 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Card, Row, Col, Table, Button, Input, Tree, Tag, Space, Drawer,
-  Form, TreeSelect, Select, Radio, Switch, DatePicker, Popconfirm,
-  Skeleton, Tooltip, Avatar, Checkbox, App,
+  Form, TreeSelect, Select, Radio, DatePicker,
+  Skeleton, Tooltip, Avatar, Checkbox, App, Dropdown, Modal,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
   PlusOutlined, EditOutlined, LockOutlined, UnlockOutlined,
   DeleteOutlined, SearchOutlined, UserOutlined, ReloadOutlined,
-  KeyOutlined, ApartmentOutlined,
+  KeyOutlined, ApartmentOutlined, SafetyOutlined, SaveOutlined,
+  MoreOutlined,
 } from '@ant-design/icons';
 import { api } from '@/lib/api';
 import dayjs from 'dayjs';
@@ -25,8 +26,8 @@ interface Staff {
   email: string;
   phone: string;
   mobile: string;
-  gender: string;
-  birthday: string;
+  gender: number;
+  birth_date: string;
   address: string;
   image: string;
   unit_id: number;
@@ -36,9 +37,9 @@ interface Staff {
   department_name: string;
   unit_name: string;
   is_admin: boolean;
-  is_unit_leader: boolean;
-  is_dept_leader: boolean;
-  locked: boolean;
+  is_represent_unit: boolean;
+  is_represent_department: boolean;
+  is_locked: boolean;
 }
 
 interface TreeNode {
@@ -78,37 +79,65 @@ export default function StaffPage() {
   const [positions, setPositions] = useState<PositionOption[]>([]);
   const [departments, setDepartments] = useState<DeptOption[]>([]);
   const [selectedUnit, setSelectedUnit] = useState<number | null>(null);
+  const [deptToUnitMap, setDeptToUnitMap] = useState<Record<number, number>>({});
+
+  // Phân quyền (gán nhóm quyền cho user)
+  const [roleDrawerOpen, setRoleDrawerOpen] = useState(false);
+  const [roleStaff, setRoleStaff] = useState<Staff | null>(null);
+  const [allRoles, setAllRoles] = useState<{ id: number; name: string; description: string }[]>([]);
+  const [staffRoleIds, setStaffRoleIds] = useState<number[]>([]);
+  const [roleLoading, setRoleLoading] = useState(false);
+  const [roleSaving, setRoleSaving] = useState(false);
 
   const mapTree = useCallback((nodes: any[]): any[] => {
     return nodes.map((n: any) => ({
       key: n.id,
       title: n.name,
+      is_unit: n.is_unit,
       children: n.children ? mapTree(n.children) : undefined,
     }));
+  }, []);
+
+  // Build a map of dept_id -> unit_id by traversing the raw tree from API
+  const buildDeptToUnitMap = useCallback((nodes: any[], currentUnitId?: number): Record<number, number> => {
+    const map: Record<number, number> = {};
+    for (const node of nodes) {
+      const unitId = node.is_unit ? node.id : currentUnitId;
+      if (unitId) {
+        map[node.id] = unitId;
+      }
+      if (node.children) {
+        const childMap = buildDeptToUnitMap(node.children, unitId);
+        Object.assign(map, childMap);
+      }
+    }
+    return map;
   }, []);
 
   const fetchTree = useCallback(async () => {
     setTreeLoading(true);
     try {
       const { data: res } = await api.get('/quan-tri/don-vi/tree');
-      setTreeData(mapTree(res.data || []));
+      const rawData = res.data || [];
+      setTreeData(mapTree(rawData));
+      setDeptToUnitMap(buildDeptToUnitMap(rawData));
     } catch (err: any) {
       message.error(err?.response?.data?.message || 'Lỗi tải cây đơn vị');
     } finally {
       setTreeLoading(false);
     }
-  }, [message, mapTree]);
+  }, [message, mapTree, buildDeptToUnitMap]);
 
   const fetchStaff = useCallback(async () => {
     setLoading(true);
     try {
       const params: any = { keyword, page, pageSize };
       if (selectedDept) params.department_id = selectedDept;
-      if (statusFilter === 'active') params.locked = false;
-      if (statusFilter === 'locked') params.locked = true;
+      if (statusFilter === 'active') params.is_locked = false;
+      if (statusFilter === 'locked') params.is_locked = true;
       const { data: res } = await api.get('/quan-tri/nguoi-dung', { params });
-      setData(res.data?.items || res.data || []);
-      setTotal(res.data?.total || 0);
+      setData(res.data || []);
+      setTotal(res.total || 0);
     } catch (err: any) {
       message.error(err?.response?.data?.message || 'Lỗi tải dữ liệu');
     } finally {
@@ -119,7 +148,7 @@ export default function StaffPage() {
   const fetchPositions = useCallback(async () => {
     try {
       const { data: res } = await api.get('/quan-tri/chuc-vu', { params: { pageSize: 100 } });
-      setPositions(res.data?.items || res.data || []);
+      setPositions(res.data || []);
     } catch { /* ignore */ }
   }, []);
 
@@ -129,6 +158,41 @@ export default function StaffPage() {
       setDepartments(res.data || []);
     } catch { /* ignore */ }
   }, []);
+
+  // Phân quyền handlers
+  const handleOpenRoles = async (record: Staff) => {
+    setRoleStaff(record);
+    setRoleDrawerOpen(true);
+    setRoleLoading(true);
+    try {
+      const [rolesRes, staffRolesRes] = await Promise.all([
+        api.get('/quan-tri/nhom-quyen'),
+        api.get(`/quan-tri/nguoi-dung/${record.id}/nhom-quyen`),
+      ]);
+      setAllRoles(rolesRes.data?.data || []);
+      const ids = (staffRolesRes.data?.data || []).map((r: any) => r.role_id);
+      setStaffRoleIds(ids);
+    } catch (err: any) {
+      message.error(err?.response?.data?.message || 'Lỗi tải nhóm quyền');
+    } finally {
+      setRoleLoading(false);
+    }
+  };
+
+  const handleSaveRoles = async () => {
+    if (!roleStaff) return;
+    setRoleSaving(true);
+    try {
+      await api.put(`/quan-tri/nguoi-dung/${roleStaff.id}/nhom-quyen`, { roleIds: staffRoleIds });
+      message.success('Lưu phân quyền thành công');
+      setRoleDrawerOpen(false);
+      fetchStaff();
+    } catch (err: any) {
+      message.error(err?.response?.data?.message || 'Lỗi lưu phân quyền');
+    } finally {
+      setRoleSaving(false);
+    }
+  };
 
   useEffect(() => {
     fetchTree();
@@ -148,9 +212,29 @@ export default function StaffPage() {
   const handleAdd = () => {
     setEditingRecord(null);
     form.resetFields();
-    form.setFieldsValue({ gender: 'male' });
-    setSelectedUnit(null);
-    setDepartments([]);
+    form.setFieldsValue({ gender: 1 });
+
+    // Pre-fill department from selected tree node
+    if (selectedDept) {
+      const unitId = deptToUnitMap[selectedDept];
+      if (unitId) {
+        setSelectedUnit(unitId);
+        fetchDeptsByUnit(unitId);
+        // If selected node IS the unit itself, only set unit_id
+        if (unitId === selectedDept) {
+          form.setFieldsValue({ unit_id: unitId });
+        } else {
+          form.setFieldsValue({ unit_id: unitId, department_id: selectedDept });
+        }
+      } else {
+        setSelectedUnit(null);
+        setDepartments([]);
+      }
+    } else {
+      setSelectedUnit(null);
+      setDepartments([]);
+    }
+
     setDrawerOpen(true);
   };
 
@@ -158,7 +242,7 @@ export default function StaffPage() {
     setEditingRecord(record);
     const values: any = {
       ...record,
-      birthday: record.birthday ? dayjs(record.birthday) : null,
+      birth_date: record.birth_date ? dayjs(record.birth_date) : null,
     };
     form.setFieldsValue(values);
     if (record.unit_id) {
@@ -181,7 +265,7 @@ export default function StaffPage() {
   const handleLockToggle = async (record: Staff) => {
     try {
       await api.patch(`/quan-tri/nguoi-dung/${record.id}/lock`);
-      message.success(record.locked ? 'Đã mở khóa' : 'Đã khóa');
+      message.success(record.is_locked ? 'Đã mở khóa' : 'Đã khóa');
       fetchStaff();
     } catch (err: any) {
       message.error(err?.response?.data?.message || 'Lỗi');
@@ -203,7 +287,7 @@ export default function StaffPage() {
       setSaving(true);
       const payload = {
         ...values,
-        birthday: values.birthday ? values.birthday.format('YYYY-MM-DD') : null,
+        birth_date: values.birth_date ? values.birth_date.format('YYYY-MM-DD') : null,
       };
       if (editingRecord) {
         delete payload.password;
@@ -316,38 +400,83 @@ export default function StaffPage() {
     },
     {
       title: 'Trạng thái',
-      dataIndex: 'locked',
-      key: 'locked',
+      dataIndex: 'is_locked',
+      key: 'is_locked',
       width: 110,
       render: (v) => (
         <Tag color={v ? 'error' : 'success'}>{v ? 'Đã khóa' : 'Hoạt động'}</Tag>
       ),
     },
     {
-      title: 'Thao tác',
+      title: '',
       key: 'actions',
-      width: 160,
+      width: 50,
       align: 'center',
       fixed: 'right',
       render: (_, record) => (
-        <Space size={2}>
-          <Tooltip title="Sửa">
-            <Button type="text" size="small" icon={<EditOutlined />} onClick={() => handleEdit(record)} style={{ color: '#0891B2' }} />
-          </Tooltip>
-          <Tooltip title={record.locked ? 'Mở khóa' : 'Khóa'}>
-            <Button type="text" size="small" icon={record.locked ? <UnlockOutlined /> : <LockOutlined />} onClick={() => handleLockToggle(record)} style={{ color: record.locked ? '#059669' : '#D97706' }} />
-          </Tooltip>
-          <Popconfirm title="Reset mật khẩu" description="Mật khẩu sẽ được đặt về mặc định?" onConfirm={() => handleResetPassword(record.id)} okText="Reset" cancelText="Hủy">
-            <Tooltip title="Reset mật khẩu">
-              <Button type="text" size="small" icon={<KeyOutlined />} style={{ color: '#64748b' }} />
-            </Tooltip>
-          </Popconfirm>
-          <Popconfirm title="Xác nhận xóa" description="Bạn có chắc chắn muốn xóa người dùng này?" onConfirm={() => handleDelete(record.id)} okText="Xóa" cancelText="Hủy" okButtonProps={{ danger: true }}>
-            <Tooltip title="Xóa">
-              <Button type="text" size="small" icon={<DeleteOutlined />} danger />
-            </Tooltip>
-          </Popconfirm>
-        </Space>
+        <Dropdown
+          trigger={['click']}
+          menu={{
+            items: [
+              {
+                key: 'edit',
+                icon: <EditOutlined />,
+                label: 'Sửa thông tin',
+                onClick: () => handleEdit(record),
+              },
+              {
+                key: 'roles',
+                icon: <SafetyOutlined />,
+                label: 'Phân quyền',
+                onClick: () => handleOpenRoles(record),
+              },
+              {
+                key: 'lock',
+                icon: record.is_locked ? <UnlockOutlined /> : <LockOutlined />,
+                label: record.is_locked ? 'Mở khóa tài khoản' : 'Khóa tài khoản',
+                onClick: () => handleLockToggle(record),
+              },
+              {
+                key: 'reset',
+                icon: <KeyOutlined />,
+                label: 'Reset mật khẩu',
+                onClick: () => {
+                  Modal.confirm({
+                    title: 'Reset mật khẩu',
+                    content: `Mật khẩu của "${record.full_name}" sẽ được đặt về mặc định (Admin@123)?`,
+                    okText: 'Reset',
+                    cancelText: 'Hủy',
+                    onOk: () => handleResetPassword(record.id),
+                  });
+                },
+              },
+              { type: 'divider' },
+              {
+                key: 'delete',
+                icon: <DeleteOutlined />,
+                label: 'Xóa người dùng',
+                danger: true,
+                onClick: () => {
+                  Modal.confirm({
+                    title: 'Xác nhận xóa',
+                    content: `Bạn có chắc chắn muốn xóa "${record.full_name}"?`,
+                    okText: 'Xóa',
+                    cancelText: 'Hủy',
+                    okButtonProps: { danger: true },
+                    onOk: () => handleDelete(record.id),
+                  });
+                },
+              },
+            ],
+          }}
+        >
+          <Button
+            type="text"
+            size="small"
+            icon={<MoreOutlined style={{ fontSize: 18 }} />}
+            style={{ color: '#64748b' }}
+          />
+        </Dropdown>
       ),
     },
   ];
@@ -463,52 +592,81 @@ export default function StaffPage() {
 
       {/* Drawer add/edit */}
       <Drawer
-        title={editingRecord ? `Sửa người dùng — ${editingRecord.code || ''}` : 'Thêm người dùng mới'}
+        title={<span style={{ color: '#fff', fontWeight: 600 }}>{editingRecord ? `Sửa người dùng — ${editingRecord.code || ''}` : 'Thêm người dùng mới'}</span>}
         width={720}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         destroyOnClose
+        styles={{
+          header: {
+            background: 'linear-gradient(135deg, #1B3A5C 0%, #0891B2 100%)',
+            borderBottom: 'none',
+            padding: '16px 24px',
+          },
+          body: { padding: 24 },
+        }}
         extra={
           <Space>
-            <Button onClick={() => setDrawerOpen(false)}>Hủy</Button>
-            <Button type="primary" loading={saving} onClick={handleSave} style={{ borderRadius: 8 }}>
+            <Button onClick={() => setDrawerOpen(false)} style={{ borderRadius: 8, borderColor: 'rgba(255,255,255,0.5)', color: '#fff' }} ghost>Hủy</Button>
+            <Button type="primary" loading={saving} onClick={handleSave} style={{ borderRadius: 8, background: '#fff', color: '#1B3A5C', borderColor: '#fff', fontWeight: 600 }}>
               {editingRecord ? 'Cập nhật' : 'Thêm mới'}
             </Button>
           </Space>
         }
       >
-        <Form form={form} layout="vertical" autoComplete="off">
+        <Form form={form} layout="vertical" autoComplete="off" validateTrigger="onSubmit" scrollToFirstError>
+          {/* Prevent browser autofill */}
+          <input type="text" name="prevent_autofill" style={{ display: 'none' }} />
+          <input type="password" name="prevent_autofill_pass" style={{ display: 'none' }} />
           <Row gutter={16}>
             {/* Left column */}
             <Col span={12}>
-              <Form.Item label="Tên đăng nhập" name="username" rules={[{ required: true, message: 'Nhập tên đăng nhập' }]}>
-                <Input placeholder="username" disabled={!!editingRecord} style={{ borderRadius: 8 }} />
+              <Form.Item
+                label="Tên đăng nhập"
+                name="username"
+                rules={[
+                  { required: true, message: 'Nhập tên đăng nhập' },
+                  { min: 3, message: 'Tối thiểu 3 ký tự' },
+                  { pattern: /^[a-zA-Z0-9._-]+$/, message: 'Chỉ chứa chữ cái, số, dấu chấm, gạch ngang' },
+                ]}
+              >
+                <Input placeholder="username" maxLength={50} disabled={!!editingRecord} autoComplete="off" style={{ borderRadius: 8 }} />
               </Form.Item>
 
               {!editingRecord && (
-                <Form.Item label="Mật khẩu" name="password">
-                  <Input.Password placeholder="Mặc định: Admin@123" style={{ borderRadius: 8 }} />
-                </Form.Item>
+                <>
+                  <Form.Item
+                    label="Mật khẩu"
+                    name="password"
+                    rules={[
+                      { min: 6, message: 'Tối thiểu 6 ký tự' },
+                      { pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, message: 'Phải chứa chữ hoa, chữ thường và số' },
+                    ]}
+                  >
+                    <Input.Password placeholder="Mặc định: Admin@123" maxLength={50} autoComplete="new-password" style={{ borderRadius: 8 }} />
+                  </Form.Item>
+                  <div style={{ fontSize: 12, color: '#94a3b8', marginTop: -16, marginBottom: 12 }}>Để trống sẽ dùng mật khẩu mặc định: Admin@123</div>
+                </>
               )}
 
               <Form.Item label="Họ" name="last_name" rules={[{ required: true, message: 'Nhập họ' }]}>
-                <Input style={{ borderRadius: 8 }} />
+                <Input maxLength={50} style={{ borderRadius: 8 }} />
               </Form.Item>
 
               <Form.Item label="Tên" name="first_name" rules={[{ required: true, message: 'Nhập tên' }]}>
-                <Input style={{ borderRadius: 8 }} />
+                <Input maxLength={50} style={{ borderRadius: 8 }} />
               </Form.Item>
 
-              <Form.Item label="Email" name="email">
-                <Input type="email" style={{ borderRadius: 8 }} />
+              <Form.Item label="Email" name="email" rules={[{ type: 'email', message: 'Email không đúng định dạng' }]}>
+                <Input type="email" maxLength={100} style={{ borderRadius: 8 }} />
               </Form.Item>
 
-              <Form.Item label="SDT" name="phone">
-                <Input style={{ borderRadius: 8 }} />
+              <Form.Item label="Số điện thoại" name="phone" rules={[{ pattern: /^[0-9+\-\s()]{8,15}$/, message: 'Số điện thoại không đúng định dạng' }]}>
+                <Input maxLength={20} style={{ borderRadius: 8 }} />
               </Form.Item>
 
-              <Form.Item label="Di động" name="mobile">
-                <Input style={{ borderRadius: 8 }} />
+              <Form.Item label="Di động" name="mobile" rules={[{ pattern: /^[0-9+\-\s()]{8,15}$/, message: 'Số di động không đúng định dạng' }]}>
+                <Input maxLength={20} style={{ borderRadius: 8 }} />
               </Form.Item>
             </Col>
 
@@ -543,38 +701,108 @@ export default function StaffPage() {
                 />
               </Form.Item>
 
-              <Form.Item label="Giới tính" name="gender" initialValue="male">
+              <Form.Item label="Giới tính" name="gender" initialValue={1}>
                 <Radio.Group>
-                  <Radio value="male">Nam</Radio>
-                  <Radio value="female">Nữ</Radio>
-                  <Radio value="other">Khác</Radio>
+                  <Radio value={1}>Nam</Radio>
+                  <Radio value={2}>Nữ</Radio>
+                  <Radio value={0}>Khác</Radio>
                 </Radio.Group>
               </Form.Item>
 
-              <Form.Item label="Ngày sinh" name="birthday">
+              <Form.Item label="Ngày sinh" name="birth_date">
                 <DatePicker format="DD/MM/YYYY" style={{ width: '100%', borderRadius: 8 }} />
               </Form.Item>
 
               <Form.Item label="Địa chỉ" name="address">
-                <Input style={{ borderRadius: 8 }} />
+                <Input maxLength={500} showCount style={{ borderRadius: 8 }} />
               </Form.Item>
             </Col>
           </Row>
 
-          <div style={{ borderTop: '1px solid #e8ecf1', paddingTop: 16, marginTop: 8 }}>
-            <Space size={24}>
-              <Form.Item name="is_admin" valuePropName="checked" noStyle>
-                <Checkbox>Quản trị viên</Checkbox>
-              </Form.Item>
-              <Form.Item name="is_unit_leader" valuePropName="checked" noStyle>
-                <Checkbox>Đại diện đơn vị</Checkbox>
-              </Form.Item>
-              <Form.Item name="is_dept_leader" valuePropName="checked" noStyle>
-                <Checkbox>Đại diện phòng ban</Checkbox>
-              </Form.Item>
-            </Space>
-          </div>
         </Form>
+      </Drawer>
+
+      {/* Drawer phân quyền (gán nhóm quyền cho user) */}
+      <Drawer
+        title={
+          <div style={{ color: '#fff' }}>
+            <span style={{ fontWeight: 400 }}>Phân quyền: </span>
+            <span style={{ fontWeight: 700, color: '#e0f2fe' }}>{roleStaff?.full_name}</span>
+          </div>
+        }
+        width={480}
+        open={roleDrawerOpen}
+        onClose={() => setRoleDrawerOpen(false)}
+        destroyOnClose
+        styles={{
+          header: {
+            background: 'linear-gradient(135deg, #1B3A5C 0%, #0891B2 100%)',
+            borderBottom: 'none',
+            padding: '16px 24px',
+          },
+          body: { padding: 24 },
+        }}
+        extra={
+          <Button
+            type="primary"
+            icon={<SaveOutlined />}
+            loading={roleSaving}
+            onClick={handleSaveRoles}
+            style={{ borderRadius: 8, background: '#fff', color: '#1B3A5C', borderColor: '#fff', fontWeight: 600 }}
+          >
+            Lưu
+          </Button>
+        }
+      >
+        {roleLoading ? (
+          <Skeleton active paragraph={{ rows: 6 }} />
+        ) : (
+          <div>
+            <p style={{ fontSize: 13, color: '#64748b', marginBottom: 16 }}>
+              Chọn nhóm quyền cho người dùng <strong>{roleStaff?.full_name}</strong> ({roleStaff?.username})
+            </p>
+            <Checkbox.Group
+              value={staffRoleIds}
+              onChange={(values) => setStaffRoleIds(values as number[])}
+              style={{ width: '100%' }}
+            >
+              <Space direction="vertical" style={{ width: '100%' }} size={8}>
+                {allRoles.map((role) => (
+                  <Card
+                    key={role.id}
+                    size="small"
+                    bordered
+                    style={{
+                      borderRadius: 8,
+                      borderColor: staffRoleIds.includes(role.id) ? '#0891B2' : '#e8ecf1',
+                      background: staffRoleIds.includes(role.id) ? '#f0fdfa' : '#fff',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                    }}
+                    styles={{ body: { padding: '10px 14px' } }}
+                    onClick={() => {
+                      setStaffRoleIds((prev) =>
+                        prev.includes(role.id)
+                          ? prev.filter((id) => id !== role.id)
+                          : [...prev, role.id]
+                      );
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <Checkbox value={role.id} onClick={(e) => e.stopPropagation()} />
+                      <div>
+                        <div style={{ fontWeight: 600, color: '#1B3A5C', fontSize: 14 }}>{role.name}</div>
+                        {role.description && (
+                          <div style={{ fontSize: 12, color: '#94a3b8' }}>{role.description}</div>
+                        )}
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </Space>
+            </Checkbox.Group>
+          </div>
+        )}
       </Drawer>
     </div>
   );
