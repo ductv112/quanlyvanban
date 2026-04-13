@@ -30,7 +30,7 @@ export interface StaffProfileRow extends Omit<StaffLoginRow, 'password_hash'> {
 
 export const authRepository = {
   async findByUsername(username: string): Promise<StaffLoginRow | null> {
-    return callFunctionOne<StaffLoginRow>('sp_auth_login', [username]);
+    return callFunctionOne<StaffLoginRow>('public.fn_auth_login', [username]);
   },
 
   async logLogin(
@@ -40,26 +40,26 @@ export const authRepository = {
     userAgent: string,
     success: boolean,
   ): Promise<void> {
-    await callFunction('sp_auth_log_login', [staffId, username, ipAddress, userAgent, success]);
+    await callFunction('public.fn_auth_log_login', [staffId, username, ipAddress, userAgent, success]);
   },
 
   async saveRefreshToken(staffId: number, tokenHash: string, expiresAt: Date): Promise<void> {
-    await callFunction('sp_auth_save_refresh_token', [staffId, tokenHash, expiresAt]);
+    await callFunction('public.fn_auth_save_refresh_token', [staffId, tokenHash, expiresAt]);
   },
 
   async verifyRefreshToken(tokenHash: string): Promise<StaffLoginRow | null> {
-    return callFunctionOne<StaffLoginRow>('sp_auth_verify_refresh_token', [tokenHash]);
+    return callFunctionOne<StaffLoginRow>('public.fn_auth_verify_refresh_token', [tokenHash]);
   },
 
   async revokeRefreshToken(tokenHash: string): Promise<void> {
-    await callFunction('sp_auth_logout', [tokenHash]);
+    await callFunction('public.fn_auth_logout', [tokenHash]);
   },
 
   async revokeAllTokens(staffId: number): Promise<void> {
-    await callFunction('sp_auth_logout_all', [staffId]);
+    await callFunction('public.fn_auth_logout_all', [staffId]);
   },
 
   async getProfile(staffId: number): Promise<StaffProfileRow | null> {
-    return callFunctionOne<StaffProfileRow>('sp_auth_get_me', [staffId]);
+    return callFunctionOne<StaffProfileRow>('public.fn_auth_get_me', [staffId]);
   },
 };

@@ -3,6 +3,9 @@
 > Tài liệu tham chiếu chính: Phân tích 47 screenshots + source code cũ (270+ controllers, 10 areas)
 > Mỗi Sprint = 1 nhóm module hoàn chỉnh (SP + API + UI + test)
 > Tiêu chí DONE: Database migration → Stored Procedures → Backend API → Frontend UI → Test trên trình duyệt
+>
+> **SP Naming Convention:** `{schema}.fn_{module}_{action}` — VD: `public.fn_auth_login`, `edoc.fn_incoming_doc_get_list`
+> Trong tài liệu này viết tắt không có schema prefix, khi implement cần thêm schema phù hợp.
 
 ---
 
@@ -24,7 +27,7 @@
 - [x] Auth middleware (authenticate, requireRoles)
 
 ### 0.3 Auth Module
-- [x] SP: sp_auth_login, sp_auth_log_login, sp_auth_save_refresh_token, sp_auth_verify_refresh_token, sp_auth_logout, sp_auth_logout_all, sp_auth_get_me, sp_auth_cleanup_expired_tokens
+- [x] SP: fn_auth_login, fn_auth_log_login, fn_auth_save_refresh_token, fn_auth_verify_refresh_token, fn_auth_logout, fn_auth_logout_all, fn_auth_get_me, fn_auth_cleanup_expired_tokens
 - [x] Backend: auth.repository → auth.service → auth.routes (login, refresh, logout, me)
 - [x] Refresh token rotation + httpOnly cookie
 
@@ -49,12 +52,12 @@
 > UI: Tree trái + Table phải (master-detail split 30/70)
 
 **Database & SP:**
-- sp_department_get_tree(p_unit_id) → Cây tổ chức đệ quy
-- sp_department_get_by_id(p_id)
-- sp_department_create(p_parent_id, p_code, p_name, p_name_en, p_short_name, p_abb_name, p_is_unit, p_level, p_sort_order, p_phone, p_fax, p_email, p_address, p_allow_doc_book, p_created_by)
-- sp_department_update(p_id, ...)
-- sp_department_delete(p_id) — soft delete, check có nhân viên không
-- sp_department_toggle_lock(p_id)
+- fn_department_get_tree(p_unit_id) → Cây tổ chức đệ quy
+- fn_department_get_by_id(p_id)
+- fn_department_create(p_parent_id, p_code, p_name, p_name_en, p_short_name, p_abb_name, p_is_unit, p_level, p_sort_order, p_phone, p_fax, p_email, p_address, p_allow_doc_book, p_created_by)
+- fn_department_update(p_id, ...)
+- fn_department_delete(p_id) — soft delete, check có nhân viên không
+- fn_department_toggle_lock(p_id)
 
 **API:**
 - GET /api/quan-tri/don-vi/tree
@@ -75,11 +78,11 @@
 > UI: Table đơn giản
 
 **Database & SP:**
-- sp_position_get_list(p_keyword, p_page, p_page_size)
-- sp_position_get_by_id(p_id)
-- sp_position_create(p_name, p_code, p_sort_order, p_description)
-- sp_position_update(p_id, ...)
-- sp_position_delete(p_id) — check có nhân viên nào đang dùng không
+- fn_position_get_list(p_keyword, p_page, p_page_size)
+- fn_position_get_by_id(p_id)
+- fn_position_create(p_name, p_code, p_sort_order, p_description)
+- fn_position_update(p_id, ...)
+- fn_position_delete(p_id) — check có nhân viên nào đang dùng không
 
 **API:**
 - GET /api/quan-tri/chuc-vu
@@ -96,15 +99,15 @@
 > UI: Tree đơn vị bên trái → Danh sách nhân viên bên phải
 
 **Database & SP:**
-- sp_staff_get_list(p_unit_id, p_department_id, p_keyword, p_is_locked, p_page, p_page_size)
-- sp_staff_get_by_id(p_id)
-- sp_staff_create(p_department_id, p_unit_id, p_position_id, p_username, p_password_hash, p_first_name, p_last_name, p_gender, p_birth_date, p_email, p_phone, p_mobile, p_address, p_id_card, p_id_card_date, p_id_card_place, p_is_admin, p_is_represent_unit, p_is_represent_department, p_created_by)
-- sp_staff_update(p_id, ...)
-- sp_staff_delete(p_id) — soft delete
-- sp_staff_toggle_lock(p_id)
-- sp_staff_reset_password(p_id, p_new_password_hash)
-- sp_staff_change_password(p_id, p_new_password_hash) — user tự đổi
-- sp_staff_update_avatar(p_id, p_image_path)
+- fn_staff_get_list(p_unit_id, p_department_id, p_keyword, p_is_locked, p_page, p_page_size)
+- fn_staff_get_by_id(p_id)
+- fn_staff_create(p_department_id, p_unit_id, p_position_id, p_username, p_password_hash, p_first_name, p_last_name, p_gender, p_birth_date, p_email, p_phone, p_mobile, p_address, p_id_card, p_id_card_date, p_id_card_place, p_is_admin, p_is_represent_unit, p_is_represent_department, p_created_by)
+- fn_staff_update(p_id, ...)
+- fn_staff_delete(p_id) — soft delete
+- fn_staff_toggle_lock(p_id)
+- fn_staff_reset_password(p_id, p_new_password_hash)
+- fn_staff_change_password(p_id, p_new_password_hash) — user tự đổi
+- fn_staff_update_avatar(p_id, p_image_path)
 
 **API:**
 - GET /api/quan-tri/nguoi-dung?unit_id=&department_id=&keyword=&page=&pageSize=
@@ -129,15 +132,15 @@
 > UI: Table nhóm quyền + Drawer phân quyền (tree chức năng)
 
 **Database & SP:**
-- sp_role_get_list(p_unit_id, p_keyword)
-- sp_role_get_by_id(p_id)
-- sp_role_create(p_unit_id, p_name, p_description)
-- sp_role_update(p_id, ...)
-- sp_role_delete(p_id) — check có user nào đang dùng không
-- sp_role_get_rights(p_role_id) → Danh sách right_id đã gán
-- sp_role_assign_rights(p_role_id, p_right_ids INT[]) — gán quyền
-- sp_staff_get_roles(p_staff_id) → Danh sách role đã gán cho nhân viên
-- sp_staff_assign_roles(p_staff_id, p_role_ids INT[]) — gán nhóm quyền cho nhân viên
+- fn_role_get_list(p_unit_id, p_keyword)
+- fn_role_get_by_id(p_id)
+- fn_role_create(p_unit_id, p_name, p_description)
+- fn_role_update(p_id, ...)
+- fn_role_delete(p_id) — check có user nào đang dùng không
+- fn_role_get_rights(p_role_id) → Danh sách right_id đã gán
+- fn_role_assign_rights(p_role_id, p_right_ids INT[]) — gán quyền
+- fn_staff_get_roles(p_staff_id) → Danh sách role đã gán cho nhân viên
+- fn_staff_assign_roles(p_staff_id, p_role_ids INT[]) — gán nhóm quyền cho nhân viên
 
 **API:**
 - GET /api/quan-tri/nhom-quyen
@@ -161,12 +164,12 @@
 > UI: Tree chức năng + Form chi tiết bên phải
 
 **Database & SP:**
-- sp_right_get_tree()
-- sp_right_get_by_id(p_id)
-- sp_right_create(p_parent_id, p_name, p_name_of_menu, p_action_link, p_icon, p_sort_order, p_show_menu, p_default_page, p_show_in_app, p_description)
-- sp_right_update(p_id, ...)
-- sp_right_delete(p_id) — check có con không
-- sp_right_get_by_staff(p_staff_id) → Menu items user được phép truy cập
+- fn_right_get_tree()
+- fn_right_get_by_id(p_id)
+- fn_right_create(p_parent_id, p_name, p_name_of_menu, p_action_link, p_icon, p_sort_order, p_show_menu, p_default_page, p_show_in_app, p_description)
+- fn_right_update(p_id, ...)
+- fn_right_delete(p_id) — check có con không
+- fn_right_get_by_staff(p_staff_id) → Menu items user được phép truy cập
 
 **API:**
 - GET /api/quan-tri/chuc-nang/tree
@@ -192,11 +195,11 @@
 > Table: 3 tab (Văn bản đến | Văn bản đi | Văn bản dự thảo)
 
 **Database & SP:**
-- sp_doc_book_get_list(p_type_id, p_unit_id) — type_id: 1=đến, 2=đi, 3=dự thảo
-- sp_doc_book_create(p_type_id, p_unit_id, p_name, p_is_default, p_description)
-- sp_doc_book_update(p_id, ...)
-- sp_doc_book_delete(p_id)
-- sp_doc_book_set_default(p_id, p_type_id, p_unit_id)
+- fn_doc_book_get_list(p_type_id, p_unit_id) — type_id: 1=đến, 2=đi, 3=dự thảo
+- fn_doc_book_create(p_type_id, p_unit_id, p_name, p_is_default, p_description)
+- fn_doc_book_update(p_id, ...)
+- fn_doc_book_delete(p_id)
+- fn_doc_book_set_default(p_id, p_type_id, p_unit_id)
 
 **API:** GET/POST/PUT/DELETE /api/quan-tri/so-van-ban
 
@@ -208,10 +211,10 @@
 > Mỗi loại: CV (Công văn), NQ (Nghị quyết), QĐ (Quyết định), CT (Chỉ thị), QC (Quy chế)
 
 **Database & SP:**
-- sp_doc_type_get_tree(p_type_id) — type_id: 1=đến, 2=đi, 3=dự thảo
-- sp_doc_type_create(p_type_id, p_parent_id, p_name, p_code, p_notation_type, p_sort_order)
-- sp_doc_type_update(p_id, ...)
-- sp_doc_type_delete(p_id)
+- fn_doc_type_get_tree(p_type_id) — type_id: 1=đến, 2=đi, 3=dự thảo
+- fn_doc_type_create(p_type_id, p_parent_id, p_name, p_code, p_notation_type, p_sort_order)
+- fn_doc_type_update(p_id, ...)
+- fn_doc_type_delete(p_id)
 
 **API:** GET/POST/PUT/DELETE /api/quan-tri/loai-van-ban
 
@@ -221,9 +224,9 @@
 > Ref cũ: edoc/Field, ApiService/FieldController
 
 **Database & SP:**
-- sp_doc_field_get_list(p_unit_id, p_keyword)
-- sp_doc_field_create(p_unit_id, p_code, p_name)
-- sp_doc_field_update / delete
+- fn_doc_field_get_list(p_unit_id, p_keyword)
+- fn_doc_field_create(p_unit_id, p_code, p_name)
+- fn_doc_field_update / delete
 
 **API:** GET/POST/PUT/DELETE /api/quan-tri/linh-vuc
 
@@ -234,9 +237,9 @@
 > Cấu hình các cột/trường hiển thị trên form VB đến, đi, dự thảo
 
 **Database & SP:**
-- sp_doc_column_get_list(p_type_id) — 1=đến, 2=đi, 3=dự thảo
-- sp_doc_column_update(p_id, p_label, p_is_mandatory, p_is_show_all, p_sort_order)
-- sp_doc_column_toggle_visibility(p_id)
+- fn_doc_column_get_list(p_type_id) — 1=đến, 2=đi, 3=dự thảo
+- fn_doc_column_update(p_id, p_label, p_is_mandatory, p_is_show_all, p_sort_order)
+- fn_doc_column_toggle_visibility(p_id)
 
 **API:** GET/PUT /api/quan-tri/thuoc-tinh-van-ban
 
@@ -246,8 +249,8 @@
 > Ref cũ: edoc/Organization
 
 **Database & SP:**
-- sp_organization_get(p_unit_id)
-- sp_organization_update(p_unit_id, p_code, p_name, p_address, p_phone, p_fax, p_email, p_secretary, p_chairman_number, p_level, p_email_doc, p_is_exchange)
+- fn_organization_get(p_unit_id)
+- fn_organization_update(p_unit_id, p_code, p_name, p_address, p_phone, p_fax, p_email, p_secretary, p_chairman_number, p_level, p_email_doc, p_is_exchange)
 
 **API:** GET/PUT /api/quan-tri/co-quan
 
@@ -257,9 +260,9 @@
 > Ref cũ: edoc/Signer, ApiService/SignerController
 
 **Database & SP:**
-- sp_signer_get_list(p_unit_id)
-- sp_signer_create(p_unit_id, p_department_id, p_staff_id)
-- sp_signer_delete(p_id)
+- fn_signer_get_list(p_unit_id)
+- fn_signer_create(p_unit_id, p_department_id, p_staff_id)
+- fn_signer_delete(p_id)
 
 **API:** GET/POST/DELETE /api/quan-tri/nguoi-ky
 
@@ -269,11 +272,11 @@
 > Ref cũ: edoc/Groups, ApiService/GroupsController
 
 **Database & SP:**
-- sp_group_get_list(p_unit_id)
-- sp_group_create(p_unit_id, p_name, p_function, p_sort_order)
-- sp_group_update / delete
-- sp_group_get_members(p_group_id)
-- sp_group_assign_members(p_group_id, p_staff_ids INT[])
+- fn_group_get_list(p_unit_id)
+- fn_group_create(p_unit_id, p_name, p_function, p_sort_order)
+- fn_group_update / delete
+- fn_group_get_members(p_group_id)
+- fn_group_assign_members(p_group_id, p_staff_ids INT[])
 
 **API:** GET/POST/PUT/DELETE /api/quan-tri/nhom-lam-viec + /members
 
@@ -283,9 +286,9 @@
 > Ref cũ: edoc/Deligation
 
 **Database & SP:**
-- sp_delegation_get_list(p_staff_id)
-- sp_delegation_create(p_from_staff_id, p_to_staff_id, p_start_date, p_end_date, p_note)
-- sp_delegation_revoke(p_id)
+- fn_delegation_get_list(p_staff_id)
+- fn_delegation_create(p_from_staff_id, p_to_staff_id, p_start_date, p_end_date, p_note)
+- fn_delegation_revoke(p_id)
 
 **API:** GET/POST/DELETE /api/quan-tri/uy-quyen
 
@@ -295,12 +298,12 @@
 > Ref cũ: Manager/Province, Manager/District, Manager/Commune
 
 **Database & SP:**
-- sp_province_get_list(p_keyword)
-- sp_province_create / update / delete
-- sp_district_get_list(p_province_id, p_keyword)
-- sp_district_create / update / delete
-- sp_commune_get_list(p_district_id, p_keyword)
-- sp_commune_create / update / delete
+- fn_province_get_list(p_keyword)
+- fn_province_create / update / delete
+- fn_district_get_list(p_province_id, p_keyword)
+- fn_district_create / update / delete
+- fn_commune_get_list(p_district_id, p_keyword)
+- fn_commune_create / update / delete
 
 **API:** GET/POST/PUT/DELETE cho mỗi cấp
 
@@ -310,9 +313,9 @@
 > Ref cũ: Manager/Calendar
 
 **Database & SP:**
-- sp_work_calendar_get(p_year)
-- sp_work_calendar_set_holiday(p_date, p_description)
-- sp_work_calendar_remove_holiday(p_date)
+- fn_work_calendar_get(p_year)
+- fn_work_calendar_set_holiday(p_date, p_description)
+- fn_work_calendar_remove_holiday(p_date)
 
 **API:** GET/POST/DELETE /api/quan-tri/lich-lam-viec
 
@@ -322,10 +325,10 @@
 > Ref cũ: ApiService/SmsMessageController, ApiService/EmailMessageController
 
 **Database & SP:**
-- sp_sms_template_get_list(p_unit_id)
-- sp_sms_template_create / update / delete
-- sp_email_template_get_list(p_unit_id)
-- sp_email_template_create / update / delete
+- fn_sms_template_get_list(p_unit_id)
+- fn_sms_template_create / update / delete
+- fn_email_template_get_list(p_unit_id)
+- fn_email_template_create / update / delete
 
 **API:** GET/POST/PUT/DELETE /api/quan-tri/mau-sms + /mau-email
 
@@ -348,10 +351,10 @@
 
 ### 3.1 Danh sách Văn bản đến
 **Database & SP:**
-- sp_incoming_doc_get_list(p_unit_id, p_staff_id, p_doc_book_id, p_doc_field_id, p_doc_type_id, p_is_read, p_status, p_from_date, p_to_date, p_keyword, p_page, p_page_size)
-- sp_incoming_doc_count_unread(p_unit_id, p_staff_id) — cho dashboard widget
-- sp_incoming_doc_mark_read(p_doc_id, p_staff_id)
-- sp_incoming_doc_mark_read_bulk(p_doc_ids INT[], p_staff_id)
+- fn_incoming_doc_get_list(p_unit_id, p_staff_id, p_doc_book_id, p_doc_field_id, p_doc_type_id, p_is_read, p_status, p_from_date, p_to_date, p_keyword, p_page, p_page_size)
+- fn_incoming_doc_count_unread(p_unit_id, p_staff_id) — cho dashboard widget
+- fn_incoming_doc_mark_read(p_doc_id, p_staff_id)
+- fn_incoming_doc_mark_read_bulk(p_doc_ids INT[], p_staff_id)
 
 **API:**
 - GET /api/van-ban/den?filters...
@@ -367,10 +370,10 @@
 
 ### 3.2 Thêm / Sửa Văn bản đến
 **Database & SP:**
-- sp_incoming_doc_create(p_unit_id, p_received_date, p_number, p_notation, p_document_code, p_abstract, p_publish_unit, p_publish_date, p_signer, p_sign_date, p_number_paper, p_number_copies, p_secret_id, p_urgent_id, p_doc_book_id, p_doc_type_id, p_doc_field_id, p_expired_date, p_is_received_paper, p_recipients TEXT, p_created_by)
-- sp_incoming_doc_update(p_id, ...)
-- sp_incoming_doc_delete(p_id)
-- sp_incoming_doc_get_next_number(p_doc_book_id, p_year) — tự tăng số đến
+- fn_incoming_doc_create(p_unit_id, p_received_date, p_number, p_notation, p_document_code, p_abstract, p_publish_unit, p_publish_date, p_signer, p_sign_date, p_number_paper, p_number_copies, p_secret_id, p_urgent_id, p_doc_book_id, p_doc_type_id, p_doc_field_id, p_expired_date, p_is_received_paper, p_recipients TEXT, p_created_by)
+- fn_incoming_doc_update(p_id, ...)
+- fn_incoming_doc_delete(p_id)
+- fn_incoming_doc_get_next_number(p_doc_book_id, p_year) — tự tăng số đến
 
 **API:**
 - POST /api/van-ban/den
@@ -384,9 +387,9 @@
 
 ### 3.3 Chi tiết Văn bản đến (Page riêng)
 **Database & SP:**
-- sp_incoming_doc_get_by_id(p_id, p_staff_id) — trả đầy đủ + đánh dấu đã đọc
-- sp_incoming_doc_get_recipients(p_doc_id) — danh sách người nhận + trạng thái đọc
-- sp_incoming_doc_get_history(p_doc_id) — lịch sử xử lý (timeline)
+- fn_incoming_doc_get_by_id(p_id, p_staff_id) — trả đầy đủ + đánh dấu đã đọc
+- fn_incoming_doc_get_recipients(p_doc_id) — danh sách người nhận + trạng thái đọc
+- fn_incoming_doc_get_history(p_doc_id) — lịch sử xử lý (timeline)
 
 **API:**
 - GET /api/van-ban/den/:id
@@ -401,9 +404,9 @@
 
 ### 3.4 File đính kèm (Attachment)
 **Database & SP:**
-- sp_attachment_incoming_create(p_doc_id, p_file_name, p_file_path, p_file_size, p_file_type, p_uploaded_by)
-- sp_attachment_incoming_delete(p_id)
-- sp_attachment_incoming_get_list(p_doc_id)
+- fn_attachment_incoming_create(p_doc_id, p_file_name, p_file_path, p_file_size, p_file_type, p_uploaded_by)
+- fn_attachment_incoming_delete(p_id)
+- fn_attachment_incoming_get_list(p_doc_id)
 
 **API:**
 - POST /api/van-ban/den/:id/dinh-kem (multipart → MinIO)
@@ -416,8 +419,8 @@
 > Ref cũ: Screen 2_5 — Chọn người nhận checkbox, Radio Gửi nhanh / Lãnh đạo UBND
 
 **Database & SP:**
-- sp_incoming_doc_send(p_doc_id, p_staff_ids INT[], p_send_type, p_sent_by)
-- sp_incoming_doc_get_sendable_staff(p_unit_id) — danh sách cán bộ có thể gửi
+- fn_incoming_doc_send(p_doc_id, p_staff_ids INT[], p_send_type, p_sent_by)
+- fn_incoming_doc_get_sendable_staff(p_unit_id) — danh sách cán bộ có thể gửi
 
 **API:**
 - POST /api/van-ban/den/:id/gui
@@ -429,9 +432,9 @@
 > Ref cũ: leader_notes table
 
 **Database & SP:**
-- sp_leader_note_create(p_doc_id, p_staff_id, p_content, p_note_type)
-- sp_leader_note_get_list(p_doc_id)
-- sp_leader_note_delete(p_id)
+- fn_leader_note_create(p_doc_id, p_staff_id, p_content, p_note_type)
+- fn_leader_note_get_list(p_doc_id)
+- fn_leader_note_delete(p_id)
 
 **API:**
 - GET /api/van-ban/den/:id/but-phe
@@ -444,8 +447,8 @@
 > Ref cũ: staff_notes table
 
 **Database & SP:**
-- sp_staff_note_toggle(p_doc_id, p_staff_id, p_doc_type, p_note)
-- sp_staff_note_get_list(p_staff_id, p_doc_type)
+- fn_staff_note_toggle(p_doc_id, p_staff_id, p_doc_type, p_note)
+- fn_staff_note_get_list(p_staff_id, p_doc_type)
 
 **API:**
 - POST /api/van-ban/den/:id/danh-dau
@@ -470,11 +473,11 @@
 
 ### 4.1 Văn bản dự thảo (Drafting)
 **Database & SP:**
-- sp_drafting_doc_get_list(p_unit_id, p_staff_id, p_doc_book_id, p_doc_type_id, p_keyword, p_from_date, p_to_date, p_is_released, p_page, p_page_size)
-- sp_drafting_doc_create(p_unit_id, p_received_date, p_number, p_sub_number, p_notation, p_abstract, p_drafting_unit_id, p_drafting_user_id, p_signer, p_doc_book_id, p_doc_type_id, p_doc_field_id, p_expired_date, p_secret_id, p_urgent_id, p_created_by)
-- sp_drafting_doc_update(p_id, ...)
-- sp_drafting_doc_delete(p_id)
-- sp_drafting_doc_release(p_id, p_released_by) — Phát hành → chuyển thành VB đi
+- fn_drafting_doc_get_list(p_unit_id, p_staff_id, p_doc_book_id, p_doc_type_id, p_keyword, p_from_date, p_to_date, p_is_released, p_page, p_page_size)
+- fn_drafting_doc_create(p_unit_id, p_received_date, p_number, p_sub_number, p_notation, p_abstract, p_drafting_unit_id, p_drafting_user_id, p_signer, p_doc_book_id, p_doc_type_id, p_doc_field_id, p_expired_date, p_secret_id, p_urgent_id, p_created_by)
+- fn_drafting_doc_update(p_id, ...)
+- fn_drafting_doc_delete(p_id)
+- fn_drafting_doc_release(p_id, p_released_by) — Phát hành → chuyển thành VB đi
 
 **API:** CRUD + POST /api/van-ban/du-thao/:id/phat-hanh
 
@@ -486,12 +489,12 @@
 
 ### 4.2 Văn bản đi / Phát hành (Outgoing)
 **Database & SP:**
-- sp_outgoing_doc_get_list(p_unit_id, p_staff_id, p_doc_book_id, p_doc_type_id, p_keyword, p_from_date, p_to_date, p_page, p_page_size)
-- sp_outgoing_doc_create(...) — tương tự drafting + publish fields
-- sp_outgoing_doc_update / delete
-- sp_outgoing_doc_count_unread(p_unit_id, p_staff_id) — dashboard widget
-- sp_outgoing_doc_mark_read(p_doc_id, p_staff_id)
-- sp_outgoing_doc_get_next_number(p_doc_book_id, p_year)
+- fn_outgoing_doc_get_list(p_unit_id, p_staff_id, p_doc_book_id, p_doc_type_id, p_keyword, p_from_date, p_to_date, p_page, p_page_size)
+- fn_outgoing_doc_create(...) — tương tự drafting + publish fields
+- fn_outgoing_doc_update / delete
+- fn_outgoing_doc_count_unread(p_unit_id, p_staff_id) — dashboard widget
+- fn_outgoing_doc_mark_read(p_doc_id, p_staff_id)
+- fn_outgoing_doc_get_next_number(p_doc_book_id, p_year)
 
 **API:** CRUD /api/van-ban/di + mark read + export
 
@@ -502,10 +505,10 @@
 
 ### 4.3 Luồng Dự thảo → Trình ký → Phát hành
 **Database & SP:**
-- sp_drafting_doc_submit_for_approval(p_id, p_submitted_by) — trình ký
-- sp_drafting_doc_approve(p_id, p_approved_by) — duyệt
-- sp_drafting_doc_reject(p_id, p_rejected_by, p_reason) — từ chối
-- sp_drafting_doc_release(p_id, p_released_by) — phát hành
+- fn_drafting_doc_submit_for_approval(p_id, p_submitted_by) — trình ký
+- fn_drafting_doc_approve(p_id, p_approved_by) — duyệt
+- fn_drafting_doc_reject(p_id, p_rejected_by, p_reason) — từ chối
+- fn_drafting_doc_release(p_id, p_released_by) — phát hành
 
 **UI:** Status badges trên danh sách + action buttons trên chi tiết (Trình ký, Duyệt, Từ chối, Phát hành)
 
@@ -519,9 +522,9 @@
 
 ### 5.1 Danh sách HSCV + Sub-menus theo trạng thái
 **Database & SP:**
-- sp_handling_doc_get_list(p_unit_id, p_department_id, p_staff_id, p_status, p_filter_type, p_keyword, p_from_date, p_to_date, p_page, p_page_size)
+- fn_handling_doc_get_list(p_unit_id, p_department_id, p_staff_id, p_status, p_filter_type, p_keyword, p_from_date, p_to_date, p_page, p_page_size)
   - filter_type: 'all' | 'created_by_me' | 'rejected' | 'returned' | 'pending_primary' | 'pending_coord' | 'submitting' | 'in_progress' | 'proposed_complete' | 'completed'
-- sp_handling_doc_count_by_status(p_unit_id, p_staff_id) — count cho sidebar badges
+- fn_handling_doc_count_by_status(p_unit_id, p_staff_id) — count cho sidebar badges
 
 **API:** GET /api/ho-so-cong-viec?filter_type=&status=&...
 
@@ -532,9 +535,9 @@
 
 ### 5.2 Thêm / Sửa HSCV
 **Database & SP:**
-- sp_handling_doc_create(p_unit_id, p_department_id, p_doc_type_id, p_doc_field_id, p_name, p_comments, p_start_date, p_end_date, p_curator_id, p_signer_id, p_workflow_id, p_is_from_doc, p_parent_id, p_created_by)
-- sp_handling_doc_update(p_id, ...)
-- sp_handling_doc_delete(p_id)
+- fn_handling_doc_create(p_unit_id, p_department_id, p_doc_type_id, p_doc_field_id, p_name, p_comments, p_start_date, p_end_date, p_curator_id, p_signer_id, p_workflow_id, p_is_from_doc, p_parent_id, p_created_by)
+- fn_handling_doc_update(p_id, ...)
+- fn_handling_doc_delete(p_id)
 
 **API:** CRUD /api/ho-so-cong-viec
 
@@ -542,12 +545,12 @@
 
 ### 5.3 Chi tiết HSCV (Page riêng)
 **Database & SP:**
-- sp_handling_doc_get_by_id(p_id)
-- sp_handling_doc_get_linked_docs(p_id) — VB liên kết
-- sp_handling_doc_get_staff(p_id) — Cán bộ tham gia (phụ trách + phối hợp)
-- sp_handling_doc_get_opinions(p_id) — Ý kiến xử lý
-- sp_handling_doc_get_attachments(p_id)
-- sp_handling_doc_get_children(p_id) — HSCV con
+- fn_handling_doc_get_by_id(p_id)
+- fn_handling_doc_get_linked_docs(p_id) — VB liên kết
+- fn_handling_doc_get_staff(p_id) — Cán bộ tham gia (phụ trách + phối hợp)
+- fn_handling_doc_get_opinions(p_id) — Ý kiến xử lý
+- fn_handling_doc_get_attachments(p_id)
+- fn_handling_doc_get_children(p_id) — HSCV con
 
 **API:**
 - GET /api/ho-so-cong-viec/:id (full detail)
@@ -563,9 +566,9 @@
 > Ref cũ: Screen 3_3 — Transfer panel chọn người theo Phòng ban
 
 **Database & SP:**
-- sp_handling_doc_assign_staff(p_doc_id, p_staff_ids INT[], p_role_type, p_deadline, p_assigned_by)
+- fn_handling_doc_assign_staff(p_doc_id, p_staff_ids INT[], p_role_type, p_deadline, p_assigned_by)
   - role_type: 'primary' (phụ trách) | 'coordinator' (phối hợp)
-- sp_handling_doc_remove_staff(p_doc_id, p_staff_id)
+- fn_handling_doc_remove_staff(p_doc_id, p_staff_id)
 
 **API:**
 - POST /api/ho-so-cong-viec/:id/phan-cong
@@ -575,8 +578,8 @@
 
 ### 5.5 Ý kiến xử lý (Opinions)
 **Database & SP:**
-- sp_opinion_create(p_doc_id, p_staff_id, p_content, p_opinion_type)
-- sp_opinion_get_list(p_doc_id)
+- fn_opinion_create(p_doc_id, p_staff_id, p_content, p_opinion_type)
+- fn_opinion_get_list(p_doc_id)
 
 **API:** GET/POST /api/ho-so-cong-viec/:id/y-kien
 
@@ -584,9 +587,9 @@
 
 ### 5.6 Liên kết VB ↔ HSCV
 **Database & SP:**
-- sp_handling_doc_link_doc(p_handling_doc_id, p_doc_id, p_doc_type, p_linked_by)
+- fn_handling_doc_link_doc(p_handling_doc_id, p_doc_id, p_doc_type, p_linked_by)
   - doc_type: 'incoming' | 'outgoing' | 'drafting'
-- sp_handling_doc_unlink_doc(p_link_id)
+- fn_handling_doc_unlink_doc(p_link_id)
 
 **API:** POST/DELETE /api/ho-so-cong-viec/:id/lien-ket-van-ban
 
@@ -594,13 +597,13 @@
 
 ### 5.7 Chuyển trạng thái HSCV
 **Database & SP:**
-- sp_handling_doc_change_status(p_id, p_new_status, p_changed_by, p_reason)
-- sp_handling_doc_submit(p_id, p_submitted_by) — trình ký
-- sp_handling_doc_approve(p_id, p_approved_by) — duyệt
-- sp_handling_doc_reject(p_id, p_rejected_by, p_reason) — từ chối
-- sp_handling_doc_return(p_id, p_returned_by, p_reason) — trả về
-- sp_handling_doc_complete(p_id, p_completed_by) — hoàn thành
-- sp_handling_doc_update_progress(p_id, p_progress) — cập nhật tiến độ %
+- fn_handling_doc_change_status(p_id, p_new_status, p_changed_by, p_reason)
+- fn_handling_doc_submit(p_id, p_submitted_by) — trình ký
+- fn_handling_doc_approve(p_id, p_approved_by) — duyệt
+- fn_handling_doc_reject(p_id, p_rejected_by, p_reason) — từ chối
+- fn_handling_doc_return(p_id, p_returned_by, p_reason) — trả về
+- fn_handling_doc_complete(p_id, p_completed_by) — hoàn thành
+- fn_handling_doc_update_progress(p_id, p_progress) — cập nhật tiến độ %
 
 **API:** PATCH /api/ho-so-cong-viec/:id/trang-thai
 
@@ -615,15 +618,15 @@
 > Ref cũ: Screen 3_5 — Visual flowchart: Bắt đầu → Soạn → Hành động → Kết thúc
 
 **Database & SP:**
-- sp_doc_flow_get_list(p_unit_id, p_doc_field_id, p_is_active)
-- sp_doc_flow_get_by_id(p_id) — trả kèm steps + staff
-- sp_doc_flow_create(p_unit_id, p_name, p_version, p_doc_field_id)
-- sp_doc_flow_update / delete / activate / deactivate
-- sp_doc_flow_step_create(p_flow_id, p_step_name, p_step_order, p_step_type, p_allow_sign, p_deadline_days)
-- sp_doc_flow_step_update / delete
-- sp_doc_flow_step_assign_staff(p_step_id, p_staff_ids INT[])
-- sp_doc_flow_step_link_create(p_from_step_id, p_to_step_id)
-- sp_doc_flow_step_link_delete(p_link_id)
+- fn_doc_flow_get_list(p_unit_id, p_doc_field_id, p_is_active)
+- fn_doc_flow_get_by_id(p_id) — trả kèm steps + staff
+- fn_doc_flow_create(p_unit_id, p_name, p_version, p_doc_field_id)
+- fn_doc_flow_update / delete / activate / deactivate
+- fn_doc_flow_step_create(p_flow_id, p_step_name, p_step_order, p_step_type, p_allow_sign, p_deadline_days)
+- fn_doc_flow_step_update / delete
+- fn_doc_flow_step_assign_staff(p_step_id, p_staff_ids INT[])
+- fn_doc_flow_step_link_create(p_from_step_id, p_to_step_id)
+- fn_doc_flow_step_link_delete(p_link_id)
 
 **API:** CRUD /api/quan-tri/quy-trinh + /steps + /links
 
@@ -639,9 +642,9 @@
 > Ref cũ: Screen 3_4 — Tổng quan công việc
 
 **Database & SP:**
-- sp_handling_doc_kpi(p_unit_id, p_from_date, p_to_date)
+- fn_handling_doc_kpi(p_unit_id, p_from_date, p_to_date)
   → Trả về: Tổng số, Chuyển kỳ trước, Kỳ này, Hoàn thành, Đang thực hiện, Quá hạn, % quá hạn
-- sp_handling_doc_kpi_by_staff(p_unit_id, p_from_date, p_to_date)
+- fn_handling_doc_kpi_by_staff(p_unit_id, p_from_date, p_to_date)
   → Theo từng cán bộ
 
 **API:** GET /api/ho-so-cong-viec/thong-ke/kpi?unit_id=&from=&to=
@@ -654,9 +657,9 @@
 > Ref cũ: 3 báo cáo: Tình hình tại đơn vị, Giải quyết công việc, Theo cán bộ giao việc
 
 **Database & SP:**
-- sp_report_handling_by_unit(p_unit_id, p_from_date, p_to_date)
-- sp_report_handling_by_resolver(p_unit_id, p_from_date, p_to_date)
-- sp_report_handling_by_assigner(p_unit_id, p_from_date, p_to_date)
+- fn_report_handling_by_unit(p_unit_id, p_from_date, p_to_date)
+- fn_report_handling_by_resolver(p_unit_id, p_from_date, p_to_date)
+- fn_report_handling_by_assigner(p_unit_id, p_from_date, p_to_date)
 
 **API:**
 - GET /api/ho-so-cong-viec/bao-cao/theo-don-vi
@@ -679,9 +682,9 @@
 > Ref cũ: edoc/InterIncoming, ApiService — bản chất là VB đến từ LGSP
 
 **Database & SP:**
-- sp_inter_incoming_get_list(p_unit_id, p_keyword, p_from_date, p_to_date, p_page, p_page_size)
-- sp_inter_incoming_create(...) — tạo từ dữ liệu LGSP parse
-- sp_inter_incoming_get_by_id(p_id)
+- fn_inter_incoming_get_list(p_unit_id, p_keyword, p_from_date, p_to_date, p_page, p_page_size)
+- fn_inter_incoming_create(...) — tạo từ dữ liệu LGSP parse
+- fn_inter_incoming_get_by_id(p_id)
 
 **API:** GET /api/van-ban/lien-thong + /:id
 
@@ -693,7 +696,7 @@
 > Ref cũ: Nút "Thêm vào HSCV" + "Giao việc" trên toolbar chi tiết VB đến
 
 **Database & SP:**
-- sp_handling_doc_create_from_doc(p_doc_id, p_doc_type, p_name, p_start_date, p_end_date, p_curator_id, p_created_by)
+- fn_handling_doc_create_from_doc(p_doc_id, p_doc_type, p_name, p_start_date, p_end_date, p_curator_id, p_created_by)
   — Tạo HSCV mới + tự động link VB
 
 **API:** POST /api/van-ban/den/:id/giao-viec
@@ -704,9 +707,9 @@
 > Ref cũ: Các action trên toolbar chi tiết VB đến
 
 **Database & SP:**
-- sp_incoming_doc_handover(p_doc_id, p_staff_id) — nhận bàn giao
-- sp_incoming_doc_return(p_doc_id, p_returned_by, p_reason) — chuyển lại
-- sp_incoming_doc_cancel_approve(p_doc_id, p_cancelled_by) — hủy duyệt
+- fn_incoming_doc_handover(p_doc_id, p_staff_id) — nhận bàn giao
+- fn_incoming_doc_return(p_doc_id, p_returned_by, p_reason) — chuyển lại
+- fn_incoming_doc_cancel_approve(p_doc_id, p_cancelled_by) — hủy duyệt
 
 **API:** POST /api/van-ban/den/:id/nhan-ban-giao, /chuyen-lai, /huy-duyet
 
@@ -721,15 +724,15 @@
 
 ### 8.1 Tin nhắn nội bộ
 **Database & SP:**
-- sp_message_get_inbox(p_staff_id, p_keyword, p_page, p_page_size)
-- sp_message_get_sent(p_staff_id, p_keyword, p_page, p_page_size)
-- sp_message_get_trash(p_staff_id, p_page, p_page_size)
-- sp_message_get_by_id(p_id, p_staff_id) — đánh dấu đã đọc
-- sp_message_create(p_from_staff_id, p_to_staff_ids INT[], p_subject, p_content, p_parent_id)
-- sp_message_reply(p_message_id, p_staff_id, p_content)
-- sp_message_delete(p_id, p_staff_id) — soft delete (chuyển thùng rác)
-- sp_message_delete_permanent(p_id, p_staff_id) — xóa vĩnh viễn
-- sp_message_count_unread(p_staff_id) — cho badge notification
+- fn_message_get_inbox(p_staff_id, p_keyword, p_page, p_page_size)
+- fn_message_get_sent(p_staff_id, p_keyword, p_page, p_page_size)
+- fn_message_get_trash(p_staff_id, p_page, p_page_size)
+- fn_message_get_by_id(p_id, p_staff_id) — đánh dấu đã đọc
+- fn_message_create(p_from_staff_id, p_to_staff_ids INT[], p_subject, p_content, p_parent_id)
+- fn_message_reply(p_message_id, p_staff_id, p_content)
+- fn_message_delete(p_id, p_staff_id) — soft delete (chuyển thùng rác)
+- fn_message_delete_permanent(p_id, p_staff_id) — xóa vĩnh viễn
+- fn_message_count_unread(p_staff_id) — cho badge notification
 
 **API:** CRUD /api/tin-nhan + /reply + /trash
 
@@ -743,10 +746,10 @@
 > Ref cũ: edoc/Notice, ApiService/NoticeController
 
 **Database & SP:**
-- sp_notice_get_list(p_unit_id, p_staff_id, p_page, p_page_size)
-- sp_notice_create(p_unit_id, p_title, p_content, p_notice_type, p_created_by)
-- sp_notice_mark_read(p_notice_id, p_staff_id)
-- sp_notice_count_unread(p_staff_id) — cho bell icon
+- fn_notice_get_list(p_unit_id, p_staff_id, p_page, p_page_size)
+- fn_notice_create(p_unit_id, p_title, p_content, p_notice_type, p_created_by)
+- fn_notice_mark_read(p_notice_id, p_staff_id)
+- fn_notice_count_unread(p_staff_id) — cho bell icon
 
 **API:** CRUD /api/thong-bao
 
@@ -769,9 +772,9 @@
 
 ### 9.1 Lịch cá nhân
 **Database & SP:**
-- sp_calendar_event_get(p_staff_id, p_from_date, p_to_date)
-- sp_calendar_event_create(p_staff_id, p_title, p_description, p_start_time, p_end_time, p_location, p_repeat_type, p_color)
-- sp_calendar_event_update / delete
+- fn_calendar_event_get(p_staff_id, p_from_date, p_to_date)
+- fn_calendar_event_create(p_staff_id, p_title, p_description, p_start_time, p_end_time, p_location, p_repeat_type, p_color)
+- fn_calendar_event_update / delete
 
 **API:** CRUD /api/lich/ca-nhan
 
@@ -779,9 +782,9 @@
 
 ### 9.2 Lịch cơ quan
 **Database & SP:**
-- sp_calendar_office_get(p_unit_id, p_from_date, p_to_date)
-- sp_calendar_office_create(p_unit_id, p_title, p_content, p_event_date, p_location, p_participants, p_created_by)
-- sp_calendar_office_update / delete
+- fn_calendar_office_get(p_unit_id, p_from_date, p_to_date)
+- fn_calendar_office_create(p_unit_id, p_title, p_content, p_event_date, p_location, p_participants, p_created_by)
+- fn_calendar_office_update / delete
 
 **API:** CRUD /api/lich/co-quan
 
@@ -789,9 +792,9 @@
 
 ### 9.3 Lịch lãnh đạo
 **Database & SP:**
-- sp_calendar_leader_get(p_unit_id, p_from_date, p_to_date)
-- sp_calendar_leader_create(...)
-- sp_calendar_leader_update / delete
+- fn_calendar_leader_get(p_unit_id, p_from_date, p_to_date)
+- fn_calendar_leader_create(...)
+- fn_calendar_leader_update / delete
 
 **API:** CRUD /api/lich/lanh-dao
 
@@ -799,7 +802,7 @@
 
 ### 9.4 Danh bạ điện thoại
 **Database & SP:**
-- sp_phonebook_get(p_unit_id, p_department_id, p_keyword) — lấy từ bảng staff
+- fn_phonebook_get(p_unit_id, p_department_id, p_keyword) — lấy từ bảng staff
 
 **API:** GET /api/danh-ba
 
@@ -814,10 +817,10 @@
 
 ### 10.1 Dashboard Widgets (dữ liệu thật)
 **Database & SP:**
-- sp_dashboard_get_stats(p_unit_id, p_staff_id) → VB đến chưa đọc, VB đi chưa đọc, HSCV tổng, Việc sắp tới hạn
-- sp_dashboard_get_upcoming_tasks(p_staff_id, p_limit) → Danh sách việc sắp tới hạn
-- sp_dashboard_get_recent_incoming(p_unit_id, p_staff_id, p_limit) → VB đến mới nhất
-- sp_dashboard_get_recent_outgoing(p_unit_id, p_staff_id, p_limit) → VB đi mới nhất
+- fn_dashboard_get_stats(p_unit_id, p_staff_id) → VB đến chưa đọc, VB đi chưa đọc, HSCV tổng, Việc sắp tới hạn
+- fn_dashboard_get_upcoming_tasks(p_staff_id, p_limit) → Danh sách việc sắp tới hạn
+- fn_dashboard_get_recent_incoming(p_unit_id, p_staff_id, p_limit) → VB đến mới nhất
+- fn_dashboard_get_recent_outgoing(p_unit_id, p_staff_id, p_limit) → VB đi mới nhất
 
 **API:**
 - GET /api/dashboard/stats
@@ -845,8 +848,8 @@
 ### 11.1 Danh mục Kho (Warehouse/Fond)
 **Database & SP:**
 - CRUD cho: esto.warehouses, esto.fonds, esto.doc_types_archive
-- sp_warehouse_get_tree() — Phòng lưu trữ → Kho → Kệ
-- sp_fond_get_list()
+- fn_warehouse_get_tree() — Phòng lưu trữ → Kho → Kệ
+- fn_fond_get_list()
 
 **API:** CRUD /api/kho-luu-tru/kho + /phong + /loai-van-kien
 
@@ -854,9 +857,9 @@
 
 ### 11.2 Quản lý Hồ sơ lưu trữ (Document Archive)
 **Database & SP:**
-- sp_doc_archive_get_list(p_warehouse_id, p_fond_id, p_keyword, p_page, p_page_size)
-- sp_doc_archive_create(p_title, p_archive_number, p_warehouse_id, p_fond_id, p_doc_type_id, p_start_date, p_end_date, p_total_pages, p_description, p_created_by)
-- sp_doc_archive_update / delete
+- fn_doc_archive_get_list(p_warehouse_id, p_fond_id, p_keyword, p_page, p_page_size)
+- fn_doc_archive_create(p_title, p_archive_number, p_warehouse_id, p_fond_id, p_doc_type_id, p_start_date, p_end_date, p_total_pages, p_description, p_created_by)
+- fn_doc_archive_update / delete
 
 **API:** CRUD /api/kho-luu-tru/ho-so
 
@@ -864,10 +867,10 @@
 
 ### 11.3 Mượn trả hồ sơ (Borrowing)
 **Database & SP:**
-- sp_borrow_request_create(p_doc_archive_id, p_borrower_staff_id, p_borrow_date, p_expected_return_date, p_purpose)
-- sp_borrow_request_approve(p_id, p_approved_by)
-- sp_borrow_request_return(p_id, p_returned_date, p_returned_by)
-- sp_borrow_request_get_list(p_status, p_page, p_page_size)
+- fn_borrow_request_create(p_doc_archive_id, p_borrower_staff_id, p_borrow_date, p_expected_return_date, p_purpose)
+- fn_borrow_request_approve(p_id, p_approved_by)
+- fn_borrow_request_return(p_id, p_returned_date, p_returned_by)
+- fn_borrow_request_get_list(p_status, p_page, p_page_size)
 
 **API:** CRUD /api/kho-luu-tru/muon-tra
 
@@ -884,11 +887,11 @@
 > Categories: Đào tạo, Nội bộ, ISO, Pháp quy, Khác, VB đến
 
 **Database & SP:**
-- sp_shared_doc_get_list(p_category_id, p_keyword, p_page, p_page_size)
-- sp_shared_doc_create(p_category_id, p_title, p_description, p_created_by)
-- sp_shared_doc_update / delete
-- sp_shared_doc_category_get_list()
-- sp_shared_doc_category_create / update / delete
+- fn_shared_doc_get_list(p_category_id, p_keyword, p_page, p_page_size)
+- fn_shared_doc_create(p_category_id, p_title, p_description, p_created_by)
+- fn_shared_doc_update / delete
+- fn_shared_doc_category_get_list()
+- fn_shared_doc_category_create / update / delete
 
 **API:** CRUD /api/tai-lieu + /danh-muc
 
@@ -901,11 +904,11 @@
 > Ref cũ: Contract Area — Contract + ContractType controllers
 
 **Database & SP:**
-- sp_contract_get_list(p_type_id, p_keyword, p_from_date, p_to_date, p_page, p_page_size)
-- sp_contract_create(p_type_id, p_contract_number, p_title, p_partner, p_sign_date, p_start_date, p_end_date, p_value, p_description, p_created_by)
-- sp_contract_update / delete
-- sp_contract_type_get_list()
-- sp_contract_type_create / update / delete
+- fn_contract_get_list(p_type_id, p_keyword, p_from_date, p_to_date, p_page, p_page_size)
+- fn_contract_create(p_type_id, p_contract_number, p_title, p_partner, p_sign_date, p_start_date, p_end_date, p_value, p_description, p_created_by)
+- fn_contract_update / delete
+- fn_contract_type_get_list()
+- fn_contract_type_create / update / delete
 
 **API:** CRUD /api/hop-dong + /loai-hop-dong
 
@@ -925,17 +928,17 @@
 ### 13.1 Quản lý Phòng họp & Loại cuộc họp (Danh mục)
 **Database & SP:**
 - CRUD cho: meeting_rooms, meeting_types
-- sp_room_get_list(p_unit_id)
+- fn_room_get_list(p_unit_id)
 
 **API:** CRUD /api/hop/phong-hop + /loai-cuoc-hop
 
 ### 13.2 Quản lý Cuộc họp
 **Database & SP:**
-- sp_meeting_get_list(p_unit_id, p_status, p_from_date, p_to_date, p_page, p_page_size)
+- fn_meeting_get_list(p_unit_id, p_status, p_from_date, p_to_date, p_page, p_page_size)
   - status: 'upcoming' | 'in_progress' | 'pending_approval' | 'completed'
-- sp_meeting_create(p_unit_id, p_room_id, p_type_id, p_title, p_content, p_start_time, p_end_time, p_chairperson_id, p_participants INT[], p_created_by)
-- sp_meeting_update / delete / approve / reject
-- sp_meeting_get_by_id(p_id)
+- fn_meeting_create(p_unit_id, p_room_id, p_type_id, p_title, p_content, p_start_time, p_end_time, p_chairperson_id, p_participants INT[], p_created_by)
+- fn_meeting_update / delete / approve / reject
+- fn_meeting_get_by_id(p_id)
 
 **API:** CRUD /api/hop/cuoc-hop + /approve + /reject
 
@@ -948,9 +951,9 @@
 > Ref cũ: edoc/Vote — Realtime voting trong cuộc họp
 
 **Database & SP:**
-- sp_vote_create(p_meeting_id, p_question, p_options JSONB, p_created_by)
-- sp_vote_cast(p_vote_id, p_staff_id, p_option_index)
-- sp_vote_get_results(p_vote_id)
+- fn_vote_create(p_meeting_id, p_question, p_options JSONB, p_created_by)
+- fn_vote_cast(p_vote_id, p_staff_id, p_option_index)
+- fn_vote_get_results(p_vote_id)
 
 **API:** POST /api/hop/cuoc-hop/:id/bieu-quyet
 
@@ -958,7 +961,7 @@
 
 ### 13.4 Thống kê cuộc họp
 **Database & SP:**
-- sp_meeting_statistics(p_unit_id, p_from_date, p_to_date)
+- fn_meeting_statistics(p_unit_id, p_from_date, p_to_date)
 
 **API:** GET /api/hop/thong-ke
 
@@ -1059,7 +1062,7 @@
 **UI:** Menu items mở tab mới (target="_blank"). URL cấu hình trong bảng configurations
 
 ### 17.2 Dynamic Sidebar Menu
-- Sidebar render từ API sp_right_get_by_staff (thay vì hardcode)
+- Sidebar render từ API fn_right_get_by_staff (thay vì hardcode)
 - Menu items redirect → open new tab
 - Badge counts realtime (VB chưa đọc, tin nhắn, thông báo)
 
