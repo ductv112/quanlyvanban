@@ -45,7 +45,7 @@ export default function PositionPage() {
       setData(res.data?.items || res.data || []);
       setTotal(res.data?.total || 0);
     } catch (err: any) {
-      message.error(err?.response?.data?.message || 'Loi tai du lieu');
+      message.error(err?.response?.data?.message || 'Lỗi tải dữ liệu');
     } finally {
       setLoading(false);
     }
@@ -71,10 +71,10 @@ export default function PositionPage() {
   const handleDelete = async (id: number) => {
     try {
       await api.delete(`/quan-tri/chuc-vu/${id}`);
-      message.success('Xoa thanh cong');
+      message.success('Xóa thành công');
       fetchData();
     } catch (err: any) {
-      message.error(err?.response?.data?.message || 'Loi khi xoa');
+      message.error(err?.response?.data?.message || 'Lỗi khi xóa');
     }
   };
 
@@ -84,16 +84,16 @@ export default function PositionPage() {
       setSaving(true);
       if (editingRecord) {
         await api.put(`/quan-tri/chuc-vu/${editingRecord.id}`, values);
-        message.success('Cap nhat thanh cong');
+        message.success('Cập nhật thành công');
       } else {
         await api.post('/quan-tri/chuc-vu', values);
-        message.success('Them thanh cong');
+        message.success('Thêm thành công');
       }
       setDrawerOpen(false);
       fetchData();
     } catch (err: any) {
       if (err?.response) {
-        message.error(err?.response?.data?.message || 'Loi khi luu');
+        message.error(err?.response?.data?.message || 'Lỗi khi lưu');
       }
     } finally {
       setSaving(false);
@@ -107,69 +107,69 @@ export default function PositionPage() {
 
   const columns: ColumnsType<Position> = [
     {
-      title: 'Ma',
+      title: 'Mã',
       dataIndex: 'code',
       key: 'code',
       width: 120,
       render: (v) => <span style={{ fontWeight: 600, color: '#1B3A5C' }}>{v}</span>,
     },
     {
-      title: 'Ten chuc vu',
+      title: 'Tên chức vụ',
       dataIndex: 'name',
       key: 'name',
       ellipsis: true,
     },
     {
-      title: 'Thu tu',
+      title: 'Thứ tự',
       dataIndex: 'sort_order',
       key: 'sort_order',
       width: 90,
       align: 'center',
     },
     {
-      title: 'So NV',
+      title: 'Số NV',
       dataIndex: 'staff_count',
       key: 'staff_count',
       width: 80,
       align: 'center',
     },
     {
-      title: 'Lanh dao',
+      title: 'Lãnh đạo',
       dataIndex: 'is_leader',
       key: 'is_leader',
       width: 100,
       align: 'center',
       render: (v) => (
-        <Tag color={v ? 'success' : 'default'}>{v ? 'Co' : 'Khong'}</Tag>
+        <Tag color={v ? 'success' : 'default'}>{v ? 'Có' : 'Không'}</Tag>
       ),
     },
     {
-      title: 'XL Van ban',
+      title: 'XL Văn bản',
       dataIndex: 'is_handle_document',
       key: 'is_handle_document',
       width: 110,
       align: 'center',
       render: (v) => (
-        <Tag color={v ? 'success' : 'default'}>{v ? 'Co' : 'Khong'}</Tag>
+        <Tag color={v ? 'success' : 'default'}>{v ? 'Có' : 'Không'}</Tag>
       ),
     },
     {
-      title: 'Trang thai',
+      title: 'Trạng thái',
       dataIndex: 'is_active',
       key: 'is_active',
       width: 120,
       render: (v) => (
-        <Tag color={v ? 'success' : 'error'}>{v ? 'Hoat dong' : 'Ngung'}</Tag>
+        <Tag color={v ? 'success' : 'error'}>{v ? 'Hoạt động' : 'Ngừng'}</Tag>
       ),
     },
     {
-      title: 'Thao tac',
+      title: 'Thao tác',
       key: 'actions',
       width: 100,
       align: 'center',
       render: (_, record) => (
         <Space size={4}>
-          <Tooltip title="Sua">
+          <Tooltip title="Sửa">
             <Button
               type="text"
               size="small"
@@ -179,14 +179,14 @@ export default function PositionPage() {
             />
           </Tooltip>
           <Popconfirm
-            title="Xac nhan xoa"
-            description="Ban co chac chan muon xoa chuc vu nay?"
+            title="Xác nhận xóa"
+            description="Bạn có chắc chắn muốn xóa chức vụ này?"
             onConfirm={() => handleDelete(record.id)}
-            okText="Xoa"
-            cancelText="Huy"
+            okText="Xóa"
+            cancelText="Hủy"
             okButtonProps={{ danger: true }}
           >
-            <Tooltip title="Xoa">
+            <Tooltip title="Xóa">
               <Button type="text" size="small" icon={<DeleteOutlined />} danger />
             </Tooltip>
           </Popconfirm>
@@ -199,10 +199,10 @@ export default function PositionPage() {
     <div>
       <div style={{ marginBottom: 20 }}>
         <h2 style={{ fontSize: 22, fontWeight: 700, color: '#1B3A5C', margin: '0 0 4px 0' }}>
-          Quan ly chuc vu
+          Quản lý chức vụ
         </h2>
         <p style={{ fontSize: 14, color: '#64748b', margin: 0 }}>
-          Danh muc chuc vu trong he thong
+          Danh mục chức vụ trong hệ thống
         </p>
       </div>
 
@@ -212,13 +212,13 @@ export default function PositionPage() {
         title={
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <IdcardOutlined style={{ color: '#0891B2' }} />
-            <span style={{ fontWeight: 600, color: '#1B3A5C' }}>Danh sach chuc vu</span>
+            <span style={{ fontWeight: 600, color: '#1B3A5C' }}>Danh sách chức vụ</span>
           </div>
         }
         extra={
           <Space>
             <Input.Search
-              placeholder="Tim kiem..."
+              placeholder="Tìm kiếm..."
               allowClear
               onSearch={handleSearch}
               style={{ width: 240, borderRadius: 8 }}
@@ -230,7 +230,7 @@ export default function PositionPage() {
               onClick={handleAdd}
               style={{ borderRadius: 8 }}
             >
-              Them chuc vu
+              Thêm chức vụ
             </Button>
           </Space>
         }
@@ -248,7 +248,7 @@ export default function PositionPage() {
             pageSize,
             total,
             showSizeChanger: true,
-            showTotal: (t) => `Tong ${t}`,
+            showTotal: (t) => `Tổng ${t}`,
             onChange: (p, ps) => {
               setPage(p);
               setPageSize(ps);
@@ -259,47 +259,47 @@ export default function PositionPage() {
 
       {/* Drawer add/edit */}
       <Drawer
-        title={editingRecord ? 'Cap nhat chuc vu' : 'Them chuc vu moi'}
+        title={editingRecord ? 'Cập nhật chức vụ' : 'Thêm chức vụ mới'}
         width={720}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         destroyOnClose
         extra={
           <Space>
-            <Button onClick={() => setDrawerOpen(false)}>Huy</Button>
+            <Button onClick={() => setDrawerOpen(false)}>Hủy</Button>
             <Button type="primary" loading={saving} onClick={handleSave} style={{ borderRadius: 8 }}>
-              {editingRecord ? 'Cap nhat' : 'Them moi'}
+              {editingRecord ? 'Cập nhật' : 'Thêm mới'}
             </Button>
           </Space>
         }
       >
         <Form form={form} layout="vertical" autoComplete="off">
-          <Form.Item label="Ten chuc vu" name="name" rules={[{ required: true, message: 'Nhap ten chuc vu' }]}>
-            <Input placeholder="VD: Giam doc" style={{ borderRadius: 8 }} />
+          <Form.Item label="Tên chức vụ" name="name" rules={[{ required: true, message: 'Nhập tên chức vụ' }]}>
+            <Input placeholder="VD: Giám đốc" style={{ borderRadius: 8 }} />
           </Form.Item>
 
-          <Form.Item label="Ma" name="code" rules={[{ required: true, message: 'Nhap ma' }]}>
+          <Form.Item label="Mã" name="code" rules={[{ required: true, message: 'Nhập mã' }]}>
             <Input placeholder="VD: GD" style={{ borderRadius: 8 }} />
           </Form.Item>
 
-          <Form.Item label="Thu tu" name="sort_order" initialValue={0}>
+          <Form.Item label="Thứ tự" name="sort_order" initialValue={0}>
             <InputNumber min={0} style={{ width: '100%', borderRadius: 8 }} />
           </Form.Item>
 
-          <Form.Item label="Mo ta" name="description">
+          <Form.Item label="Mô tả" name="description">
             <Input.TextArea rows={3} style={{ borderRadius: 8 }} />
           </Form.Item>
 
-          <Form.Item label="Chuc vu lanh dao" name="is_leader" valuePropName="checked" initialValue={false}>
-            <Switch checkedChildren="Co" unCheckedChildren="Khong" />
+          <Form.Item label="Chức vụ lãnh đạo" name="is_leader" valuePropName="checked" initialValue={false}>
+            <Switch checkedChildren="Có" unCheckedChildren="Không" />
           </Form.Item>
 
-          <Form.Item label="Duoc xu ly van ban" name="is_handle_document" valuePropName="checked" initialValue={true}>
-            <Switch checkedChildren="Co" unCheckedChildren="Khong" />
+          <Form.Item label="Được xử lý văn bản" name="is_handle_document" valuePropName="checked" initialValue={true}>
+            <Switch checkedChildren="Có" unCheckedChildren="Không" />
           </Form.Item>
 
-          <Form.Item label="Trang thai" name="is_active" valuePropName="checked" initialValue={true}>
-            <Switch checkedChildren="Hoat dong" unCheckedChildren="Ngung" />
+          <Form.Item label="Trạng thái" name="is_active" valuePropName="checked" initialValue={true}>
+            <Switch checkedChildren="Hoạt động" unCheckedChildren="Ngừng" />
           </Form.Item>
         </Form>
       </Drawer>

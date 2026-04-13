@@ -17,7 +17,7 @@ const router = Router();
 // GET /don-vi/tree
 router.get('/don-vi/tree', async (req: Request, res: Response) => {
   try {
-    const unitId = Number(req.query.unit_id) || 0;
+    const unitId = req.query.unit_id ? Number(req.query.unit_id) : null;
     const data = await departmentRepository.getTree(unitId);
     res.json({ success: true, data });
   } catch (error) {

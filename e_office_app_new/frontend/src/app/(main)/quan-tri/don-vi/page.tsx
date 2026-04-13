@@ -25,9 +25,9 @@ interface Department {
   fax: string;
   email: string;
   address: string;
-  allow_doc_register: boolean;
+  allow_doc_book: boolean;
   description: string;
-  locked: boolean;
+  is_locked: boolean;
   staff_count: number;
 }
 
@@ -58,7 +58,7 @@ export default function DepartmentPage() {
       const { data: res } = await api.get('/quan-tri/don-vi/tree');
       setTreeData(res.data || []);
     } catch (err: any) {
-      message.error(err?.response?.data?.message || 'Loi tai du lieu don vi');
+      message.error(err?.response?.data?.message || 'Lỗi tải dữ liệu đơn vị');
     } finally {
       setTreeLoading(false);
     }
@@ -72,7 +72,7 @@ export default function DepartmentPage() {
       const { data: res } = await api.get('/quan-tri/don-vi', { params });
       setDepartments(res.data || []);
     } catch (err: any) {
-      message.error(err?.response?.data?.message || 'Loi tai danh sach');
+      message.error(err?.response?.data?.message || 'Lỗi tải danh sách');
     } finally {
       setLoading(false);
     }
@@ -110,21 +110,21 @@ export default function DepartmentPage() {
   const handleDelete = async (id: number) => {
     try {
       await api.delete(`/quan-tri/don-vi/${id}`);
-      message.success('Xoa thanh cong');
+      message.success('Xóa thành công');
       fetchTree();
       fetchDepartments(selectedNode);
     } catch (err: any) {
-      message.error(err?.response?.data?.message || 'Loi khi xoa');
+      message.error(err?.response?.data?.message || 'Lỗi khi xóa');
     }
   };
 
   const handleLockToggle = async (record: Department) => {
     try {
       await api.patch(`/quan-tri/don-vi/${record.id}/lock`);
-      message.success(record.locked ? 'Da mo khoa' : 'Da khoa');
+      message.success(record.is_locked ? 'Đã mở khóa' : 'Đã khóa');
       fetchDepartments(selectedNode);
     } catch (err: any) {
-      message.error(err?.response?.data?.message || 'Loi');
+      message.error(err?.response?.data?.message || 'Lỗi');
     }
   };
 
@@ -138,17 +138,17 @@ export default function DepartmentPage() {
       };
       if (editingRecord) {
         await api.put(`/quan-tri/don-vi/${editingRecord.id}`, payload);
-        message.success('Cap nhat thanh cong');
+        message.success('Cập nhật thành công');
       } else {
         await api.post('/quan-tri/don-vi', payload);
-        message.success('Them thanh cong');
+        message.success('Thêm thành công');
       }
       setDrawerOpen(false);
       fetchTree();
       fetchDepartments(selectedNode);
     } catch (err: any) {
       if (err?.response) {
-        message.error(err?.response?.data?.message || 'Loi khi luu');
+        message.error(err?.response?.data?.message || 'Lỗi khi lưu');
       }
     } finally {
       setSaving(false);
@@ -183,51 +183,51 @@ export default function DepartmentPage() {
 
   const columns: ColumnsType<Department> = [
     {
-      title: 'Ma',
+      title: 'Mã',
       dataIndex: 'code',
       key: 'code',
       width: 100,
       render: (v) => <span style={{ fontWeight: 600, color: '#1B3A5C' }}>{v}</span>,
     },
     {
-      title: 'Ten',
+      title: 'Tên',
       dataIndex: 'name',
       key: 'name',
       ellipsis: true,
     },
     {
-      title: 'Cap',
+      title: 'Cấp',
       dataIndex: 'is_unit',
       key: 'is_unit',
       width: 120,
       render: (v) => (
-        <Tag color={v ? '#0891B2' : '#1B3A5C'}>{v ? 'Don vi' : 'Phong ban'}</Tag>
+        <Tag color={v ? '#0891B2' : '#1B3A5C'}>{v ? 'Đơn vị' : 'Phòng ban'}</Tag>
       ),
     },
     {
-      title: 'So NV',
+      title: 'Số NV',
       dataIndex: 'staff_count',
       key: 'staff_count',
       width: 80,
       align: 'center',
     },
     {
-      title: 'Trang thai',
-      dataIndex: 'locked',
-      key: 'locked',
+      title: 'Trạng thái',
+      dataIndex: 'is_locked',
+      key: 'is_locked',
       width: 110,
       render: (v) => (
-        <Tag color={v ? 'error' : 'success'}>{v ? 'Da khoa' : 'Hoat dong'}</Tag>
+        <Tag color={v ? 'error' : 'success'}>{v ? 'Đã khóa' : 'Hoạt động'}</Tag>
       ),
     },
     {
-      title: 'Thao tac',
+      title: 'Thao tác',
       key: 'actions',
       width: 130,
       align: 'center',
       render: (_, record) => (
         <Space size={4}>
-          <Tooltip title="Sua">
+          <Tooltip title="Sửa">
             <Button
               type="text"
               size="small"
@@ -236,24 +236,24 @@ export default function DepartmentPage() {
               style={{ color: '#0891B2' }}
             />
           </Tooltip>
-          <Tooltip title={record.locked ? 'Mo khoa' : 'Khoa'}>
+          <Tooltip title={record.is_locked ? 'Mở khóa' : 'Khóa'}>
             <Button
               type="text"
               size="small"
-              icon={record.locked ? <UnlockOutlined /> : <LockOutlined />}
+              icon={record.is_locked ? <UnlockOutlined /> : <LockOutlined />}
               onClick={() => handleLockToggle(record)}
-              style={{ color: record.locked ? '#059669' : '#D97706' }}
+              style={{ color: record.is_locked ? '#059669' : '#D97706' }}
             />
           </Tooltip>
           <Popconfirm
-            title="Xac nhan xoa"
-            description="Ban co chac chan muon xoa don vi nay?"
+            title="Xác nhận xóa"
+            description="Bạn có chắc chắn muốn xóa đơn vị này?"
             onConfirm={() => handleDelete(record.id)}
-            okText="Xoa"
-            cancelText="Huy"
+            okText="Xóa"
+            cancelText="Hủy"
             okButtonProps={{ danger: true }}
           >
-            <Tooltip title="Xoa">
+            <Tooltip title="Xóa">
               <Button type="text" size="small" icon={<DeleteOutlined />} danger />
             </Tooltip>
           </Popconfirm>
@@ -266,10 +266,10 @@ export default function DepartmentPage() {
     <div>
       <div style={{ marginBottom: 20 }}>
         <h2 style={{ fontSize: 22, fontWeight: 700, color: '#1B3A5C', margin: '0 0 4px 0' }}>
-          Quan ly don vi
+          Quản lý đơn vị
         </h2>
         <p style={{ fontSize: 14, color: '#64748b', margin: 0 }}>
-          Quan ly co cau to chuc, don vi va phong ban
+          Quản lý cơ cấu tổ chức, đơn vị và phòng ban
         </p>
       </div>
 
@@ -282,17 +282,17 @@ export default function DepartmentPage() {
             title={
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <ApartmentOutlined style={{ color: '#0891B2' }} />
-                <span style={{ fontWeight: 600, color: '#1B3A5C' }}>Co cau to chuc</span>
+                <span style={{ fontWeight: 600, color: '#1B3A5C' }}>Cơ cấu tổ chức</span>
               </div>
             }
             extra={
-              <Tooltip title="Tai lai">
+              <Tooltip title="Tải lại">
                 <Button type="text" size="small" icon={<ReloadOutlined />} onClick={fetchTree} />
               </Tooltip>
             }
           >
             <Input
-              placeholder="Tim kiem don vi..."
+              placeholder="Tìm kiếm đơn vị..."
               prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
               value={searchTree}
               onChange={(e) => setSearchTree(e.target.value)}
@@ -322,7 +322,7 @@ export default function DepartmentPage() {
             style={{ borderRadius: 12, boxShadow: '0 2px 8px rgba(27,58,92,0.06)' }}
             title={
               <span style={{ fontWeight: 600, color: '#1B3A5C' }}>
-                Danh sach don vi
+                Danh sách đơn vị
               </span>
             }
             extra={
@@ -332,7 +332,7 @@ export default function DepartmentPage() {
                 onClick={handleAdd}
                 style={{ borderRadius: 8 }}
               >
-                Them don vi
+                Thêm đơn vị
               </Button>
             }
           >
@@ -352,25 +352,25 @@ export default function DepartmentPage() {
 
       {/* Drawer add/edit */}
       <Drawer
-        title={editingRecord ? 'Cap nhat don vi' : 'Them don vi moi'}
+        title={editingRecord ? 'Cập nhật đơn vị' : 'Thêm đơn vị mới'}
         width={720}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         destroyOnClose
         extra={
           <Space>
-            <Button onClick={() => setDrawerOpen(false)}>Huy</Button>
+            <Button onClick={() => setDrawerOpen(false)}>Hủy</Button>
             <Button type="primary" loading={saving} onClick={handleSave} style={{ borderRadius: 8 }}>
-              {editingRecord ? 'Cap nhat' : 'Them moi'}
+              {editingRecord ? 'Cập nhật' : 'Thêm mới'}
             </Button>
           </Space>
         }
       >
         <Form form={form} layout="vertical" autoComplete="off">
-          <Form.Item label="Don vi cha" name="parent_id">
+          <Form.Item label="Đơn vị cha" name="parent_id">
             <TreeSelect
               treeData={flattenTreeForSelect(treeData)}
-              placeholder="Chon don vi cha (bo trong neu la goc)"
+              placeholder="Chọn đơn vị cha (bỏ trống nếu là gốc)"
               allowClear
               treeDefaultExpandAll
               style={{ borderRadius: 8 }}
@@ -379,40 +379,40 @@ export default function DepartmentPage() {
 
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item label="Ma" name="code" rules={[{ required: true, message: 'Nhap ma' }]}>
+              <Form.Item label="Mã" name="code" rules={[{ required: true, message: 'Nhập mã' }]}>
                 <Input placeholder="VD: PB01" style={{ borderRadius: 8 }} />
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item label="Ten" name="name" rules={[{ required: true, message: 'Nhap ten' }]}>
-                <Input placeholder="Ten don vi / phong ban" style={{ borderRadius: 8 }} />
+              <Form.Item label="Tên" name="name" rules={[{ required: true, message: 'Nhập tên' }]}>
+                <Input placeholder="Tên đơn vị / phòng ban" style={{ borderRadius: 8 }} />
               </Form.Item>
             </Col>
           </Row>
 
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item label="Ten tieng Anh" name="name_en">
+              <Form.Item label="Tên tiếng Anh" name="name_en">
                 <Input placeholder="English name" style={{ borderRadius: 8 }} />
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item label="Ten viet tat" name="short_name">
+              <Form.Item label="Tên viết tắt" name="short_name">
                 <Input placeholder="VD: CNTT" style={{ borderRadius: 8 }} />
               </Form.Item>
             </Col>
           </Row>
 
-          <Form.Item label="Cap" name="is_unit" initialValue="dept">
+          <Form.Item label="Cấp" name="is_unit" initialValue="dept">
             <Radio.Group>
-              <Radio value="unit">Don vi</Radio>
-              <Radio value="dept">Phong ban</Radio>
+              <Radio value="unit">Đơn vị</Radio>
+              <Radio value="dept">Phòng ban</Radio>
             </Radio.Group>
           </Form.Item>
 
           <Row gutter={16}>
             <Col span={8}>
-              <Form.Item label="Thu tu" name="sort_order" initialValue={0}>
+              <Form.Item label="Thứ tự" name="sort_order" initialValue={0}>
                 <InputNumber min={0} style={{ width: '100%', borderRadius: 8 }} />
               </Form.Item>
             </Col>
@@ -435,17 +435,17 @@ export default function DepartmentPage() {
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item label="Dia chi" name="address">
+              <Form.Item label="Địa chỉ" name="address">
                 <Input style={{ borderRadius: 8 }} />
               </Form.Item>
             </Col>
           </Row>
 
-          <Form.Item label="Cho phep so VB" name="allow_doc_register" valuePropName="checked">
+          <Form.Item label="Cho phép sổ VB" name="allow_doc_book" valuePropName="checked">
             <Switch />
           </Form.Item>
 
-          <Form.Item label="Mo ta" name="description">
+          <Form.Item label="Mô tả" name="description">
             <Input.TextArea rows={3} style={{ borderRadius: 8 }} />
           </Form.Item>
         </Form>

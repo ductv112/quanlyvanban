@@ -85,7 +85,7 @@ export default function StaffPage() {
       const { data: res } = await api.get('/quan-tri/don-vi/tree');
       setTreeData(res.data || []);
     } catch (err: any) {
-      message.error(err?.response?.data?.message || 'Loi tai cay don vi');
+      message.error(err?.response?.data?.message || 'Lỗi tải cây đơn vị');
     } finally {
       setTreeLoading(false);
     }
@@ -102,7 +102,7 @@ export default function StaffPage() {
       setData(res.data?.items || res.data || []);
       setTotal(res.data?.total || 0);
     } catch (err: any) {
-      message.error(err?.response?.data?.message || 'Loi tai du lieu');
+      message.error(err?.response?.data?.message || 'Lỗi tải dữ liệu');
     } finally {
       setLoading(false);
     }
@@ -163,29 +163,29 @@ export default function StaffPage() {
   const handleDelete = async (id: number) => {
     try {
       await api.delete(`/quan-tri/nguoi-dung/${id}`);
-      message.success('Xoa thanh cong');
+      message.success('Xóa thành công');
       fetchStaff();
     } catch (err: any) {
-      message.error(err?.response?.data?.message || 'Loi khi xoa');
+      message.error(err?.response?.data?.message || 'Lỗi khi xóa');
     }
   };
 
   const handleLockToggle = async (record: Staff) => {
     try {
       await api.patch(`/quan-tri/nguoi-dung/${record.id}/lock`);
-      message.success(record.locked ? 'Da mo khoa' : 'Da khoa');
+      message.success(record.locked ? 'Đã mở khóa' : 'Đã khóa');
       fetchStaff();
     } catch (err: any) {
-      message.error(err?.response?.data?.message || 'Loi');
+      message.error(err?.response?.data?.message || 'Lỗi');
     }
   };
 
   const handleResetPassword = async (id: number) => {
     try {
       await api.patch(`/quan-tri/nguoi-dung/${id}/reset-password`);
-      message.success('Da reset mat khau');
+      message.success('Đã reset mật khẩu');
     } catch (err: any) {
-      message.error(err?.response?.data?.message || 'Loi reset mat khau');
+      message.error(err?.response?.data?.message || 'Lỗi reset mật khẩu');
     }
   };
 
@@ -200,16 +200,16 @@ export default function StaffPage() {
       if (editingRecord) {
         delete payload.password;
         await api.put(`/quan-tri/nguoi-dung/${editingRecord.id}`, payload);
-        message.success('Cap nhat thanh cong');
+        message.success('Cập nhật thành công');
       } else {
         await api.post('/quan-tri/nguoi-dung', payload);
-        message.success('Them thanh cong');
+        message.success('Thêm thành công');
       }
       setDrawerOpen(false);
       fetchStaff();
     } catch (err: any) {
       if (err?.response) {
-        message.error(err?.response?.data?.message || 'Loi khi luu');
+        message.error(err?.response?.data?.message || 'Lỗi khi lưu');
       }
     } finally {
       setSaving(false);
@@ -260,14 +260,14 @@ export default function StaffPage() {
       ),
     },
     {
-      title: 'Ho ten',
+      title: 'Họ tên',
       dataIndex: 'full_name',
       key: 'full_name',
       ellipsis: true,
       render: (v) => <span style={{ fontWeight: 600, color: '#1B3A5C' }}>{v}</span>,
     },
     {
-      title: 'Ma NV',
+      title: 'Mã NV',
       dataIndex: 'code',
       key: 'code',
       width: 110,
@@ -280,14 +280,14 @@ export default function StaffPage() {
       width: 120,
     },
     {
-      title: 'Chuc vu',
+      title: 'Chức vụ',
       dataIndex: 'position_name',
       key: 'position_name',
       width: 140,
       ellipsis: true,
     },
     {
-      title: 'Phong ban',
+      title: 'Phòng ban',
       dataIndex: 'department_name',
       key: 'department_name',
       width: 160,
@@ -307,35 +307,35 @@ export default function StaffPage() {
       width: 110,
     },
     {
-      title: 'Trang thai',
+      title: 'Trạng thái',
       dataIndex: 'locked',
       key: 'locked',
       width: 110,
       render: (v) => (
-        <Tag color={v ? 'error' : 'success'}>{v ? 'Da khoa' : 'Hoat dong'}</Tag>
+        <Tag color={v ? 'error' : 'success'}>{v ? 'Đã khóa' : 'Hoạt động'}</Tag>
       ),
     },
     {
-      title: 'Thao tac',
+      title: 'Thao tác',
       key: 'actions',
       width: 160,
       align: 'center',
       fixed: 'right',
       render: (_, record) => (
         <Space size={2}>
-          <Tooltip title="Sua">
+          <Tooltip title="Sửa">
             <Button type="text" size="small" icon={<EditOutlined />} onClick={() => handleEdit(record)} style={{ color: '#0891B2' }} />
           </Tooltip>
-          <Tooltip title={record.locked ? 'Mo khoa' : 'Khoa'}>
+          <Tooltip title={record.locked ? 'Mở khóa' : 'Khóa'}>
             <Button type="text" size="small" icon={record.locked ? <UnlockOutlined /> : <LockOutlined />} onClick={() => handleLockToggle(record)} style={{ color: record.locked ? '#059669' : '#D97706' }} />
           </Tooltip>
-          <Popconfirm title="Reset mat khau" description="Mat khau se duoc dat ve mac dinh?" onConfirm={() => handleResetPassword(record.id)} okText="Reset" cancelText="Huy">
-            <Tooltip title="Reset mat khau">
+          <Popconfirm title="Reset mật khẩu" description="Mật khẩu sẽ được đặt về mặc định?" onConfirm={() => handleResetPassword(record.id)} okText="Reset" cancelText="Hủy">
+            <Tooltip title="Reset mật khẩu">
               <Button type="text" size="small" icon={<KeyOutlined />} style={{ color: '#64748b' }} />
             </Tooltip>
           </Popconfirm>
-          <Popconfirm title="Xac nhan xoa" description="Ban co chac chan muon xoa nguoi dung nay?" onConfirm={() => handleDelete(record.id)} okText="Xoa" cancelText="Huy" okButtonProps={{ danger: true }}>
-            <Tooltip title="Xoa">
+          <Popconfirm title="Xác nhận xóa" description="Bạn có chắc chắn muốn xóa người dùng này?" onConfirm={() => handleDelete(record.id)} okText="Xóa" cancelText="Hủy" okButtonProps={{ danger: true }}>
+            <Tooltip title="Xóa">
               <Button type="text" size="small" icon={<DeleteOutlined />} danger />
             </Tooltip>
           </Popconfirm>
@@ -348,10 +348,10 @@ export default function StaffPage() {
     <div>
       <div style={{ marginBottom: 20 }}>
         <h2 style={{ fontSize: 22, fontWeight: 700, color: '#1B3A5C', margin: '0 0 4px 0' }}>
-          Quan ly nguoi dung
+          Quản lý người dùng
         </h2>
         <p style={{ fontSize: 14, color: '#64748b', margin: 0 }}>
-          Quan ly tai khoan nguoi dung trong he thong
+          Quản lý tài khoản người dùng trong hệ thống
         </p>
       </div>
 
@@ -364,17 +364,17 @@ export default function StaffPage() {
             title={
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <ApartmentOutlined style={{ color: '#0891B2' }} />
-                <span style={{ fontWeight: 600, color: '#1B3A5C' }}>Don vi / Phong ban</span>
+                <span style={{ fontWeight: 600, color: '#1B3A5C' }}>Đơn vị / Phòng ban</span>
               </div>
             }
             extra={
-              <Tooltip title="Tai lai">
+              <Tooltip title="Tải lại">
                 <Button type="text" size="small" icon={<ReloadOutlined />} onClick={fetchTree} />
               </Tooltip>
             }
           >
             <Input
-              placeholder="Tim kiem..."
+              placeholder="Tìm kiếm..."
               prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
               value={searchTree}
               onChange={(e) => setSearchTree(e.target.value)}
@@ -403,18 +403,18 @@ export default function StaffPage() {
             bordered={false}
             style={{ borderRadius: 12, boxShadow: '0 2px 8px rgba(27,58,92,0.06)' }}
             title={
-              <span style={{ fontWeight: 600, color: '#1B3A5C' }}>Danh sach nguoi dung</span>
+              <span style={{ fontWeight: 600, color: '#1B3A5C' }}>Danh sách người dùng</span>
             }
             extra={
               <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd} style={{ borderRadius: 8 }}>
-                Them nguoi dung
+                Thêm người dùng
               </Button>
             }
           >
             {/* Filter bar */}
             <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
               <Input.Search
-                placeholder="Tim kiem ho ten, username..."
+                placeholder="Tìm kiếm họ tên, username..."
                 allowClear
                 onSearch={(v) => { setKeyword(v); setPage(1); }}
                 style={{ width: 280, borderRadius: 8 }}
@@ -425,9 +425,9 @@ export default function StaffPage() {
                 onChange={(v) => { setStatusFilter(v); setPage(1); }}
                 style={{ width: 160 }}
                 options={[
-                  { label: 'Tat ca', value: 'all' },
-                  { label: 'Hoat dong', value: 'active' },
-                  { label: 'Da khoa', value: 'locked' },
+                  { label: 'Tất cả', value: 'all' },
+                  { label: 'Hoạt động', value: 'active' },
+                  { label: 'Đã khóa', value: 'locked' },
                 ]}
               />
             </div>
@@ -445,7 +445,7 @@ export default function StaffPage() {
                 pageSize,
                 total,
                 showSizeChanger: true,
-                showTotal: (t) => `Tong ${t}`,
+                showTotal: (t) => `Tổng ${t}`,
                 onChange: (p, ps) => { setPage(p); setPageSize(ps); },
               }}
             />
@@ -455,16 +455,16 @@ export default function StaffPage() {
 
       {/* Drawer add/edit */}
       <Drawer
-        title={editingRecord ? `Sua nguoi dung — ${editingRecord.code || ''}` : 'Them nguoi dung moi'}
+        title={editingRecord ? `Sửa người dùng — ${editingRecord.code || ''}` : 'Thêm người dùng mới'}
         width={720}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         destroyOnClose
         extra={
           <Space>
-            <Button onClick={() => setDrawerOpen(false)}>Huy</Button>
+            <Button onClick={() => setDrawerOpen(false)}>Hủy</Button>
             <Button type="primary" loading={saving} onClick={handleSave} style={{ borderRadius: 8 }}>
-              {editingRecord ? 'Cap nhat' : 'Them moi'}
+              {editingRecord ? 'Cập nhật' : 'Thêm mới'}
             </Button>
           </Space>
         }
@@ -473,21 +473,21 @@ export default function StaffPage() {
           <Row gutter={16}>
             {/* Left column */}
             <Col span={12}>
-              <Form.Item label="Ten dang nhap" name="username" rules={[{ required: true, message: 'Nhap ten dang nhap' }]}>
+              <Form.Item label="Tên đăng nhập" name="username" rules={[{ required: true, message: 'Nhập tên đăng nhập' }]}>
                 <Input placeholder="username" disabled={!!editingRecord} style={{ borderRadius: 8 }} />
               </Form.Item>
 
               {!editingRecord && (
-                <Form.Item label="Mat khau" name="password">
-                  <Input.Password placeholder="Mac dinh: Admin@123" style={{ borderRadius: 8 }} />
+                <Form.Item label="Mật khẩu" name="password">
+                  <Input.Password placeholder="Mặc định: Admin@123" style={{ borderRadius: 8 }} />
                 </Form.Item>
               )}
 
-              <Form.Item label="Ho" name="last_name" rules={[{ required: true, message: 'Nhap ho' }]}>
+              <Form.Item label="Họ" name="last_name" rules={[{ required: true, message: 'Nhập họ' }]}>
                 <Input style={{ borderRadius: 8 }} />
               </Form.Item>
 
-              <Form.Item label="Ten" name="first_name" rules={[{ required: true, message: 'Nhap ten' }]}>
+              <Form.Item label="Tên" name="first_name" rules={[{ required: true, message: 'Nhập tên' }]}>
                 <Input style={{ borderRadius: 8 }} />
               </Form.Item>
 
@@ -499,17 +499,17 @@ export default function StaffPage() {
                 <Input style={{ borderRadius: 8 }} />
               </Form.Item>
 
-              <Form.Item label="Di dong" name="mobile">
+              <Form.Item label="Di động" name="mobile">
                 <Input style={{ borderRadius: 8 }} />
               </Form.Item>
             </Col>
 
             {/* Right column */}
             <Col span={12}>
-              <Form.Item label="Don vi" name="unit_id" rules={[{ required: true, message: 'Chon don vi' }]}>
+              <Form.Item label="Đơn vị" name="unit_id" rules={[{ required: true, message: 'Chọn đơn vị' }]}>
                 <TreeSelect
                   treeData={flattenTreeForSelect(treeData)}
-                  placeholder="Chon don vi"
+                  placeholder="Chọn đơn vị"
                   allowClear
                   treeDefaultExpandAll
                   onChange={handleUnitChange}
@@ -517,37 +517,37 @@ export default function StaffPage() {
                 />
               </Form.Item>
 
-              <Form.Item label="Phong ban" name="department_id" rules={[{ required: true, message: 'Chon phong ban' }]}>
+              <Form.Item label="Phòng ban" name="department_id" rules={[{ required: true, message: 'Chọn phòng ban' }]}>
                 <Select
-                  placeholder="Chon phong ban"
+                  placeholder="Chọn phòng ban"
                   allowClear
                   options={departments.map((d) => ({ label: d.name, value: d.id }))}
                   style={{ borderRadius: 8 }}
                 />
               </Form.Item>
 
-              <Form.Item label="Chuc vu" name="position_id">
+              <Form.Item label="Chức vụ" name="position_id">
                 <Select
-                  placeholder="Chon chuc vu"
+                  placeholder="Chọn chức vụ"
                   allowClear
                   options={positions.map((p) => ({ label: p.name, value: p.id }))}
                   style={{ borderRadius: 8 }}
                 />
               </Form.Item>
 
-              <Form.Item label="Gioi tinh" name="gender" initialValue="male">
+              <Form.Item label="Giới tính" name="gender" initialValue="male">
                 <Radio.Group>
                   <Radio value="male">Nam</Radio>
-                  <Radio value="female">Nu</Radio>
-                  <Radio value="other">Khac</Radio>
+                  <Radio value="female">Nữ</Radio>
+                  <Radio value="other">Khác</Radio>
                 </Radio.Group>
               </Form.Item>
 
-              <Form.Item label="Ngay sinh" name="birthday">
+              <Form.Item label="Ngày sinh" name="birthday">
                 <DatePicker format="DD/MM/YYYY" style={{ width: '100%', borderRadius: 8 }} />
               </Form.Item>
 
-              <Form.Item label="Dia chi" name="address">
+              <Form.Item label="Địa chỉ" name="address">
                 <Input style={{ borderRadius: 8 }} />
               </Form.Item>
             </Col>
@@ -556,13 +556,13 @@ export default function StaffPage() {
           <div style={{ borderTop: '1px solid #e8ecf1', paddingTop: 16, marginTop: 8 }}>
             <Space size={24}>
               <Form.Item name="is_admin" valuePropName="checked" noStyle>
-                <Checkbox>Quan tri vien</Checkbox>
+                <Checkbox>Quản trị viên</Checkbox>
               </Form.Item>
               <Form.Item name="is_unit_leader" valuePropName="checked" noStyle>
-                <Checkbox>Dai dien don vi</Checkbox>
+                <Checkbox>Đại diện đơn vị</Checkbox>
               </Form.Item>
               <Form.Item name="is_dept_leader" valuePropName="checked" noStyle>
-                <Checkbox>Dai dien phong ban</Checkbox>
+                <Checkbox>Đại diện phòng ban</Checkbox>
               </Form.Item>
             </Space>
           </div>

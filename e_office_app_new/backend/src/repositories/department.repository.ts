@@ -28,7 +28,7 @@ export interface DepartmentDetailRow extends DepartmentTreeRow {
 }
 
 export const departmentRepository = {
-  async getTree(unitId: number): Promise<DepartmentTreeRow[]> {
+  async getTree(unitId: number | null): Promise<DepartmentTreeRow[]> {
     return callFunction<DepartmentTreeRow>('public.fn_department_get_tree', [unitId]);
   },
 

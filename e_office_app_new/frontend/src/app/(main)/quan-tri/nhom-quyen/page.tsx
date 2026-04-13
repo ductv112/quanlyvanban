@@ -59,7 +59,7 @@ export default function RolePage() {
       setData(res.data?.items || res.data || []);
       setTotal(res.data?.total || 0);
     } catch (err: any) {
-      message.error(err?.response?.data?.message || 'Loi tai du lieu');
+      message.error(err?.response?.data?.message || 'Lỗi tải dữ liệu');
     } finally {
       setLoading(false);
     }
@@ -84,10 +84,10 @@ export default function RolePage() {
   const handleDelete = async (id: number) => {
     try {
       await api.delete(`/quan-tri/nhom-quyen/${id}`);
-      message.success('Xoa thanh cong');
+      message.success('Xóa thành công');
       fetchData();
     } catch (err: any) {
-      message.error(err?.response?.data?.message || 'Loi khi xoa');
+      message.error(err?.response?.data?.message || 'Lỗi khi xóa');
     }
   };
 
@@ -97,16 +97,16 @@ export default function RolePage() {
       setSaving(true);
       if (editingRecord) {
         await api.put(`/quan-tri/nhom-quyen/${editingRecord.id}`, values);
-        message.success('Cap nhat thanh cong');
+        message.success('Cập nhật thành công');
       } else {
         await api.post('/quan-tri/nhom-quyen', values);
-        message.success('Them thanh cong');
+        message.success('Thêm thành công');
       }
       setDrawerOpen(false);
       fetchData();
     } catch (err: any) {
       if (err?.response) {
-        message.error(err?.response?.data?.message || 'Loi khi luu');
+        message.error(err?.response?.data?.message || 'Lỗi khi lưu');
       }
     } finally {
       setSaving(false);
@@ -127,7 +127,7 @@ export default function RolePage() {
       const ids = (rolePermsRes.data?.data || []).map((r: any) => r.right_id || r.id);
       setCheckedKeys(ids);
     } catch (err: any) {
-      message.error(err?.response?.data?.message || 'Loi tai quyen');
+      message.error(err?.response?.data?.message || 'Lỗi tải quyền');
     } finally {
       setPermLoading(false);
     }
@@ -138,10 +138,10 @@ export default function RolePage() {
     setPermSaving(true);
     try {
       await api.put(`/quan-tri/nhom-quyen/${permRole.id}/quyen`, { rightIds: checkedKeys });
-      message.success('Luu phan quyen thanh cong');
+      message.success('Lưu phân quyền thành công');
       setPermDrawerOpen(false);
     } catch (err: any) {
-      message.error(err?.response?.data?.message || 'Loi luu phan quyen');
+      message.error(err?.response?.data?.message || 'Lỗi lưu phân quyền');
     } finally {
       setPermSaving(false);
     }
@@ -154,19 +154,19 @@ export default function RolePage() {
 
   const columns: ColumnsType<Role> = [
     {
-      title: 'Ten nhom',
+      title: 'Tên nhóm',
       dataIndex: 'name',
       key: 'name',
       render: (v) => <span style={{ fontWeight: 600, color: '#1B3A5C' }}>{v}</span>,
     },
     {
-      title: 'Mo ta',
+      title: 'Mô tả',
       dataIndex: 'description',
       key: 'description',
       ellipsis: true,
     },
     {
-      title: 'So nguoi dung',
+      title: 'Số người dùng',
       dataIndex: 'staff_count',
       key: 'staff_count',
       width: 130,
@@ -174,34 +174,34 @@ export default function RolePage() {
       render: (v) => <Tag color="blue">{v || 0}</Tag>,
     },
     {
-      title: 'Ngay tao',
+      title: 'Ngày tạo',
       dataIndex: 'created_at',
       key: 'created_at',
       width: 140,
       render: (v) => v ? dayjs(v).format('DD/MM/YYYY') : '-',
     },
     {
-      title: 'Thao tac',
+      title: 'Thao tác',
       key: 'actions',
       width: 140,
       align: 'center',
       render: (_, record) => (
         <Space size={4}>
-          <Tooltip title="Sua">
+          <Tooltip title="Sửa">
             <Button type="text" size="small" icon={<EditOutlined />} onClick={() => handleEdit(record)} style={{ color: '#0891B2' }} />
           </Tooltip>
-          <Tooltip title="Phan quyen">
+          <Tooltip title="Phân quyền">
             <Button type="text" size="small" icon={<KeyOutlined />} onClick={() => handleOpenPermissions(record)} style={{ color: '#1B3A5C' }} />
           </Tooltip>
           <Popconfirm
-            title="Xac nhan xoa"
-            description="Ban co chac chan muon xoa nhom quyen nay?"
+            title="Xác nhận xóa"
+            description="Bạn có chắc chắn muốn xóa nhóm quyền này?"
             onConfirm={() => handleDelete(record.id)}
-            okText="Xoa"
-            cancelText="Huy"
+            okText="Xóa"
+            cancelText="Hủy"
             okButtonProps={{ danger: true }}
           >
-            <Tooltip title="Xoa">
+            <Tooltip title="Xóa">
               <Button type="text" size="small" icon={<DeleteOutlined />} danger />
             </Tooltip>
           </Popconfirm>
@@ -214,10 +214,10 @@ export default function RolePage() {
     <div>
       <div style={{ marginBottom: 20 }}>
         <h2 style={{ fontSize: 22, fontWeight: 700, color: '#1B3A5C', margin: '0 0 4px 0' }}>
-          Quan ly nhom quyen
+          Quản lý nhóm quyền
         </h2>
         <p style={{ fontSize: 14, color: '#64748b', margin: 0 }}>
-          Quan ly nhom quyen va phan quyen cho nguoi dung
+          Quản lý nhóm quyền và phân quyền cho người dùng
         </p>
       </div>
 
@@ -227,20 +227,20 @@ export default function RolePage() {
         title={
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <SafetyCertificateOutlined style={{ color: '#0891B2' }} />
-            <span style={{ fontWeight: 600, color: '#1B3A5C' }}>Danh sach nhom quyen</span>
+            <span style={{ fontWeight: 600, color: '#1B3A5C' }}>Danh sách nhóm quyền</span>
           </div>
         }
         extra={
           <Space>
             <Input.Search
-              placeholder="Tim kiem..."
+              placeholder="Tìm kiếm..."
               allowClear
               onSearch={handleSearch}
               style={{ width: 240, borderRadius: 8 }}
               prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
             />
             <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd} style={{ borderRadius: 8 }}>
-              Them nhom quyen
+              Thêm nhóm quyền
             </Button>
           </Space>
         }
@@ -258,7 +258,7 @@ export default function RolePage() {
             pageSize,
             total,
             showSizeChanger: true,
-            showTotal: (t) => `Tong ${t}`,
+            showTotal: (t) => `Tổng ${t}`,
             onChange: (p, ps) => { setPage(p); setPageSize(ps); },
           }}
         />
@@ -266,26 +266,26 @@ export default function RolePage() {
 
       {/* Drawer add/edit */}
       <Drawer
-        title={editingRecord ? 'Cap nhat nhom quyen' : 'Them nhom quyen moi'}
+        title={editingRecord ? 'Cập nhật nhóm quyền' : 'Thêm nhóm quyền mới'}
         width={720}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         destroyOnClose
         extra={
           <Space>
-            <Button onClick={() => setDrawerOpen(false)}>Huy</Button>
+            <Button onClick={() => setDrawerOpen(false)}>Hủy</Button>
             <Button type="primary" loading={saving} onClick={handleSave} style={{ borderRadius: 8 }}>
-              {editingRecord ? 'Cap nhat' : 'Them moi'}
+              {editingRecord ? 'Cập nhật' : 'Thêm mới'}
             </Button>
           </Space>
         }
       >
         <Form form={form} layout="vertical" autoComplete="off">
-          <Form.Item label="Ten nhom quyen" name="name" rules={[{ required: true, message: 'Nhap ten nhom quyen' }]}>
-            <Input placeholder="VD: Quan tri he thong" style={{ borderRadius: 8 }} />
+          <Form.Item label="Tên nhóm quyền" name="name" rules={[{ required: true, message: 'Nhập tên nhóm quyền' }]}>
+            <Input placeholder="VD: Quản trị hệ thống" style={{ borderRadius: 8 }} />
           </Form.Item>
-          <Form.Item label="Mo ta" name="description">
-            <Input.TextArea rows={4} placeholder="Mo ta vai tro cua nhom quyen" style={{ borderRadius: 8 }} />
+          <Form.Item label="Mô tả" name="description">
+            <Input.TextArea rows={4} placeholder="Mô tả vai trò của nhóm quyền" style={{ borderRadius: 8 }} />
           </Form.Item>
         </Form>
       </Drawer>
@@ -294,7 +294,7 @@ export default function RolePage() {
       <Drawer
         title={
           <div>
-            <span>Phan quyen: </span>
+            <span>Phân quyền: </span>
             <span style={{ color: '#0891B2', fontWeight: 700 }}>{permRole?.name}</span>
           </div>
         }
@@ -310,7 +310,7 @@ export default function RolePage() {
             onClick={handleSavePermissions}
             style={{ borderRadius: 8 }}
           >
-            Luu phan quyen
+            Lưu phân quyền
           </Button>
         }
       >

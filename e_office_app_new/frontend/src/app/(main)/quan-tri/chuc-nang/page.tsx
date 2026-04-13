@@ -48,7 +48,7 @@ export default function RightsPage() {
       const { data: res } = await api.get('/quan-tri/chuc-nang/tree');
       setTreeData(res.data || []);
     } catch (err: any) {
-      message.error(err?.response?.data?.message || 'Loi tai du lieu');
+      message.error(err?.response?.data?.message || 'Lỗi tải dữ liệu');
     } finally {
       setTreeLoading(false);
     }
@@ -91,11 +91,11 @@ export default function RightsPage() {
         ...values,
         parent_id: selectedNode.parent_id,
       });
-      message.success('Cap nhat thanh cong');
+      message.success('Cập nhật thành công');
       fetchTree();
     } catch (err: any) {
       if (err?.response) {
-        message.error(err?.response?.data?.message || 'Loi khi luu');
+        message.error(err?.response?.data?.message || 'Lỗi khi lưu');
       }
     } finally {
       setSaving(false);
@@ -106,27 +106,27 @@ export default function RightsPage() {
     if (!selectedNode) return;
     try {
       await api.delete(`/quan-tri/chuc-nang/${selectedNode.id}`);
-      message.success('Xoa thanh cong');
+      message.success('Xóa thành công');
       setSelectedNode(null);
       form.resetFields();
       fetchTree();
     } catch (err: any) {
-      message.error(err?.response?.data?.message || 'Loi khi xoa');
+      message.error(err?.response?.data?.message || 'Lỗi khi xóa');
     }
   };
 
   const handleAddRoot = async () => {
     try {
       await api.post('/quan-tri/chuc-nang', {
-        name: 'Chuc nang moi',
-        menu_name: 'Menu moi',
+        name: 'Chức năng mới',
+        menu_name: 'Menu mới',
         parent_id: null,
         sort_order: 0,
       });
-      message.success('Them chuc nang goc thanh cong');
+      message.success('Thêm chức năng gốc thành công');
       fetchTree();
     } catch (err: any) {
-      message.error(err?.response?.data?.message || 'Loi khi them');
+      message.error(err?.response?.data?.message || 'Lỗi khi thêm');
     }
   };
 
@@ -134,15 +134,15 @@ export default function RightsPage() {
     if (!selectedNode) return;
     try {
       await api.post('/quan-tri/chuc-nang', {
-        name: 'Chuc nang con moi',
+        name: 'Chức năng con mới',
         menu_name: 'Menu con',
         parent_id: selectedNode.id,
         sort_order: 0,
       });
-      message.success('Them chuc nang con thanh cong');
+      message.success('Thêm chức năng con thành công');
       fetchTree();
     } catch (err: any) {
-      message.error(err?.response?.data?.message || 'Loi khi them');
+      message.error(err?.response?.data?.message || 'Lỗi khi thêm');
     }
   };
 
@@ -165,10 +165,10 @@ export default function RightsPage() {
     <div>
       <div style={{ marginBottom: 20 }}>
         <h2 style={{ fontSize: 22, fontWeight: 700, color: '#1B3A5C', margin: '0 0 4px 0' }}>
-          Quan ly chuc nang
+          Quản lý chức năng
         </h2>
         <p style={{ fontSize: 14, color: '#64748b', margin: 0 }}>
-          Quan ly cay chuc nang va menu he thong
+          Quản lý cây chức năng và menu hệ thống
         </p>
       </div>
 
@@ -181,24 +181,24 @@ export default function RightsPage() {
             title={
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <AppstoreOutlined style={{ color: '#0891B2' }} />
-                <span style={{ fontWeight: 600, color: '#1B3A5C' }}>Cay chuc nang</span>
+                <span style={{ fontWeight: 600, color: '#1B3A5C' }}>Cây chức năng</span>
               </div>
             }
             extra={
               <Space>
-                <Tooltip title="Them goc">
+                <Tooltip title="Thêm gốc">
                   <Button type="primary" size="small" icon={<PlusOutlined />} onClick={handleAddRoot} style={{ borderRadius: 6 }}>
-                    Them goc
+                    Thêm gốc
                   </Button>
                 </Tooltip>
-                <Tooltip title="Tai lai">
+                <Tooltip title="Tải lại">
                   <Button type="text" size="small" icon={<ReloadOutlined />} onClick={fetchTree} />
                 </Tooltip>
               </Space>
             }
           >
             <Input
-              placeholder="Tim kiem chuc nang..."
+              placeholder="Tìm kiếm chức năng..."
               prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
               value={searchTree}
               onChange={(e) => setSearchTree(e.target.value)}
@@ -228,30 +228,30 @@ export default function RightsPage() {
             style={{ borderRadius: 12, boxShadow: '0 2px 8px rgba(27,58,92,0.06)', minHeight: 500 }}
             title={
               <span style={{ fontWeight: 600, color: '#1B3A5C' }}>
-                {selectedNode ? `Chi tiet: ${selectedNode.name}` : 'Chi tiet chuc nang'}
+                {selectedNode ? `Chi tiết: ${selectedNode.name}` : 'Chi tiết chức năng'}
               </span>
             }
             extra={
               selectedNode && (
                 <Space>
-                  <Tooltip title="Them con">
+                  <Tooltip title="Thêm con">
                     <Button size="small" icon={<PlusCircleOutlined />} onClick={handleAddChild} style={{ borderRadius: 6 }}>
-                      Them con
+                      Thêm con
                     </Button>
                   </Tooltip>
                   <Button type="primary" icon={<SaveOutlined />} loading={saving} onClick={handleSave} style={{ borderRadius: 6 }}>
-                    Luu
+                    Lưu
                   </Button>
                   <Popconfirm
-                    title="Xac nhan xoa"
-                    description="Ban co chac chan muon xoa chuc nang nay?"
+                    title="Xác nhận xóa"
+                    description="Bạn có chắc chắn muốn xóa chức năng này?"
                     onConfirm={handleDelete}
-                    okText="Xoa"
-                    cancelText="Huy"
+                    okText="Xóa"
+                    cancelText="Hủy"
                     okButtonProps={{ danger: true }}
                   >
                     <Button danger icon={<DeleteOutlined />} style={{ borderRadius: 6 }}>
-                      Xoa
+                      Xóa
                     </Button>
                   </Popconfirm>
                 </Space>
@@ -260,18 +260,18 @@ export default function RightsPage() {
           >
             {!selectedNode ? (
               <div style={{ textAlign: 'center', padding: '60px 0' }}>
-                <Empty description="Chon mot chuc nang tu cay ben trai de xem chi tiet" />
+                <Empty description="Chọn một chức năng từ cây bên trái để xem chi tiết" />
               </div>
             ) : (
               <Form form={form} layout="vertical" autoComplete="off">
                 <Row gutter={16}>
                   <Col span={12}>
-                    <Form.Item label="Ten chuc nang" name="name" rules={[{ required: true, message: 'Nhap ten' }]}>
+                    <Form.Item label="Tên chức năng" name="name" rules={[{ required: true, message: 'Nhập tên' }]}>
                       <Input style={{ borderRadius: 8 }} />
                     </Form.Item>
                   </Col>
                   <Col span={12}>
-                    <Form.Item label="Ten menu" name="menu_name">
+                    <Form.Item label="Tên menu" name="menu_name">
                       <Input style={{ borderRadius: 8 }} />
                     </Form.Item>
                   </Col>
@@ -290,29 +290,29 @@ export default function RightsPage() {
                   </Col>
                 </Row>
 
-                <Form.Item label="Thu tu" name="sort_order">
+                <Form.Item label="Thứ tự" name="sort_order">
                   <InputNumber min={0} style={{ width: '100%', borderRadius: 8 }} />
                 </Form.Item>
 
                 <Row gutter={24}>
                   <Col span={8}>
-                    <Form.Item label="Hien tren menu" name="show_on_menu" valuePropName="checked">
+                    <Form.Item label="Hiện trên menu" name="show_on_menu" valuePropName="checked">
                       <Switch />
                     </Form.Item>
                   </Col>
                   <Col span={8}>
-                    <Form.Item label="Trang mac dinh" name="is_default" valuePropName="checked">
+                    <Form.Item label="Trang mặc định" name="is_default" valuePropName="checked">
                       <Switch />
                     </Form.Item>
                   </Col>
                   <Col span={8}>
-                    <Form.Item label="Hien tren mobile" name="show_on_mobile" valuePropName="checked">
+                    <Form.Item label="Hiện trên mobile" name="show_on_mobile" valuePropName="checked">
                       <Switch />
                     </Form.Item>
                   </Col>
                 </Row>
 
-                <Form.Item label="Mo ta" name="description">
+                <Form.Item label="Mô tả" name="description">
                   <Input.TextArea rows={3} style={{ borderRadius: 8 }} />
                 </Form.Item>
               </Form>
