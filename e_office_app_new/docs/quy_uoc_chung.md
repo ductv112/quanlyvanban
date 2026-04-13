@@ -211,17 +211,29 @@
 - Divider trước action nguy hiểm (xóa)
 - Action nguy hiểm: `danger: true`
 
-### 6.3 Notifications
+### 6.3 Form hints & helper text
+- Gợi ý cho field: dùng **`placeholder`** trong Input, KHÔNG dùng div/text bên ngoài
+- Giải thích thêm cho label: dùng **`tooltip`** prop của Form.Item (icon ? bên cạnh)
+- KHÔNG BAO GIỜ dùng `<div>` hoặc `<p>` bên ngoài Form.Item để hiển thị gợi ý → gây lệch layout 2 cột
+
+### 6.4 Error display (validation)
+- Lỗi validation (required, format): **text đỏ dưới field** — tự động bởi Ant Design Form rules
+- Lỗi backend (trùng dữ liệu, nghiệp vụ): **text đỏ dưới field tương ứng** — dùng `form.setFields([{name, errors}])`
+- Lỗi hệ thống (500, network): **toast message** fallback — `message.error('...')`
+- PHẢI đồng nhất: mọi lỗi liên quan đến 1 field → hiện dưới field đó, KHÔNG dùng toast
+- Form 2 cột: dùng `validateTrigger="onSubmit"` để tránh vỡ layout khi validate realtime
+
+### 6.5 Notifications
 - Thành công: `message.success('...')`
-- Lỗi: `message.error('...')`
+- Lỗi hệ thống: `message.error('...')` (chỉ khi không map được vào field cụ thể)
 - KHÔNG dùng alert, KHÔNG dùng notification popup
 
-### 6.4 Loading
+### 6.6 Loading
 - Table/List: `loading` prop
 - Page: `<Skeleton />`
 - KHÔNG dùng `<Spin />` toàn trang
 
-### 6.5 Ngôn ngữ
+### 6.7 Ngôn ngữ
 - **LUÔN** viết tiếng Việt **CÓ DẤU** đầy đủ
 - Labels, messages, placeholders, tooltips, tags — tất cả phải có dấu
 

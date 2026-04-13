@@ -91,6 +91,19 @@ export default function RolePage() {
     }
   };
 
+  const setBackendFieldError = (errorMessage: string): boolean => {
+    const fieldErrorMap: Record<string, string> = {
+      'Tên nhóm quyền đã tồn tại': 'name',
+      'Tên nhóm quyền là bắt buộc': 'name',
+    };
+    const fieldName = fieldErrorMap[errorMessage];
+    if (fieldName) {
+      form.setFields([{ name: fieldName, errors: [errorMessage] }]);
+      return true;
+    }
+    return false;
+  };
+
   const handleSave = async () => {
     try {
       const values = await form.validateFields();
@@ -105,8 +118,11 @@ export default function RolePage() {
       setDrawerOpen(false);
       fetchData();
     } catch (err: any) {
-      if (err?.response) {
-        message.error(err?.response?.data?.message || 'Lỗi khi lưu');
+      if (err?.response?.data?.message) {
+        const mapped = setBackendFieldError(err.response.data.message);
+        if (!mapped) {
+          message.error(err.response.data.message);
+        }
       }
     } finally {
       setSaving(false);

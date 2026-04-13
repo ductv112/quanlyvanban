@@ -92,6 +92,18 @@ export default function RightsPage() {
     }
   };
 
+  const setBackendFieldError = (errorMessage: string): boolean => {
+    const fieldErrorMap: Record<string, string> = {
+      'Tên chức năng là bắt buộc': 'name',
+    };
+    const fieldName = fieldErrorMap[errorMessage];
+    if (fieldName) {
+      form.setFields([{ name: fieldName, errors: [errorMessage] }]);
+      return true;
+    }
+    return false;
+  };
+
   const handleSave = async () => {
     if (!selectedNode) return;
     try {
@@ -104,8 +116,11 @@ export default function RightsPage() {
       message.success('Cập nhật thành công');
       fetchTree();
     } catch (err: any) {
-      if (err?.response) {
-        message.error(err?.response?.data?.message || 'Lỗi khi lưu');
+      if (err?.response?.data?.message) {
+        const mapped = setBackendFieldError(err.response.data.message);
+        if (!mapped) {
+          message.error(err.response.data.message);
+        }
       }
     } finally {
       setSaving(false);

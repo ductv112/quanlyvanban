@@ -46,17 +46,9 @@ body {
   box-shadow: 0 6px 20px rgba(27, 58, 92, 0.12) !important;
 }
 
-/* Form validation — prevent layout shift when error message appears */
+/* Form validation error text */
 .ant-form-item-explain {
-  min-height: 0 !important;
-  position: absolute;
-  bottom: -18px;
   font-size: 12px !important;
-}
-
-.ant-form-item {
-  position: relative;
-  margin-bottom: 20px !important;
 }
 
 /* Override browser autofill background (Chrome xanh nhạt) */

@@ -281,6 +281,27 @@ export default function StaffPage() {
     }
   };
 
+  const setBackendFieldError = (errorMessage: string): boolean => {
+    const fieldErrorMap: Record<string, string> = {
+      'Tên đăng nhập đã tồn tại': 'username',
+      'Email đã được sử dụng': 'email',
+      'Số điện thoại không đúng định dạng': 'phone',
+      'Số di động không đúng định dạng': 'mobile',
+      'Email không đúng định dạng': 'email',
+      'Tên đăng nhập chỉ chứa chữ cái, số, dấu chấm, gạch ngang': 'username',
+      'Tên đăng nhập phải có ít nhất 3 ký tự': 'username',
+      'Mật khẩu phải có ít nhất 6 ký tự, chứa chữ hoa, chữ thường và số': 'password',
+      'Họ và tên là bắt buộc': 'last_name',
+      'Đơn vị và phòng ban là bắt buộc': 'department_id',
+    };
+    const fieldName = fieldErrorMap[errorMessage];
+    if (fieldName) {
+      form.setFields([{ name: fieldName, errors: [errorMessage] }]);
+      return true;
+    }
+    return false;
+  };
+
   const handleSave = async () => {
     try {
       const values = await form.validateFields();
@@ -300,8 +321,11 @@ export default function StaffPage() {
       setDrawerOpen(false);
       fetchStaff();
     } catch (err: any) {
-      if (err?.response) {
-        message.error(err?.response?.data?.message || 'Lỗi khi lưu');
+      if (err?.response?.data?.message) {
+        const mapped = setBackendFieldError(err.response.data.message);
+        if (!mapped) {
+          message.error(err.response.data.message);
+        }
       }
     } finally {
       setSaving(false);
@@ -634,19 +658,17 @@ export default function StaffPage() {
               </Form.Item>
 
               {!editingRecord && (
-                <>
-                  <Form.Item
-                    label="Mật khẩu"
-                    name="password"
-                    rules={[
-                      { min: 6, message: 'Tối thiểu 6 ký tự' },
-                      { pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, message: 'Phải chứa chữ hoa, chữ thường và số' },
-                    ]}
-                  >
-                    <Input.Password placeholder="Mặc định: Admin@123" maxLength={50} autoComplete="new-password" style={{ borderRadius: 8 }} />
-                  </Form.Item>
-                  <div style={{ fontSize: 12, color: '#94a3b8', marginTop: -16, marginBottom: 12 }}>Để trống sẽ dùng mật khẩu mặc định: Admin@123</div>
-                </>
+                <Form.Item
+                  label="Mật khẩu"
+                  name="password"
+                  tooltip="Để trống sẽ dùng mặc định: Admin@123"
+                  rules={[
+                    { min: 6, message: 'Tối thiểu 6 ký tự' },
+                    { pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, message: 'Phải chứa chữ hoa, chữ thường và số' },
+                  ]}
+                >
+                  <Input.Password placeholder="Để trống = Admin@123" maxLength={50} autoComplete="new-password" style={{ borderRadius: 8 }} />
+                </Form.Item>
               )}
 
               <Form.Item label="Họ" name="last_name" rules={[{ required: true, message: 'Nhập họ' }]}>

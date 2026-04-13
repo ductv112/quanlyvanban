@@ -508,6 +508,16 @@ router.put('/nguoi-dung/:id', async (req: Request, res: Response) => {
         res.status(400).json({ success: false, message: 'Email không đúng định dạng' });
         return;
       }
+
+      // Email unique check (excluding current user)
+      const emailExists = await pool.query(
+        'SELECT id FROM staff WHERE LOWER(email) = LOWER($1) AND is_deleted = FALSE AND id != $2',
+        [email.trim(), id]
+      );
+      if (emailExists.rows.length > 0) {
+        res.status(409).json({ success: false, message: 'Email đã được sử dụng' });
+        return;
+      }
     }
 
     // Phone validation (if provided)
