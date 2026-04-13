@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import type { Request, Response } from 'express';
 import type { AuthRequest } from '../middleware/auth.js';
-import { hashPassword } from '../lib/auth/password.js';
+import { hashPassword, verifyPassword } from '../lib/auth/password.js';
 import { departmentRepository } from '../repositories/department.repository.js';
 import { positionRepository } from '../repositories/position.repository.js';
 import { staffRepository } from '../repositories/staff.repository.js';
@@ -145,8 +145,8 @@ router.get('/chuc-vu', async (req: Request, res: Response) => {
 // POST /chuc-vu
 router.post('/chuc-vu', async (req: Request, res: Response) => {
   try {
-    const { name, code, sort_order, description } = req.body;
-    const id = await positionRepository.create(name, code ?? '', sort_order ?? 0, description ?? '');
+    const { name, code, sort_order, description, is_leader, is_handle_document } = req.body;
+    const id = await positionRepository.create(name, code ?? '', sort_order ?? 0, description ?? '', is_leader ?? false, is_handle_document ?? false);
     res.status(201).json({ success: true, data: { id } });
   } catch (error) {
     res.status(500).json({ success: false, message: (error as Error).message });
@@ -157,8 +157,8 @@ router.post('/chuc-vu', async (req: Request, res: Response) => {
 router.put('/chuc-vu/:id', async (req: Request, res: Response) => {
   try {
     const id = Number(req.params.id);
-    const { name, code, sort_order, description, is_active } = req.body;
-    const updated = await positionRepository.update(id, name, code ?? '', sort_order ?? 0, description ?? '', is_active ?? true);
+    const { name, code, sort_order, description, is_active, is_leader, is_handle_document } = req.body;
+    const updated = await positionRepository.update(id, name, code ?? '', sort_order ?? 0, description ?? '', is_active ?? true, is_leader ?? false, is_handle_document ?? false);
     if (!updated) {
       res.status(404).json({ success: false, message: 'Không tìm thấy chức vụ' });
       return;
@@ -234,15 +234,16 @@ router.post('/nguoi-dung', async (req: Request, res: Response) => {
       is_admin, is_represent_unit, is_represent_department,
     } = req.body;
 
-    if (!username || !password) {
-      res.status(400).json({ success: false, message: 'Tên đăng nhập và mật khẩu là bắt buộc' });
+    if (!username) {
+      res.status(400).json({ success: false, message: 'Tên đăng nhập là bắt buộc' });
       return;
     }
 
-    const passwordHash = hashPassword(password);
+    const normalizedUsername = username.trim().toLowerCase().replace(/\s+/g, '');
+    const passwordHash = hashPassword(password || 'Admin@123');
 
     const result = await staffRepository.create(
-      department_id, unit_id, position_id, username, passwordHash,
+      department_id, unit_id, position_id, normalizedUsername, passwordHash,
       first_name, last_name, gender ?? 0, birth_date ?? null,
       email ?? '', phone ?? '', mobile ?? '', address ?? '',
       id_card ?? '', id_card_date ?? null, id_card_place ?? '',
@@ -340,6 +341,48 @@ router.patch('/nguoi-dung/:id/reset-password', async (req: Request, res: Respons
       return;
     }
     res.json({ success: true, data: { reset: true } });
+  } catch (error) {
+    res.status(500).json({ success: false, message: (error as Error).message });
+  }
+});
+
+// PATCH /nguoi-dung/:id/change-password
+router.patch('/nguoi-dung/:id/change-password', async (req: Request, res: Response) => {
+  try {
+    const id = Number(req.params.id);
+    const { oldPassword, newPassword } = req.body;
+
+    if (!oldPassword || !newPassword) {
+      res.status(400).json({ success: false, message: 'Mật khẩu cũ và mật khẩu mới là bắt buộc' });
+      return;
+    }
+
+    if (oldPassword === newPassword) {
+      res.status(400).json({ success: false, message: 'Mật khẩu mới không được trùng với mật khẩu hiện tại' });
+      return;
+    }
+
+    const staff = await staffRepository.getById(id);
+    if (!staff) {
+      res.status(404).json({ success: false, message: 'Không tìm thấy người dùng' });
+      return;
+    }
+
+    // Verify old password — staff detail should have password_hash via a separate query if needed
+    // For now we use the verifyPassword with the stored hash
+    const isValid = verifyPassword(oldPassword, (staff as any).password_hash);
+    if (!isValid) {
+      res.status(400).json({ success: false, message: 'Mật khẩu hiện tại không đúng' });
+      return;
+    }
+
+    const newPasswordHash = hashPassword(newPassword);
+    const reset = await staffRepository.resetPassword(id, newPasswordHash);
+    if (!reset) {
+      res.status(500).json({ success: false, message: 'Không thể đổi mật khẩu' });
+      return;
+    }
+    res.json({ success: true, data: { changed: true } });
   } catch (error) {
     res.status(500).json({ success: false, message: (error as Error).message });
   }

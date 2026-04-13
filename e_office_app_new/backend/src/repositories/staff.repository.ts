@@ -2,6 +2,7 @@ import { callFunction, callFunctionOne } from '../lib/db/query.js';
 
 export interface StaffListRow {
   id: number;
+  code: string;
   username: string;
   first_name: string;
   last_name: string;
@@ -16,6 +17,7 @@ export interface StaffListRow {
   unit_name: string;
   is_admin: boolean;
   is_locked: boolean;
+  password_changed: boolean;
   total_count: number;
 }
 
@@ -45,6 +47,11 @@ export interface StaffDetailRow {
   position_name: string;
   department_name: string;
   unit_name: string;
+  code: string;
+  password_changed: boolean;
+  sign_phone: string;
+  sign_ca: string;
+  sign_image: string;
   created_at: string;
   updated_at: string;
 }

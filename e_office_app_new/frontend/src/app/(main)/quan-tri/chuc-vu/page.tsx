@@ -18,6 +18,8 @@ interface Position {
   sort_order: number;
   description: string;
   is_active: boolean;
+  is_leader: boolean;
+  is_handle_document: boolean;
   staff_count: number;
 }
 
@@ -56,7 +58,7 @@ export default function PositionPage() {
   const handleAdd = () => {
     setEditingRecord(null);
     form.resetFields();
-    form.setFieldsValue({ is_active: true, sort_order: 0 });
+    form.setFieldsValue({ is_active: true, sort_order: 0, is_leader: false, is_handle_document: true });
     setDrawerOpen(true);
   };
 
@@ -130,6 +132,26 @@ export default function PositionPage() {
       key: 'staff_count',
       width: 80,
       align: 'center',
+    },
+    {
+      title: 'Lanh dao',
+      dataIndex: 'is_leader',
+      key: 'is_leader',
+      width: 100,
+      align: 'center',
+      render: (v) => (
+        <Tag color={v ? 'success' : 'default'}>{v ? 'Co' : 'Khong'}</Tag>
+      ),
+    },
+    {
+      title: 'XL Van ban',
+      dataIndex: 'is_handle_document',
+      key: 'is_handle_document',
+      width: 110,
+      align: 'center',
+      render: (v) => (
+        <Tag color={v ? 'success' : 'default'}>{v ? 'Co' : 'Khong'}</Tag>
+      ),
     },
     {
       title: 'Trang thai',
@@ -266,6 +288,14 @@ export default function PositionPage() {
 
           <Form.Item label="Mo ta" name="description">
             <Input.TextArea rows={3} style={{ borderRadius: 8 }} />
+          </Form.Item>
+
+          <Form.Item label="Chuc vu lanh dao" name="is_leader" valuePropName="checked" initialValue={false}>
+            <Switch checkedChildren="Co" unCheckedChildren="Khong" />
+          </Form.Item>
+
+          <Form.Item label="Duoc xu ly van ban" name="is_handle_document" valuePropName="checked" initialValue={true}>
+            <Switch checkedChildren="Co" unCheckedChildren="Khong" />
           </Form.Item>
 
           <Form.Item label="Trang thai" name="is_active" valuePropName="checked" initialValue={true}>

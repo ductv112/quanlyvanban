@@ -7,6 +7,8 @@ export interface PositionRow {
   sort_order: number;
   description: string;
   is_active: boolean;
+  is_leader: boolean;
+  is_handle_document: boolean;
   total_count: number;
 }
 
@@ -19,10 +21,10 @@ export const positionRepository = {
     return callFunctionOne<PositionRow>('public.fn_position_get_by_id', [id]);
   },
 
-  async create(name: string, code: string, sortOrder: number, description: string): Promise<number | null> {
+  async create(name: string, code: string, sortOrder: number, description: string, isLeader: boolean, isHandleDocument: boolean): Promise<number | null> {
     const row = await callFunctionOne<{ fn_position_create: number }>(
       'public.fn_position_create',
-      [name, code, sortOrder, description],
+      [name, code, sortOrder, description, isLeader, isHandleDocument],
     );
     return row?.fn_position_create ?? null;
   },
@@ -34,10 +36,12 @@ export const positionRepository = {
     sortOrder: number,
     description: string,
     isActive: boolean,
+    isLeader: boolean,
+    isHandleDocument: boolean,
   ): Promise<boolean> {
     const row = await callFunctionOne<{ fn_position_update: boolean }>(
       'public.fn_position_update',
-      [id, name, code, sortOrder, description, isActive],
+      [id, name, code, sortOrder, description, isActive, isLeader, isHandleDocument],
     );
     return row?.fn_position_update ?? false;
   },

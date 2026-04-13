@@ -17,6 +17,7 @@ import dayjs from 'dayjs';
 
 interface Staff {
   id: number;
+  code: string;
   username: string;
   first_name: string;
   last_name: string;
@@ -266,6 +267,13 @@ export default function StaffPage() {
       render: (v) => <span style={{ fontWeight: 600, color: '#1B3A5C' }}>{v}</span>,
     },
     {
+      title: 'Ma NV',
+      dataIndex: 'code',
+      key: 'code',
+      width: 110,
+      render: (v) => <span style={{ fontWeight: 600, color: '#1B3A5C' }}>{v}</span>,
+    },
+    {
       title: 'Username',
       dataIndex: 'username',
       key: 'username',
@@ -447,7 +455,7 @@ export default function StaffPage() {
 
       {/* Drawer add/edit */}
       <Drawer
-        title={editingRecord ? 'Cap nhat nguoi dung' : 'Them nguoi dung moi'}
+        title={editingRecord ? `Sua nguoi dung — ${editingRecord.code || ''}` : 'Them nguoi dung moi'}
         width={720}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
@@ -470,8 +478,8 @@ export default function StaffPage() {
               </Form.Item>
 
               {!editingRecord && (
-                <Form.Item label="Mat khau" name="password" rules={[{ required: true, message: 'Nhap mat khau' }]}>
-                  <Input.Password placeholder="Mat khau" style={{ borderRadius: 8 }} />
+                <Form.Item label="Mat khau" name="password">
+                  <Input.Password placeholder="Mac dinh: Admin@123" style={{ borderRadius: 8 }} />
                 </Form.Item>
               )}
 
