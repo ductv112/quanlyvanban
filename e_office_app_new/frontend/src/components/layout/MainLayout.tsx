@@ -18,6 +18,9 @@ import {
   EditOutlined,
   HomeOutlined,
   KeyOutlined,
+  ApartmentOutlined,
+  IdcardOutlined,
+  AppstoreOutlined,
 } from '@ant-design/icons';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
@@ -56,8 +59,11 @@ const menuItems: MenuItem[] = [
     icon: <SettingOutlined />,
     label: 'Quản trị',
     children: [
+      { key: '/quan-tri/don-vi', icon: <ApartmentOutlined />, label: 'Đơn vị' },
+      { key: '/quan-tri/chuc-vu', icon: <IdcardOutlined />, label: 'Chức vụ' },
       { key: '/quan-tri/nguoi-dung', icon: <UserOutlined />, label: 'Người dùng' },
       { key: '/quan-tri/nhom-quyen', icon: <KeyOutlined />, label: 'Nhóm quyền' },
+      { key: '/quan-tri/chuc-nang', icon: <AppstoreOutlined />, label: 'Chức năng' },
     ],
   },
 ];
@@ -71,8 +77,11 @@ const breadcrumbMap: Record<string, string> = {
   '/van-ban/du-thao': 'Văn bản dự thảo',
   '/ho-so-cong-viec': 'Hồ sơ công việc',
   '/quan-tri': 'Quản trị',
+  '/quan-tri/don-vi': 'Đơn vị',
+  '/quan-tri/chuc-vu': 'Chức vụ',
   '/quan-tri/nguoi-dung': 'Người dùng',
   '/quan-tri/nhom-quyen': 'Nhóm quyền',
+  '/quan-tri/chuc-nang': 'Chức năng',
 };
 
 function buildBreadcrumbs(pathname: string) {

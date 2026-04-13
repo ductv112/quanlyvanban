@@ -9,6 +9,8 @@ import pino from 'pino';
 
 import healthRoutes from './routes/health.js';
 import authRoutes from './routes/auth.js';
+import adminRoutes from './routes/admin.js';
+import { authenticate } from './middleware/auth.js';
 
 const app = express();
 const port = Number(process.env.PORT) || 4000;
@@ -31,11 +33,12 @@ app.use(pinoHttp({ logger }));
 app.use('/api/health', healthRoutes);
 app.use('/api/auth', authRoutes);
 
+app.use('/api/quan-tri', authenticate, adminRoutes);
+
 // --- TODO: Module routes sẽ được thêm sau ---
 // app.use('/api/van-ban/den', incomingDocRoutes);
 // app.use('/api/van-ban/di', outgoingDocRoutes);
 // app.use('/api/ho-so-cong-viec', handlingDocRoutes);
-// app.use('/api/quan-tri', adminRoutes);
 
 // --- Error handler ---
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
