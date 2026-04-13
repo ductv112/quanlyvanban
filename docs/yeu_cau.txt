@@ -1,0 +1,10 @@
+Source code cũ là angularjs + .net 4 + sql server
+==>
+Cần làm lại trang này bằng nextjs
+csdl là postgresql
+cái này làm sẽ cho cả mongodb và redis vào luôn
+mongodb để lưu log
+redis để làm cache
+file thì sử dụng minio quản lý file
+riêng phần dashboard sẽ làm dạng wiget
+sau này người dùng chủ động cấu hình dashboard

@@ -1,0 +1,75 @@
+services:
+  # ============================================
+  # PostgreSQL 16 — Database chính
+  # ============================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: qlvb_postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: qlvb_dev
+      POSTGRES_USER: qlvb_admin
+      POSTGRES_PASSWORD: QlvbDev@2026
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U qlvb_admin -d qlvb_dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================
+  # MongoDB 7 — Log & Audit
+  # ============================================
+  mongodb:
+    image: mongo:7
+    container_name: qlvb_mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: qlvb_admin
+      MONGO_INITDB_ROOT_PASSWORD: QlvbMongo@2026
+      MONGO_INITDB_DATABASE: qlvb_logs
+    volumes:
+      - mongodb_data:/data/db
+
+  # ============================================
+  # Redis 7 — Cache + Job Queue (BullMQ)
+  # ============================================
+  redis:
+    image: redis:7-alpine
+    container_name: qlvb_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: redis-server --requirepass QlvbRedis@2026 --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+
+  # ============================================
+  # MinIO — File Storage (S3-compatible)
+  # ============================================
+  minio:
+    image: minio/minio:latest
+    container_name: qlvb_minio
+    restart: unless-stopped
+    ports:
+      - "9000:9000"    # API
+      - "9001:9001"    # Console (Web UI)
+    environment:
+      MINIO_ROOT_USER: qlvb_admin
+      MINIO_ROOT_PASSWORD: QlvbMinio@2026
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+
+volumes:
+  postgres_data:
+  mongodb_data:
+  redis_data:
+  minio_data:

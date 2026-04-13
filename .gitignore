@@ -1,0 +1,44 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+dist/
+.next/
+out/
+build/
+
+# Environment files (contain secrets)
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Docker volumes
+postgres_data/
+mongodb_data/
+redis_data/
+minio_data/
+
+# TypeScript
+*.tsbuildinfo
+
+# Claude memory (personal)
+.claude/
+
+# Source code cũ (chỉ giữ local để tham khảo)
+docs/source_code_cu/

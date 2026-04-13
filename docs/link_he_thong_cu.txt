@@ -1,0 +1,3 @@
+http://qlvbdn.lstt.vn/login/user?next=%2f
+Tài khoản: admin
+Mật khẩu: 123456
