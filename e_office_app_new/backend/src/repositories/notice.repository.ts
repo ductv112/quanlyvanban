@@ -9,7 +9,7 @@ export interface NoticeListRow {
   content: string;
   notice_type: string | null;
   created_by: number;
-  created_by_name: string;
+  // NOTE: fn_notice_get_list does NOT return created_by_name — only created_by
   created_at: string;
   is_read: boolean;
   total_count: number;

@@ -43,6 +43,13 @@ export interface MessageCreateResult {
   id: number;
 }
 
+// fn_message_reply returns reply_id (not id) — separate type to avoid confusion
+export interface MessageReplyResult {
+  success: boolean;
+  message: string;
+  reply_id: number;
+}
+
 export interface MessageActionResult {
   success: boolean;
   message: string;
@@ -107,11 +114,11 @@ export const messageRepository = {
     messageId: number,
     staffId: number,
     content: string,
-  ): Promise<MessageCreateResult> {
-    const row = await callFunctionOne<MessageCreateResult>('edoc.fn_message_reply', [
+  ): Promise<MessageReplyResult> {
+    const row = await callFunctionOne<MessageReplyResult>('edoc.fn_message_reply', [
       messageId, staffId, content,
     ]);
-    return row ?? { success: false, message: 'Không thể trả lời tin nhắn', id: 0 };
+    return row ?? { success: false, message: 'Không thể trả lời tin nhắn', reply_id: 0 };
   },
 
   async delete(id: number, staffId: number): Promise<MessageActionResult> {
