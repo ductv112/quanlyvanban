@@ -205,7 +205,7 @@ router.post('/:id/reply', async (req: Request, res: Response) => {
       res.status(400).json({ success: false, message: result.message });
       return;
     }
-    res.status(201).json({ success: true, data: { id: result.id } });
+    res.status(201).json({ success: true, data: { id: result.reply_id } });
   } catch (error) {
     handleDbError(error, res);
   }
