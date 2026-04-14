@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import { createServer } from 'http';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -18,7 +19,10 @@ import handlingDocRoutes from './routes/handling-doc.js';
 import workflowRoutes from './routes/workflow.js';
 import handlingDocReportRoutes from './routes/handling-doc-report.js';
 import interIncomingRoutes from './routes/inter-incoming.js';
+import messageRoutes from './routes/message.js';
+import noticeRoutes from './routes/notice.js';
 import { authenticate } from './middleware/auth.js';
+import { initSocket } from './lib/socket.js';
 
 const app = express();
 const port = Number(process.env.PORT) || 4000;
@@ -53,6 +57,8 @@ app.use('/api/van-ban-di', authenticate, outgoingDocRoutes);
 app.use('/api/ho-so-cong-viec/thong-ke', authenticate, handlingDocReportRoutes);
 app.use('/api/ho-so-cong-viec', authenticate, handlingDocRoutes);
 app.use('/api/quan-tri/quy-trinh', authenticate, workflowRoutes);
+app.use('/api/tin-nhan', authenticate, messageRoutes);
+app.use('/api/thong-bao', authenticate, noticeRoutes);
 
 // --- Error handler ---
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
@@ -66,9 +72,11 @@ app.use((err: Error, _req: express.Request, res: express.Response, _next: expres
 });
 
 // --- Start ---
-app.listen(port, () => {
-  logger.info(`🚀 QLVB Backend running at http://localhost:${port}`);
-  logger.info(`📋 Health check: http://localhost:${port}/api/health`);
+const httpServer = createServer(app);
+initSocket(httpServer);
+httpServer.listen(port, () => {
+  logger.info(`QLVB Backend running at http://localhost:${port}`);
+  logger.info(`Health check: http://localhost:${port}/api/health`);
 });
 
 export default app;
