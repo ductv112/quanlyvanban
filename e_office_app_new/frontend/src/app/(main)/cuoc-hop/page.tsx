@@ -74,7 +74,7 @@ interface MeetingRecord {
   approved: number;
   meeting_status: number;
   rejection_reason: string | null;
-  created_at: string;
+  created_date: string;
   total_count: number;
 }
 
