@@ -103,12 +103,12 @@ Plans:
   4. Biểu quyết realtime hoạt động trong cuộc họp và thống kê cuộc họp hiển thị đúng chart
 **Plans**: 6 plans
 Plans:
-- [ ] 05-01-PLAN.md — Database: 3 migrations (Sprint 11 archive esto, Sprint 12 docs/contracts iso+cont, Sprint 13 meetings edoc)
-- [ ] 05-02-PLAN.md — Backend: Archive + Document + Contract repositories + routes + error-handler update
-- [ ] 05-03-PLAN.md — Backend: Meeting repository + routes + server.ts mount all Phase 5 routes
-- [ ] 05-04-PLAN.md — Frontend: Archive pages (kho/phong tree, ho so luu tru, muon/tra)
-- [ ] 05-05-PLAN.md — Frontend: Document management + Contract management pages
-- [ ] 05-06-PLAN.md — Frontend: Meeting pages (list, detail with voting, statistics charts) + sidebar nav + checkpoint
+- [x] 05-01-PLAN.md — Database: 3 migrations (Sprint 11 archive esto, Sprint 12 docs/contracts iso+cont, Sprint 13 meetings edoc)
+- [x] 05-02-PLAN.md — Backend: Archive + Document + Contract repositories + routes + error-handler update
+- [x] 05-03-PLAN.md — Backend: Meeting repository + routes + server.ts mount all Phase 5 routes
+- [x] 05-04-PLAN.md — Frontend: Archive pages (kho/phong tree, ho so luu tru, muon/tra)
+- [x] 05-05-PLAN.md — Frontend: Document management + Contract management pages
+- [x] 05-06-PLAN.md — Frontend: Meeting pages (list, detail with voting, statistics charts) + sidebar nav + checkpoint
 **UI hint**: yes
 
 ### Phase 6: Tích hợp hệ thống ngoài
