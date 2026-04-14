@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Layout, Menu, Avatar, Dropdown, Badge, Breadcrumb, Skeleton, App, Button, List, Typography } from 'antd';
+import { Layout, Menu, Avatar, Dropdown, Badge, Breadcrumb, Skeleton, App, Button, Typography } from 'antd';
 import type { MenuProps } from 'antd';
 import {
   DashboardOutlined,
@@ -413,35 +413,26 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       </div>
 
       {/* Notification items */}
-      <List
-        dataSource={notifItems}
-        locale={{ emptyText: <div style={{ padding: '16px', textAlign: 'center', color: '#94A3B8', fontSize: 13 }}>Không có thông báo</div> }}
-        renderItem={(item) => (
+      {notifItems.length === 0 ? (
+        <div style={{ padding: '16px', textAlign: 'center', color: '#94A3B8', fontSize: 13 }}>Không có thông báo</div>
+      ) : (
+        notifItems.map((item) => (
           <div
+            key={item.id}
             className={`notif-item${!item.is_read ? ' unread' : ''}`}
             onClick={() => router.push('/thong-bao')}
             style={{ cursor: 'pointer' }}
           >
             <div style={{
-              width: 28,
-              height: 28,
-              borderRadius: '50%',
-              background: '#EFF8FF',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
+              width: 28, height: 28, borderRadius: '50%', background: '#EFF8FF',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
             }}>
               <BellOutlined style={{ color: '#0891B2', fontSize: 12 }} />
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{
-                fontSize: 13,
-                fontWeight: !item.is_read ? 600 : 400,
-                color: '#1B3A5C',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
+                fontSize: 13, fontWeight: !item.is_read ? 600 : 400, color: '#1B3A5C',
+                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
               }}>
                 {item.title}
               </div>
@@ -450,8 +441,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
               </div>
             </div>
           </div>
-        )}
-      />
+        ))
+      )}
 
       {/* Footer link */}
       <div style={{

@@ -296,7 +296,7 @@ export default function OutgoingDocPage() {
 
       <Drawer
         title={editingRecord ? 'Sửa văn bản đi' : 'Thêm văn bản đi'}
-        width={720} open={drawerOpen} onClose={() => setDrawerOpen(false)}
+        size={720} open={drawerOpen} onClose={() => setDrawerOpen(false)}
         rootClassName="drawer-gradient"
         extra={<Space><Button onClick={() => setDrawerOpen(false)} ghost style={{ borderColor: 'rgba(255,255,255,0.6)', color: '#fff' }}>Hủy</Button><Button type="primary" loading={saving} onClick={handleSave}>{editingRecord ? 'Cập nhật' : 'Tạo mới'}</Button></Space>}
       >

@@ -62,7 +62,7 @@ interface HoSoRecord {
   keyword?: string;
   maintenance?: string;
   language?: string;
-  format?: string;
+  format?: number;
   total_count?: number;
 }
 
@@ -284,7 +284,7 @@ export default function KhoLuuTruPage() {
 
   const fetchStaff = useCallback(async () => {
     try {
-      const { data: res } = await api.get('/quan-tri/nguoi-dung', { params: { page: 1, page_size: 500 } });
+      const { data: res } = await api.get('/quan-tri/nguoi-dung', { params: { page: 1, pageSize: 500 } });
       setStaffOptions((res.data || []).map((s: { id: number; full_name: string }) => ({
         value: s.id,
         label: s.full_name,
@@ -415,6 +415,21 @@ export default function KhoLuuTruPage() {
     });
   }, [message, fetchRecords, pagination.current, pagination.pageSize]);
 
+  // ── Backend field error mapping ──────────────────────────────────────────────
+
+  const setBackendFieldError = (errorMessage: string): boolean => {
+    const fieldErrorMap: Record<string, string> = {
+      'Mã kho đã tồn tại': 'code',
+      'Mã phông đã tồn tại': 'code',
+    };
+    const fieldName = fieldErrorMap[errorMessage];
+    if (fieldName) {
+      form.setFields([{ name: fieldName, errors: [errorMessage] }]);
+      return true;
+    }
+    return false;
+  };
+
   // ── Drawer save ──────────────────────────────────────────────────────────────
 
   const handleSave = async () => {
@@ -465,8 +480,9 @@ export default function KhoLuuTruPage() {
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } }; errorFields?: unknown[] };
       if (e?.errorFields) return;
-      if (e?.response?.data?.message) {
-        message.error(e.response.data.message);
+      const msg = e?.response?.data?.message;
+      if (msg && !setBackendFieldError(msg)) {
+        message.error(msg);
       }
     } finally {
       setSaving(false);
@@ -787,7 +803,7 @@ export default function KhoLuuTruPage() {
         onClose={() => setDrawerOpen(false)}
         destroyOnClose
         rootClassName="drawer-gradient"
-        width={720}
+        size={720}
         extra={
           <Space>
             <Button
@@ -843,8 +859,8 @@ export default function KhoLuuTruPage() {
               </Row>
               <Row gutter={16}>
                 <Col span={12}>
-                  <Form.Item label="Số điện thoại" name="phone_number">
-                    <Input placeholder="Số điện thoại" maxLength={20} />
+                  <Form.Item label="Số điện thoại" name="phone_number" rules={[{ pattern: /^[0-9+\-\s()]*$/, message: 'Số điện thoại không hợp lệ' }]}>
+                    <Input placeholder="Số điện thoại" maxLength={50} />
                   </Form.Item>
                 </Col>
                 <Col span={12}>
@@ -974,7 +990,7 @@ export default function KhoLuuTruPage() {
               </Row>
               <Row gutter={16}>
                 <Col span={12}>
-                  <Form.Item label="Người phụ trách" name="in_charge_staff_id">
+                  <Form.Item label="Người phụ trách" name="in_charge_staff_id" rules={[{ required: true, message: 'Chọn người phụ trách' }]}>
                     <Select
                       placeholder="Chọn người phụ trách"
                       allowClear
@@ -1010,19 +1026,27 @@ export default function KhoLuuTruPage() {
                 </Col>
                 <Col span={12}>
                   <Form.Item label="Hình thức" name="format">
-                    <Input placeholder="VD: Bản giấy, Điện tử..." maxLength={100} />
+                    <Select
+                      placeholder="Chọn hình thức"
+                      allowClear
+                      options={[
+                        { value: 1, label: 'Bản giấy' },
+                        { value: 2, label: 'Điện tử' },
+                        { value: 3, label: 'Hỗn hợp' },
+                      ]}
+                    />
                   </Form.Item>
                 </Col>
               </Row>
               <Row gutter={16}>
                 <Col span={12}>
                   <Form.Item label="Thời hạn bảo quản" name="maintenance">
-                    <Input placeholder="VD: Vĩnh viễn, 20 năm..." maxLength={100} />
+                    <Input placeholder="VD: Vĩnh viễn, 20 năm..." maxLength={200} />
                   </Form.Item>
                 </Col>
                 <Col span={12}>
                   <Form.Item label="Từ khóa" name="keyword">
-                    <Input placeholder="Từ khóa tìm kiếm" maxLength={200} />
+                    <Input placeholder="Từ khóa tìm kiếm" maxLength={500} />
                   </Form.Item>
                 </Col>
               </Row>

@@ -16,10 +16,12 @@ import {
   Empty,
   Tag,
   ColorPicker,
+  Segmented,
+  Table,
 } from 'antd';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
-import { PlusOutlined, DeleteOutlined, LockOutlined } from '@ant-design/icons';
+import { PlusOutlined, DeleteOutlined, LockOutlined, CalendarOutlined, UnorderedListOutlined } from '@ant-design/icons';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth.store';
 
@@ -52,6 +54,7 @@ export default function LichLanhDaoPage() {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(false);
   const [currentDate, setCurrentDate] = useState<Dayjs>(dayjs());
+  const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
@@ -249,18 +252,28 @@ export default function LichLanhDaoPage() {
             <h2 className="page-title">Lịch lãnh đạo</h2>
             <p className="page-description">Lịch công tác của ban lãnh đạo đơn vị</p>
           </div>
-          {isEditable && (
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => openCreateDrawer()}>
-              Thêm sự kiện
-            </Button>
-          )}
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+            <Segmented
+              options={[
+                { label: <span><CalendarOutlined /> Lịch</span>, value: 'calendar' },
+                { label: <span><UnorderedListOutlined /> Danh sách</span>, value: 'list' },
+              ]}
+              value={viewMode}
+              onChange={(v) => setViewMode(v as 'calendar' | 'list')}
+            />
+            {isEditable && (
+              <Button type="primary" icon={<PlusOutlined />} onClick={() => openCreateDrawer()}>
+                Thêm sự kiện
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 
       <div className="page-card" style={{ background: '#fff', borderRadius: 12, padding: 24, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
         {loading ? (
           <Skeleton active paragraph={{ rows: 10 }} />
-        ) : (
+        ) : viewMode === 'calendar' ? (
           <Calendar
             value={currentDate}
             cellRender={cellRender}
@@ -271,13 +284,27 @@ export default function LichLanhDaoPage() {
               }
             }}
           />
+        ) : (
+          <Table
+            dataSource={events}
+            rowKey="id"
+            pagination={false}
+            locale={{ emptyText: 'Chưa có sự kiện nào' }}
+            columns={[
+              { title: 'Tiêu đề', dataIndex: 'title', key: 'title' },
+              { title: 'Ngày bắt đầu', dataIndex: 'start_date', key: 'start_date', width: 160, render: (v: string) => v ? dayjs(v).format('DD/MM/YYYY HH:mm') : '---' },
+              { title: 'Ngày kết thúc', dataIndex: 'end_date', key: 'end_date', width: 160, render: (v: string) => v ? dayjs(v).format('DD/MM/YYYY HH:mm') : '---' },
+              { title: 'Cả ngày', dataIndex: 'all_day', key: 'all_day', width: 80, render: (v: boolean) => v ? <Tag color="blue">Cả ngày</Tag> : '---' },
+            ]}
+            onRow={(record) => ({ onClick: () => { if (isEditable) { setEditingEvent(record); setDrawerOpen(true); form.setFieldsValue({ ...record, start_date: record.start_date ? dayjs(record.start_date) : null, end_date: record.end_date ? dayjs(record.end_date) : null }); } }, style: { cursor: isEditable ? 'pointer' : 'default' } })}
+          />
         )}
       </div>
 
       {/* Drawer */}
       <Drawer
         title={editingEvent ? 'Chỉnh sửa sự kiện' : 'Thêm sự kiện mới'}
-        width={720}
+        size={720}
         open={drawerOpen}
         rootClassName="drawer-gradient"
         onClose={() => {

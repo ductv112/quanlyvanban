@@ -47,9 +47,11 @@ export function filterTree(nodes: TreeNode[], keyword: string): TreeNode[] {
 export function flattenTreeForSelect(
   nodes: TreeNode[]
 ): { value: number; title: string; children?: any[] }[] {
-  return nodes.map((n) => ({
-    value: n.key,
-    title: n.title,
-    children: n.children ? flattenTreeForSelect(n.children) : undefined,
-  }));
+  return nodes
+    .filter((n) => (n.key ?? n.id) != null)
+    .map((n) => ({
+      value: n.key ?? n.id,
+      title: n.title ?? n.name ?? '',
+      children: n.children?.length ? flattenTreeForSelect(n.children) : undefined,
+    }));
 }

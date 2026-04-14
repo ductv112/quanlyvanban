@@ -159,7 +159,7 @@ Hệ thống quản lý văn bản điện tử (e-Office) dành cho cơ quan nh
 ## Frontend Component Patterns
 ### Page Structure
 ### Drawer (Add/Edit)
-- Width: `720` (standard for forms)
+- Size: `size={720}` (standard for forms — AntD 6 dùng `size` thay vì `width`)
 - Use `rootClassName="drawer-gradient"` for gradient header
 - Title: dynamic based on `editingRecord` — "Them moi" vs "Chinh sua"
 - Footer: Save + Cancel buttons in drawer `extra`
@@ -328,6 +328,135 @@ Use these entry points:
 
 Do not make direct repo edits outside a GSD workflow unless the user explicitly asks to bypass it.
 <!-- GSD:workflow-end -->
+
+## Phase Execution Rules (Bài học từ Phase 4-5)
+
+### Quy trình thực thi bắt buộc
+
+**Wave 1 (DB migrations):**
+- Tạo migration → **chạy vào DB ngay** → verify SP hoạt động (test trực tiếp bằng psql trong docker)
+- Kiểm tra reserved words (`position`, `offset`, `limit`, `order`...) phải quote bằng `""`
+- Kiểm tra cột tham chiếu tồn tại thực sự trong bảng (không giả định `is_deleted` có sẵn)
+
+**Wave 2 (Backend repos + routes) — TUẦN TỰ:**
+- Agent backend **PHẢI query DB** (`\d table_name`) để lấy tên cột thật trước khi viết Row interface
+- Không "tưởng tượng" cột — chỉ dùng cột có trong bảng
+- SP trả về đúng tên cột DB (snake_case), KHÔNG alias/rename
+
+**Wave 3 (Frontend pages) — TUẦN TỰ:**
+- Agent frontend **PHẢI đọc file repository** đã tạo ở Wave 2 để lấy đúng tên field
+- Không tự đặt tên field — copy từ Row interface
+- Kiểm tra API endpoint paths khớp với routes backend
+
+**Integration check sau MỖI wave**, không chỉ cuối phase.
+
+### Khi nào được chạy song song?
+- Các module **hoàn toàn độc lập** (không share file, không share bảng, không gọi nhau)
+- Khi nghi ngờ → chạy tuần tự
+
+### Commit
+- KHÔNG tự động commit. Chỉ commit khi user yêu cầu rõ ràng.
+
+### Bài học cụ thể
+- Phase 5: 15 bugs do parallel agents (missing routes, `file_url` vs `file_path`, `created_at` vs `created_date`, `is_deleted` không tồn tại, reserved word `position`)
+- Sprint 4: Tên trường không thống nhất giữa SP ↔ repository ↔ frontend
+
+### Checklist lỗi thường gặp — PHẢI kiểm tra khi viết code
+
+#### 1. Field name mismatch (SP ↔ Repository ↔ Frontend)
+- SP trả `created_date` nhưng frontend dùng `created_at` → **luôn dùng đúng tên SP trả về**
+- SP trả `file_path` nhưng frontend dùng `file_url` → **copy tên từ SP output**
+- SP trả `staff_name` nhưng frontend dùng `full_name` → **đọc SP RETURNS TABLE trước khi đặt tên interface**
+- Frontend định nghĩa field SP không trả về (`secretary_name`, `department_name`, `doc_type_name`) → **chỉ khai báo field có trong SP output**
+
+#### 2. API route path sai
+- Frontend gọi `/danh-muc/linh-vuc` nhưng backend mount ở `/quan-tri/linh-vuc` → **đọc server.ts để biết đúng path**
+- Frontend gọi `/quan-tri/nhan-vien` nhưng route tên `/quan-tri/nguoi-dung` → **search trong routes/ thay vì đoán**
+- Frontend gọi `/nguoi-dung/list` nhưng route dùng `/:id` → `list` bị catch bởi param → **tránh path trùng với route param**
+
+#### 3. Query param naming
+- Frontend gửi `page_size` (snake_case) nhưng backend đọc `pageSize` (camelCase) → **kiểm tra req.query trong route handler**
+- Pagination response: thống nhất `{ pagination: { total, page, pageSize } }` hoặc `{ total, page, pageSize }` — KHÔNG mix
+
+#### 4. PostgreSQL reserved words
+- Các từ PHẢI quote bằng `""` trong RETURNS TABLE và SELECT: `position`, `offset`, `limit`, `order`, `user`, `type`, `comment`, `key`, `value`, `name`
+- Nếu SP tạo thành công nhưng runtime lỗi "does not exist" → check reserved word trong RETURNS TABLE
+
+#### 5. Cột không tồn tại trong bảng
+- Không giả định `is_deleted` có sẵn — nhiều bảng (incoming_docs, outgoing_docs, handling_docs) KHÔNG có soft delete
+- **PHẢI chạy `\d schema.table_name`** trong docker để verify cột tồn tại trước khi viết SP
+
+#### 6. SQL alias conflict
+- Không dùng alias trùng tên cột: `JOIN incoming_docs id` → `id.is_deleted` conflict với cột `id` → **dùng alias rõ ràng: `ind`, `od`, `hd`**
+
+#### 7. Ant Design 6 deprecated APIs
+- `Drawer`: dùng `size={720}` thay vì `width={720}`
+- `List` component: deprecated → dùng `.map()` + `Pagination` riêng
+- Kiểm tra AntD 6 migration guide khi dùng component
+
+#### 8. Data type mismatch (DB type ↔ TypeScript type)
+- DB `VARCHAR` → TS `string` (KHÔNG dùng `number`)
+- DB `INTEGER/SMALLINT` → TS `number` (KHÔNG dùng `string`)
+- DB `BIGINT` → TS `number` (OK cho IDs thông thường, `string` nếu giá trị rất lớn)
+- DB `BOOLEAN` → TS `boolean` (KHÔNG dùng `number`)
+- DB `NUMERIC/DECIMAL` → TS `number` (KHÔNG dùng `string`)
+- DB `TIMESTAMP/DATE` → TS `string` (pg driver trả ISO string, KHÔNG dùng `Date`)
+- Đặc biệt: nếu DB là `VARCHAR` (VD: `amount VARCHAR(200)`) thì frontend KHÔNG được dùng `<InputNumber>` — phải dùng `<Input>`
+
+#### 9. maxLength validation trên form
+- Mỗi `<Input>` trong form **PHẢI có `maxLength={N}`** khớp với DB `VARCHAR(N)`
+- Mỗi `<Input.TextArea>` dùng `maxLength={N}` với `showCount`
+- Bảng tham chiếu nhanh:
+  - `code`: thường `VARCHAR(20-100)` → `maxLength={50}` hoặc theo DB
+  - `name`: thường `VARCHAR(200-500)` → `maxLength={200}` hoặc theo DB
+  - `phone`: `VARCHAR(50)` → `maxLength={50}`
+  - `address`: `VARCHAR(500)` → `maxLength={500}`
+  - `email`: `VARCHAR(200)` → `maxLength={200}`
+- **PHẢI query `\d schema.table_name`** để lấy chính xác limit, KHÔNG đoán
+
+#### 10. NOT NULL → required validation
+- DB column `NOT NULL` (không có DEFAULT) → Form.Item phải có `rules={[{ required: true, message: '...' }]}`
+- Đặc biệt: `<Select>` cho FK columns (room_id, staff_id, department_id) cũng cần `required` rule
+
+#### 11. Format validation trên form
+- **Email**: `rules={[{ type: 'email', message: 'Email không hợp lệ' }]}` — áp dụng cho tất cả field email
+- **Số điện thoại/fax**: `rules={[{ pattern: /^[0-9+\-\s()]*$/, message: 'Số điện thoại không hợp lệ' }]}`
+- **Số (sort_order, number...)**: dùng `<InputNumber>` thay vì `<Input type="number">`
+- **Tiền/số lượng**: nếu DB là `VARCHAR` → dùng `<Input>`, nếu DB là `INTEGER/NUMERIC` → dùng `<InputNumber>`
+
+#### 12. Date range validation
+- Khi form có cặp `start_date` / `end_date`: **PHẢI validate end_date >= start_date** bằng Form rules
+- Dùng pattern `dependencies` + `validator`:
+  ```tsx
+  <Form.Item name="end_date" dependencies={['start_date']} rules={[{
+    validator: (_, value) => {
+      const start = form.getFieldValue('start_date');
+      if (start && value && dayjs(value).isBefore(dayjs(start)))
+        return Promise.reject('Ngày kết thúc phải sau ngày bắt đầu');
+      return Promise.resolve();
+    }
+  }]}>
+  ```
+- **KHÔNG validate ngày trong handleSave()** — phải dùng Form rules để user thấy lỗi inline
+
+#### 13. setBackendFieldError cho unique constraint
+- Mỗi page có form CRUD **PHẢI có `setBackendFieldError`** để map lỗi unique violation thành inline field error
+- Đọc `error-handler.ts` để biết Vietnamese message cho mỗi constraint
+- Pattern:
+  ```tsx
+  const setBackendFieldError = (msg: string): boolean => {
+    const map: Record<string, string> = { 'Mã ... đã tồn tại': 'code' };
+    const field = map[msg];
+    if (field) { form.setFields([{ name: field, errors: [msg] }]); return true; }
+    return false;
+  };
+  // Trong catch: if (!setBackendFieldError(msg)) message.error(msg);
+  ```
+
+#### 14. Password validation
+- Đổi mật khẩu: yêu cầu mật khẩu cũ + mật khẩu mới (min 6 ký tự, có chữ hoa + số) + xác nhận mật khẩu mới
+- Xác nhận mật khẩu: dùng `dependencies={['new_password']}` + validator so sánh
+- Đăng nhập sai: hiển thị `message.error()` với thông báo từ backend
 
 
 

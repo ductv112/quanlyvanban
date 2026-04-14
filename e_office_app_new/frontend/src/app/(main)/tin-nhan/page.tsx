@@ -117,8 +117,8 @@ export default function TinNhanPage() {
 
   const fetchStaff = useCallback(async () => {
     try {
-      const { data: res } = await api.get('/quan-tri/nhan-vien', {
-        params: { page: 1, page_size: 200 },
+      const { data: res } = await api.get('/quan-tri/nguoi-dung', {
+        params: { page: 1, pageSize: 200 },
       });
       const list = res.data?.list || res.data || [];
       setStaffOptions(
@@ -449,7 +449,7 @@ export default function TinNhanPage() {
         title="Soạn tin nhắn mới"
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        width={720}
+        size={720}
         rootClassName="drawer-gradient"
         extra={
           <div style={{ display: 'flex', gap: 8 }}>

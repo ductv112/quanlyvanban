@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  List, Tabs, Button, Badge, Drawer, Form, Input, App, Skeleton,
+  Tabs, Button, Badge, Drawer, Form, Input, App, Skeleton, Pagination,
 } from 'antd';
 import { BellOutlined } from '@ant-design/icons';
 import { api } from '@/lib/api';
@@ -180,88 +180,63 @@ export default function ThongBaoPage() {
             ))}
           </div>
         ) : (
-          <List
-            dataSource={notices}
-            locale={{
-              emptyText: (
-                <div className="empty-center" style={{ padding: '40px 0' }}>
-                  <BellOutlined style={{ fontSize: 36, color: '#CBD5E1', display: 'block', marginBottom: 8 }} />
-                  <div style={{ color: '#94A3B8', fontSize: 14 }}>Chưa có thông báo</div>
-                  <div style={{ color: '#CBD5E1', fontSize: 12, marginTop: 4 }}>
-                    Hệ thống sẽ thông báo khi có văn bản mới hoặc việc được giao.
-                  </div>
-                </div>
-              ),
-            }}
-            renderItem={(item) => (
-              <div
-                className={`notif-item${!item.is_read ? ' unread' : ''}`}
-                onClick={() => !item.is_read && handleMarkRead(item.id)}
-              >
-                {/* Icon */}
-                <div style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: '50%',
-                  background: '#EFF8FF',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                  marginTop: 2,
-                }}>
-                  <BellOutlined style={{ color: '#0891B2', fontSize: 14 }} />
-                </div>
-
-                {/* Content */}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
-                    <span style={{
-                      fontSize: 14,
-                      fontWeight: !item.is_read ? 600 : 400,
-                      color: '#1B3A5C',
-                      lineHeight: 1.4,
-                    }}>
-                      {!item.is_read && (
-                        <Badge
-                          dot
-                          color="#0891B2"
-                          style={{ marginRight: 6 }}
-                        />
-                      )}
-                      {item.title}
-                    </span>
-                    <span style={{ fontSize: 12, color: '#64748B', flexShrink: 0 }}>
-                      {dayjs(item.created_at).format('DD/MM/YYYY HH:mm')}
-                    </span>
-                  </div>
-                  <div style={{
-                    fontSize: 14,
-                    color: '#64748B',
-                    marginTop: 4,
-                    overflow: 'hidden',
-                    display: '-webkit-box',
-                    WebkitLineClamp: 2,
-                    WebkitBoxOrient: 'vertical',
-                  } as React.CSSProperties}>
-                    {item.content}
-                  </div>
+          <>
+            {notices.length === 0 ? (
+              <div className="empty-center" style={{ padding: '40px 0' }}>
+                <BellOutlined style={{ fontSize: 36, color: '#CBD5E1', display: 'block', marginBottom: 8 }} />
+                <div style={{ color: '#94A3B8', fontSize: 14 }}>Chưa có thông báo</div>
+                <div style={{ color: '#CBD5E1', fontSize: 12, marginTop: 4 }}>
+                  Hệ thống sẽ thông báo khi có văn bản mới hoặc việc được giao.
                 </div>
               </div>
+            ) : (
+              <>
+                {notices.map((item) => (
+                  <div
+                    key={item.id}
+                    className={`notif-item${!item.is_read ? ' unread' : ''}`}
+                    onClick={() => !item.is_read && handleMarkRead(item.id)}
+                  >
+                    <div style={{
+                      width: 32, height: 32, borderRadius: '50%', background: '#EFF8FF',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      flexShrink: 0, marginTop: 2,
+                    }}>
+                      <BellOutlined style={{ color: '#0891B2', fontSize: 14 }} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                        <span style={{
+                          fontSize: 14, fontWeight: !item.is_read ? 600 : 400,
+                          color: '#1B3A5C', lineHeight: 1.4,
+                        }}>
+                          {!item.is_read && <Badge dot color="#0891B2" style={{ marginRight: 6 }} />}
+                          {item.title}
+                        </span>
+                        <span style={{ fontSize: 12, color: '#64748B', flexShrink: 0 }}>
+                          {dayjs(item.created_at).format('DD/MM/YYYY HH:mm')}
+                        </span>
+                      </div>
+                      <div style={{
+                        fontSize: 14, color: '#64748B', marginTop: 4, overflow: 'hidden',
+                        display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+                      } as React.CSSProperties}>
+                        {item.content}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {total > pageSize && (
+                  <div style={{ padding: '16px', textAlign: 'right' }}>
+                    <Pagination
+                      current={page} pageSize={pageSize} total={total}
+                      onChange={(p) => setPage(p)} showSizeChanger={false}
+                    />
+                  </div>
+                )}
+              </>
             )}
-            pagination={
-              total > pageSize
-                ? {
-                    current: page,
-                    pageSize,
-                    total,
-                    onChange: (p) => setPage(p),
-                    style: { padding: '16px', textAlign: 'right' },
-                    showSizeChanger: false,
-                  }
-                : false
-            }
-          />
+          </>
         )}
       </div>
 
@@ -270,7 +245,7 @@ export default function ThongBaoPage() {
         title="Tạo thông báo mới"
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        width={720}
+        size={720}
         rootClassName="drawer-gradient"
         extra={
           <div style={{ display: 'flex', gap: 8 }}>

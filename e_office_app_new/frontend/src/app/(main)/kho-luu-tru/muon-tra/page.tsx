@@ -513,7 +513,7 @@ export default function MuonTraPage() {
         onClose={() => setDrawerOpen(false)}
         destroyOnClose
         rootClassName="drawer-gradient"
-        width={720}
+        size={720}
         extra={
           <Space>
             <Button

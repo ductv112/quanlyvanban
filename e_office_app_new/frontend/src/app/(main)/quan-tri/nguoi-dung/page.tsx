@@ -595,7 +595,7 @@ export default function StaffPage() {
         onClose={() => setDrawerOpen(false)}
         destroyOnClose
         rootClassName="drawer-gradient"
-        width={720}
+        size={720}
         extra={
           <Space>
             <Button onClick={() => setDrawerOpen(false)} ghost style={{ borderColor: 'rgba(255,255,255,0.6)', color: '#fff' }}>Hủy</Button>
@@ -718,7 +718,7 @@ export default function StaffPage() {
         onClose={() => setRoleDrawerOpen(false)}
         destroyOnClose
         rootClassName="drawer-gradient"
-        width={480}
+        size={480}
         extra={
           <Button
             type="primary"
@@ -742,7 +742,7 @@ export default function StaffPage() {
               onChange={(values) => setStaffRoleIds(values as number[])}
               style={{ width: '100%' }}
             >
-              <Space direction="vertical" style={{ width: '100%' }} size={8}>
+              <Space orientation="vertical" style={{ width: '100%' }} size={8}>
                 {allRoles.map((role) => (
                   <Card
                     key={role.id}

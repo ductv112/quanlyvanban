@@ -23,10 +23,9 @@ BEGIN
     (
       SELECT COUNT(*)
       FROM edoc.user_incoming_docs uid
-      INNER JOIN edoc.incoming_docs id ON id.id = uid.incoming_doc_id
+      INNER JOIN edoc.incoming_docs ind ON ind.id = uid.incoming_doc_id
       WHERE uid.staff_id = p_staff_id
         AND uid.is_read = FALSE
-        AND id.is_deleted = FALSE
     ) AS incoming_unread,
 
     -- VB đi chưa phê duyệt
@@ -35,7 +34,6 @@ BEGIN
       FROM edoc.outgoing_docs
       WHERE unit_id = p_unit_id
         AND approved = FALSE
-        AND is_deleted = FALSE
     ) AS outgoing_pending,
 
     -- Tổng HSCV đang xử lý
@@ -43,7 +41,6 @@ BEGIN
       SELECT COUNT(*)
       FROM edoc.handling_docs
       WHERE unit_id = p_unit_id
-        AND is_deleted = FALSE
     ) AS handling_total,
 
     -- HSCV quá hạn (end_date < NOW() và chưa hoàn thành — status != 4)
@@ -51,7 +48,6 @@ BEGIN
       SELECT COUNT(*)
       FROM edoc.handling_docs
       WHERE unit_id = p_unit_id
-        AND is_deleted = FALSE
         AND end_date IS NOT NULL
         AND end_date < NOW()
         AND status != 4

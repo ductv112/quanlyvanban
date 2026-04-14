@@ -60,7 +60,7 @@ export interface StaffDetailRow {
   sign_ca: string;
   sign_image: string;
   created_at: string;
-  updated_at: string;
+  updated_at?: string;
 }
 
 export const staffRepository = {

@@ -158,7 +158,7 @@ export default function HoSoCongViecPage() {
       const [typeRes, fieldRes, staffRes, workflowRes, hscvRes, unitRes] = await Promise.all([
         api.get('/quan-tri/loai-van-ban/tree').catch(() => ({ data: { data: [] } })),
         api.get('/quan-tri/linh-vuc').catch(() => ({ data: { data: [] } })),
-        api.get('/quan-tri/nguoi-dung', { params: { page: 1, page_size: 500 } }).catch(() => ({ data: { data: [] } })),
+        api.get('/quan-tri/nguoi-dung', { params: { page: 1, pageSize: 500 } }).catch(() => ({ data: { data: [] } })),
         api.get('/quan-tri/quy-trinh').catch(() => ({ data: { data: [] } })),
         api.get('/ho-so-cong-viec', { params: { page: 1, page_size: 200, filter_type: 'all' } }).catch(() => ({ data: { data: [] } })),
         api.get('/quan-tri/don-vi').catch(() => ({ data: { data: [] } })),
@@ -204,15 +204,6 @@ export default function HoSoCongViecPage() {
     try {
       const values = await form.validateFields();
       setFormLoading(true);
-
-      // Kiểm tra hạn giải quyết phải sau ngày mở
-      if (values.start_date && values.end_date) {
-        if (values.end_date.isBefore(values.start_date)) {
-          message.error('Hạn giải quyết phải sau hoặc bằng ngày mở hồ sơ');
-          setFormLoading(false);
-          return;
-        }
-      }
 
       const payload = {
         ...values,
@@ -542,7 +533,7 @@ export default function HoSoCongViecPage() {
       {/* Drawer tạo/sửa HSCV */}
       <Drawer
         title={editingRecord ? 'Chỉnh sửa hồ sơ công việc' : 'Tạo hồ sơ công việc'}
-        width={720}
+        size={720}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         rootClassName="drawer-gradient"
@@ -624,8 +615,17 @@ export default function HoSoCongViecPage() {
               <Form.Item
                 name="end_date"
                 label="Hạn giải quyết"
+                dependencies={['start_date']}
                 rules={[
                   { required: true, message: 'Vui lòng chọn hạn giải quyết' },
+                  ({ getFieldValue }) => ({
+                    validator(_, value) {
+                      const startDate = getFieldValue('start_date');
+                      if (!value || !startDate) return Promise.resolve();
+                      if (value.isSameOrAfter(startDate, 'day')) return Promise.resolve();
+                      return Promise.reject(new Error('Hạn giải quyết phải sau hoặc bằng ngày mở hồ sơ'));
+                    },
+                  }),
                 ]}
               >
                 <DatePicker

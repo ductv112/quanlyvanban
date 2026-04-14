@@ -253,7 +253,7 @@ export default function IncomingDocPage() {
 
       <Drawer
         title={editingRecord ? 'Sửa văn bản đến' : 'Thêm văn bản đến'}
-        width={800} open={drawerOpen} onClose={() => setDrawerOpen(false)}
+        size={800} open={drawerOpen} onClose={() => setDrawerOpen(false)}
         rootClassName="drawer-gradient"
         extra={<Space><Button onClick={() => setDrawerOpen(false)} ghost style={{ borderColor: 'rgba(255,255,255,0.6)', color: '#fff' }}>Hủy</Button><Button type="primary" loading={saving} onClick={handleSave}>{editingRecord ? 'Cập nhật' : 'Tạo mới'}</Button></Space>}
       >
@@ -264,14 +264,14 @@ export default function IncomingDocPage() {
             <Col span={6}><Form.Item name="received_date" label="Ngày đến"><DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" /></Form.Item></Col>
           </Row>
           <Row gutter={16}>
-            <Col span={12}><Form.Item name="notation" label="Số ký hiệu"><Input placeholder="VD: 123/UBND-VP" /></Form.Item></Col>
-            <Col span={12}><Form.Item name="publish_unit" label="Cơ quan ban hành"><Input placeholder="VD: UBND tỉnh Lạng Sơn" /></Form.Item></Col>
+            <Col span={12}><Form.Item name="notation" label="Số ký hiệu"><Input placeholder="VD: 123/UBND-VP" maxLength={100} /></Form.Item></Col>
+            <Col span={12}><Form.Item name="publish_unit" label="Cơ quan ban hành"><Input placeholder="VD: UBND tỉnh Lạng Sơn" maxLength={500} /></Form.Item></Col>
           </Row>
           <Form.Item name="abstract" label="Trích yếu nội dung" rules={[{ required: true, message: 'Bắt buộc' }]}><TextArea rows={3} placeholder="Trích yếu nội dung văn bản" /></Form.Item>
           <Row gutter={16}>
             <Col span={8}><Form.Item name="doc_type_id" label="Loại văn bản"><Select placeholder="Chọn loại" allowClear options={docTypes} /></Form.Item></Col>
             <Col span={8}><Form.Item name="doc_field_id" label="Lĩnh vực"><Select placeholder="Chọn lĩnh vực" allowClear options={docFields} /></Form.Item></Col>
-            <Col span={8}><Form.Item name="signer" label="Người ký"><Input placeholder="Họ tên người ký" /></Form.Item></Col>
+            <Col span={8}><Form.Item name="signer" label="Người ký"><Input placeholder="Họ tên người ký" maxLength={200} /></Form.Item></Col>
           </Row>
           <Row gutter={16}>
             <Col span={6}><Form.Item name="sign_date" label="Ngày ký"><DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" /></Form.Item></Col>

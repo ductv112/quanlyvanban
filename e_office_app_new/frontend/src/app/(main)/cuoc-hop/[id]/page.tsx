@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Card, Tabs, Table, Button, Form, Input, Select, Tag, Badge,
-  Progress, Upload, List, Divider, Modal, Space, Skeleton, Radio, App, Checkbox,
+  Progress, Upload, Divider, Modal, Space, Skeleton, Radio, App, Checkbox,
   Descriptions, Typography,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
@@ -219,7 +219,7 @@ export default function CuocHopDetailPage() {
 
   const fetchStaffOptions = useCallback(async () => {
     try {
-      const { data: res } = await api.get('/quan-tri/nguoi-dung', { params: { page: 1, page_size: 500 } });
+      const { data: res } = await api.get('/quan-tri/nguoi-dung', { params: { page: 1, pageSize: 500 } });
       setStaffOptions((res.data || []).map((s: { id: number; full_name: string }) => ({ value: s.id, label: s.full_name })));
     } catch {
       // silent
@@ -617,24 +617,21 @@ export default function CuocHopDetailPage() {
                   </Upload>
                 }
               >
-                {attachLoading ? <Skeleton active paragraph={{ rows: 4 }} /> : (
-                  <List
-                    dataSource={attachments}
-                    locale={{ emptyText: 'Chưa có tài liệu đính kèm' }}
-                    renderItem={(item) => (
-                      <List.Item
-                        actions={[
-                          <Button key="dl" type="link" icon={<DownloadOutlined />} href={item.file_path} target="_blank">Tải về</Button>,
-                          <Button key="del" type="text" icon={<DeleteOutlined />} danger onClick={() => handleDeleteAttachment(item.id)}>Xóa</Button>,
-                        ]}
-                      >
-                        <List.Item.Meta
-                          title={item.file_name}
-                          description={`${formatFileSize(item.file_size)} — ${dayjs(item.created_date).format('DD/MM/YYYY HH:mm')}`}
-                        />
-                      </List.Item>
-                    )}
-                  />
+                {attachLoading ? <Skeleton active paragraph={{ rows: 4 }} /> : attachments.length === 0 ? (
+                  <div style={{ padding: '16px', textAlign: 'center', color: '#94A3B8' }}>Chưa có tài liệu đính kèm</div>
+                ) : (
+                  attachments.map((item) => (
+                    <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #F1F5F9' }}>
+                      <div>
+                        <div style={{ fontWeight: 500 }}>{item.file_name}</div>
+                        <div style={{ fontSize: 12, color: '#94A3B8' }}>{formatFileSize(item.file_size)} — {dayjs(item.created_date).format('DD/MM/YYYY HH:mm')}</div>
+                      </div>
+                      <div>
+                        <Button type="link" icon={<DownloadOutlined />} href={item.file_path} target="_blank">Tải về</Button>
+                        <Button type="text" icon={<DeleteOutlined />} danger onClick={() => handleDeleteAttachment(item.id)}>Xóa</Button>
+                      </div>
+                    </div>
+                  ))
                 )}
               </Card>
             ),
@@ -702,7 +699,7 @@ export default function CuocHopDetailPage() {
                                       value={selectedAnswers[q.id]}
                                       onChange={(e) => setSelectedAnswers((prev) => ({ ...prev, [q.id]: e.target.value }))}
                                     >
-                                      <Space direction="vertical">
+                                      <Space orientation="vertical">
                                         {q.answers.map((a) => <Radio key={a.id} value={a.id}>{a.name}</Radio>)}
                                       </Space>
                                     </Radio.Group>
@@ -711,7 +708,7 @@ export default function CuocHopDetailPage() {
                                       value={selectedAnswers[q.id] as number[] || []}
                                       onChange={(vals) => setSelectedAnswers((prev) => ({ ...prev, [q.id]: vals as number[] }))}
                                     >
-                                      <Space direction="vertical">
+                                      <Space orientation="vertical">
                                         {q.answers.map((a) => <Checkbox key={a.id} value={a.id}>{a.name}</Checkbox>)}
                                       </Space>
                                     </Checkbox.Group>

@@ -29,7 +29,7 @@ interface DocDetail {
   secret_id: number; urgent_id: number; number_paper: number; number_copies: number;
   expired_date: string; recipients: string; approver: string; approved: boolean;
   is_handling: boolean; archive_status: boolean;
-  is_inter_doc: boolean; is_digital_signed: boolean;
+  is_inter_doc: boolean; is_digital_signed: boolean | number;
   drafting_unit_id: number; drafting_user_id: number; publish_unit_id: number;
   drafting_unit_name: string; drafting_user_name: string;
   created_by: number; created_at: string; updated_by: number; updated_at: string;

@@ -118,7 +118,7 @@ router.get('/', async (req: Request, res: Response) => {
 
     const rows = await contractRepository.getContractList(unitId, contractTypeId, status, keyword, page, pageSize);
     const total = rows.length > 0 ? Number(rows[0].total_count) : 0;
-    res.json({ success: true, data: rows, total, page, page_size: pageSize });
+    res.json({ success: true, data: rows, total, page, pageSize });
   } catch (error) {
     handleDbError(error, res);
   }

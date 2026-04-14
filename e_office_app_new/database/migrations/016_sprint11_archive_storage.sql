@@ -175,7 +175,7 @@ RETURNS TABLE (
   is_unit           BOOLEAN,
   warehouse_level   INT,
   limit_child       INT,
-  position          VARCHAR,
+  "position"        VARCHAR,
   created_user_id   INT,
   created_date      TIMESTAMPTZ
 )
@@ -196,7 +196,7 @@ BEGIN
     w.is_unit,
     w.warehouse_level,
     w.limit_child,
-    w.position,
+    w."position",
     w.created_user_id,
     w.created_date
   FROM esto.warehouses w
@@ -224,7 +224,7 @@ RETURNS TABLE (
   is_unit           BOOLEAN,
   warehouse_level   INT,
   limit_child       INT,
-  position          VARCHAR,
+  "position"        VARCHAR,
   created_user_id   INT,
   created_date      TIMESTAMPTZ,
   modified_user_id  INT,
@@ -247,7 +247,7 @@ BEGIN
     w.is_unit,
     w.warehouse_level,
     w.limit_child,
-    w.position,
+    w."position",
     w.created_user_id,
     w.created_date,
     w.modified_user_id,
@@ -287,7 +287,7 @@ BEGIN
   INSERT INTO esto.warehouses (
     unit_id, type_id, code, name, phone_number, address, status,
     description, parent_id, is_unit, warehouse_level, limit_child,
-    position, created_user_id
+    "position", created_user_id
   ) VALUES (
     p_unit_id, p_type_id, NULLIF(TRIM(p_code),''), p_name, p_phone_number,
     p_address, COALESCE(p_status, true), p_description,
@@ -340,7 +340,7 @@ BEGIN
     is_unit          = COALESCE(p_is_unit, false),
     warehouse_level  = COALESCE(p_warehouse_level, 0),
     limit_child      = COALESCE(p_limit_child, 0),
-    position         = p_position,
+    "position"       = p_position,
     modified_user_id = p_modified_user_id,
     modified_date    = NOW()
   WHERE id = p_id AND is_deleted = false;

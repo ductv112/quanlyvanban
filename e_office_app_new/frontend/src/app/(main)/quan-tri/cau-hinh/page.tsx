@@ -265,7 +265,7 @@ export default function ConfigPage() {
         onClose={() => setDrawerOpen(false)}
         destroyOnClose
         rootClassName="drawer-gradient"
-        width={720}
+        size={720}
         extra={
           <Space>
             <Button onClick={() => setDrawerOpen(false)} ghost style={{ borderColor: 'rgba(255,255,255,0.6)', color: '#fff' }}>Hủy</Button>

@@ -361,7 +361,7 @@ export default function DepartmentPage() {
         onClose={() => setDrawerOpen(false)}
         destroyOnClose
         rootClassName="drawer-gradient"
-        width={720}
+        size={720}
         extra={
           <Space>
             <Button onClick={() => setDrawerOpen(false)} ghost style={{ borderColor: 'rgba(255,255,255,0.6)', color: '#fff' }}>Hủy</Button>
@@ -385,7 +385,7 @@ export default function DepartmentPage() {
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item label="Mã" name="code" rules={[{ required: true, message: 'Nhập mã' }]}>
-                <Input placeholder="VD: PB01" maxLength={20} style={{ borderRadius: 8 }} />
+                <Input placeholder="VD: PB01" maxLength={50} style={{ borderRadius: 8 }} />
               </Form.Item>
             </Col>
             <Col span={12}>
@@ -422,12 +422,12 @@ export default function DepartmentPage() {
               </Form.Item>
             </Col>
             <Col span={8}>
-              <Form.Item label="SDT" name="phone">
+              <Form.Item label="SDT" name="phone" rules={[{ pattern: /^[0-9+\-\s()]*$/, message: 'Số điện thoại không hợp lệ' }]}>
                 <Input maxLength={20} style={{ borderRadius: 8 }} />
               </Form.Item>
             </Col>
             <Col span={8}>
-              <Form.Item label="Fax" name="fax">
+              <Form.Item label="Fax" name="fax" rules={[{ pattern: /^[0-9+\-\s()]*$/, message: 'Số fax không hợp lệ' }]}>
                 <Input maxLength={20} style={{ borderRadius: 8 }} />
               </Form.Item>
             </Col>
@@ -435,8 +435,8 @@ export default function DepartmentPage() {
 
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item label="Email" name="email">
-                <Input type="email" maxLength={100} style={{ borderRadius: 8 }} />
+              <Form.Item label="Email" name="email" rules={[{ type: 'email', message: 'Email không hợp lệ' }]}>
+                <Input maxLength={100} style={{ borderRadius: 8 }} />
               </Form.Item>
             </Col>
             <Col span={12}>

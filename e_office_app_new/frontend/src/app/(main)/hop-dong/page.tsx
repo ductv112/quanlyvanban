@@ -26,7 +26,7 @@ interface ContractType {
   name: string;
   note: string;
   sort_order: number;
-  is_locked: boolean;
+  is_locked?: boolean;
 }
 
 interface Contract {
@@ -40,8 +40,8 @@ interface Contract {
   input_date: string;
   receive_date: string;
   signer: string;
-  amount: number;
-  payment_amount: number;
+  amount?: string;
+  payment_amount?: string;
   currency: string;
   note: string;
   staff_id: number;
@@ -73,9 +73,11 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function formatCurrency(amount: number, currency = 'VND'): string {
+function formatCurrency(amount: string | number | null | undefined, currency = 'VND'): string {
   if (!amount) return '—';
-  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency }).format(amount);
+  const num = typeof amount === 'string' ? parseFloat(amount.replace(/,/g, '')) : amount;
+  if (isNaN(num)) return String(amount);
+  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency }).format(num);
 }
 
 // ─────────────────── component ───────────────────
@@ -198,6 +200,30 @@ export default function HopDongPage() {
     });
   };
 
+  const setTypeBackendFieldError = (errorMessage: string): boolean => {
+    const fieldErrorMap: Record<string, string> = {
+      'Mã loại hợp đồng đã tồn tại': 'code',
+    };
+    const fieldName = fieldErrorMap[errorMessage];
+    if (fieldName) {
+      typeForm.setFields([{ name: fieldName, errors: [errorMessage] }]);
+      return true;
+    }
+    return false;
+  };
+
+  const setBackendFieldError = (errorMessage: string): boolean => {
+    const fieldErrorMap: Record<string, string> = {
+      'Tên hợp đồng là bắt buộc': 'name',
+    };
+    const fieldName = fieldErrorMap[errorMessage];
+    if (fieldName) {
+      form.setFields([{ name: fieldName, errors: [errorMessage] }]);
+      return true;
+    }
+    return false;
+  };
+
   const handleSaveType = async () => {
     try {
       const values = await typeForm.validateFields();
@@ -213,9 +239,9 @@ export default function HopDongPage() {
       typeForm.resetFields();
       fetchContractTypes();
     } catch (err: any) {
-      if (err?.response?.data?.message) {
-        message.error(err.response.data.message);
-      }
+      if (err?.errorFields) return;
+      const msg = err?.response?.data?.message;
+      if (msg && !setTypeBackendFieldError(msg)) message.error(msg);
     } finally {
       setTypeSaving(false);
     }
@@ -280,9 +306,9 @@ export default function HopDongPage() {
       setDrawerOpen(false);
       fetchContracts();
     } catch (err: any) {
-      if (err?.response?.data?.message) {
-        message.error(err.response.data.message);
-      }
+      if (err?.errorFields) return;
+      const msg = err?.response?.data?.message;
+      if (msg && !setBackendFieldError(msg)) message.error(msg);
     } finally {
       setSaving(false);
     }
@@ -622,7 +648,7 @@ export default function HopDongPage() {
         title="Quản lý loại hợp đồng"
         open={typeDrawerOpen}
         onClose={() => { setTypeDrawerOpen(false); setEditingType(null); typeForm.resetFields(); }}
-        width={600}
+        size={600}
         rootClassName="drawer-gradient"
       >
         <Card
@@ -634,7 +660,7 @@ export default function HopDongPage() {
             <Row gutter={12}>
               <Col span={12}>
                 <Form.Item name="code" label="Mã loại">
-                  <Input placeholder="Nhập mã loại" />
+                  <Input placeholder="Nhập mã loại" maxLength={50} />
                 </Form.Item>
               </Col>
               <Col span={12}>
@@ -648,7 +674,7 @@ export default function HopDongPage() {
               label="Tên loại hợp đồng"
               rules={[{ required: true, message: 'Vui lòng nhập tên loại hợp đồng' }]}
             >
-              <Input placeholder="Nhập tên loại hợp đồng" />
+              <Input placeholder="Nhập tên loại hợp đồng" maxLength={200} />
             </Form.Item>
             <Form.Item name="note" label="Ghi chú">
               <TextArea rows={2} placeholder="Ghi chú" />
@@ -685,7 +711,7 @@ export default function HopDongPage() {
         title={editingContract ? 'Chỉnh sửa hợp đồng' : 'Thêm hợp đồng mới'}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        width={720}
+        size={720}
         rootClassName="drawer-gradient"
         extra={
           <Space>
@@ -700,7 +726,7 @@ export default function HopDongPage() {
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item name="code" label="Mã hợp đồng">
-                <Input placeholder="Nhập mã hợp đồng" />
+                <Input placeholder="Nhập mã hợp đồng" maxLength={100} />
               </Form.Item>
             </Col>
             <Col span={12}>
@@ -722,18 +748,18 @@ export default function HopDongPage() {
             label="Tên hợp đồng"
             rules={[{ required: true, message: 'Vui lòng nhập tên hợp đồng' }]}
           >
-            <Input placeholder="Nhập tên hợp đồng" />
+            <Input placeholder="Nhập tên hợp đồng" maxLength={500} />
           </Form.Item>
 
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item name="contact_name" label="Đối tác">
-                <Input placeholder="Tên đối tác / tổ chức" />
+                <Input placeholder="Tên đối tác / tổ chức" maxLength={200} />
               </Form.Item>
             </Col>
             <Col span={12}>
               <Form.Item name="signer" label="Người ký">
-                <Input placeholder="Họ tên người ký" />
+                <Input placeholder="Họ tên người ký" maxLength={200} />
               </Form.Item>
             </Col>
           </Row>
@@ -759,22 +785,12 @@ export default function HopDongPage() {
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item name="amount" label="Giá trị hợp đồng">
-                <InputNumber
-                  min={0}
-                  style={{ width: '100%' }}
-                  placeholder="0"
-                  formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                />
+                <Input placeholder="Nhập giá trị hợp đồng" maxLength={200} />
               </Form.Item>
             </Col>
             <Col span={12}>
               <Form.Item name="payment_amount" label="Số tiền đã thanh toán">
-                <InputNumber
-                  min={0}
-                  style={{ width: '100%' }}
-                  placeholder="0"
-                  formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                />
+                <Input placeholder="Nhập số tiền đã thanh toán" maxLength={200} />
               </Form.Item>
             </Col>
           </Row>
@@ -816,7 +832,7 @@ export default function HopDongPage() {
         title={`Chi tiết hợp đồng: ${selectedContract?.name || ''}`}
         open={detailDrawerOpen}
         onClose={() => setDetailDrawerOpen(false)}
-        width={720}
+        size={720}
         rootClassName="drawer-gradient"
         extra={
           <Button

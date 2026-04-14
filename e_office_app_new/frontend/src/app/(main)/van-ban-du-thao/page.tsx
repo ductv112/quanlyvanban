@@ -468,7 +468,7 @@ export default function DraftingDocPage() {
 
       <Drawer
         title={editingRecord ? 'Sửa văn bản dự thảo' : 'Thêm văn bản dự thảo'}
-        width={720}
+        size={720}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         rootClassName="drawer-gradient"

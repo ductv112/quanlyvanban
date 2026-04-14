@@ -415,7 +415,7 @@ export default function BaoCaoPage() {
                 hoverable
               >
                 {kpiLoading ? (
-                  <Space direction="vertical" size={8}>
+                  <Space orientation="vertical" size={8}>
                     <Skeleton.Avatar active size={40} shape="square" />
                     <Skeleton.Input active size="small" style={{ width: 80 }} />
                   </Space>

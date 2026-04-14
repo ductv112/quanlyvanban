@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Card, Tabs, Table, Button, Form, Input, Select, DatePicker, Tag, Badge,
-  Progress, Upload, List, Avatar, Divider, Modal, Slider, InputNumber, Space,
+  Progress, Upload, Avatar, Divider, Modal, Slider, InputNumber, Space,
   Breadcrumb, Skeleton, Radio, Popconfirm, App, Checkbox, Tree,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
@@ -74,35 +74,35 @@ interface HscvDetail {
 interface LinkedDoc {
   id: number;
   link_id: number;
-  doc_number: string;
+  doc_number: number | string;
   abstract: string;
   doc_type: string;
-  doc_type_name: string;
-  signed_date: string;
+  doc_type_name?: string;
+  signed_date?: string;
 }
 
 interface StaffItem {
   id: number;
   staff_id: number;
-  full_name: string;
+  staff_name: string;
   position_name: string;
   department_name: string;
-  role_type: number;
+  role: number;
   deadline: string | null;
 }
 
 interface AssignedStaff {
   staff_id: number;
-  full_name: string;
+  staff_name: string;
   position_name: string;
   department_name: string;
-  role_type: number;
+  role: number;
   deadline: dayjs.Dayjs | null;
 }
 
 interface AvailableStaff {
   staff_id: number;
-  full_name: string;
+  staff_name: string;
   position_name: string;
   checked: boolean;
 }
@@ -136,10 +136,10 @@ interface ChildHscv {
 
 interface SearchDocItem {
   id: number;
-  doc_number: string;
+  doc_number: number | string;
   abstract: string;
-  doc_type_name: string;
-  signed_date: string;
+  doc_type_name?: string;
+  signed_date?: string;
 }
 
 interface DeptNode {
@@ -379,10 +379,10 @@ export default function HscvDetailPage() {
       setAssignedStaff(
         existingStaff.map((s) => ({
           staff_id: s.staff_id,
-          full_name: s.full_name,
+          staff_name: s.staff_name,
           position_name: s.position_name,
           department_name: s.department_name,
-          role_type: s.role_type,
+          role: s.role,
           deadline: s.deadline ? dayjs(s.deadline) : null,
         }))
       );
@@ -594,17 +594,17 @@ export default function HscvDetailPage() {
     setEditDrawerOpen(true);
     // Load options if not yet loaded
     if (docTypes.length === 0) {
-      api.get('/danh-muc/loai-van-ban').then(({ data: r }) => {
+      api.get('/quan-tri/loai-van-ban/tree').then(({ data: r }) => {
         setDocTypes((r.data || []).map((x: any) => ({ value: x.id, label: x.name })));
       }).catch(() => {});
     }
     if (fields.length === 0) {
-      api.get('/danh-muc/linh-vuc').then(({ data: r }) => {
+      api.get('/quan-tri/linh-vuc').then(({ data: r }) => {
         setFields((r.data || []).map((x: any) => ({ value: x.id, label: x.name })));
       }).catch(() => {});
     }
     if (staffOptions.length === 0) {
-      api.get('/quan-tri/nguoi-dung/list').then(({ data: r }) => {
+      api.get('/quan-tri/nguoi-dung', { params: { page: 1, pageSize: 500 } }).then(({ data: r }) => {
         setStaffOptions((r.data || []).map((x: any) => ({ value: x.id, label: x.full_name })));
       }).catch(() => {});
     }
@@ -706,7 +706,7 @@ export default function HscvDetailPage() {
       setAvailableStaff(
         (res.data || []).map((s: any) => ({
           staff_id: s.id || s.staff_id,
-          full_name: s.full_name,
+          staff_name: s.staff_name || s.full_name,
           position_name: s.position_name || '',
           checked: false,
           alreadyAdded: assigned.has(s.id || s.staff_id),
@@ -727,10 +727,10 @@ export default function HscvDetailPage() {
       .filter((s) => !existing.has(s.staff_id))
       .map((s) => ({
         staff_id: s.staff_id,
-        full_name: s.full_name,
+        staff_name: s.staff_name,
         position_name: s.position_name,
         department_name: '',
-        role_type: 2,
+        role: 2,
         deadline: null,
       }));
     if (!toAdd.length) { message.info('Các cán bộ đã được phân công rồi'); return; }
@@ -749,7 +749,7 @@ export default function HscvDetailPage() {
       await api.post(`/ho-so-cong-viec/${id}/phan-cong`, {
         staff: assignedStaff.map((s) => ({
           staff_id: s.staff_id,
-          role_type: s.role_type,
+          role: s.role,
           deadline: s.deadline?.toISOString() || null,
         })),
       });
@@ -833,7 +833,7 @@ export default function HscvDetailPage() {
     childForm.setFieldsValue({ parent_id: detail?.id, parent_name: detail?.name });
     setChildDrawerOpen(true);
     if (staffOptions.length === 0) {
-      api.get('/quan-tri/nguoi-dung/list').then(({ data: r }) => {
+      api.get('/quan-tri/nguoi-dung', { params: { page: 1, pageSize: 500 } }).then(({ data: r }) => {
         setStaffOptions((r.data || []).map((x: any) => ({ value: x.id, label: x.full_name })));
       }).catch(() => {});
     }
@@ -1141,7 +1141,7 @@ export default function HscvDetailPage() {
                               }
                             />
                             <div style={{ flex: 1 }}>
-                              <div style={{ fontWeight: 500, fontSize: 13 }}>{s.full_name}</div>
+                              <div style={{ fontWeight: 500, fontSize: 13 }}>{s.staff_name}</div>
                               <div style={{ fontSize: 11, color: '#64748B' }}>{s.position_name}</div>
                             </div>
                           </div>
@@ -1176,7 +1176,7 @@ export default function HscvDetailPage() {
                       <div key={s.staff_id} className="staff-assign-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 6 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
                           <div>
-                            <span style={{ fontWeight: 500, fontSize: 13 }}>{s.full_name}</span>
+                            <span style={{ fontWeight: 500, fontSize: 13 }}>{s.staff_name}</span>
                             {s.position_name && (
                               <span style={{ fontSize: 11, color: '#64748B', marginLeft: 6 }}>
                                 {s.position_name}
@@ -1194,11 +1194,11 @@ export default function HscvDetailPage() {
                         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                           <Radio.Group
                             size="small"
-                            value={s.role_type}
+                            value={s.role}
                             onChange={(e) =>
                               setAssignedStaff((prev) =>
                                 prev.map((x) =>
-                                  x.staff_id === s.staff_id ? { ...x, role_type: e.target.value } : x
+                                  x.staff_id === s.staff_id ? { ...x, role: e.target.value } : x
                                 )
                               )
                             }
@@ -1258,9 +1258,8 @@ export default function HscvDetailPage() {
                   Chưa có ý kiến xử lý. Hãy là người đầu tiên thêm ý kiến.
                 </div>
               ) : (
-                <List
-                  dataSource={opinions}
-                  renderItem={(item) => (
+                <>
+                  {opinions.map((item) => (
                     <div key={item.id} className="opinion-item">
                       <Avatar
                         size={32}
@@ -1278,8 +1277,8 @@ export default function HscvDetailPage() {
                         <div className="opinion-item-text">{item.content}</div>
                       </div>
                     </div>
-                  )}
-                />
+                  ))}
+                </>
               )}
               <Divider />
               <Form form={opinionForm} validateTrigger="onSubmit">
@@ -1561,7 +1560,7 @@ export default function HscvDetailPage() {
         onCancel={() => { setAddDocModalOpen(false); setSelectedDocKeys([]); }}
         okText="Liên kết"
         cancelText="Hủy bỏ"
-        width={800}
+        size={800}
       >
         <div style={{ marginBottom: 12 }}>
           <Tabs

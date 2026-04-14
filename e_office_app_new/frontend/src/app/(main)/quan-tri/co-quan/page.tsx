@@ -137,12 +137,12 @@ export default function OrganizationPage() {
 
             <Row gutter={16}>
               <Col span={12}>
-                <Form.Item label="Số điện thoại" name="phone">
+                <Form.Item label="Số điện thoại" name="phone" rules={[{ pattern: /^[0-9+\-\s()]*$/, message: 'Số điện thoại không hợp lệ' }]}>
                   <Input placeholder="Nhập số điện thoại" maxLength={20} style={{ borderRadius: 8 }} />
                 </Form.Item>
               </Col>
               <Col span={12}>
-                <Form.Item label="Fax" name="fax">
+                <Form.Item label="Fax" name="fax" rules={[{ pattern: /^[0-9+\-\s()]*$/, message: 'Số fax không hợp lệ' }]}>
                   <Input placeholder="Nhập số fax" maxLength={20} style={{ borderRadius: 8 }} />
                 </Form.Item>
               </Col>

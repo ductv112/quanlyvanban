@@ -142,6 +142,12 @@ input:-webkit-autofill:active {
   overflow-y: auto;
   overflow-x: hidden;
 }
+.main-sider-menu-wrap::after {
+  content: '';
+  display: block;
+  height: 80px;
+  flex-shrink: 0;
+}
 
 /* Main area beside sidebar */
 .main-area {
@@ -288,14 +294,20 @@ input:-webkit-autofill:active {
 .drawer-gradient .ant-drawer-body {
   padding: 24px;
 }
-.drawer-gradient .ant-drawer-header .ant-drawer-extra .ant-btn-default {
-  border-color: rgba(255,255,255,0.5);
-  color: #fff;
+.drawer-gradient .ant-drawer-header .ant-drawer-extra .ant-btn:not(.ant-btn-primary) {
+  border-color: rgba(255,255,255,0.6) !important;
+  color: #fff !important;
+  background: transparent !important;
+}
+.drawer-gradient .ant-drawer-header .ant-drawer-extra .ant-btn:not(.ant-btn-primary):hover {
+  border-color: #fff !important;
+  color: #fff !important;
+  background: rgba(255,255,255,0.15) !important;
 }
 .drawer-gradient .ant-drawer-header .ant-drawer-extra .ant-btn-primary {
-  background: #fff;
-  color: #1B3A5C;
-  border-color: #fff;
+  background: #fff !important;
+  color: #1B3A5C !important;
+  border-color: #fff !important;
 }
 
 /* --- Detail Page — Section Titles --- */

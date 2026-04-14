@@ -27,8 +27,8 @@ interface DirectoryRow {
   mobile: string;
   email: string;
   image: string;
-  department_id: number;
-  unit_id: number;
+  department_id?: number;
+  unit_id?: number;
 }
 
 interface DeptTreeItem {

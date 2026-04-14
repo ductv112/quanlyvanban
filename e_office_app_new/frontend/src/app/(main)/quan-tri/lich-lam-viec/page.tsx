@@ -157,14 +157,9 @@ export default function WorkCalendarPage() {
     );
   };
 
-  const dateFullCellRender = (current: Dayjs, info: { type: string }) => {
-    if (info.type !== 'date') {
-      return cellRender(current, info);
-    }
-
+  const dateCellRender = (current: Dayjs) => {
     const dateStr = current.format('YYYY-MM-DD');
     const holiday = holidayMap[dateStr];
-    const isCurrentMonth = current.month() === (activeDate ? dayjs(activeDate).month() : dayjs().month());
 
     return (
       <Popover
@@ -181,23 +176,10 @@ export default function WorkCalendarPage() {
           }
         }}
       >
-        <div
-          style={{
-            padding: '4px 8px',
-            minHeight: 60,
-            borderRadius: 6,
-            cursor: 'pointer',
-            background: holiday ? '#fef2f2' : undefined,
-            border: holiday ? '1px solid #fecaca' : '1px solid transparent',
-            opacity: isCurrentMonth ? 1 : 0.4,
-          }}
-        >
-          <div style={{ fontWeight: 500, fontSize: 13, color: holiday ? '#dc2626' : '#334155' }}>
-            {current.date()}
-          </div>
+        <div style={{ minHeight: 40, cursor: 'pointer' }}>
           {holiday && (
             <Tag color="red" style={{ fontSize: 10, lineHeight: '16px', padding: '0 3px', marginTop: 2 }}>
-              {holiday.description.length > 12 ? holiday.description.slice(0, 12) + '...' : holiday.description}
+              {holiday.description.length > 15 ? holiday.description.slice(0, 15) + '...' : holiday.description}
             </Tag>
           )}
         </div>
@@ -212,38 +194,26 @@ export default function WorkCalendarPage() {
 
   return (
     <div>
-      <div style={{ marginBottom: 20 }}>
-        <h2 style={{ fontSize: 22, fontWeight: 700, color: '#1B3A5C', margin: '0 0 4px 0' }}>
-          Lịch làm việc
-        </h2>
-        <p style={{ fontSize: 14, color: '#64748b', margin: 0 }}>
-          Quản lý ngày nghỉ lễ, ngày nghỉ trong năm
-        </p>
-      </div>
-
-      <Card
-        variant="borderless"
-        style={{ borderRadius: 12, boxShadow: '0 2px 8px rgba(27,58,92,0.06)' }}
-        title={
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <CalendarOutlined style={{ color: '#0891B2' }} />
-            <span style={{ fontWeight: 600, color: '#1B3A5C' }}>Lịch năm {year}</span>
+      <div className="page-header">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <h2 className="page-title">Lịch làm việc</h2>
+            <p className="page-description">Quản lý ngày nghỉ lễ, ngày nghỉ trong năm</p>
           </div>
-        }
-        extra={
-          <Space>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
             <Select
               value={year}
               onChange={setYear}
               options={yearOptions}
               style={{ width: 140 }}
             />
-          </Space>
-        }
-        loading={loading}
-      >
+          </div>
+        </div>
+      </div>
+
+      <div className="page-card" style={{ background: '#fff', borderRadius: 12, padding: 24, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
         <Calendar
-          fullCellRender={dateFullCellRender}
+          cellRender={dateCellRender}
           headerRender={({ value, onChange }) => {
             const months = Array.from({ length: 12 }, (_, i) => ({
               value: i,
@@ -261,7 +231,7 @@ export default function WorkCalendarPage() {
             );
           }}
         />
-      </Card>
+      </div>
     </div>
   );
 }

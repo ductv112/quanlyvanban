@@ -17,7 +17,10 @@ import {
   Modal,
   Tag,
   ColorPicker,
+  Segmented,
+  Table,
 } from 'antd';
+import { CalendarOutlined, UnorderedListOutlined } from '@ant-design/icons';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
@@ -56,6 +59,7 @@ export default function LichCaNhanPage() {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(false);
   const [currentDate, setCurrentDate] = useState<Dayjs>(dayjs());
+  const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
@@ -287,14 +291,31 @@ export default function LichCaNhanPage() {
   return (
     <div>
       <div className="page-header">
-        <h2 className="page-title">Lịch cá nhân</h2>
-        <p className="page-description">Quản lý lịch làm việc và sự kiện cá nhân</p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <h2 className="page-title">Lịch cá nhân</h2>
+            <p className="page-description">Quản lý lịch làm việc và sự kiện cá nhân</p>
+          </div>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+            <Segmented
+              options={[
+                { label: <span><CalendarOutlined /> Lịch</span>, value: 'calendar' },
+                { label: <span><UnorderedListOutlined /> Danh sách</span>, value: 'list' },
+              ]}
+              value={viewMode}
+              onChange={(v) => setViewMode(v as 'calendar' | 'list')}
+            />
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => openCreateDrawer(dayjs())}>
+              Thêm sự kiện
+            </Button>
+          </div>
+        </div>
       </div>
 
       <div className="page-card" style={{ background: '#fff', borderRadius: 12, padding: 24, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
         {loading ? (
           <Skeleton active paragraph={{ rows: 10 }} />
-        ) : (
+        ) : viewMode === 'calendar' ? (
           <Popover
             content={popoverContent}
             title={popoverDate ? `Ngày ${popoverDate.format('DD/MM/YYYY')}` : ''}
@@ -315,6 +336,21 @@ export default function LichCaNhanPage() {
               }}
             />
           </Popover>
+        ) : (
+          <Table
+            dataSource={events}
+            rowKey="id"
+            pagination={false}
+            locale={{ emptyText: 'Chưa có sự kiện nào' }}
+            columns={[
+              { title: 'Tiêu đề', dataIndex: 'title', key: 'title' },
+              { title: 'Ngày bắt đầu', dataIndex: 'start_date', key: 'start_date', width: 160, render: (v: string) => v ? dayjs(v).format('DD/MM/YYYY HH:mm') : '---' },
+              { title: 'Ngày kết thúc', dataIndex: 'end_date', key: 'end_date', width: 160, render: (v: string) => v ? dayjs(v).format('DD/MM/YYYY HH:mm') : '---' },
+              { title: 'Cả ngày', dataIndex: 'all_day', key: 'all_day', width: 80, render: (v: boolean) => v ? <Tag color="blue">Cả ngày</Tag> : '---' },
+              { title: 'Màu', dataIndex: 'color', key: 'color', width: 60, render: (v: string) => v ? <div style={{ width: 16, height: 16, borderRadius: 4, background: v }} /> : '---' },
+            ]}
+            onRow={(record) => ({ onClick: () => { setEditingEvent(record); setDrawerOpen(true); form.setFieldsValue({ ...record, start_date: record.start_date ? dayjs(record.start_date) : null, end_date: record.end_date ? dayjs(record.end_date) : null }); }, style: { cursor: 'pointer' } })}
+          />
         )}
       </div>
 
@@ -332,7 +368,7 @@ export default function LichCaNhanPage() {
       {/* Drawer for full create/edit */}
       <Drawer
         title={editingEvent ? 'Chỉnh sửa sự kiện' : 'Thêm sự kiện mới'}
-        width={720}
+        size={720}
         open={drawerOpen}
         rootClassName="drawer-gradient"
         onClose={() => {

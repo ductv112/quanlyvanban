@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
-  Card, Row, Col, Table, Button, Input, Tree, Space, Drawer,
+  Card, Row, Col, Table, Button, Input, InputNumber, Tree, Space, Drawer,
   Form, TreeSelect, Skeleton, Dropdown, Modal, App, Upload, Select,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
@@ -24,7 +24,7 @@ interface DocCategory {
   code: string;
   name: string;
   description: string;
-  date_process: string;
+  date_process?: number;
 }
 
 interface Document {
@@ -192,6 +192,30 @@ export default function TaiLieuPage() {
     });
   };
 
+  const setCatBackendFieldError = (errorMessage: string): boolean => {
+    const fieldErrorMap: Record<string, string> = {
+      'Mã danh mục đã tồn tại': 'code',
+    };
+    const fieldName = fieldErrorMap[errorMessage];
+    if (fieldName) {
+      catForm.setFields([{ name: fieldName, errors: [errorMessage] }]);
+      return true;
+    }
+    return false;
+  };
+
+  const setDocBackendFieldError = (errorMessage: string): boolean => {
+    const fieldErrorMap: Record<string, string> = {
+      'Tiêu đề tài liệu là bắt buộc': 'title',
+    };
+    const fieldName = fieldErrorMap[errorMessage];
+    if (fieldName) {
+      docForm.setFields([{ name: fieldName, errors: [errorMessage] }]);
+      return true;
+    }
+    return false;
+  };
+
   const handleSaveCategory = async () => {
     try {
       const values = await catForm.validateFields();
@@ -206,9 +230,9 @@ export default function TaiLieuPage() {
       setCatDrawerOpen(false);
       fetchCategories();
     } catch (err: any) {
-      if (err?.response?.data?.message) {
-        message.error(err.response.data.message);
-      }
+      if (err?.errorFields) return;
+      const msg = err?.response?.data?.message;
+      if (msg && !setCatBackendFieldError(msg)) message.error(msg);
     } finally {
       setCatSaving(false);
     }
@@ -304,9 +328,9 @@ export default function TaiLieuPage() {
       setDocDrawerOpen(false);
       fetchDocuments();
     } catch (err: any) {
-      if (err?.response?.data?.message) {
-        message.error(err.response.data.message);
-      }
+      if (err?.errorFields) return;
+      const msg = err?.response?.data?.message;
+      if (msg && !setDocBackendFieldError(msg)) message.error(msg);
     } finally {
       setDocSaving(false);
     }
@@ -429,7 +453,7 @@ export default function TaiLieuPage() {
         <span className="page-title">Quản lý tài liệu</span>
       </div>
 
-      <Row gutter={16} style={{ margin: '0 16px 16px' }}>
+      <Row gutter={16} wrap={false} style={{ margin: '0 16px 16px' }}>
         {/* Left: Category tree */}
         <Col flex="280px">
           <Card
@@ -574,7 +598,7 @@ export default function TaiLieuPage() {
         title={editingCategory ? 'Chỉnh sửa danh mục' : 'Thêm danh mục tài liệu'}
         open={catDrawerOpen}
         onClose={() => setCatDrawerOpen(false)}
-        width={520}
+        size={520}
         rootClassName="drawer-gradient"
         extra={
           <Space>
@@ -587,14 +611,14 @@ export default function TaiLieuPage() {
       >
         <Form form={catForm} layout="vertical" validateTrigger="onSubmit">
           <Form.Item name="code" label="Mã danh mục">
-            <Input placeholder="Nhập mã danh mục" />
+            <Input placeholder="Nhập mã danh mục" maxLength={50} />
           </Form.Item>
           <Form.Item
             name="name"
             label="Tên danh mục"
             rules={[{ required: true, message: 'Vui lòng nhập tên danh mục' }]}
           >
-            <Input placeholder="Nhập tên danh mục" />
+            <Input placeholder="Nhập tên danh mục" maxLength={200} />
           </Form.Item>
           <Form.Item name="parent_id" label="Danh mục cha">
             <TreeSelect
@@ -608,8 +632,8 @@ export default function TaiLieuPage() {
           <Form.Item name="description" label="Mô tả">
             <TextArea rows={3} placeholder="Mô tả danh mục" />
           </Form.Item>
-          <Form.Item name="date_process" label="Ngày xử lý">
-            <Input placeholder="Ngày xử lý" />
+          <Form.Item name="date_process" label="Thời hạn xử lý (ngày)">
+            <InputNumber min={0} style={{ width: '100%' }} placeholder="Số ngày xử lý" />
           </Form.Item>
         </Form>
       </Drawer>
@@ -619,7 +643,7 @@ export default function TaiLieuPage() {
         title={editingDoc ? 'Chỉnh sửa tài liệu' : 'Thêm tài liệu mới'}
         open={docDrawerOpen}
         onClose={() => setDocDrawerOpen(false)}
-        width={720}
+        size={720}
         rootClassName="drawer-gradient"
         extra={
           <Space>
@@ -636,7 +660,7 @@ export default function TaiLieuPage() {
             label="Tên tài liệu"
             rules={[{ required: true, message: 'Vui lòng nhập tên tài liệu' }]}
           >
-            <Input placeholder="Nhập tên tài liệu" />
+            <Input placeholder="Nhập tên tài liệu" maxLength={500} />
           </Form.Item>
 
           <Form.Item
@@ -658,7 +682,7 @@ export default function TaiLieuPage() {
           </Form.Item>
 
           <Form.Item name="keyword" label="Từ khóa">
-            <Input placeholder="Nhập từ khóa (cách nhau bằng dấu phẩy)" />
+            <Input placeholder="Nhập từ khóa (cách nhau bằng dấu phẩy)" maxLength={500} />
           </Form.Item>
 
           <Form.Item

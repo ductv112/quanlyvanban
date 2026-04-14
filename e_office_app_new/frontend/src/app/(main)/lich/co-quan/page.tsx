@@ -338,7 +338,7 @@ export default function LichCoQuanPage() {
       {/* Drawer */}
       <Drawer
         title={editingEvent ? 'Chỉnh sửa sự kiện' : 'Thêm sự kiện mới'}
-        width={720}
+        size={720}
         open={drawerOpen}
         rootClassName="drawer-gradient"
         onClose={() => {

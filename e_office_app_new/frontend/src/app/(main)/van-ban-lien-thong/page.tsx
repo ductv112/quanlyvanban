@@ -223,7 +223,7 @@ export default function LienThongDocPage() {
           emptyText: (
             <Empty
               description={
-                <Space direction="vertical" size={4}>
+                <Space orientation="vertical" size={4}>
                   <span style={{ fontWeight: 600 }}>Không có văn bản liên thông</span>
                   <span style={{ color: '#8c8c8c', fontSize: 13 }}>Hiện chưa có văn bản liên thông nào. Hãy kiểm tra lại bộ lọc.</span>
                 </Space>

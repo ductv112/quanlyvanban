@@ -9,6 +9,7 @@ export interface PositionRow {
   is_active: boolean;
   is_leader: boolean;
   is_handle_document: boolean;
+  staff_count?: number;
   total_count: number;
 }
 

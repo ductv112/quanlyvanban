@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  Table, Button, Input, Select, DatePicker, Drawer, Form,
+  Table, Button, Input, InputNumber, Select, DatePicker, Drawer, Form,
   Tag, Modal, App, Row, Col, Dropdown, Space, Skeleton, TimePicker,
   Divider,
 } from 'antd';
@@ -68,7 +68,7 @@ interface MeetingRecord {
   master_id: number | null;
   master_name: string | null;
   secretary_id: number | null;
-  secretary_name: string | null;
+  secretary_name?: string | null;
   online_link: string | null;
   component: string | null;
   approved: number;
@@ -179,7 +179,7 @@ export default function CuocHopPage() {
 
   const fetchStaff = useCallback(async () => {
     try {
-      const { data: res } = await api.get('/quan-tri/nguoi-dung', { params: { page: 1, page_size: 500 } });
+      const { data: res } = await api.get('/quan-tri/nguoi-dung', { params: { page: 1, pageSize: 500 } });
       setStaffOptions((res.data || []).map((s: { id: number; full_name: string }) => ({ value: s.id, label: s.full_name })));
     } catch {
       // silent
@@ -242,7 +242,8 @@ export default function CuocHopPage() {
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } }; errorFields?: unknown[] };
       if (e?.errorFields) return;
-      message.error(e?.response?.data?.message || 'Lỗi lưu cuộc họp');
+      const msg = e?.response?.data?.message;
+      if (msg && !setBackendFieldError(msg)) message.error(msg);
     } finally {
       setFormLoading(false);
     }
@@ -324,6 +325,42 @@ export default function CuocHopPage() {
     setRoomFormOpen(true);
   };
 
+  const setRoomBackendFieldError = (errorMessage: string): boolean => {
+    const fieldErrorMap: Record<string, string> = {
+      'Mã phòng họp đã tồn tại': 'code',
+    };
+    const fieldName = fieldErrorMap[errorMessage];
+    if (fieldName) {
+      roomForm.setFields([{ name: fieldName, errors: [errorMessage] }]);
+      return true;
+    }
+    return false;
+  };
+
+  const setTypeBackendFieldError = (errorMessage: string): boolean => {
+    const fieldErrorMap: Record<string, string> = {
+      'Tên loại cuộc họp đã tồn tại': 'name',
+    };
+    const fieldName = fieldErrorMap[errorMessage];
+    if (fieldName) {
+      typeForm.setFields([{ name: fieldName, errors: [errorMessage] }]);
+      return true;
+    }
+    return false;
+  };
+
+  const setBackendFieldError = (errorMessage: string): boolean => {
+    const fieldErrorMap: Record<string, string> = {
+      'Thành viên đã được thêm vào cuộc họp': 'name',
+    };
+    const fieldName = fieldErrorMap[errorMessage];
+    if (fieldName) {
+      form.setFields([{ name: fieldName, errors: [errorMessage] }]);
+      return true;
+    }
+    return false;
+  };
+
   const handleSaveRoom = async () => {
     try {
       const values = await roomForm.validateFields();
@@ -340,7 +377,8 @@ export default function CuocHopPage() {
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } }; errorFields?: unknown[] };
       if (e?.errorFields) return;
-      message.error(e?.response?.data?.message || 'Lỗi lưu phòng họp');
+      const msg = e?.response?.data?.message;
+      if (msg && !setRoomBackendFieldError(msg)) message.error(msg);
     } finally {
       setRoomFormLoading(false);
     }
@@ -405,7 +443,8 @@ export default function CuocHopPage() {
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } }; errorFields?: unknown[] };
       if (e?.errorFields) return;
-      message.error(e?.response?.data?.message || 'Lỗi lưu loại cuộc họp');
+      const msg = e?.response?.data?.message;
+      if (msg && !setTypeBackendFieldError(msg)) message.error(msg);
     } finally {
       setTypeFormLoading(false);
     }
@@ -694,7 +733,7 @@ export default function CuocHopPage() {
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         title={editingRecord ? 'Chỉnh sửa cuộc họp' : 'Đăng ký cuộc họp'}
-        width={720}
+        size={720}
         rootClassName="drawer-gradient"
         extra={
           <Space>
@@ -707,11 +746,11 @@ export default function CuocHopPage() {
           <Row gutter={16}>
             <Col span={24}>
               <Form.Item name="name" label="Tên cuộc họp" rules={[{ required: true, message: 'Vui lòng nhập tên cuộc họp' }]}>
-                <Input placeholder="Nhập tên cuộc họp" />
+                <Input placeholder="Nhập tên cuộc họp" maxLength={500} />
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item name="room_id" label="Phòng họp">
+              <Form.Item name="room_id" label="Phòng họp" rules={[{ required: true, message: 'Chọn phòng họp' }]}>
                 <Select placeholder="Chọn phòng họp" allowClear options={rooms.map((r) => ({ value: r.id, label: r.name }))} />
               </Form.Item>
             </Col>
@@ -726,7 +765,21 @@ export default function CuocHopPage() {
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item name="end_date" label="Ngày kết thúc">
+              <Form.Item
+                name="end_date"
+                label="Ngày kết thúc"
+                dependencies={['start_date']}
+                rules={[
+                  ({ getFieldValue }) => ({
+                    validator(_, value) {
+                      const startDate = getFieldValue('start_date');
+                      if (!value || !startDate) return Promise.resolve();
+                      if (value.isSameOrAfter(startDate, 'day')) return Promise.resolve();
+                      return Promise.reject(new Error('Ngày kết thúc phải sau hoặc bằng ngày họp'));
+                    },
+                  }),
+                ]}
+              >
                 <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" placeholder="Chọn ngày" />
               </Form.Item>
             </Col>
@@ -752,12 +805,12 @@ export default function CuocHopPage() {
             </Col>
             <Col span={24}>
               <Form.Item name="online_link" label="Đường dẫn họp trực tuyến">
-                <Input placeholder="https://..." />
+                <Input placeholder="https://..." maxLength={500} />
               </Form.Item>
             </Col>
             <Col span={24}>
               <Form.Item name="component" label="Thành phần tham dự">
-                <Input placeholder="Nhập thành phần tham dự" />
+                <Input placeholder="Nhập thành phần tham dự" maxLength={500} />
               </Form.Item>
             </Col>
             <Col span={24}>
@@ -774,7 +827,7 @@ export default function CuocHopPage() {
         open={roomDrawerOpen}
         onClose={() => setRoomDrawerOpen(false)}
         title="Quản lý phòng họp"
-        width={600}
+        size={600}
         extra={<Button type="primary" icon={<PlusOutlined />} onClick={() => openRoomForm()}>Thêm phòng</Button>}
       >
         <Table<Room>
@@ -798,16 +851,16 @@ export default function CuocHopPage() {
         >
           <Form form={roomForm} layout="vertical">
             <Form.Item name="code" label="Mã phòng" rules={[{ required: true, message: 'Vui lòng nhập mã phòng' }]}>
-              <Input placeholder="VD: P101" />
+              <Input placeholder="VD: P101" maxLength={50} />
             </Form.Item>
             <Form.Item name="name" label="Tên phòng" rules={[{ required: true, message: 'Vui lòng nhập tên phòng' }]}>
-              <Input placeholder="Nhập tên phòng họp" />
+              <Input placeholder="Nhập tên phòng họp" maxLength={200} />
             </Form.Item>
             <Form.Item name="location" label="Địa điểm">
-              <Input placeholder="Nhập địa điểm" />
+              <Input placeholder="Nhập địa điểm" maxLength={500} />
             </Form.Item>
             <Form.Item name="sort_order" label="Thứ tự sắp xếp">
-              <Input type="number" />
+              <InputNumber style={{ width: '100%' }} min={0} />
             </Form.Item>
             <Form.Item name="note" label="Ghi chú">
               <TextArea rows={2} />
@@ -819,11 +872,37 @@ export default function CuocHopPage() {
       {/* ── Meeting Type Management Drawer ───────────────────────────────────── */}
       <Drawer
         open={typeDrawerOpen}
-        onClose={() => setTypeDrawerOpen(false)}
+        onClose={() => { setTypeDrawerOpen(false); setEditingType(null); typeForm.resetFields(); }}
         title="Quản lý loại cuộc họp"
-        width={600}
-        extra={<Button type="primary" icon={<PlusOutlined />} onClick={() => openTypeForm()}>Thêm loại</Button>}
+        size={600}
+        rootClassName="drawer-gradient"
       >
+        <Card
+          size="small"
+          title={editingType ? 'Chỉnh sửa loại cuộc họp' : 'Thêm loại cuộc họp mới'}
+          style={{ marginBottom: 16 }}
+        >
+          <Form form={typeForm} layout="vertical" validateTrigger="onSubmit">
+            <Form.Item name="name" label="Tên loại" rules={[{ required: true, message: 'Vui lòng nhập tên loại' }]}>
+              <Input placeholder="Nhập tên loại cuộc họp" maxLength={200} />
+            </Form.Item>
+            <Form.Item name="description" label="Mô tả">
+              <TextArea rows={2} />
+            </Form.Item>
+            <Form.Item name="sort_order" label="Thứ tự sắp xếp">
+              <InputNumber style={{ width: '100%' }} min={0} />
+            </Form.Item>
+            <Space>
+              <Button type="primary" loading={typeFormLoading} onClick={handleSaveType}>
+                {editingType ? 'Cập nhật' : 'Thêm mới'}
+              </Button>
+              {editingType && (
+                <Button onClick={() => { setEditingType(null); typeForm.resetFields(); }}>Hủy</Button>
+              )}
+            </Space>
+          </Form>
+        </Card>
+
         <Table<MeetingType>
           rowKey="id"
           columns={typeColumns}
@@ -832,28 +911,6 @@ export default function CuocHopPage() {
           size="small"
           pagination={false}
         />
-
-        <Modal
-          open={typeFormOpen}
-          onCancel={() => setTypeFormOpen(false)}
-          title={editingType ? 'Chỉnh sửa loại cuộc họp' : 'Thêm loại cuộc họp'}
-          onOk={handleSaveType}
-          confirmLoading={typeFormLoading}
-          okText="Lưu"
-          cancelText="Hủy"
-        >
-          <Form form={typeForm} layout="vertical">
-            <Form.Item name="name" label="Tên loại" rules={[{ required: true, message: 'Vui lòng nhập tên loại' }]}>
-              <Input placeholder="Nhập tên loại cuộc họp" />
-            </Form.Item>
-            <Form.Item name="description" label="Mô tả">
-              <TextArea rows={2} />
-            </Form.Item>
-            <Form.Item name="sort_order" label="Thứ tự sắp xếp">
-              <Input type="number" />
-            </Form.Item>
-          </Form>
-        </Modal>
       </Drawer>
 
       {/* ── Reject Modal ──────────────────────────────────────────────────────── */}

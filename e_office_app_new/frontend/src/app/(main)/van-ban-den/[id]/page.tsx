@@ -113,7 +113,7 @@ export default function IncomingDocDetailPage() {
 
   const fetchStaffOptions = useCallback(async () => {
     try {
-      const { data: res } = await api.get('/quan-tri/nhan-vien', { params: { page: 1, page_size: 200 } });
+      const { data: res } = await api.get('/quan-tri/nguoi-dung', { params: { page: 1, pageSize: 200 } });
       setStaffOptions((res.data || []).map((s: { id: number; full_name: string; position_name?: string }) => ({
         value: s.id,
         label: s.full_name + (s.position_name ? ` (${s.position_name})` : ''),
@@ -579,7 +579,7 @@ export default function IncomingDocDetailPage() {
       {/* ====== DRAWER GIAO VIỆC ====== */}
       <Drawer
         title="Giao việc"
-        width={720}
+        size={720}
         open={giaoViecOpen}
         onClose={() => { setGiaoViecOpen(false); giaoViecForm.resetFields(); }}
         rootClassName="drawer-gradient"
