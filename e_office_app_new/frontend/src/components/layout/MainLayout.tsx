@@ -37,6 +37,8 @@ import {
   ContactsOutlined,
   DatabaseOutlined,
   AuditOutlined,
+  ApiOutlined,
+  NotificationOutlined,
 } from '@ant-design/icons';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
@@ -126,6 +128,16 @@ const menuItems: MenuItem[] = [
     ],
   },
   {
+    key: 'tich-hop',
+    icon: <ApiOutlined />,
+    label: 'Tích hợp',
+    children: [
+      { key: '/lgsp', label: 'Liên thông văn bản', icon: <SwapOutlined /> },
+      { key: '/lgsp/co-quan', label: 'Cơ quan liên thông', icon: <BankOutlined /> },
+      { key: '/thong-bao-kenh', label: 'Cấu hình thông báo', icon: <NotificationOutlined /> },
+    ],
+  },
+  {
     type: 'divider',
   },
   {
@@ -201,6 +213,9 @@ const breadcrumbMap: Record<string, string> = {
   '/hop-dong': 'Hợp đồng',
   '/cuoc-hop': 'Cuộc họp',
   '/cuoc-hop/thong-ke': 'Thống kê cuộc họp',
+  '/lgsp': 'Liên thông văn bản',
+  '/lgsp/co-quan': 'Cơ quan liên thông',
+  '/thong-bao-kenh': 'Cấu hình thông báo',
 };
 
 function buildBreadcrumbs(pathname: string) {
