@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   Card, Tag, Button, Space, Row, Col, Timeline, Avatar,
   Upload, Modal, Input, Popconfirm, Checkbox, Empty, Spin, App,
-  Badge, Typography, Flex, Dropdown,
+  Badge, Typography, Flex, Dropdown, Drawer, Form, DatePicker, Select,
 } from 'antd';
 import {
   ArrowLeftOutlined, CheckCircleOutlined, CloseCircleOutlined, SendOutlined,
@@ -12,7 +12,8 @@ import {
   StarOutlined, StarFilled, CommentOutlined, PaperClipOutlined,
   InboxOutlined, ClockCircleOutlined, UserOutlined, FilePdfOutlined,
   FileImageOutlined, FileWordOutlined, FileExcelOutlined, FileOutlined,
-  EditOutlined, SafetyCertificateOutlined,
+  EditOutlined, SafetyCertificateOutlined, ThunderboltOutlined,
+  RollbackOutlined,
 } from '@ant-design/icons';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth.store';
@@ -94,7 +95,31 @@ export default function IncomingDocDetailPage() {
   const [addingNote, setAddingNote] = useState(false);
   const [uploading, setUploading] = useState(false);
 
+  // Giao việc drawer
+  const [giaoViecOpen, setGiaoViecOpen] = useState(false);
+  const [giaoViecSaving, setGiaoViecSaving] = useState(false);
+  const [giaoViecForm] = Form.useForm();
+  const [staffOptions, setStaffOptions] = useState<{ value: number; label: string }[]>([]);
+
+  // Chuyển lại modal
+  const [chuyenLaiOpen, setChuyenLaiOpen] = useState(false);
+  const [chuyenLaiSaving, setChuyenLaiSaving] = useState(false);
+  const [chuyenLaiForm] = Form.useForm();
+
+  // Action loading
+  const [actionLoading, setActionLoading] = useState(false);
+
   const fetchDoc = useCallback(async () => { try { const { data: res } = await api.get(`/van-ban-den/${docId}`); setDoc(res.data); } catch { message.error('Không tìm thấy văn bản'); router.push('/van-ban-den'); } }, [docId, message, router]);
+
+  const fetchStaffOptions = useCallback(async () => {
+    try {
+      const { data: res } = await api.get('/quan-tri/nhan-vien', { params: { page: 1, page_size: 200 } });
+      setStaffOptions((res.data || []).map((s: { id: number; full_name: string; position_name?: string }) => ({
+        value: s.id,
+        label: s.full_name + (s.position_name ? ` (${s.position_name})` : ''),
+      })));
+    } catch { /* ignore */ }
+  }, []);
   const fetchAttachments = useCallback(async () => { try { const { data: res } = await api.get(`/van-ban-den/${docId}/dinh-kem`); setAttachments(res.data || []); } catch {} }, [docId]);
   const fetchRecipients = useCallback(async () => { try { const { data: res } = await api.get(`/van-ban-den/${docId}/nguoi-nhan`); setRecipients(res.data || []); } catch {} }, [docId]);
   const fetchHistory = useCallback(async () => { try { const { data: res } = await api.get(`/van-ban-den/${docId}/lich-su`); setHistory(res.data || []); } catch {} }, [docId]);
@@ -108,6 +133,85 @@ export default function IncomingDocDetailPage() {
   // Actions
   const handleApprove = async () => { try { await api.patch(`/van-ban-den/${docId}/duyet`); message.success('Duyệt thành công'); fetchDoc(); fetchHistory(); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } };
   const handleUnapprove = async () => { try { await api.patch(`/van-ban-den/${docId}/huy-duyet`); message.success('Hủy duyệt thành công'); fetchDoc(); fetchHistory(); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } };
+
+  const openGiaoViec = () => {
+    giaoViecForm.resetFields();
+    if (doc) {
+      giaoViecForm.setFieldsValue({
+        name: doc.abstract,
+        end_date: doc.expired_date ? dayjs(doc.expired_date) : undefined,
+      });
+    }
+    fetchStaffOptions();
+    setGiaoViecOpen(true);
+  };
+
+  const handleGiaoViec = async () => {
+    try {
+      const values = await giaoViecForm.validateFields();
+      setGiaoViecSaving(true);
+      const payload = {
+        name: values.name,
+        start_date: dayjs().toISOString(),
+        end_date: values.end_date?.toISOString() || null,
+        curator_ids: values.curator_ids || [],
+        note: values.note || '',
+      };
+      await api.post(`/van-ban-den/${docId}/giao-viec`, payload);
+      message.success('Giao việc thành công');
+      setGiaoViecOpen(false);
+      giaoViecForm.resetFields();
+    } catch (e: any) {
+      if (e?.response?.data?.message) message.error(e.response.data.message);
+    } finally {
+      setGiaoViecSaving(false);
+    }
+  };
+
+  const handleNhanBanGiao = async () => {
+    setActionLoading(true);
+    try {
+      await api.post(`/van-ban-den/${docId}/nhan-ban-giao`, {});
+      message.success('Nhận bàn giao thành công');
+      fetchDoc();
+      fetchHistory();
+    } catch (e: any) {
+      message.error(e?.response?.data?.message || 'Thao tác thất bại');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleChuyenLai = async () => {
+    try {
+      const values = await chuyenLaiForm.validateFields();
+      setChuyenLaiSaving(true);
+      await api.post(`/van-ban-den/${docId}/chuyen-lai`, { reason: values.reason });
+      message.success('Chuyển lại văn bản thành công');
+      setChuyenLaiOpen(false);
+      chuyenLaiForm.resetFields();
+      fetchDoc();
+      fetchHistory();
+    } catch (e: any) {
+      if (e?.response?.data?.message) message.error(e.response.data.message);
+    } finally {
+      setChuyenLaiSaving(false);
+    }
+  };
+
+  const handleHuyDuyet = async () => {
+    setActionLoading(true);
+    try {
+      await api.post(`/van-ban-den/${docId}/huy-duyet`, {});
+      message.success('Đã hủy duyệt văn bản');
+      fetchDoc();
+      fetchHistory();
+    } catch (e: any) {
+      message.error(e?.response?.data?.message || 'Thao tác thất bại');
+    } finally {
+      setActionLoading(false);
+    }
+  };
   const handleDelete = () => { modal.confirm({ title: 'Xác nhận xóa', content: 'Xóa văn bản này?', okText: 'Xóa', okType: 'danger', cancelText: 'Hủy', onOk: async () => { try { await api.delete(`/van-ban-den/${docId}`); message.success('Đã xóa'); router.push('/van-ban-den'); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } } }); };
   const handleReceivePaper = async () => { try { await api.patch(`/van-ban-den/${docId}/nhan-ban-giay`); message.success('Đã xác nhận nhận bản giấy'); fetchDoc(); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } };
   const handleToggleBookmark = async () => { try { const { data: res } = await api.post(`/van-ban-den/${docId}/danh-dau`, {}); setIsBookmarked(res.data?.is_bookmarked); message.success(res.data?.message); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } };
@@ -175,6 +279,58 @@ export default function IncomingDocDetailPage() {
             icon={isBookmarked ? <StarFilled style={{ color: '#faad14' }} /> : <StarOutlined />}
             onClick={handleToggleBookmark}
           />
+
+          {/* Giao việc — always visible */}
+          <Button
+            type="primary"
+            icon={<ThunderboltOutlined />}
+            style={{ backgroundColor: '#0891B2', borderColor: '#0891B2' }}
+            onClick={openGiaoViec}
+          >
+            Giao việc
+          </Button>
+
+          {/* Nhận bàn giao */}
+          <Popconfirm
+            title="Nhận bàn giao văn bản?"
+            description="Bạn có chắc chắn nhận bàn giao văn bản này?"
+            okText="Xác nhận"
+            cancelText="Hủy"
+            onConfirm={handleNhanBanGiao}
+            disabled={actionLoading}
+          >
+            <Button
+              icon={<CheckCircleOutlined />}
+              loading={actionLoading}
+              style={{ color: '#059669', borderColor: '#059669' }}
+            >
+              Nhận bàn giao
+            </Button>
+          </Popconfirm>
+
+          {/* Chuyển lại */}
+          <Button
+            icon={<RollbackOutlined />}
+            onClick={() => { chuyenLaiForm.resetFields(); setChuyenLaiOpen(true); }}
+          >
+            Chuyển lại
+          </Button>
+
+          {/* Hủy duyệt */}
+          <Popconfirm
+            title="Hủy duyệt văn bản?"
+            description="Văn bản sẽ được chuyển về trạng thái chưa duyệt. Thao tác này không thể hoàn tác."
+            okText="Hủy duyệt"
+            okButtonProps={{ danger: true }}
+            cancelText="Đóng"
+            onConfirm={handleHuyDuyet}
+            disabled={actionLoading}
+          >
+            <Button danger icon={<CloseCircleOutlined />} loading={actionLoading}>
+              Hủy duyệt
+            </Button>
+          </Popconfirm>
+
           {!doc.approved && (
             <>
               <Button icon={<EditOutlined />} onClick={() => router.push(`/van-ban-den?edit=${doc.id}`)}>Sửa</Button>
@@ -191,7 +347,6 @@ export default function IncomingDocDetailPage() {
               <Button type="primary" icon={<SendOutlined />} onClick={openSendModal}>Gửi</Button>
               <Button icon={<CommentOutlined />} onClick={() => document.getElementById('note-input')?.focus()}>Bút phê</Button>
               <Dropdown menu={{ items: [
-                { key: 'unapprove', icon: <CloseCircleOutlined />, label: 'Hủy duyệt', onClick: handleUnapprove },
                 ...(!doc.is_received_paper ? [{ key: 'paper', icon: <InboxOutlined />, label: 'Nhận bản giấy', onClick: handleReceivePaper }] : []),
               ] }}>
                 <Button icon={<MoreOutlined />} />
@@ -419,6 +574,88 @@ export default function IncomingDocDetailPage() {
             </div>
           ))}
         </div>
+      </Modal>
+
+      {/* ====== DRAWER GIAO VIỆC ====== */}
+      <Drawer
+        title="Giao việc"
+        width={720}
+        open={giaoViecOpen}
+        onClose={() => { setGiaoViecOpen(false); giaoViecForm.resetFields(); }}
+        rootClassName="drawer-gradient"
+        extra={
+          <Space>
+            <Button onClick={() => { setGiaoViecOpen(false); giaoViecForm.resetFields(); }} ghost>Hủy</Button>
+            <Button type="primary" loading={giaoViecSaving} onClick={handleGiaoViec}>Tạo và giao việc</Button>
+          </Space>
+        }
+      >
+        <Form form={giaoViecForm} layout="vertical" validateTrigger="onSubmit" autoComplete="off">
+          <Form.Item
+            name="name"
+            label="Tên hồ sơ"
+            rules={[{ required: true, message: 'Vui lòng nhập tên hồ sơ' }]}
+          >
+            <Input placeholder="Nhập tên hồ sơ công việc..." maxLength={200} />
+          </Form.Item>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="end_date"
+                label="Hạn xử lý"
+                rules={[{ required: true, message: 'Vui lòng chọn hạn xử lý' }]}
+              >
+                <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" placeholder="Chọn ngày hạn xử lý" />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Form.Item
+            name="curator_ids"
+            label="Người phụ trách"
+            rules={[{ required: true, message: 'Vui lòng chọn ít nhất một người phụ trách' }]}
+          >
+            <Select
+              mode="multiple"
+              placeholder="Tìm kiếm và chọn người phụ trách..."
+              options={staffOptions}
+              showSearch
+              filterOption={(input, option) =>
+                (option?.label as string)?.toLowerCase().includes(input.toLowerCase())
+              }
+              style={{ width: '100%' }}
+            />
+          </Form.Item>
+          <Form.Item name="note" label="Ghi chú">
+            <Input.TextArea rows={4} placeholder="Nhập ghi chú (không bắt buộc)..." maxLength={500} showCount />
+          </Form.Item>
+        </Form>
+      </Drawer>
+
+      {/* ====== MODAL CHUYỂN LẠI ====== */}
+      <Modal
+        title="Lý do chuyển lại"
+        open={chuyenLaiOpen}
+        onCancel={() => { setChuyenLaiOpen(false); chuyenLaiForm.resetFields(); }}
+        onOk={handleChuyenLai}
+        okText="Chuyển lại"
+        cancelText="Hủy"
+        confirmLoading={chuyenLaiSaving}
+        width={480}
+      >
+        <Form form={chuyenLaiForm} layout="vertical" validateTrigger="onSubmit" style={{ marginTop: 16 }}>
+          <Form.Item
+            name="reason"
+            label="Lý do chuyển lại"
+            rules={[{ required: true, message: 'Vui lòng nhập lý do chuyển lại' }]}
+          >
+            <Input.TextArea
+              rows={4}
+              placeholder="Nhập lý do chuyển lại văn bản..."
+              maxLength={500}
+              showCount
+            />
+          </Form.Item>
+        </Form>
       </Modal>
     </div>
   );
