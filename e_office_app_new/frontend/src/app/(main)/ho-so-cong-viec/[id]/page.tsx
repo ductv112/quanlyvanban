@@ -1,0 +1,1647 @@
+'use client';
+
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import {
+  Card, Tabs, Table, Button, Form, Input, Select, DatePicker, Tag, Badge,
+  Progress, Upload, List, Avatar, Divider, Modal, Slider, InputNumber, Space,
+  Breadcrumb, Skeleton, Radio, Popconfirm, App, Checkbox, Tree,
+} from 'antd';
+import type { ColumnsType } from 'antd/es/table';
+import type { DataNode } from 'antd/es/tree';
+import type { UploadRequestOption } from 'rc-upload/lib/interface';
+import {
+  ArrowLeftOutlined, FolderOutlined, FileTextOutlined, TeamOutlined,
+  CommentOutlined, PaperClipOutlined, ApartmentOutlined, SaveOutlined,
+  UploadOutlined, DeleteOutlined, DownloadOutlined, PlusOutlined,
+  ExclamationCircleOutlined, FilePdfOutlined, FileWordOutlined,
+  FileExcelOutlined, FileImageOutlined, FileOutlined, LinkOutlined,
+} from '@ant-design/icons';
+import { useRouter, useParams } from 'next/navigation';
+import dayjs from 'dayjs';
+import { api } from '@/lib/api';
+import { useAuthStore } from '@/stores/auth.store';
+import { buildTree } from '@/lib/tree-utils';
+
+const { TextArea } = Input;
+const { DirectoryTree } = Tree;
+
+// ===========================
+// Types
+// ===========================
+
+interface HscvDetail {
+  id: number;
+  name: string;
+  status: number;
+  open_date: string;
+  deadline: string;
+  field_id: number | null;
+  field_name: string | null;
+  doc_type_id: number | null;
+  doc_type_name: string | null;
+  process_id: number | null;
+  process_name: string | null;
+  lead_staff_id: number | null;
+  lead_staff_name: string | null;
+  signer_id: number | null;
+  signer_name: string | null;
+  progress: number;
+  comments: string | null;
+  parent_id: number | null;
+  parent_name: string | null;
+  created_at: string;
+  created_by: number;
+  created_by_name: string;
+  unit_id: number;
+}
+
+interface LinkedDoc {
+  id: number;
+  link_id: number;
+  doc_number: string;
+  abstract: string;
+  doc_type: string;
+  doc_type_name: string;
+  signed_date: string;
+}
+
+interface StaffItem {
+  id: number;
+  staff_id: number;
+  full_name: string;
+  position_name: string;
+  department_name: string;
+  role_type: number;
+  deadline: string | null;
+}
+
+interface AssignedStaff {
+  staff_id: number;
+  full_name: string;
+  position_name: string;
+  department_name: string;
+  role_type: number;
+  deadline: dayjs.Dayjs | null;
+}
+
+interface AvailableStaff {
+  staff_id: number;
+  full_name: string;
+  position_name: string;
+  checked: boolean;
+}
+
+interface Opinion {
+  id: number;
+  staff_id: number;
+  staff_name: string;
+  content: string;
+  created_at: string;
+}
+
+interface Attachment {
+  id: number;
+  file_name: string;
+  file_size: number;
+  file_type: string;
+  created_at: string;
+  created_by_name: string;
+}
+
+interface ChildHscv {
+  id: number;
+  name: string;
+  status: number;
+  open_date: string;
+  deadline: string;
+  progress: number;
+  lead_staff_name: string | null;
+}
+
+interface SearchDocItem {
+  id: number;
+  doc_number: string;
+  abstract: string;
+  doc_type_name: string;
+  signed_date: string;
+}
+
+interface DeptNode {
+  id: number;
+  name: string;
+  parent_id: number | null;
+  children?: DeptNode[];
+}
+
+// ===========================
+// Constants
+// ===========================
+
+const STATUS_MAP: Record<number, { text: string; color: string }> = {
+  0: { text: 'Mới tạo', color: 'blue' },
+  1: { text: 'Đang xử lý', color: 'processing' },
+  2: { text: 'Chờ trình ký', color: 'orange' },
+  3: { text: 'Đã trình ký', color: 'purple' },
+  4: { text: 'Hoàn thành', color: 'success' },
+  5: { text: 'Tạm dừng', color: 'default' },
+  '-1': { text: 'Từ chối', color: 'error' },
+  '-2': { text: 'Trả về', color: 'warning' },
+  '-3': { text: 'Đã hủy', color: 'default' },
+};
+
+const AVATAR_COLORS = [
+  '#1B3A5C', '#0891B2', '#059669', '#D97706', '#7C3AED',
+  '#DC2626', '#2563EB', '#0F766E', '#9333EA', '#C2410C',
+];
+
+function getAvatarColor(id: number): string {
+  return AVATAR_COLORS[id % AVATAR_COLORS.length];
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function getFileIcon(fileName: string): React.ReactNode {
+  const ext = fileName.split('.').pop()?.toLowerCase();
+  if (ext === 'pdf') return <FilePdfOutlined style={{ color: '#DC2626', fontSize: 18 }} />;
+  if (ext === 'doc' || ext === 'docx') return <FileWordOutlined style={{ color: '#2563EB', fontSize: 18 }} />;
+  if (ext === 'xls' || ext === 'xlsx') return <FileExcelOutlined style={{ color: '#059669', fontSize: 18 }} />;
+  if (ext === 'png' || ext === 'jpg' || ext === 'jpeg') return <FileImageOutlined style={{ color: '#D97706', fontSize: 18 }} />;
+  return <FileOutlined style={{ color: '#64748B', fontSize: 18 }} />;
+}
+
+// ===========================
+// Toolbar button config
+// ===========================
+
+interface ToolbarButton {
+  label: string;
+  type: 'primary' | 'default';
+  danger?: boolean;
+  ghost?: boolean;
+  style?: React.CSSProperties;
+  action: string;
+  newStatus?: number;
+}
+
+function getToolbarButtons(status: number): ToolbarButton[] {
+  switch (status) {
+    case 0:
+      return [
+        { label: 'Chuyển xử lý', type: 'primary', action: 'change', newStatus: 1 },
+        { label: 'Sửa', type: 'default', action: 'edit' },
+        { label: 'Xóa', type: 'default', danger: true, ghost: true, action: 'delete' },
+      ];
+    case 1:
+      return [
+        { label: 'Trình ký', type: 'primary', action: 'submit' },
+        { label: 'Cập nhật tiến độ', type: 'default', action: 'progress' },
+        { label: 'Tạm dừng', type: 'default', action: 'change', newStatus: 5 },
+      ];
+    case 2:
+      return [
+        { label: 'Gửi trình ký', type: 'primary', action: 'change', newStatus: 3 },
+        { label: 'Trả về', type: 'default', action: 'return' },
+      ];
+    case 3:
+      return [
+        { label: 'Duyệt hồ sơ', type: 'primary', action: 'approve', style: { backgroundColor: '#059669', borderColor: '#059669' } },
+        { label: 'Từ chối', type: 'primary', danger: true, action: 'reject' },
+        { label: 'Trả về', type: 'default', action: 'return' },
+      ];
+    case 4:
+      return [{ label: 'Xem lịch sử', type: 'default', action: 'history' }];
+    case 5:
+      return [
+        { label: 'Tiếp tục xử lý', type: 'primary', action: 'change', newStatus: 1 },
+      ];
+    case -1:
+    case -2:
+      return [
+        { label: 'Xử lý lại', type: 'primary', action: 'change', newStatus: 1 },
+        { label: 'Hủy HSCV', type: 'default', danger: true, ghost: true, action: 'change', newStatus: -3 },
+      ];
+    default:
+      return [];
+  }
+}
+
+// ===========================
+// Main component
+// ===========================
+
+export default function HscvDetailPage() {
+  const { message, modal } = App.useApp();
+  const router = useRouter();
+  const params = useParams<{ id: string }>();
+  const id = params.id;
+  const user = useAuthStore((s) => s.user);
+
+  // Core state
+  const [detail, setDetail] = useState<HscvDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('info');
+  const [actionLoading, setActionLoading] = useState(false);
+
+  // Tab-specific data
+  const [linkedDocs, setLinkedDocs] = useState<LinkedDoc[]>([]);
+  const [linkedDocsLoading, setLinkedDocsLoading] = useState(false);
+  const [staffList, setStaffList] = useState<StaffItem[]>([]);
+  const [staffLoading, setStaffLoading] = useState(false);
+  const [opinions, setOpinions] = useState<Opinion[]>([]);
+  const [opinionsLoading, setOpinionsLoading] = useState(false);
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [attachmentsLoading, setAttachmentsLoading] = useState(false);
+  const [children, setChildren] = useState<ChildHscv[]>([]);
+  const [childrenLoading, setChildrenLoading] = useState(false);
+
+  // Transfer panel state
+  const [deptTreeData, setDeptTreeData] = useState<DataNode[]>([]);
+  const [selectedDeptId, setSelectedDeptId] = useState<number | null>(null);
+  const [availableStaff, setAvailableStaff] = useState<AvailableStaff[]>([]);
+  const [availableStaffLoading, setAvailableStaffLoading] = useState(false);
+  const [assignedStaff, setAssignedStaff] = useState<AssignedStaff[]>([]);
+  const [savingAssignment, setSavingAssignment] = useState(false);
+
+  // Opinion form
+  const [opinionForm] = Form.useForm();
+  const [sendingOpinion, setSendingOpinion] = useState(false);
+
+  // Progress update modal
+  const [progressModalOpen, setProgressModalOpen] = useState(false);
+  const [progressValue, setProgressValue] = useState(0);
+  const [updatingProgress, setUpdatingProgress] = useState(false);
+
+  // Edit drawer for HSCV details
+  const [editDrawerOpen, setEditDrawerOpen] = useState(false);
+  const [editForm] = Form.useForm();
+  const [saving, setSaving] = useState(false);
+
+  // Add linked doc modal
+  const [addDocModalOpen, setAddDocModalOpen] = useState(false);
+  const [searchDocTab, setSearchDocTab] = useState('den');
+  const [searchDocKeyword, setSearchDocKeyword] = useState('');
+  const [searchDocResults, setSearchDocResults] = useState<SearchDocItem[]>([]);
+  const [searchDocLoading, setSearchDocLoading] = useState(false);
+  const [selectedDocKeys, setSelectedDocKeys] = useState<number[]>([]);
+
+  // Child HSCV drawer
+  const [childDrawerOpen, setChildDrawerOpen] = useState(false);
+  const [childForm] = Form.useForm();
+  const [savingChild, setSavingChild] = useState(false);
+
+  // Shared select options
+  const [docTypes, setDocTypes] = useState<{ value: number; label: string }[]>([]);
+  const [fields, setFields] = useState<{ value: number; label: string }[]>([]);
+  const [staffOptions, setStaffOptions] = useState<{ value: number; label: string }[]>([]);
+
+  const tabsLoaded = useRef<Set<string>>(new Set(['info']));
+
+  // ===========================
+  // Fetch core detail
+  // ===========================
+
+  const fetchDetail = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data: res } = await api.get(`/ho-so-cong-viec/${id}`);
+      const rec = res.data;
+      setDetail(rec);
+      setProgressValue(rec.progress || 0);
+    } catch {
+      message.error('Không thể tải hồ sơ công việc. Kiểm tra kết nối mạng và thử lại.');
+    } finally {
+      setLoading(false);
+    }
+  }, [id, message]);
+
+  useEffect(() => {
+    fetchDetail();
+  }, [fetchDetail]);
+
+  // ===========================
+  // Lazy tab data loading
+  // ===========================
+
+  const fetchLinkedDocs = useCallback(async () => {
+    if (linkedDocsLoading) return;
+    setLinkedDocsLoading(true);
+    try {
+      const { data: res } = await api.get(`/ho-so-cong-viec/${id}/van-ban-lien-ket`);
+      setLinkedDocs(res.data || []);
+    } catch {
+      message.error('Lỗi tải văn bản liên kết');
+    } finally {
+      setLinkedDocsLoading(false);
+    }
+  }, [id, message, linkedDocsLoading]);
+
+  const fetchStaffAndDepts = useCallback(async () => {
+    if (staffLoading) return;
+    setStaffLoading(true);
+    try {
+      const [staffRes, deptRes] = await Promise.all([
+        api.get(`/ho-so-cong-viec/${id}/can-bo`),
+        api.get('/quan-tri/don-vi/tree'),
+      ]);
+
+      const rawDeptList: DeptNode[] = deptRes.data.data || [];
+      const tree = buildTree(rawDeptList);
+      const toDataNode = (nodes: DeptNode[]): DataNode[] =>
+        nodes.map((n) => ({
+          key: n.id,
+          title: n.name,
+          children: n.children ? toDataNode(n.children) : undefined,
+        }));
+      setDeptTreeData(toDataNode(tree as DeptNode[]));
+
+      const existingStaff: StaffItem[] = staffRes.data.data || [];
+      setStaffList(existingStaff);
+      setAssignedStaff(
+        existingStaff.map((s) => ({
+          staff_id: s.staff_id,
+          full_name: s.full_name,
+          position_name: s.position_name,
+          department_name: s.department_name,
+          role_type: s.role_type,
+          deadline: s.deadline ? dayjs(s.deadline) : null,
+        }))
+      );
+    } catch {
+      message.error('Lỗi tải danh sách cán bộ');
+    } finally {
+      setStaffLoading(false);
+    }
+  }, [id, message, staffLoading]);
+
+  const fetchOpinions = useCallback(async () => {
+    if (opinionsLoading) return;
+    setOpinionsLoading(true);
+    try {
+      const { data: res } = await api.get(`/ho-so-cong-viec/${id}/y-kien`);
+      setOpinions(res.data || []);
+    } catch {
+      message.error('Lỗi tải ý kiến xử lý');
+    } finally {
+      setOpinionsLoading(false);
+    }
+  }, [id, message, opinionsLoading]);
+
+  const fetchAttachments = useCallback(async () => {
+    if (attachmentsLoading) return;
+    setAttachmentsLoading(true);
+    try {
+      const { data: res } = await api.get(`/ho-so-cong-viec/${id}/dinh-kem`);
+      setAttachments(res.data || []);
+    } catch {
+      message.error('Lỗi tải file đính kèm');
+    } finally {
+      setAttachmentsLoading(false);
+    }
+  }, [id, message, attachmentsLoading]);
+
+  const fetchChildren = useCallback(async () => {
+    if (childrenLoading) return;
+    setChildrenLoading(true);
+    try {
+      const { data: res } = await api.get(`/ho-so-cong-viec/${id}/hscv-con`);
+      setChildren(res.data || []);
+    } catch {
+      message.error('Lỗi tải hồ sơ con');
+    } finally {
+      setChildrenLoading(false);
+    }
+  }, [id, message, childrenLoading]);
+
+  const handleTabChange = (tabKey: string) => {
+    setActiveTab(tabKey);
+    if (tabsLoaded.current.has(tabKey)) return;
+    tabsLoaded.current.add(tabKey);
+    if (tabKey === 'linked-docs') fetchLinkedDocs();
+    if (tabKey === 'staff') fetchStaffAndDepts();
+    if (tabKey === 'opinions') fetchOpinions();
+    if (tabKey === 'attachments') fetchAttachments();
+    if (tabKey === 'children') fetchChildren();
+  };
+
+  // ===========================
+  // Status transition handlers
+  // ===========================
+
+  const handleStatusChange = useCallback(
+    async (action: string, newStatus?: number, reason?: string) => {
+      setActionLoading(true);
+      try {
+        await api.patch(`/ho-so-cong-viec/${id}/trang-thai`, { action, new_status: newStatus, reason });
+        message.success('Cập nhật trạng thái thành công');
+        await fetchDetail();
+        // Reload staff tab if assigned
+        if (tabsLoaded.current.has('staff')) {
+          tabsLoaded.current.delete('staff');
+        }
+      } catch (err: any) {
+        message.error(err?.response?.data?.message || 'Cập nhật trạng thái thất bại');
+      } finally {
+        setActionLoading(false);
+      }
+    },
+    [id, message, fetchDetail]
+  );
+
+  const handleReject = () => {
+    let reason = '';
+    modal.confirm({
+      title: 'Từ chối hồ sơ',
+      icon: <ExclamationCircleOutlined />,
+      content: (
+        <div>
+          <p>Nhập lý do từ chối để thông báo cho người xử lý.</p>
+          <TextArea
+            rows={3}
+            placeholder="Nhập lý do từ chối..."
+            onChange={(e) => { reason = e.target.value; }}
+          />
+        </div>
+      ),
+      okText: 'Từ chối',
+      okType: 'danger',
+      cancelText: 'Hủy bỏ',
+      onOk: () => {
+        if (!reason.trim()) {
+          message.error('Vui lòng nhập lý do từ chối');
+          return Promise.reject('missing reason');
+        }
+        return handleStatusChange('reject', undefined, reason);
+      },
+    });
+  };
+
+  const handleReturn = () => {
+    let reason = '';
+    modal.confirm({
+      title: 'Trả về hồ sơ',
+      icon: <ExclamationCircleOutlined />,
+      content: (
+        <div>
+          <p>Nhập lý do trả về để người xử lý biết cần chỉnh sửa gì.</p>
+          <TextArea
+            rows={3}
+            placeholder="Nhập lý do trả về..."
+            onChange={(e) => { reason = e.target.value; }}
+          />
+        </div>
+      ),
+      okText: 'Trả về',
+      okType: 'primary',
+      cancelText: 'Hủy bỏ',
+      onOk: () => {
+        if (!reason.trim()) {
+          message.error('Vui lòng nhập lý do trả về');
+          return Promise.reject('missing reason');
+        }
+        return handleStatusChange('return', undefined, reason);
+      },
+    });
+  };
+
+  const handleDelete = () => {
+    modal.confirm({
+      title: 'Xóa hồ sơ',
+      icon: <ExclamationCircleOutlined />,
+      content: 'Bạn có chắc muốn xóa hồ sơ này? Hành động này không thể hoàn tác.',
+      okText: 'Xóa',
+      okType: 'danger',
+      cancelText: 'Hủy bỏ',
+      onOk: async () => {
+        try {
+          await api.delete(`/ho-so-cong-viec/${id}`);
+          message.success('Xóa hồ sơ thành công');
+          router.push('/ho-so-cong-viec');
+        } catch (err: any) {
+          message.error(err?.response?.data?.message || 'Xóa hồ sơ thất bại');
+        }
+      },
+    });
+  };
+
+  const handleToolbarAction = (btn: ToolbarButton) => {
+    if (btn.action === 'delete') { handleDelete(); return; }
+    if (btn.action === 'reject') { handleReject(); return; }
+    if (btn.action === 'return') { handleReturn(); return; }
+    if (btn.action === 'edit') { openEditDrawer(); return; }
+    if (btn.action === 'progress') { setProgressModalOpen(true); return; }
+    if (btn.action === 'history') { message.info('Tính năng xem lịch sử đang phát triển'); return; }
+    if (btn.action === 'submit') { handleStatusChange('submit'); return; }
+    if (btn.action === 'approve') { handleStatusChange('approve'); return; }
+    if (btn.action === 'change' && btn.newStatus !== undefined) {
+      handleStatusChange('change', btn.newStatus);
+    }
+  };
+
+  // ===========================
+  // Update progress
+  // ===========================
+
+  const handleUpdateProgress = async () => {
+    setUpdatingProgress(true);
+    try {
+      await api.patch(`/ho-so-cong-viec/${id}/tien-do`, { progress: progressValue });
+      message.success('Cập nhật tiến độ thành công');
+      setProgressModalOpen(false);
+      await fetchDetail();
+    } catch (err: any) {
+      message.error(err?.response?.data?.message || 'Cập nhật tiến độ thất bại');
+    } finally {
+      setUpdatingProgress(false);
+    }
+  };
+
+  // ===========================
+  // Edit HSCV drawer
+  // ===========================
+
+  const openEditDrawer = () => {
+    if (!detail) return;
+    editForm.setFieldsValue({
+      name: detail.name,
+      field_id: detail.field_id,
+      doc_type_id: detail.doc_type_id,
+      open_date: detail.open_date ? dayjs(detail.open_date) : null,
+      deadline: detail.deadline ? dayjs(detail.deadline) : null,
+      comments: detail.comments,
+      lead_staff_id: detail.lead_staff_id,
+      signer_id: detail.signer_id,
+    });
+    setEditDrawerOpen(true);
+    // Load options if not yet loaded
+    if (docTypes.length === 0) {
+      api.get('/danh-muc/loai-van-ban').then(({ data: r }) => {
+        setDocTypes((r.data || []).map((x: any) => ({ value: x.id, label: x.name })));
+      }).catch(() => {});
+    }
+    if (fields.length === 0) {
+      api.get('/danh-muc/linh-vuc').then(({ data: r }) => {
+        setFields((r.data || []).map((x: any) => ({ value: x.id, label: x.name })));
+      }).catch(() => {});
+    }
+    if (staffOptions.length === 0) {
+      api.get('/quan-tri/nguoi-dung/list').then(({ data: r }) => {
+        setStaffOptions((r.data || []).map((x: any) => ({ value: x.id, label: x.full_name })));
+      }).catch(() => {});
+    }
+  };
+
+  const handleEditSave = async () => {
+    try {
+      const values = await editForm.validateFields();
+      setSaving(true);
+      await api.put(`/ho-so-cong-viec/${id}`, {
+        ...values,
+        open_date: values.open_date?.toISOString(),
+        deadline: values.deadline?.toISOString(),
+      });
+      message.success('Lưu hồ sơ thành công');
+      setEditDrawerOpen(false);
+      await fetchDetail();
+    } catch (err: any) {
+      if (err?.errorFields) return;
+      message.error(err?.response?.data?.message || 'Lưu hồ sơ thất bại. Vui lòng kiểm tra lại thông tin và thử lại.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // ===========================
+  // Linked docs
+  // ===========================
+
+  const handleSearchDocs = async () => {
+    setSearchDocLoading(true);
+    try {
+      const endpoint = searchDocTab === 'den' ? '/van-ban-den'
+        : searchDocTab === 'di' ? '/van-ban-di'
+        : '/van-ban-du-thao';
+      const { data: res } = await api.get(endpoint, {
+        params: { keyword: searchDocKeyword, page: 1, page_size: 20 },
+      });
+      setSearchDocResults((res.data || []).map((x: any) => ({
+        id: x.id,
+        doc_number: x.document_code || x.doc_number || x.number || '',
+        abstract: x.abstract || '',
+        doc_type_name: x.doc_type_name || '',
+        signed_date: x.sign_date || x.signed_date || x.created_at || '',
+      })));
+    } catch {
+      message.error('Lỗi tìm kiếm văn bản');
+    } finally {
+      setSearchDocLoading(false);
+    }
+  };
+
+  const handleAddLinkedDocs = async () => {
+    if (selectedDocKeys.length === 0) {
+      message.warning('Vui lòng chọn ít nhất một văn bản');
+      return;
+    }
+    try {
+      await Promise.all(
+        selectedDocKeys.map((docId) =>
+          api.post(`/ho-so-cong-viec/${id}/lien-ket-van-ban`, {
+            doc_id: docId,
+            doc_type: searchDocTab,
+          })
+        )
+      );
+      message.success('Liên kết văn bản thành công');
+      setAddDocModalOpen(false);
+      setSelectedDocKeys([]);
+      setSearchDocResults([]);
+      await fetchLinkedDocs();
+    } catch (err: any) {
+      message.error(err?.response?.data?.message || 'Lỗi liên kết văn bản');
+    }
+  };
+
+  const handleUnlinkDoc = async (linkId: number) => {
+    try {
+      await api.delete(`/ho-so-cong-viec/${id}/lien-ket-van-ban/${linkId}`);
+      message.success('Đã gỡ liên kết văn bản');
+      setLinkedDocs((prev) => prev.filter((d) => d.link_id !== linkId));
+    } catch (err: any) {
+      message.error(err?.response?.data?.message || 'Lỗi gỡ liên kết');
+    }
+  };
+
+  // ===========================
+  // Staff transfer panel
+  // ===========================
+
+  const handleDeptSelect = async (selectedKeys: React.Key[]) => {
+    if (!selectedKeys.length) return;
+    const deptId = selectedKeys[0] as number;
+    setSelectedDeptId(deptId);
+    setAvailableStaffLoading(true);
+    try {
+      const { data: res } = await api.get(`/quan-tri/don-vi/${deptId}/nhan-vien`);
+      const assigned = new Set(assignedStaff.map((s) => s.staff_id));
+      setAvailableStaff(
+        (res.data || []).map((s: any) => ({
+          staff_id: s.id || s.staff_id,
+          full_name: s.full_name,
+          position_name: s.position_name || '',
+          checked: false,
+          alreadyAdded: assigned.has(s.id || s.staff_id),
+        }))
+      );
+    } catch {
+      message.error('Lỗi tải danh sách nhân viên');
+    } finally {
+      setAvailableStaffLoading(false);
+    }
+  };
+
+  const handleAddToAssigned = () => {
+    const checked = availableStaff.filter((s) => s.checked);
+    if (!checked.length) { message.warning('Vui lòng chọn cán bộ cần thêm'); return; }
+    const existing = new Set(assignedStaff.map((s) => s.staff_id));
+    const toAdd = checked
+      .filter((s) => !existing.has(s.staff_id))
+      .map((s) => ({
+        staff_id: s.staff_id,
+        full_name: s.full_name,
+        position_name: s.position_name,
+        department_name: '',
+        role_type: 2,
+        deadline: null,
+      }));
+    if (!toAdd.length) { message.info('Các cán bộ đã được phân công rồi'); return; }
+    setAssignedStaff((prev) => [...prev, ...toAdd]);
+    setAvailableStaff((prev) => prev.map((s) => ({ ...s, checked: false })));
+  };
+
+  const handleRemoveAssigned = (staffId: number) => {
+    setAssignedStaff((prev) => prev.filter((s) => s.staff_id !== staffId));
+  };
+
+  const handleSaveAssignment = async () => {
+    if (!assignedStaff.length) { message.warning('Chưa có cán bộ nào được phân công'); return; }
+    setSavingAssignment(true);
+    try {
+      await api.post(`/ho-so-cong-viec/${id}/phan-cong`, {
+        staff: assignedStaff.map((s) => ({
+          staff_id: s.staff_id,
+          role_type: s.role_type,
+          deadline: s.deadline?.toISOString() || null,
+        })),
+      });
+      message.success('Phân công cán bộ thành công');
+    } catch (err: any) {
+      message.error(err?.response?.data?.message || 'Lỗi phân công cán bộ');
+    } finally {
+      setSavingAssignment(false);
+    }
+  };
+
+  // ===========================
+  // Opinions
+  // ===========================
+
+  const handleSendOpinion = async () => {
+    try {
+      const values = await opinionForm.validateFields();
+      setSendingOpinion(true);
+      await api.post(`/ho-so-cong-viec/${id}/y-kien`, { content: values.content });
+      message.success('Gửi ý kiến thành công');
+      opinionForm.resetFields();
+      // Refresh opinions
+      const { data: res } = await api.get(`/ho-so-cong-viec/${id}/y-kien`);
+      setOpinions(res.data || []);
+    } catch (err: any) {
+      if (err?.errorFields) return;
+      message.error(err?.response?.data?.message || 'Gửi ý kiến thất bại');
+    } finally {
+      setSendingOpinion(false);
+    }
+  };
+
+  // ===========================
+  // Attachments
+  // ===========================
+
+  const handleUpload = async (options: UploadRequestOption) => {
+    const { file, onSuccess, onError } = options;
+    const formData = new FormData();
+    formData.append('file', file as File);
+    try {
+      const { data: res } = await api.post(`/ho-so-cong-viec/${id}/dinh-kem`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      onSuccess?.(res);
+      message.success('Tải lên file thành công');
+      const { data: listRes } = await api.get(`/ho-so-cong-viec/${id}/dinh-kem`);
+      setAttachments(listRes.data || []);
+    } catch (err: any) {
+      onError?.(err);
+      message.error('Tải lên file thất bại');
+    }
+  };
+
+  const handleDownload = async (attachmentId: number, fileName: string) => {
+    try {
+      const { data: res } = await api.get(`/ho-so-cong-viec/${id}/dinh-kem/${attachmentId}/download`);
+      window.open(res.data.url, '_blank');
+    } catch {
+      message.error(`Không thể tải xuống file "${fileName}"`);
+    }
+  };
+
+  const handleDeleteAttachment = async (attachmentId: number) => {
+    try {
+      await api.delete(`/ho-so-cong-viec/${id}/dinh-kem/${attachmentId}`);
+      message.success('Đã xóa file');
+      setAttachments((prev) => prev.filter((a) => a.id !== attachmentId));
+    } catch (err: any) {
+      message.error(err?.response?.data?.message || 'Xóa file thất bại');
+    }
+  };
+
+  // ===========================
+  // Child HSCV drawer
+  // ===========================
+
+  const handleCreateChild = () => {
+    childForm.resetFields();
+    childForm.setFieldsValue({ parent_id: detail?.id, parent_name: detail?.name });
+    setChildDrawerOpen(true);
+    if (staffOptions.length === 0) {
+      api.get('/quan-tri/nguoi-dung/list').then(({ data: r }) => {
+        setStaffOptions((r.data || []).map((x: any) => ({ value: x.id, label: x.full_name })));
+      }).catch(() => {});
+    }
+  };
+
+  const handleSaveChild = async () => {
+    try {
+      const values = await childForm.validateFields();
+      setSavingChild(true);
+      await api.post('/ho-so-cong-viec', {
+        ...values,
+        parent_id: detail?.id,
+        open_date: values.open_date?.toISOString(),
+        deadline: values.deadline?.toISOString(),
+      });
+      message.success('Tạo hồ sơ con thành công');
+      setChildDrawerOpen(false);
+      // Refresh children tab
+      const { data: res } = await api.get(`/ho-so-cong-viec/${id}/hscv-con`);
+      setChildren(res.data || []);
+    } catch (err: any) {
+      if (err?.errorFields) return;
+      message.error(err?.response?.data?.message || 'Tạo hồ sơ thất bại');
+    } finally {
+      setSavingChild(false);
+    }
+  };
+
+  // ===========================
+  // Table columns
+  // ===========================
+
+  const linkedDocsColumns: ColumnsType<LinkedDoc> = [
+    { title: 'Số VB', dataIndex: 'doc_number', width: 120 },
+    { title: 'Trích yếu', dataIndex: 'abstract', ellipsis: true },
+    {
+      title: 'Loại',
+      dataIndex: 'doc_type_name',
+      width: 130,
+      render: (v: string) => v ? <Tag color="blue">{v}</Tag> : '-',
+    },
+    {
+      title: 'Ngày ký',
+      dataIndex: 'signed_date',
+      width: 110,
+      render: (v: string) => v ? dayjs(v).format('DD/MM/YYYY') : '-',
+    },
+    {
+      title: 'Thao tác',
+      width: 110,
+      render: (_: unknown, record: LinkedDoc) => (
+        <Popconfirm
+          title="Gỡ liên kết văn bản này?"
+          okText="Gỡ"
+          cancelText="Hủy bỏ"
+          okType="danger"
+          onConfirm={() => handleUnlinkDoc(record.link_id)}
+        >
+          <Button type="link" danger size="small">Gỡ liên kết</Button>
+        </Popconfirm>
+      ),
+    },
+  ];
+
+  const childrenColumns: ColumnsType<ChildHscv> = [
+    {
+      title: 'Tên hồ sơ',
+      dataIndex: 'name',
+      render: (v: string, record: ChildHscv) => (
+        <Button
+          type="link"
+          style={{ padding: 0, fontWeight: 500, color: '#1B3A5C' }}
+          onClick={() => router.push(`/ho-so-cong-viec/${record.id}`)}
+        >
+          {v}
+        </Button>
+      ),
+    },
+    {
+      title: 'Ngày mở',
+      dataIndex: 'open_date',
+      width: 110,
+      render: (v: string) => v ? dayjs(v).format('DD/MM/YYYY') : '-',
+    },
+    {
+      title: 'Hạn giải quyết',
+      dataIndex: 'deadline',
+      width: 130,
+      render: (v: string) => {
+        if (!v) return '-';
+        const isOverdue = dayjs(v).isBefore(dayjs(), 'day');
+        return (
+          <span style={{ color: isOverdue ? '#DC2626' : undefined }}>
+            {isOverdue && <ExclamationCircleOutlined style={{ marginRight: 4 }} />}
+            {dayjs(v).format('DD/MM/YYYY')}
+          </span>
+        );
+      },
+    },
+    {
+      title: 'Trạng thái',
+      dataIndex: 'status',
+      width: 130,
+      render: (v: number) => {
+        const s = STATUS_MAP[v] || STATUS_MAP[String(v) as unknown as number];
+        return s ? <Tag color={s.color}>{s.text}</Tag> : <Tag>{v}</Tag>;
+      },
+    },
+    {
+      title: 'Tiến độ',
+      dataIndex: 'progress',
+      width: 140,
+      render: (v: number) => (
+        <Progress percent={v || 0} size="small" strokeColor="#0891B2" />
+      ),
+    },
+  ];
+
+  // ===========================
+  // Render
+  // ===========================
+
+  if (loading) {
+    return (
+      <div>
+        <Skeleton active paragraph={{ rows: 2 }} style={{ marginBottom: 16 }} />
+        <Skeleton active paragraph={{ rows: 6 }} />
+      </div>
+    );
+  }
+
+  if (!detail) {
+    return (
+      <div className="empty-center">
+        <p>Không tìm thấy hồ sơ công việc</p>
+        <Button onClick={() => router.push('/ho-so-cong-viec')}>Quay lại danh sách</Button>
+      </div>
+    );
+  }
+
+  const statusInfo = STATUS_MAP[detail.status] || STATUS_MAP[String(detail.status) as unknown as number] || { text: 'Không xác định', color: 'default' };
+  const toolbarButtons = getToolbarButtons(detail.status);
+
+  const tabItems = [
+    {
+      key: 'info',
+      label: <span><FolderOutlined /> Thông tin chung</span>,
+      children: (
+        <div>
+          <p className="section-title" style={{ marginBottom: 12 }}>Thông tin hồ sơ</p>
+          <div className="info-grid" style={{ marginBottom: 16 }}>
+            <div>
+              <div className="info-label">Ngày mở</div>
+              <div className="info-value">
+                {detail.open_date ? dayjs(detail.open_date).format('DD/MM/YYYY') : '—'}
+              </div>
+            </div>
+            <div>
+              <div className="info-label">Hạn giải quyết</div>
+              <div className="info-value" style={{
+                color: detail.deadline && dayjs(detail.deadline).isBefore(dayjs(), 'day') ? '#DC2626' : undefined,
+              }}>
+                {detail.deadline ? dayjs(detail.deadline).format('DD/MM/YYYY') : '—'}
+              </div>
+            </div>
+            <div>
+              <div className="info-label">Lĩnh vực</div>
+              <div className="info-value">{detail.field_name || '—'}</div>
+            </div>
+            <div>
+              <div className="info-label">Loại văn bản</div>
+              <div className="info-value">{detail.doc_type_name || '—'}</div>
+            </div>
+            <div>
+              <div className="info-label">Quy trình</div>
+              <div className="info-value">{detail.process_name || '—'}</div>
+            </div>
+            <div>
+              <div className="info-label">Trạng thái</div>
+              <div className="info-value">
+                <Tag color={statusInfo.color}>{statusInfo.text}</Tag>
+              </div>
+            </div>
+            <div>
+              <div className="info-label">Người phụ trách</div>
+              <div className="info-value">{detail.lead_staff_name || '—'}</div>
+            </div>
+            <div>
+              <div className="info-label">Lãnh đạo ký</div>
+              <div className="info-value">{detail.signer_name || '—'}</div>
+            </div>
+          </div>
+          <div style={{ marginBottom: 16 }}>
+            <div className="info-label" style={{ marginBottom: 8 }}>Tiến độ</div>
+            <Progress
+              percent={detail.progress || 0}
+              strokeColor="#0891B2"
+              style={{ maxWidth: 400 }}
+            />
+          </div>
+          {detail.comments && (
+            <div>
+              <p className="section-title" style={{ marginBottom: 8 }}>Ghi chú</p>
+              <div className="doc-abstract-box">{detail.comments}</div>
+            </div>
+          )}
+          {detail.parent_name && (
+            <div style={{ marginTop: 8 }}>
+              <div className="info-label">HSCV cha</div>
+              <div className="info-value">
+                <Button
+                  type="link"
+                  style={{ padding: 0, color: '#0891B2' }}
+                  onClick={() => router.push(`/ho-so-cong-viec/${detail.parent_id}`)}
+                >
+                  {detail.parent_name}
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: 'linked-docs',
+      label: <span><FileTextOutlined /> Văn bản liên kết</span>,
+      children: (
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <Space>
+              <span style={{ fontWeight: 600, color: '#1B3A5C' }}>Văn bản liên kết</span>
+              <Badge count={linkedDocs.length} style={{ backgroundColor: '#0891B2' }} />
+            </Space>
+            <Button
+              type="primary"
+              ghost
+              icon={<LinkOutlined />}
+              onClick={() => {
+                setAddDocModalOpen(true);
+                setSearchDocResults([]);
+                setSelectedDocKeys([]);
+                setSearchDocKeyword('');
+              }}
+            >
+              Thêm văn bản
+            </Button>
+          </div>
+          <Table
+            columns={linkedDocsColumns}
+            dataSource={linkedDocs}
+            rowKey="id"
+            loading={linkedDocsLoading}
+            size="small"
+            locale={{
+              emptyText: (
+                <div className="empty-center">
+                  Chưa có văn bản liên kết. Nhấn &quot;Thêm văn bản&quot; để liên kết văn bản đến/đi/dự thảo.
+                </div>
+              ),
+            }}
+            pagination={false}
+          />
+        </div>
+      ),
+    },
+    {
+      key: 'staff',
+      label: <span><TeamOutlined /> Cán bộ xử lý</span>,
+      children: (
+        <div>
+          {staffLoading ? (
+            <Skeleton active paragraph={{ rows: 6 }} />
+          ) : (
+            <>
+              <div className="transfer-panel">
+                {/* Left: Department tree + staff list */}
+                <div className="transfer-panel-left">
+                  <div style={{ fontWeight: 600, color: '#1B3A5C', marginBottom: 8, fontSize: 13 }}>
+                    Chọn đơn vị
+                  </div>
+                  <DirectoryTree
+                    treeData={deptTreeData}
+                    onSelect={handleDeptSelect}
+                    style={{ marginBottom: 12 }}
+                  />
+                  {selectedDeptId && (
+                    <>
+                      <Divider style={{ margin: '8px 0' }} />
+                      <div style={{ fontWeight: 600, color: '#1B3A5C', marginBottom: 8, fontSize: 13 }}>
+                        Danh sách cán bộ
+                      </div>
+                      {availableStaffLoading ? (
+                        <Skeleton active paragraph={{ rows: 3 }} />
+                      ) : (
+                        availableStaff.map((s) => (
+                          <div key={s.staff_id} className="staff-assign-row">
+                            <Checkbox
+                              checked={s.checked}
+                              onChange={(e) =>
+                                setAvailableStaff((prev) =>
+                                  prev.map((x) =>
+                                    x.staff_id === s.staff_id ? { ...x, checked: e.target.checked } : x
+                                  )
+                                )
+                              }
+                            />
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontWeight: 500, fontSize: 13 }}>{s.full_name}</div>
+                              <div style={{ fontSize: 11, color: '#64748B' }}>{s.position_name}</div>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </>
+                  )}
+                </div>
+
+                {/* Middle: actions */}
+                <div className="transfer-panel-actions">
+                  <Button
+                    type="primary"
+                    size="small"
+                    onClick={handleAddToAssigned}
+                  >
+                    Thêm &gt;&gt;
+                  </Button>
+                </div>
+
+                {/* Right: assigned staff */}
+                <div className="transfer-panel-right">
+                  <div style={{ fontWeight: 600, color: '#1B3A5C', marginBottom: 8, fontSize: 13 }}>
+                    Cán bộ được phân công ({assignedStaff.length})
+                  </div>
+                  {assignedStaff.length === 0 ? (
+                    <div className="empty-center" style={{ padding: '24px 0' }}>
+                      Chưa có cán bộ nào được phân công
+                    </div>
+                  ) : (
+                    assignedStaff.map((s) => (
+                      <div key={s.staff_id} className="staff-assign-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 6 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+                          <div>
+                            <span style={{ fontWeight: 500, fontSize: 13 }}>{s.full_name}</span>
+                            {s.position_name && (
+                              <span style={{ fontSize: 11, color: '#64748B', marginLeft: 6 }}>
+                                {s.position_name}
+                              </span>
+                            )}
+                          </div>
+                          <Button
+                            type="text"
+                            danger
+                            size="small"
+                            icon={<DeleteOutlined />}
+                            onClick={() => handleRemoveAssigned(s.staff_id)}
+                          />
+                        </div>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                          <Radio.Group
+                            size="small"
+                            value={s.role_type}
+                            onChange={(e) =>
+                              setAssignedStaff((prev) =>
+                                prev.map((x) =>
+                                  x.staff_id === s.staff_id ? { ...x, role_type: e.target.value } : x
+                                )
+                              )
+                            }
+                          >
+                            <Radio value={1}>
+                              <span style={{ color: '#059669', fontWeight: 500 }}>Phụ trách</span>
+                            </Radio>
+                            <Radio value={2}>
+                              <span style={{ color: '#0891B2', fontWeight: 500 }}>Phối hợp</span>
+                            </Radio>
+                          </Radio.Group>
+                          <DatePicker
+                            size="small"
+                            placeholder="Hạn xử lý"
+                            value={s.deadline}
+                            format="DD/MM/YYYY"
+                            onChange={(date) =>
+                              setAssignedStaff((prev) =>
+                                prev.map((x) =>
+                                  x.staff_id === s.staff_id ? { ...x, deadline: date } : x
+                                )
+                              )
+                            }
+                          />
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+              <div style={{ marginTop: 16, textAlign: 'right' }}>
+                <Button
+                  type="primary"
+                  icon={<SaveOutlined />}
+                  loading={savingAssignment}
+                  onClick={handleSaveAssignment}
+                >
+                  Lưu phân công
+                </Button>
+              </div>
+            </>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: 'opinions',
+      label: <span><CommentOutlined /> Ý kiến xử lý</span>,
+      children: (
+        <div>
+          {opinionsLoading ? (
+            <Skeleton active paragraph={{ rows: 4 }} />
+          ) : (
+            <>
+              {opinions.length === 0 ? (
+                <div className="empty-center">
+                  Chưa có ý kiến xử lý. Hãy là người đầu tiên thêm ý kiến.
+                </div>
+              ) : (
+                <List
+                  dataSource={opinions}
+                  renderItem={(item) => (
+                    <div key={item.id} className="opinion-item">
+                      <Avatar
+                        size={32}
+                        style={{ backgroundColor: getAvatarColor(item.staff_id), flexShrink: 0 }}
+                      >
+                        {item.staff_name?.charAt(0)?.toUpperCase() || '?'}
+                      </Avatar>
+                      <div className="opinion-item-content">
+                        <div className="opinion-item-header">
+                          <span className="opinion-item-name">{item.staff_name}</span>
+                          <span className="opinion-item-time">
+                            {dayjs(item.created_at).format('DD/MM/YYYY HH:mm')}
+                          </span>
+                        </div>
+                        <div className="opinion-item-text">{item.content}</div>
+                      </div>
+                    </div>
+                  )}
+                />
+              )}
+              <Divider />
+              <Form form={opinionForm} validateTrigger="onSubmit">
+                <Form.Item
+                  name="content"
+                  rules={[{ required: true, message: 'Vui lòng nhập ý kiến' }]}
+                  style={{ marginBottom: 8 }}
+                >
+                  <TextArea rows={4} placeholder="Nhập ý kiến xử lý..." />
+                </Form.Item>
+                <div style={{ textAlign: 'right' }}>
+                  <Button
+                    type="primary"
+                    loading={sendingOpinion}
+                    onClick={handleSendOpinion}
+                  >
+                    Gửi ý kiến
+                  </Button>
+                </div>
+              </Form>
+            </>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: 'attachments',
+      label: <span><PaperClipOutlined /> File đính kèm</span>,
+      children: (
+        <div>
+          <Upload.Dragger
+            multiple
+            showUploadList={false}
+            accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
+            customRequest={handleUpload}
+            style={{ marginBottom: 16 }}
+          >
+            <p style={{ fontSize: 24, color: '#0891B2' }}><UploadOutlined /></p>
+            <p style={{ fontWeight: 500 }}>Kéo thả file vào đây hoặc nhấn để chọn file</p>
+            <p style={{ fontSize: 12, color: '#64748B' }}>
+              Hỗ trợ: PDF, Word, Excel, PNG, JPG — tối đa 50MB mỗi file
+            </p>
+          </Upload.Dragger>
+          {attachmentsLoading ? (
+            <Skeleton active paragraph={{ rows: 3 }} />
+          ) : attachments.length === 0 ? (
+            <div className="empty-center">Chưa có file đính kèm</div>
+          ) : (
+            attachments.map((att) => (
+              <div key={att.id} className="attachment-item">
+                <div className="attachment-info">
+                  {getFileIcon(att.file_name)}
+                  <div>
+                    <div className="file-name">{att.file_name}</div>
+                    <div className="file-meta">
+                      {formatFileSize(att.file_size)} · {dayjs(att.created_at).format('DD/MM/YYYY HH:mm')}
+                      {att.created_by_name && ` · ${att.created_by_name}`}
+                    </div>
+                  </div>
+                </div>
+                <Space>
+                  <Button
+                    size="small"
+                    icon={<DownloadOutlined />}
+                    onClick={() => handleDownload(att.id, att.file_name)}
+                  >
+                    Tải xuống
+                  </Button>
+                  <Popconfirm
+                    title="Xóa file này?"
+                    okText="Xóa"
+                    cancelText="Hủy bỏ"
+                    okType="danger"
+                    onConfirm={() => handleDeleteAttachment(att.id)}
+                  >
+                    <Button size="small" danger icon={<DeleteOutlined />}>Xóa</Button>
+                  </Popconfirm>
+                </Space>
+              </div>
+            ))
+          )}
+        </div>
+      ),
+    },
+    {
+      key: 'children',
+      label: <span><ApartmentOutlined /> HSCV con</span>,
+      children: (
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+            <Button
+              type="primary"
+              ghost
+              icon={<PlusOutlined />}
+              onClick={handleCreateChild}
+            >
+              Tạo HSCV con
+            </Button>
+          </div>
+          <Table
+            columns={childrenColumns}
+            dataSource={children}
+            rowKey="id"
+            loading={childrenLoading}
+            size="small"
+            locale={{
+              emptyText: (
+                <div className="empty-center">
+                  Chưa có hồ sơ con. Nhấn &quot;Tạo HSCV con&quot; để thêm hồ sơ con.
+                </div>
+              ),
+            }}
+            pagination={false}
+          />
+        </div>
+      ),
+    },
+  ];
+
+  return (
+    <div>
+      {/* Breadcrumb */}
+      <Breadcrumb
+        style={{ marginBottom: 12 }}
+        items={[
+          { title: <a onClick={() => router.push('/')}>Trang chủ</a> },
+          { title: <a onClick={() => router.push('/ho-so-cong-viec')}>Hồ sơ công việc</a> },
+          { title: detail.name },
+        ]}
+      />
+
+      {/* Detail header */}
+      <div className="detail-header">
+        <div className="detail-header-left">
+          <Button
+            icon={<ArrowLeftOutlined />}
+            onClick={() => router.back()}
+            aria-label="Quay lại"
+          />
+          <Tag color={statusInfo.color} style={{ margin: 0 }}>{statusInfo.text}</Tag>
+          <h1 className="detail-header-title">{detail.name}</h1>
+        </div>
+        <div className="detail-header-right">
+          {toolbarButtons.map((btn, idx) => (
+            <Button
+              key={idx}
+              type={btn.type}
+              danger={btn.danger}
+              ghost={btn.ghost}
+              style={btn.style}
+              loading={actionLoading && idx === 0}
+              onClick={() => handleToolbarAction(btn)}
+              aria-label={btn.label}
+            >
+              {btn.label}
+            </Button>
+          ))}
+        </div>
+      </div>
+
+      {/* Main content card with tabs */}
+      <Card className="page-card" bodyStyle={{ padding: 0 }}>
+        <Tabs
+          type="card"
+          activeKey={activeTab}
+          onChange={handleTabChange}
+          items={tabItems}
+          style={{ padding: '0 0 16px 0' }}
+          tabBarStyle={{ marginBottom: 0, paddingLeft: 16, paddingTop: 8 }}
+        />
+      </Card>
+
+      {/* Progress update modal */}
+      <Modal
+        title="Cập nhật tiến độ"
+        open={progressModalOpen}
+        onOk={handleUpdateProgress}
+        onCancel={() => setProgressModalOpen(false)}
+        okText="Cập nhật"
+        cancelText="Hủy bỏ"
+        confirmLoading={updatingProgress}
+      >
+        <div style={{ padding: '16px 0' }}>
+          <div style={{ marginBottom: 12 }}>Tiến độ hoàn thành (%)</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <Slider
+              min={0}
+              max={100}
+              value={progressValue}
+              onChange={setProgressValue}
+              style={{ flex: 1 }}
+              tooltip={{ formatter: (v) => `${v}%` }}
+            />
+            <InputNumber
+              min={0}
+              max={100}
+              value={progressValue}
+              onChange={(v) => setProgressValue(v || 0)}
+              addonAfter="%"
+              style={{ width: 100 }}
+            />
+          </div>
+        </div>
+      </Modal>
+
+      {/* Edit drawer */}
+      <div
+        style={{ position: 'fixed', inset: 0, display: editDrawerOpen ? undefined : 'none', zIndex: 1000 }}
+      >
+        <div style={{
+          position: 'fixed',
+          right: 0,
+          top: 0,
+          bottom: 0,
+          width: 720,
+          background: '#fff',
+          boxShadow: '-4px 0 16px rgba(0,0,0,0.12)',
+          display: 'flex',
+          flexDirection: 'column',
+        }}>
+          <div style={{
+            background: 'linear-gradient(135deg, #1B3A5C 0%, #0891B2 100%)',
+            padding: '16px 24px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}>
+            <span style={{ color: '#fff', fontSize: 16, fontWeight: 600 }}>Chỉnh sửa hồ sơ công việc</span>
+            <Space>
+              <Button ghost style={{ borderColor: 'rgba(255,255,255,0.5)', color: '#fff' }} onClick={() => setEditDrawerOpen(false)}>Hủy</Button>
+              <Button style={{ background: '#fff', color: '#1B3A5C' }} icon={<SaveOutlined />} loading={saving} onClick={handleEditSave}>Lưu</Button>
+            </Space>
+          </div>
+          <div style={{ flex: 1, overflowY: 'auto', padding: 24 }}>
+            <Form form={editForm} layout="vertical" validateTrigger="onSubmit">
+              <Form.Item name="name" label="Tên hồ sơ công việc" rules={[{ required: true, message: 'Vui lòng nhập tên hồ sơ' }]}>
+                <Input maxLength={500} placeholder="Nhập tên hồ sơ công việc..." />
+              </Form.Item>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px' }}>
+                <Form.Item name="doc_type_id" label="Loại văn bản">
+                  <Select options={docTypes} placeholder="Chọn loại văn bản" allowClear />
+                </Form.Item>
+                <Form.Item name="field_id" label="Lĩnh vực">
+                  <Select options={fields} placeholder="Chọn lĩnh vực" allowClear />
+                </Form.Item>
+                <Form.Item name="open_date" label="Ngày mở" rules={[{ required: true, message: 'Vui lòng chọn ngày mở' }]}>
+                  <DatePicker format="DD/MM/YYYY" style={{ width: '100%' }} />
+                </Form.Item>
+                <Form.Item name="deadline" label="Hạn giải quyết" rules={[{ required: true, message: 'Vui lòng chọn hạn' }]}>
+                  <DatePicker format="DD/MM/YYYY" style={{ width: '100%' }} />
+                </Form.Item>
+                <Form.Item name="lead_staff_id" label="Người phụ trách">
+                  <Select options={staffOptions} placeholder="Chọn người phụ trách" showSearch optionFilterProp="label" allowClear />
+                </Form.Item>
+                <Form.Item name="signer_id" label="Lãnh đạo ký">
+                  <Select options={staffOptions} placeholder="Chọn lãnh đạo ký" showSearch optionFilterProp="label" allowClear />
+                </Form.Item>
+              </div>
+              <Form.Item name="comments" label="Ghi chú">
+                <TextArea rows={3} maxLength={2000} placeholder="Nhập ghi chú..." />
+              </Form.Item>
+            </Form>
+          </div>
+        </div>
+      </div>
+
+      {/* Add linked document modal */}
+      <Modal
+        title="Thêm văn bản liên kết"
+        open={addDocModalOpen}
+        onOk={handleAddLinkedDocs}
+        onCancel={() => { setAddDocModalOpen(false); setSelectedDocKeys([]); }}
+        okText="Liên kết"
+        cancelText="Hủy bỏ"
+        width={800}
+      >
+        <div style={{ marginBottom: 12 }}>
+          <Tabs
+            activeKey={searchDocTab}
+            onChange={(k) => { setSearchDocTab(k); setSearchDocResults([]); setSelectedDocKeys([]); }}
+            items={[
+              { key: 'den', label: 'Văn bản đến' },
+              { key: 'di', label: 'Văn bản đi' },
+              { key: 'du-thao', label: 'Dự thảo' },
+            ]}
+          />
+          <Space.Compact style={{ width: '100%', marginBottom: 12 }}>
+            <Input
+              placeholder="Nhập từ khóa tìm kiếm..."
+              value={searchDocKeyword}
+              onChange={(e) => setSearchDocKeyword(e.target.value)}
+              onPressEnter={handleSearchDocs}
+            />
+            <Button type="primary" onClick={handleSearchDocs} loading={searchDocLoading}>Tìm kiếm</Button>
+          </Space.Compact>
+          <Table
+            size="small"
+            loading={searchDocLoading}
+            dataSource={searchDocResults}
+            rowKey="id"
+            rowSelection={{
+              type: 'checkbox',
+              selectedRowKeys: selectedDocKeys,
+              onChange: (keys) => setSelectedDocKeys(keys as number[]),
+            }}
+            columns={[
+              { title: 'Số VB', dataIndex: 'doc_number', width: 120 },
+              { title: 'Trích yếu', dataIndex: 'abstract', ellipsis: true },
+              { title: 'Loại', dataIndex: 'doc_type_name', width: 130 },
+              {
+                title: 'Ngày ký',
+                dataIndex: 'signed_date',
+                width: 110,
+                render: (v: string) => v ? dayjs(v).format('DD/MM/YYYY') : '-',
+              },
+            ]}
+            pagination={{ pageSize: 5, size: 'small' }}
+          />
+        </div>
+      </Modal>
+
+      {/* Child HSCV drawer */}
+      <div
+        style={{ position: 'fixed', inset: 0, display: childDrawerOpen ? undefined : 'none', zIndex: 1000 }}
+      >
+        <div style={{
+          position: 'fixed',
+          right: 0,
+          top: 0,
+          bottom: 0,
+          width: 720,
+          background: '#fff',
+          boxShadow: '-4px 0 16px rgba(0,0,0,0.12)',
+          display: 'flex',
+          flexDirection: 'column',
+        }}>
+          <div style={{
+            background: 'linear-gradient(135deg, #1B3A5C 0%, #0891B2 100%)',
+            padding: '16px 24px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}>
+            <span style={{ color: '#fff', fontSize: 16, fontWeight: 600 }}>Tạo hồ sơ con</span>
+            <Space>
+              <Button ghost style={{ borderColor: 'rgba(255,255,255,0.5)', color: '#fff' }} onClick={() => setChildDrawerOpen(false)}>Hủy</Button>
+              <Button style={{ background: '#fff', color: '#1B3A5C' }} icon={<SaveOutlined />} loading={savingChild} onClick={handleSaveChild}>Lưu</Button>
+            </Space>
+          </div>
+          <div style={{ flex: 1, overflowY: 'auto', padding: 24 }}>
+            <Form form={childForm} layout="vertical" validateTrigger="onSubmit">
+              <Form.Item name="parent_name" label="Hồ sơ cha">
+                <Input disabled />
+              </Form.Item>
+              <Form.Item name="name" label="Tên hồ sơ con" rules={[{ required: true, message: 'Vui lòng nhập tên hồ sơ con' }]}>
+                <Input maxLength={500} placeholder="Nhập tên hồ sơ công việc con..." />
+              </Form.Item>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px' }}>
+                <Form.Item name="open_date" label="Ngày mở" rules={[{ required: true, message: 'Vui lòng chọn ngày mở' }]}>
+                  <DatePicker format="DD/MM/YYYY" style={{ width: '100%' }} />
+                </Form.Item>
+                <Form.Item name="deadline" label="Hạn giải quyết" rules={[{ required: true, message: 'Vui lòng chọn hạn' }]}>
+                  <DatePicker format="DD/MM/YYYY" style={{ width: '100%' }} />
+                </Form.Item>
+                <Form.Item name="lead_staff_id" label="Người phụ trách">
+                  <Select options={staffOptions} placeholder="Chọn người phụ trách" showSearch optionFilterProp="label" allowClear />
+                </Form.Item>
+                <Form.Item name="signer_id" label="Lãnh đạo ký">
+                  <Select options={staffOptions} placeholder="Chọn lãnh đạo ký" showSearch optionFilterProp="label" allowClear />
+                </Form.Item>
+              </div>
+              <Form.Item name="comments" label="Ghi chú">
+                <TextArea rows={3} maxLength={2000} placeholder="Nhập ghi chú..." />
+              </Form.Item>
+            </Form>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
