@@ -34,6 +34,7 @@ import {
   MailOutlined,
   ToolOutlined,
   StarOutlined,
+  ContactsOutlined,
 } from '@ant-design/icons';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
@@ -78,6 +79,21 @@ const menuItems: MenuItem[] = [
     key: '/thong-bao',
     icon: <BellOutlined />,
     label: 'Thông báo',
+  },
+  {
+    key: 'lich',
+    icon: <CalendarOutlined />,
+    label: 'Lịch',
+    children: [
+      { key: '/lich/ca-nhan', icon: <UserOutlined />, label: 'Lịch cá nhân' },
+      { key: '/lich/co-quan', icon: <BankOutlined />, label: 'Lịch cơ quan' },
+      { key: '/lich/lanh-dao', icon: <SolutionOutlined />, label: 'Lịch lãnh đạo' },
+    ],
+  },
+  {
+    key: '/danh-ba',
+    icon: <ContactsOutlined />,
+    label: 'Danh bạ',
   },
   {
     type: 'divider',
@@ -145,6 +161,10 @@ const breadcrumbMap: Record<string, string> = {
   '/quan-tri/mau-thong-bao': 'Mẫu thông báo',
   '/quan-tri/cau-hinh': 'Cấu hình',
   '/thong-tin-ca-nhan': 'Thông tin cá nhân',
+  '/lich/ca-nhan': 'Lịch cá nhân',
+  '/lich/co-quan': 'Lịch cơ quan',
+  '/lich/lanh-dao': 'Lịch lãnh đạo',
+  '/danh-ba': 'Danh bạ điện thoại',
 };
 
 function buildBreadcrumbs(pathname: string) {
