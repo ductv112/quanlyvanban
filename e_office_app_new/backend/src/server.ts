@@ -24,6 +24,10 @@ import noticeRoutes from './routes/notice.js';
 import calendarRoutes from './routes/calendar.js';
 import directoryRoutes from './routes/directory.js';
 import dashboardRoutes from './routes/dashboard.js';
+import archiveRoutes from './routes/archive.js';
+import documentRoutes from './routes/document.js';
+import contractRoutes from './routes/contract.js';
+import meetingRoutes from './routes/meeting.js';
 import { authenticate } from './middleware/auth.js';
 import { initSocket } from './lib/socket.js';
 
@@ -65,6 +69,12 @@ app.use('/api/thong-bao', authenticate, noticeRoutes);
 app.use('/api/lich', authenticate, calendarRoutes);
 app.use('/api/danh-ba', authenticate, directoryRoutes);
 app.use('/api/dashboard', authenticate, dashboardRoutes);
+
+// --- Phase 5: Kho luu tru, Tai lieu, Hop dong, Cuoc hop ---
+app.use('/api/kho-luu-tru', authenticate, archiveRoutes);
+app.use('/api/tai-lieu', authenticate, documentRoutes);
+app.use('/api/hop-dong', authenticate, contractRoutes);
+app.use('/api/cuoc-hop', authenticate, meetingRoutes);
 
 // --- Error handler ---
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
