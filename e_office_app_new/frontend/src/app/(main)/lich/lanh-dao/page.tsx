@@ -130,14 +130,15 @@ export default function LichLanhDaoPage() {
                 text={
                   <span
                     style={{
-                      fontSize: 11,
+                      fontSize: 12,
+                      fontWeight: 600,
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap',
-                      maxWidth: 100,
+                      maxWidth: 110,
                       display: 'inline-block',
                       cursor: 'pointer',
-                      color: '#1B3A5C',
+                      color: ev.color || '#D97706',
                     }}
                     onClick={(e) => {
                       e.stopPropagation();

@@ -110,14 +110,15 @@ export default function LichCaNhanPage() {
                 text={
                   <span
                     style={{
-                      fontSize: 11,
+                      fontSize: 12,
+                      fontWeight: 600,
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap',
-                      maxWidth: 100,
+                      maxWidth: 110,
                       display: 'inline-block',
                       cursor: 'pointer',
-                      color: '#1B3A5C',
+                      color: ev.color || '#1B3A5C',
                     }}
                     onClick={(e) => {
                       e.stopPropagation();

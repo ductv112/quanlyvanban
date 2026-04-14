@@ -673,3 +673,20 @@ input:-webkit-autofill:active {
   border-radius: 12px;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.10);
 }
+
+/* === Calendar Overrides === */
+.ant-picker-calendar .ant-picker-cell-selected .ant-picker-cell-inner {
+  background: rgba(8, 145, 178, 0.12) !important;
+  border-radius: 6px;
+}
+.ant-picker-calendar .ant-picker-cell-today .ant-picker-cell-inner::before {
+  border-color: #0891B2 !important;
+  border-radius: 6px !important;
+}
+.ant-picker-calendar .ant-picker-cell-inner {
+  min-height: 80px !important;
+}
+.ant-picker-calendar .ant-badge-status-text {
+  font-size: 12px !important;
+  font-weight: 600 !important;
+}
