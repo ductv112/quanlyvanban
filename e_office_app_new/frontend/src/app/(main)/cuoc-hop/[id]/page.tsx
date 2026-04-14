@@ -65,7 +65,7 @@ interface MeetingDetail {
   master_id: number | null;
   master_name: string | null;
   secretary_id: number | null;
-  secretary_name: string | null;
+  secretary_name?: string | null;
   online_link: string | null;
   component: string | null;
   approved: number;
@@ -78,7 +78,7 @@ interface MeetingStaff {
   staff_id: number;
   staff_name: string;
   position_name: string | null;
-  department_name: string | null;
+  department_name?: string | null;
   user_type: number;
   attendance: boolean;
   attendance_note: string | null;
@@ -88,8 +88,8 @@ interface MeetingAttachment {
   id: number;
   file_name: string;
   file_size: number;
-  file_url: string;
-  created_at: string;
+  file_path: string;
+  created_date: string;
 }
 
 interface VoteAnswer {
@@ -624,13 +624,13 @@ export default function CuocHopDetailPage() {
                     renderItem={(item) => (
                       <List.Item
                         actions={[
-                          <Button key="dl" type="link" icon={<DownloadOutlined />} href={item.file_url} target="_blank">Tải về</Button>,
+                          <Button key="dl" type="link" icon={<DownloadOutlined />} href={item.file_path} target="_blank">Tải về</Button>,
                           <Button key="del" type="text" icon={<DeleteOutlined />} danger onClick={() => handleDeleteAttachment(item.id)}>Xóa</Button>,
                         ]}
                       >
                         <List.Item.Meta
                           title={item.file_name}
-                          description={`${formatFileSize(item.file_size)} — ${dayjs(item.created_at).format('DD/MM/YYYY HH:mm')}`}
+                          description={`${formatFileSize(item.file_size)} — ${dayjs(item.created_date).format('DD/MM/YYYY HH:mm')}`}
                         />
                       </List.Item>
                     )}
