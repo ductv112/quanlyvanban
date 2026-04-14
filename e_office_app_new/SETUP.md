@@ -87,6 +87,46 @@ WHERE username = 'admin';
 " | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
 ```
 
+### Sprint 2-3: Văn bản đến/đi/dự thảo, HSCV
+```bash
+cat database/migrations/007_sprint2_incoming_doc.sql | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
+cat database/migrations/008_sprint3_handling_doc.sql | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
+cat database/migrations/009_sprint4_drafting_outgoing.sql | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
+```
+
+### Sprint 5-10: Danh mục, tin nhắn, lịch, danh bạ, luồng xử lý
+```bash
+cat database/migrations/010_sprint5_catalog_sp.sql | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
+cat database/migrations/011_sprint6_inter_incoming.sql | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
+cat database/migrations/012_sprint7_messages_notices.sql | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
+cat database/migrations/013_sprint8_calendar_contacts.sql | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
+cat database/migrations/014_sprint9_doc_flow.sql | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
+cat database/migrations/015_sprint10_sms_email_templates.sql | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
+```
+
+### Sprint 11-13: Kho lưu trữ, tài liệu, hợp đồng, cuộc họp
+```bash
+cat database/migrations/016_sprint11_archive_storage.sql | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
+cat database/migrations/017_sprint12_documents_contracts.sql | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
+cat database/migrations/018_sprint13_meetings.sql | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
+```
+
+### Sprint 14-16: LGSP, Ký số, Thông báo đa kênh
+```bash
+cat database/migrations/019_sprint14_lgsp.sql | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
+cat database/migrations/020_sprint15_digital_signing.sql | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
+cat database/migrations/021_sprint16_notifications.sql | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
+```
+
+### Seed data demo (TRUNCATE toàn bộ + seed lại từ đầu)
+```bash
+cat database/seed_full_demo.sql | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
+```
+
+> **Lưu ý:** `seed_full_demo.sql` sẽ TRUNCATE tất cả bảng rồi seed data mới.
+> Bao gồm: 10 phòng ban, 10 nhân viên, VB đến/đi/dự thảo, HSCV, cuộc họp, kho lưu trữ, tài liệu ISO, hợp đồng, LGSP, ký số, thông báo.
+> Password tất cả tài khoản: **Admin@123**
+
 ---
 
 ## 5. CẤU HÌNH BACKEND
