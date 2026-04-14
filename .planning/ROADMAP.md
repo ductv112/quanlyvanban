@@ -84,7 +84,12 @@ Plans:
   2. Admin quản lý lịch cơ quan và lịch lãnh đạo với phân quyền xem
   3. Người dùng tra cứu danh bạ điện thoại với filter đơn vị/phòng ban
   4. Dashboard hiển thị 4 KPI card với dữ liệu thật và widget kéo thả được sắp xếp lại
-**Plans**: TBD
+**Plans**: 4 plans
+Plans:
+- [ ] 04-01-PLAN.md — Database: Sprint 9+10 migration (calendar_events table + calendar SPs + dashboard stats SPs)
+- [ ] 04-02-PLAN.md — Backend: Calendar + Directory + Dashboard repositories and routes, server.ts mount
+- [ ] 04-03-PLAN.md — Frontend: Dashboard rewrite with real KPI cards + 3 data widgets + react-grid-layout drag-drop
+- [ ] 04-04-PLAN.md — Frontend: Calendar 3 pages (cá nhân/cơ quan/lãnh đạo) + Danh bạ + sidebar nav update + checkpoint
 **UI hint**: yes
 
 ### Phase 5: Kho lưu trữ, Tài liệu & Họp
@@ -132,7 +137,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | 1. Stabilize Sprint 0-4 | 3/3 | Complete    | 2026-04-14 |
 | 2. Hồ sơ công việc | 8/8 | Complete    | 2026-04-14 |
 | 3. Liên thông & Tin nhắn | 5/5 | Complete    | 2026-04-14 |
-| 4. Lịch, Danh bạ & Dashboard | 0/TBD | Not started | - |
+| 4. Lịch, Danh bạ & Dashboard | 0/4 | Not started | - |
 | 5. Kho lưu trữ, Tài liệu & Họp | 0/TBD | Not started | - |
 | 6. Tích hợp hệ thống ngoài | 0/TBD | Not started | - |
 | 7. Polish & Redirect | 0/TBD | Not started | - |
