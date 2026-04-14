@@ -500,7 +500,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
               onOpenChange={handleBellOpenChange}
               placement="bottomRight"
               trigger={['click']}
-              dropdownRender={() => bellDropdownContent}
+              popupRender={() => bellDropdownContent}
             >
               <Badge count={notifUnreadCount} size="small" overflowCount={99}>
                 <BellOutlined
