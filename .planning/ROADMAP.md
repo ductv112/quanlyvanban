@@ -10,7 +10,7 @@ Rebuild hệ thống quản lý văn bản điện tử (.NET cũ) thành stack 
 - Integer phases (1, 2, 3): Planned milestone work
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
-- [ ] **Phase 1: Stabilize Sprint 0-4** - Fix visible bugs, refactor shared patterns, đảm bảo golden path chạy mượt
+- [x] **Phase 1: Stabilize Sprint 0-4** - Fix visible bugs, refactor shared patterns, đảm bảo golden path chạy mượt (completed 2026-04-14)
 - [ ] **Phase 2: Hồ sơ công việc** - Module HSCV hoàn chỉnh: danh sách, CRUD, workflow, báo cáo
 - [ ] **Phase 3: Liên thông & Tin nhắn** - Văn bản liên thông, giao việc từ VB, tin nhắn nội bộ & thông báo realtime
 - [ ] **Phase 4: Lịch, Danh bạ & Dashboard** - Lịch 3 loại, danh bạ, dashboard hoàn thiện với widget thật
@@ -31,9 +31,9 @@ Rebuild hệ thống quản lý văn bản điện tử (.NET cũ) thành stack 
   4. handleDbError và API response format nhất quán trên toàn backend
 **Plans**: 3 plans
 Plans:
-- [ ] 01-01-PLAN.md — Frontend tree utilities: tạo shared lib/tree-utils.ts + types/tree.ts, cập nhật 4 trang admin
-- [ ] 01-02-PLAN.md — Backend error handler: tạo shared lib/error-handler.ts, cập nhật 5 route files
-- [ ] 01-03-PLAN.md — Golden path & bug fixes: fix backslash paths, kiểm tra Vietnamese text, checkpoint xác nhận
+- [x] 01-01-PLAN.md — Frontend tree utilities: tạo shared lib/tree-utils.ts + types/tree.ts, cập nhật 4 trang admin
+- [x] 01-02-PLAN.md — Backend error handler: tạo shared lib/error-handler.ts, cập nhật 5 route files
+- [x] 01-03-PLAN.md — Golden path & bug fixes: fix backslash paths, kiểm tra Vietnamese text, checkpoint xác nhận
 
 ### Phase 2: Hồ sơ công việc
 **Goal**: Người dùng có thể quản lý toàn bộ vòng đời hồ sơ công việc — tạo, phân công, xử lý, chuyển trạng thái, và xem báo cáo
@@ -114,7 +114,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Stabilize Sprint 0-4 | 0/3 | In progress | - |
+| 1. Stabilize Sprint 0-4 | 3/3 | Complete    | 2026-04-14 |
 | 2. Hồ sơ công việc | 0/TBD | Not started | - |
 | 3. Liên thông & Tin nhắn | 0/TBD | Not started | - |
 | 4. Lịch, Danh bạ & Dashboard | 0/TBD | Not started | - |
