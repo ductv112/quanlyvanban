@@ -306,11 +306,12 @@ export const incomingDocRepository = {
     curatorIds: number[],
     note: string | null,
     createdBy: number,
-  ): Promise<DbResult> {
-    const row = await callFunctionOne<DbResult>('edoc.fn_handling_doc_create_from_doc', [
+  ): Promise<DbResultWithId> {
+    // fn_handling_doc_create_from_doc returns TABLE(success, message, id bigint)
+    const row = await callFunctionOne<DbResultWithId>('edoc.fn_handling_doc_create_from_doc', [
       docId, docType, name, startDate, endDate, curatorIds, note, createdBy,
     ]);
-    return row ?? { success: false, message: 'Không thể tạo hồ sơ công việc' };
+    return row ?? { success: false, message: 'Không thể tạo hồ sơ công việc', id: 0 };
   },
 
   async handover(docId: number, staffId: number): Promise<DbResult> {
