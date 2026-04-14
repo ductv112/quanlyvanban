@@ -492,6 +492,25 @@ router.post('/muon-tra', async (req: Request, res: Response) => {
   }
 });
 
+// DELETE /muon-tra/:id — Xóa yêu cầu mượn
+router.delete('/muon-tra/:id', async (req: Request, res: Response) => {
+  try {
+    const id = Number(req.params.id);
+    const { rawQuery } = await import('../lib/db/query.js');
+    const rows = await rawQuery(
+      `DELETE FROM esto.borrow_requests WHERE id = $1 AND status = 0 RETURNING id`,
+      [id],
+    );
+    if (!rows || rows.length === 0) {
+      res.status(400).json({ success: false, message: 'Không thể xóa: yêu cầu không tồn tại hoặc đã được xử lý' });
+      return;
+    }
+    res.json({ success: true, message: 'Xóa yêu cầu mượn thành công' });
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
+
 // PATCH /muon-tra/:id/approve — Duyệt yêu cầu mượn
 router.patch('/muon-tra/:id/approve', async (req: Request, res: Response) => {
   try {
