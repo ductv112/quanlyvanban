@@ -12,7 +12,7 @@ Rebuild hệ thống quản lý văn bản điện tử (.NET cũ) thành stack 
 
 - [x] **Phase 1: Stabilize Sprint 0-4** - Fix visible bugs, refactor shared patterns, đảm bảo golden path chạy mượt (completed 2026-04-14)
 - [x] **Phase 2: Hồ sơ công việc** - Module HSCV hoàn chỉnh: danh sách, CRUD, workflow, báo cáo (completed 2026-04-14)
-- [ ] **Phase 3: Liên thông & Tin nhắn** - Văn bản liên thông, giao việc từ VB, tin nhắn nội bộ & thông báo realtime
+- [x] **Phase 3: Liên thông & Tin nhắn** - Văn bản liên thông, giao việc từ VB, tin nhắn nội bộ & thông báo realtime (completed 2026-04-14)
 - [ ] **Phase 4: Lịch, Danh bạ & Dashboard** - Lịch 3 loại, danh bạ, dashboard hoàn thiện với widget thật
 - [ ] **Phase 5: Kho lưu trữ, Tài liệu & Họp** - Kho/Phông, tài liệu/hợp đồng, họp không giấy
 - [ ] **Phase 6: Tích hợp hệ thống ngoài** - LGSP liên thông, ký số điện tử, thông báo đa kênh
@@ -71,8 +71,8 @@ Plans:
 - [x] 03-01-PLAN.md — Database: Sprint 7+8 migration (VB lien thong + messages + notices tables + 20 stored functions)
 - [x] 03-02-PLAN.md — Backend: VB lien thong repository + routes, incoming doc action endpoints (giao viec, nhan ban giao, chuyen lai, huy duyet)
 - [x] 03-03-PLAN.md — Backend: Message + notice repositories + routes, Socket.IO server setup with JWT auth
-- [ ] 03-04-PLAN.md — Frontend: VB lien thong list + detail pages, giao viec drawer + action buttons on VB den detail
-- [ ] 03-05-PLAN.md — Frontend: Tin nhan 3-panel mail, thong bao page, bell dropdown, Socket.IO client, sidebar nav updates
+- [x] 03-04-PLAN.md — Frontend: VB lien thong list + detail pages, giao viec drawer + action buttons on VB den detail
+- [x] 03-05-PLAN.md — Frontend: Tin nhan 3-panel mail, thong bao page, bell dropdown, Socket.IO client, sidebar nav updates
 **UI hint**: yes
 
 ### Phase 4: Lịch, Danh bạ & Dashboard
@@ -131,7 +131,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 |-------|----------------|--------|-----------|
 | 1. Stabilize Sprint 0-4 | 3/3 | Complete    | 2026-04-14 |
 | 2. Hồ sơ công việc | 8/8 | Complete    | 2026-04-14 |
-| 3. Liên thông & Tin nhắn | 3/5 | In Progress|  |
+| 3. Liên thông & Tin nhắn | 5/5 | Complete    | 2026-04-14 |
 | 4. Lịch, Danh bạ & Dashboard | 0/TBD | Not started | - |
 | 5. Kho lưu trữ, Tài liệu & Họp | 0/TBD | Not started | - |
 | 6. Tích hợp hệ thống ngoài | 0/TBD | Not started | - |
