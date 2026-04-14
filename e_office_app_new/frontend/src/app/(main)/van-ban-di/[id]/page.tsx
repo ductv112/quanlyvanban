@@ -9,8 +9,8 @@ import {
 import {
   ArrowLeftOutlined, CheckCircleOutlined, CloseCircleOutlined, SendOutlined,
   DeleteOutlined, DownloadOutlined, UploadOutlined, MoreOutlined,
-  StarOutlined, StarFilled, CommentOutlined, PaperClipOutlined,
-  InboxOutlined, ClockCircleOutlined, UserOutlined, FilePdfOutlined,
+  StarOutlined, StarFilled, PaperClipOutlined,
+  ClockCircleOutlined, UserOutlined, FilePdfOutlined,
   FileImageOutlined, FileWordOutlined, FileExcelOutlined, FileOutlined,
   EditOutlined, SafetyCertificateOutlined,
 } from '@ant-design/icons';
@@ -19,25 +19,26 @@ import { useAuthStore } from '@/stores/auth.store';
 import { useParams, useRouter } from 'next/navigation';
 import dayjs from 'dayjs';
 
-const { TextArea } = Input;
 const { Text } = Typography;
 
 interface DocDetail {
-  id: number; unit_id: number; received_date: string; number: number;
-  notation: string; document_code: string; abstract: string;
-  publish_unit: string; publish_date: string; signer: string; sign_date: string;
+  id: number; unit_id: number; number: number; sub_number: string;
+  notation: string; abstract: string;
+  publish_date: string; signer: string; sign_date: string;
   doc_book_id: number; doc_type_id: number; doc_field_id: number;
   secret_id: number; urgent_id: number; number_paper: number; number_copies: number;
   expired_date: string; recipients: string; approver: string; approved: boolean;
-  is_handling: boolean; is_received_paper: boolean; archive_status: boolean;
+  is_handling: boolean; archive_status: boolean;
+  is_inter_doc: boolean; is_digital_signed: boolean;
+  drafting_unit_id: number; drafting_user_id: number; publish_unit_id: number;
+  drafting_unit_name: string; drafting_user_name: string;
   created_by: number; created_at: string; updated_by: number; updated_at: string;
   doc_book_name: string; doc_type_name: string; doc_type_code: string;
-  doc_field_name: string; created_by_name: string; is_read: boolean;
+  doc_field_name: string; created_by_name: string;
 }
 interface Attachment { id: number; file_name: string; file_path: string; file_size: number; content_type: string; created_by_name: string; created_at: string; }
 interface Recipient { id: number; staff_id: number; staff_name: string; position_name: string; department_name: string; is_read: boolean; read_at: string; created_at: string; }
 interface HistoryEvent { event_type: string; event_time: string; staff_name: string; content: string; }
-interface LeaderNote { id: number; staff_id: number; staff_name: string; position_name: string; content: string; created_at: string; }
 interface SendableStaff { staff_id: number; full_name: string; position_name: string; department_id: number; department_name: string; }
 
 const SECRET_TAGS: Record<number, { text: string; color: string }> = {
@@ -65,14 +66,8 @@ function formatSize(bytes: number) {
 function fmtDate(d: string | null) { return d ? dayjs(d).format('DD/MM/YYYY') : '—'; }
 function fmtDateTime(d: string | null) { return d ? dayjs(d).format('DD/MM/YYYY HH:mm') : '—'; }
 
-// ====== Styles — use CSS classes from globals.css for layout ======
-// sectionTitle → className="section-title"
-// fieldLabel → className="info-label"
-// fieldValue → className="info-value"
-// infoRow → className="info-grid"
-// infoRowFull → className="info-grid-full"
 
-export default function IncomingDocDetailPage() {
+export default function OutgoingDocDetailPage() {
   const { message, modal } = App.useApp();
   const user = useAuthStore((s) => s.user);
   const params = useParams();
@@ -84,58 +79,43 @@ export default function IncomingDocDetailPage() {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [recipients, setRecipients] = useState<Recipient[]>([]);
   const [history, setHistory] = useState<HistoryEvent[]>([]);
-  const [leaderNotes, setLeaderNotes] = useState<LeaderNote[]>([]);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [sendModalOpen, setSendModalOpen] = useState(false);
   const [sendableStaff, setSendableStaff] = useState<SendableStaff[]>([]);
   const [selectedStaffIds, setSelectedStaffIds] = useState<number[]>([]);
   const [sending, setSending] = useState(false);
-  const [noteContent, setNoteContent] = useState('');
-  const [addingNote, setAddingNote] = useState(false);
   const [uploading, setUploading] = useState(false);
 
-  const fetchDoc = useCallback(async () => { try { const { data: res } = await api.get(`/van-ban-den/${docId}`); setDoc(res.data); } catch { message.error('Không tìm thấy văn bản'); router.push('/van-ban-den'); } }, [docId, message, router]);
-  const fetchAttachments = useCallback(async () => { try { const { data: res } = await api.get(`/van-ban-den/${docId}/dinh-kem`); setAttachments(res.data || []); } catch {} }, [docId]);
-  const fetchRecipients = useCallback(async () => { try { const { data: res } = await api.get(`/van-ban-den/${docId}/nguoi-nhan`); setRecipients(res.data || []); } catch {} }, [docId]);
-  const fetchHistory = useCallback(async () => { try { const { data: res } = await api.get(`/van-ban-den/${docId}/lich-su`); setHistory(res.data || []); } catch {} }, [docId]);
-  const fetchLeaderNotes = useCallback(async () => { try { const { data: res } = await api.get(`/van-ban-den/${docId}/but-phe`); setLeaderNotes(res.data || []); } catch {} }, [docId]);
+  const fetchDoc = useCallback(async () => { try { const { data: res } = await api.get(`/van-ban-di/${docId}`); setDoc(res.data); } catch { message.error('Không tìm thấy văn bản'); router.push('/van-ban-di'); } }, [docId, message, router]);
+  const fetchAttachments = useCallback(async () => { try { const { data: res } = await api.get(`/van-ban-di/${docId}/dinh-kem`); setAttachments(res.data || []); } catch {} }, [docId]);
+  const fetchRecipients = useCallback(async () => { try { const { data: res } = await api.get(`/van-ban-di/${docId}/nguoi-nhan`); setRecipients(res.data || []); } catch {} }, [docId]);
+  const fetchHistory = useCallback(async () => { try { const { data: res } = await api.get(`/van-ban-di/${docId}/lich-su`); setHistory(res.data || []); } catch {} }, [docId]);
 
   useEffect(() => {
     setLoading(true);
-    Promise.all([fetchDoc(), fetchAttachments(), fetchRecipients(), fetchHistory(), fetchLeaderNotes()]).finally(() => setLoading(false));
-  }, [fetchDoc, fetchAttachments, fetchRecipients, fetchHistory, fetchLeaderNotes]);
+    Promise.all([fetchDoc(), fetchAttachments(), fetchRecipients(), fetchHistory()]).finally(() => setLoading(false));
+  }, [fetchDoc, fetchAttachments, fetchRecipients, fetchHistory]);
 
   // Actions
-  const handleApprove = async () => { try { await api.patch(`/van-ban-den/${docId}/duyet`); message.success('Duyệt thành công'); fetchDoc(); fetchHistory(); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } };
-  const handleUnapprove = async () => { try { await api.patch(`/van-ban-den/${docId}/huy-duyet`); message.success('Hủy duyệt thành công'); fetchDoc(); fetchHistory(); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } };
-  const handleDelete = () => { modal.confirm({ title: 'Xác nhận xóa', content: 'Xóa văn bản này?', okText: 'Xóa', okType: 'danger', cancelText: 'Hủy', onOk: async () => { try { await api.delete(`/van-ban-den/${docId}`); message.success('Đã xóa'); router.push('/van-ban-den'); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } } }); };
-  const handleReceivePaper = async () => { try { await api.patch(`/van-ban-den/${docId}/nhan-ban-giay`); message.success('Đã xác nhận nhận bản giấy'); fetchDoc(); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } };
-  const handleToggleBookmark = async () => { try { const { data: res } = await api.post(`/van-ban-den/${docId}/danh-dau`, {}); setIsBookmarked(res.data?.is_bookmarked); message.success(res.data?.message); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } };
+  const handleApprove = async () => { try { await api.patch(`/van-ban-di/${docId}/duyet`); message.success('Duyệt thành công'); fetchDoc(); fetchHistory(); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } };
+  const handleUnapprove = async () => { try { await api.patch(`/van-ban-di/${docId}/huy-duyet`); message.success('Hủy duyệt thành công'); fetchDoc(); fetchHistory(); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } };
+  const handleDelete = () => { modal.confirm({ title: 'Xác nhận xóa', content: 'Xóa văn bản này?', okText: 'Xóa', okType: 'danger', cancelText: 'Hủy', onOk: async () => { try { await api.delete(`/van-ban-di/${docId}`); message.success('Đã xóa'); router.push('/van-ban-di'); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } } }); };
+  const handleToggleBookmark = async () => { try { const { data: res } = await api.post(`/van-ban-di/${docId}/danh-dau`, {}); setIsBookmarked(res.data?.is_bookmarked); message.success(res.data?.message); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } };
 
   // Attachments
-  const handleUpload = async (file: File) => { setUploading(true); try { const fd = new FormData(); fd.append('file', file); await api.post(`/van-ban-den/${docId}/dinh-kem`, fd, { headers: { 'Content-Type': 'multipart/form-data' } }); message.success('Tải lên thành công'); fetchAttachments(); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } finally { setUploading(false); } return false; };
-  const handleDownload = async (att: Attachment) => { try { const { data: res } = await api.get(`/van-ban-den/${docId}/dinh-kem/${att.id}/download`); window.open(res.data?.url, '_blank'); } catch { message.error('Lỗi tải file'); } };
-  const handleDeleteAttachment = async (att: Attachment) => { try { await api.delete(`/van-ban-den/${docId}/dinh-kem/${att.id}`); message.success('Đã xóa'); fetchAttachments(); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } };
+  const handleUpload = async (file: File) => { setUploading(true); try { const fd = new FormData(); fd.append('file', file); await api.post(`/van-ban-di/${docId}/dinh-kem`, fd, { headers: { 'Content-Type': 'multipart/form-data' } }); message.success('Tải lên thành công'); fetchAttachments(); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } finally { setUploading(false); } return false; };
+  const handleDownload = async (att: Attachment) => { try { const { data: res } = await api.get(`/van-ban-di/${docId}/dinh-kem/${att.id}/download`); window.open(res.data?.url, '_blank'); } catch { message.error('Lỗi tải file'); } };
+  const handleDeleteAttachment = async (att: Attachment) => { try { await api.delete(`/van-ban-di/${docId}/dinh-kem/${att.id}`); message.success('Đã xóa'); fetchAttachments(); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } };
 
   // Send
-  const openSendModal = async () => { try { const { data: res } = await api.get(`/van-ban-den/${docId}/danh-sach-gui`); setSendableStaff(res.data || []); setSelectedStaffIds([]); setSendModalOpen(true); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } };
+  const openSendModal = async () => { try { const { data: res } = await api.get(`/van-ban-di/${docId}/danh-sach-gui`); setSendableStaff(res.data || []); setSelectedStaffIds([]); setSendModalOpen(true); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } };
   const handleSend = async () => {
     if (selectedStaffIds.length === 0) { message.warning('Chọn ít nhất một người nhận'); return; }
     setSending(true);
-    try { const { data: res } = await api.post(`/van-ban-den/${docId}/gui`, { staff_ids: selectedStaffIds }); message.success(res.data?.message || 'Đã gửi'); setSendModalOpen(false); fetchRecipients(); fetchHistory(); }
+    try { const { data: res } = await api.post(`/van-ban-di/${docId}/gui`, { staff_ids: selectedStaffIds }); message.success(res.data?.message || 'Đã gửi'); setSendModalOpen(false); fetchRecipients(); fetchHistory(); }
     catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); }
     finally { setSending(false); }
   };
-
-  // Leader Notes
-  const handleAddNote = async () => {
-    if (!noteContent.trim()) { message.warning('Nhập nội dung bút phê'); return; }
-    setAddingNote(true);
-    try { await api.post(`/van-ban-den/${docId}/but-phe`, { content: noteContent.trim() }); message.success('Thêm bút phê thành công'); setNoteContent(''); fetchLeaderNotes(); fetchHistory(); }
-    catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); }
-    finally { setAddingNote(false); }
-  };
-  const handleDeleteNote = async (noteId: number) => { try { await api.delete(`/van-ban-den/${docId}/but-phe/${noteId}`); message.success('Đã xóa'); fetchLeaderNotes(); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } };
 
   if (loading) return <div style={{ textAlign: 'center', padding: 80 }}><Spin size="large" /></div>;
   if (!doc) return <Empty description="Không tìm thấy văn bản" />;
@@ -153,18 +133,18 @@ export default function IncomingDocDetailPage() {
         display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12,
       }}>
         <Flex align="center" gap={12}>
-          <Button icon={<ArrowLeftOutlined />} onClick={() => router.push('/van-ban-den')} />
+          <Button icon={<ArrowLeftOutlined />} onClick={() => router.push('/van-ban-di')} />
           <div>
             <div style={{ fontSize: 16, fontWeight: 700, color: '#1B3A5C' }}>
-              Số đến: {doc.number} — {doc.notation || 'Không có ký hiệu'}
+              Số đi: {doc.number}{doc.sub_number ? `/${doc.sub_number}` : ''} — {doc.notation || 'Không có ký hiệu'}
             </div>
             <div style={{ fontSize: 13, color: '#8c8c8c' }}>
-              {doc.publish_unit} • Ngày đến: {fmtDate(doc.received_date)}
+              {doc.drafting_unit_name || 'Đơn vị soạn'} • Ngày ban hành: {fmtDate(doc.publish_date)}
             </div>
           </div>
           {doc.approved
             ? <Tag color="success" icon={<SafetyCertificateOutlined />}>Đã duyệt</Tag>
-            : <Tag color="warning">Chờ duyệt</Tag>
+            : <Tag color="gold">Chờ duyệt</Tag>
           }
           {doc.urgent_id > 1 && <Tag color={urgentTag.color}>{urgentTag.text}</Tag>}
           {doc.secret_id > 1 && <Tag color={secretTag.color}>{secretTag.text}</Tag>}
@@ -177,7 +157,7 @@ export default function IncomingDocDetailPage() {
           />
           {!doc.approved && (
             <>
-              <Button icon={<EditOutlined />} onClick={() => router.push(`/van-ban-den?edit=${doc.id}`)}>Sửa</Button>
+              <Button icon={<EditOutlined />} onClick={() => router.push(`/van-ban-di?edit=${doc.id}`)}>Sửa</Button>
               <Button type="primary" icon={<CheckCircleOutlined />} onClick={handleApprove}>Duyệt</Button>
               <Dropdown menu={{ items: [
                 { key: 'delete', icon: <DeleteOutlined />, label: 'Xóa văn bản', danger: true, onClick: handleDelete },
@@ -189,10 +169,8 @@ export default function IncomingDocDetailPage() {
           {doc.approved && (
             <>
               <Button type="primary" icon={<SendOutlined />} onClick={openSendModal}>Gửi</Button>
-              <Button icon={<CommentOutlined />} onClick={() => document.getElementById('note-input')?.focus()}>Bút phê</Button>
               <Dropdown menu={{ items: [
                 { key: 'unapprove', icon: <CloseCircleOutlined />, label: 'Hủy duyệt', onClick: handleUnapprove },
-                ...(!doc.is_received_paper ? [{ key: 'paper', icon: <InboxOutlined />, label: 'Nhận bản giấy', onClick: handleReceivePaper }] : []),
               ] }}>
                 <Button icon={<MoreOutlined />} />
               </Dropdown>
@@ -224,16 +202,20 @@ export default function IncomingDocDetailPage() {
             <div className="section-title">Thông tin văn bản</div>
             <div style={{ marginTop: 16 }}>
               <div className="info-grid">
-                <div><div className="info-label">Số đến</div><div className="info-value">{doc.number}</div></div>
-                <div><div className="info-label">Ngày đến</div><div className="info-value">{fmtDate(doc.received_date)}</div></div>
+                <div><div className="info-label">Số đi</div><div className="info-value">{doc.number}{doc.sub_number ? `/${doc.sub_number}` : ''}</div></div>
+                <div><div className="info-label">Ngày ban hành</div><div className="info-value">{fmtDate(doc.publish_date)}</div></div>
               </div>
               <div className="info-grid">
                 <div><div className="info-label">Số ký hiệu</div><div className="info-value" style={{ color: '#0891B2' }}>{doc.notation || '—'}</div></div>
                 <div><div className="info-label">Sổ văn bản</div><div className="info-value">{doc.doc_book_name || '—'}</div></div>
               </div>
+              <div className="info-grid">
+                <div><div className="info-label">Đơn vị soạn</div><div className="info-value">{doc.drafting_unit_name || '—'}</div></div>
+                <div><div className="info-label">Người soạn</div><div className="info-value">{doc.drafting_user_name || '—'}</div></div>
+              </div>
               <div className="info-grid-full">
-                <div className="info-label">Cơ quan ban hành</div>
-                <div className="info-value">{doc.publish_unit || '—'}</div>
+                <div className="info-label">Đơn vị phát hành</div>
+                <div className="info-value">{doc.publish_unit_id ? `Đơn vị #${doc.publish_unit_id}` : '—'}</div>
               </div>
               <div className="info-grid">
                 <div><div className="info-label">Loại văn bản</div><div className="info-value">{doc.doc_type_name || '—'}</div></div>
@@ -259,7 +241,11 @@ export default function IncomingDocDetailPage() {
               </div>
               <div className="info-grid">
                 <div><div className="info-label">Số tờ / Số bản</div><div className="info-value">{doc.number_paper} tờ / {doc.number_copies} bản</div></div>
-                <div><div className="info-label">Bản giấy</div>{doc.is_received_paper ? <Tag color="success">Đã nhận</Tag> : <Tag>Chưa nhận</Tag>}</div>
+                <div><div className="info-label">Ký số</div>{doc.is_digital_signed ? <Tag color="success">Đã ký số</Tag> : <Tag>Chưa ký số</Tag>}</div>
+              </div>
+              <div className="info-grid">
+                <div><div className="info-label">Liên thông</div>{doc.is_inter_doc ? <Tag color="processing">Liên thông</Tag> : <Tag>Nội bộ</Tag>}</div>
+                <div><div className="info-label">Lưu trữ</div>{doc.archive_status ? <Tag color="success">Đã lưu trữ</Tag> : <Tag>Chưa lưu trữ</Tag>}</div>
               </div>
               <div className="info-grid" style={{ borderTop: '1px solid #f0f0f0', paddingTop: 12, marginTop: 12 }}>
                 <div><div className="info-label">Người nhập</div><div style={{ fontSize: 13, color: '#595959' }}>{doc.created_by_name}</div></div>
@@ -300,43 +286,6 @@ export default function IncomingDocDetailPage() {
                     </Space>
                   </Flex>
                 ))}
-              </div>
-            )}
-          </div>
-
-          {/* --- Bút phê lãnh đạo --- */}
-          <div style={{
-            background: '#fff', borderRadius: 10, padding: '20px 24px', marginBottom: 16,
-            boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
-          }}>
-            <div className="section-title" style={{ marginBottom: 12 }}><CommentOutlined /> Ý kiến bút phê ({leaderNotes.length})</div>
-
-            {leaderNotes.map((note) => (
-              <div key={note.id} style={{ padding: '12px 16px', background: '#f6ffed', borderRadius: 8, marginBottom: 8, borderLeft: '3px solid #52c41a' }}>
-                <Flex justify="space-between" align="flex-start">
-                  <Flex gap={10}>
-                    <Avatar style={{ background: '#0891B2' }} size="small" icon={<UserOutlined />} />
-                    <div>
-                      <div style={{ fontWeight: 600, fontSize: 13, color: '#1B3A5C' }}>
-                        {note.staff_name}{note.position_name ? ` — ${note.position_name}` : ''}
-                      </div>
-                      <div style={{ fontSize: 14, marginTop: 4, color: '#262626', lineHeight: 1.5 }}>{note.content}</div>
-                      <div style={{ fontSize: 11, color: '#8c8c8c', marginTop: 4 }}>{fmtDateTime(note.created_at)}</div>
-                    </div>
-                  </Flex>
-                  {note.staff_id === user?.staffId && (
-                    <Popconfirm title="Xóa bút phê?" onConfirm={() => handleDeleteNote(note.id)}>
-                      <Button size="small" type="text" danger icon={<DeleteOutlined />} />
-                    </Popconfirm>
-                  )}
-                </Flex>
-              </div>
-            ))}
-
-            {doc.approved && (
-              <div style={{ marginTop: leaderNotes.length > 0 ? 12 : 0 }}>
-                <TextArea id="note-input" rows={2} placeholder="Nhập nội dung bút phê..." value={noteContent} onChange={(e) => setNoteContent(e.target.value)} style={{ borderRadius: 8 }} />
-                <Button type="primary" size="small" style={{ marginTop: 8 }} loading={addingNote} onClick={handleAddNote} disabled={!noteContent.trim()}>Gửi bút phê</Button>
               </div>
             )}
           </div>

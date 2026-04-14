@@ -8,7 +8,7 @@ import {
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
 import {
   PlusOutlined, EditOutlined, DeleteOutlined, MoreOutlined,
-  CheckCircleOutlined, EyeOutlined, FileTextOutlined, ReloadOutlined,
+  CheckCircleOutlined, EyeOutlined, SendOutlined, ReloadOutlined,
 } from '@ant-design/icons';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth.store';
@@ -17,15 +17,17 @@ import dayjs from 'dayjs';
 const { TextArea } = Input;
 const { RangePicker } = DatePicker;
 
-interface IncomingDoc {
-  id: number; received_date: string; number: number; notation: string;
-  document_code: string; abstract: string; publish_unit: string;
+interface OutgoingDoc {
+  id: number; received_date: string; number: number; sub_number: string;
+  notation: string; document_code: string; abstract: string;
+  drafting_unit_id: number; drafting_unit_name: string;
+  drafting_user_id: number; drafting_user_name: string;
+  publish_unit_id: number; publish_unit_name: string;
   publish_date: string; signer: string; sign_date: string;
   doc_book_id: number; doc_type_id: number; doc_field_id: number;
   secret_id: number; urgent_id: number; number_paper: number;
   number_copies: number; expired_date: string; recipients: string;
-  approver: string; approved: boolean; is_handling: boolean;
-  is_received_paper: boolean; archive_status: boolean;
+  approver: string; approved: boolean;
   created_by: number; created_at: string;
   doc_book_name: string; doc_type_name: string; doc_type_code: string;
   doc_field_name: string; created_by_name: string;
@@ -34,17 +36,38 @@ interface IncomingDoc {
 
 interface SelectOption { value: number; label: string }
 
+interface DepartmentNode {
+  id: number;
+  name: string;
+  children?: DepartmentNode[];
+}
+
+interface StaffItem {
+  id: number;
+  full_name: string;
+}
+
 const URGENT_MAP: Record<number, { text: string; color: string }> = {
   1: { text: 'Thường', color: 'default' },
   2: { text: 'Khẩn', color: 'orange' },
   3: { text: 'Hỏa tốc', color: 'red' },
 };
 
-export default function IncomingDocPage() {
+function flattenDepartments(nodes: DepartmentNode[], result: SelectOption[] = [], prefix = ''): SelectOption[] {
+  for (const node of nodes) {
+    result.push({ value: node.id, label: prefix ? `${prefix} / ${node.name}` : node.name });
+    if (node.children && node.children.length > 0) {
+      flattenDepartments(node.children, result, prefix ? `${prefix} / ${node.name}` : node.name);
+    }
+  }
+  return result;
+}
+
+export default function OutgoingDocPage() {
   const { message, modal } = App.useApp();
   const user = useAuthStore((s) => s.user);
   const [loading, setLoading] = useState(false);
-  const [data, setData] = useState<IncomingDoc[]>([]);
+  const [data, setData] = useState<OutgoingDoc[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
@@ -56,8 +79,10 @@ export default function IncomingDocPage() {
   const [docBooks, setDocBooks] = useState<SelectOption[]>([]);
   const [docTypes, setDocTypes] = useState<SelectOption[]>([]);
   const [docFields, setDocFields] = useState<SelectOption[]>([]);
+  const [departments, setDepartments] = useState<SelectOption[]>([]);
+  const [staffList, setStaffList] = useState<SelectOption[]>([]);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [editingRecord, setEditingRecord] = useState<IncomingDoc | null>(null);
+  const [editingRecord, setEditingRecord] = useState<OutgoingDoc | null>(null);
   const [saving, setSaving] = useState(false);
   const [form] = Form.useForm();
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
@@ -74,23 +99,26 @@ export default function IncomingDocPage() {
         params.from_date = filterDateRange[0].startOf('day').toISOString();
         params.to_date = filterDateRange[1].endOf('day').toISOString();
       }
-      const { data: res } = await api.get('/van-ban-den', { params });
+      const { data: res } = await api.get('/van-ban-di', { params });
       setData(res.data || []);
       setTotal(res.pagination?.total || 0);
-    } catch { message.error('Lỗi tải danh sách văn bản đến'); }
+    } catch { message.error('Lỗi tải danh sách văn bản đi'); }
     finally { setLoading(false); }
   }, [page, pageSize, keyword, filterDocBookId, filterDocTypeId, filterUrgentId, filterDateRange, message]);
 
   const fetchDropdowns = useCallback(async () => {
     try {
-      const [bookRes, typeRes, fieldRes] = await Promise.all([
-        api.get('/quan-tri/so-van-ban', { params: { type_id: 1 } }),
+      const [bookRes, typeRes, fieldRes, deptRes] = await Promise.all([
+        api.get('/quan-tri/so-van-ban', { params: { type_id: 2 } }),
         api.get('/quan-tri/loai-van-ban/tree'),
         api.get('/quan-tri/linh-vuc'),
+        api.get('/quan-tri/don-vi/tree'),
       ]);
       setDocBooks((bookRes.data.data || []).map((b: { id: number; name: string }) => ({ value: b.id, label: b.name })));
       setDocTypes((typeRes.data.data || []).map((t: { id: number; name: string }) => ({ value: t.id, label: t.name })));
       setDocFields((fieldRes.data.data || []).map((f: { id: number; name: string }) => ({ value: f.id, label: f.name })));
+      const deptTree: DepartmentNode[] = deptRes.data.data || [];
+      setDepartments(flattenDepartments(deptTree));
     } catch { /* ignore */ }
   }, []);
 
@@ -99,12 +127,19 @@ export default function IncomingDocPage() {
 
   const fetchNextNumber = async (docBookId: number) => {
     try {
-      const { data: res } = await api.get('/van-ban-den/so-den-tiep-theo', { params: { doc_book_id: docBookId } });
+      const { data: res } = await api.get('/van-ban-di/so-tiep-theo', { params: { doc_book_id: docBookId } });
       form.setFieldsValue({ number: res.data?.number || 1 });
     } catch { /* ignore */ }
   };
 
-  const openDrawer = (record?: IncomingDoc) => {
+  const fetchStaff = async (unitId: number) => {
+    try {
+      const { data: res } = await api.get('/quan-tri/nguoi-dung', { params: { unit_id: unitId } });
+      setStaffList((res.data || []).map((s: StaffItem) => ({ value: s.id, label: s.full_name })));
+    } catch { setStaffList([]); }
+  };
+
+  const openDrawer = (record?: OutgoingDoc) => {
     if (record) {
       setEditingRecord(record);
       form.setFieldsValue({
@@ -114,10 +149,14 @@ export default function IncomingDocPage() {
         sign_date: record.sign_date ? dayjs(record.sign_date) : null,
         expired_date: record.expired_date ? dayjs(record.expired_date) : null,
       });
+      if (record.drafting_unit_id) {
+        fetchStaff(record.drafting_unit_id);
+      }
     } else {
       setEditingRecord(null);
       form.resetFields();
       form.setFieldsValue({ received_date: dayjs(), secret_id: 1, urgent_id: 1, number_paper: 1, number_copies: 1 });
+      setStaffList([]);
     }
     setDrawerOpen(true);
   };
@@ -134,13 +173,13 @@ export default function IncomingDocPage() {
         expired_date: values.expired_date?.toISOString() || null,
       };
       if (editingRecord) {
-        const { data: res } = await api.put(`/van-ban-den/${editingRecord.id}`, payload);
+        const { data: res } = await api.put(`/van-ban-di/${editingRecord.id}`, payload);
         if (!res.success) { message.error(res.message); return; }
         message.success('Cập nhật thành công');
       } else {
-        const { data: res } = await api.post('/van-ban-den', payload);
+        const { data: res } = await api.post('/van-ban-di', payload);
         if (!res.success) { message.error(res.message); return; }
-        message.success('Tạo văn bản đến thành công');
+        message.success('Tạo văn bản đi thành công');
       }
       setDrawerOpen(false);
       fetchData();
@@ -149,57 +188,61 @@ export default function IncomingDocPage() {
     } finally { setSaving(false); }
   };
 
-  const handleDelete = (record: IncomingDoc) => {
+  const handleDelete = (record: OutgoingDoc) => {
     modal.confirm({
       title: 'Xác nhận xóa', content: `Xóa văn bản "${record.abstract?.substring(0, 50)}..."?`,
       okText: 'Xóa', okType: 'danger', cancelText: 'Hủy',
       onOk: async () => {
-        try { await api.delete(`/van-ban-den/${record.id}`); message.success('Đã xóa'); fetchData(); }
+        try { await api.delete(`/van-ban-di/${record.id}`); message.success('Đã xóa'); fetchData(); }
         catch (err: any) { message.error(err?.response?.data?.message || 'Lỗi xóa'); }
       },
     });
   };
 
-  const handleApprove = async (record: IncomingDoc) => {
-    try { await api.patch(`/van-ban-den/${record.id}/duyet`); message.success('Duyệt thành công'); fetchData(); }
+  const handleApprove = async (record: OutgoingDoc) => {
+    try { await api.patch(`/van-ban-di/${record.id}/duyet`); message.success('Duyệt thành công'); fetchData(); }
     catch (err: any) { message.error(err?.response?.data?.message || 'Lỗi duyệt'); }
   };
 
   const handleMarkReadBulk = async () => {
     if (selectedRowKeys.length === 0) return;
     try {
-      await api.patch('/van-ban-den/danh-dau-da-doc', { doc_ids: selectedRowKeys });
+      await api.patch('/van-ban-di/danh-dau-da-doc', { doc_ids: selectedRowKeys });
       message.success('Đã đánh dấu đọc'); setSelectedRowKeys([]); fetchData();
     } catch (err: any) { message.error(err?.response?.data?.message || 'Lỗi'); }
   };
 
-  const columns: ColumnsType<IncomingDoc> = [
+  const columns: ColumnsType<OutgoingDoc> = [
     {
-      title: 'Số đến', dataIndex: 'number', width: 80, align: 'center',
+      title: 'Số đi', dataIndex: 'number', width: 80, align: 'center',
       render: (num, r) => <span style={{ fontWeight: r.is_read ? 'normal' : 'bold' }}>{num}</span>,
     },
     {
-      title: 'Ngày đến', dataIndex: 'received_date', width: 100,
+      title: 'Số phụ', dataIndex: 'sub_number', width: 80, align: 'center',
+      render: (val, r) => <span style={{ fontWeight: r.is_read ? 'normal' : 'bold' }}>{val || ''}</span>,
+    },
+    {
+      title: 'Ngày đề', dataIndex: 'received_date', width: 100,
       render: (d, r) => <span style={{ fontWeight: r.is_read ? 'normal' : 'bold' }}>{d ? dayjs(d).format('DD/MM/YYYY') : ''}</span>,
     },
     {
-      title: 'Số ký hiệu', dataIndex: 'notation', width: 130,
+      title: 'Ký hiệu', dataIndex: 'notation', width: 130,
       render: (val, r) => <span style={{ fontWeight: r.is_read ? 'normal' : 'bold' }}>{val}</span>,
     },
     {
       title: 'Trích yếu', dataIndex: 'abstract', ellipsis: true,
       render: (val, r) => (
         <Tooltip title={val}>
-          <a style={{ fontWeight: r.is_read ? 'normal' : 'bold' }} href={`/van-ban-den/${r.id}`}>{val}</a>
+          <a style={{ fontWeight: r.is_read ? 'normal' : 'bold' }} href={`/van-ban-di/${r.id}`}>{val}</a>
         </Tooltip>
       ),
     },
-    { title: 'CQ ban hành', dataIndex: 'publish_unit', width: 180, ellipsis: true },
-    { title: 'Loại VB', dataIndex: 'doc_type_name', width: 110, ellipsis: true },
+    { title: 'Đơn vị soạn', dataIndex: 'drafting_unit_name', width: 180, ellipsis: true },
     {
-      title: 'Độ khẩn', dataIndex: 'urgent_id', width: 90, align: 'center',
-      render: (val: number) => { const u = URGENT_MAP[val]; return u && val > 1 ? <Tag color={u.color}>{u.text}</Tag> : null; },
+      title: 'Nơi nhận', dataIndex: 'recipients', width: 180, ellipsis: true,
+      render: (val) => <Tooltip title={val}><span>{val}</span></Tooltip>,
     },
+    { title: 'Loại VB', dataIndex: 'doc_type_name', width: 110, ellipsis: true },
     {
       title: 'Trạng thái', width: 100, align: 'center',
       render: (_, r) => r.approved ? <Tag color="green">Đã duyệt</Tag> : <Tag color="gold">Chờ duyệt</Tag>,
@@ -208,7 +251,7 @@ export default function IncomingDocPage() {
       key: 'actions', width: 50, align: 'center', fixed: 'right',
       render: (_, record) => {
         const items = [
-          { key: 'view', icon: <EyeOutlined />, label: 'Xem chi tiết', onClick: () => { window.location.href = `/van-ban-den/${record.id}`; } },
+          { key: 'view', icon: <EyeOutlined />, label: 'Xem chi tiết', onClick: () => { window.location.href = `/van-ban-di/${record.id}`; } },
           ...(!record.approved ? [
             { key: 'edit', icon: <EditOutlined />, label: 'Sửa', onClick: () => openDrawer(record) },
             { key: 'approve', icon: <CheckCircleOutlined />, label: 'Duyệt', onClick: () => handleApprove(record) },
@@ -227,7 +270,7 @@ export default function IncomingDocPage() {
 
   return (
     <Card
-      title={<><FileTextOutlined style={{ marginRight: 8 }} />Văn bản đến</>}
+      title={<><SendOutlined style={{ marginRight: 8 }} />Văn bản đi</>}
       extra={
         <Space>
           {selectedRowKeys.length > 0 && <Button onClick={handleMarkReadBulk}>Đánh dấu đã đọc ({selectedRowKeys.length})</Button>}
@@ -244,48 +287,153 @@ export default function IncomingDocPage() {
         <Col span={2}><Tooltip title="Xóa bộ lọc"><Button icon={<ReloadOutlined />} onClick={() => { setKeyword(''); setFilterDocBookId(undefined); setFilterDocTypeId(undefined); setFilterUrgentId(undefined); setFilterDateRange(null); setPage(1); }} /></Tooltip></Col>
       </Row>
 
-      <Table<IncomingDoc>
-        rowKey="id" loading={loading} columns={columns} dataSource={data} size="small" scroll={{ x: 1100 }}
+      <Table<OutgoingDoc>
+        rowKey="id" loading={loading} columns={columns} dataSource={data} size="small" scroll={{ x: 1200 }}
         rowSelection={{ selectedRowKeys, onChange: setSelectedRowKeys }}
         pagination={{ current: page, pageSize, total, showSizeChanger: true, showTotal: (t) => `Tổng ${t} văn bản`, pageSizeOptions: ['10', '20', '50', '100'] }}
         onChange={(p) => { setPage(p.current || 1); setPageSize(p.pageSize || 20); }}
       />
 
       <Drawer
-        title={editingRecord ? 'Sửa văn bản đến' : 'Thêm văn bản đến'}
-        width={800} open={drawerOpen} onClose={() => setDrawerOpen(false)}
+        title={editingRecord ? 'Sửa văn bản đi' : 'Thêm văn bản đi'}
+        width={720} open={drawerOpen} onClose={() => setDrawerOpen(false)}
         rootClassName="drawer-gradient"
         extra={<Space><Button onClick={() => setDrawerOpen(false)} ghost>Hủy</Button><Button type="primary" loading={saving} onClick={handleSave}>{editingRecord ? 'Cập nhật' : 'Tạo mới'}</Button></Space>}
       >
         <Form form={form} layout="vertical" autoComplete="off">
           <Row gutter={16}>
-            <Col span={12}><Form.Item name="doc_book_id" label="Sổ văn bản" rules={[{ required: true, message: 'Bắt buộc' }]}><Select placeholder="Chọn sổ văn bản" options={docBooks} onChange={(val) => { if (val && !editingRecord) fetchNextNumber(val); }} /></Form.Item></Col>
-            <Col span={6}><Form.Item name="number" label="Số đến"><InputNumber style={{ width: '100%' }} min={1} /></Form.Item></Col>
-            <Col span={6}><Form.Item name="received_date" label="Ngày đến"><DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" /></Form.Item></Col>
+            <Col span={12}>
+              <Form.Item name="doc_book_id" label="Sổ văn bản" rules={[{ required: true, message: 'Bắt buộc' }]}>
+                <Select placeholder="Chọn sổ văn bản" options={docBooks} onChange={(val) => { if (val && !editingRecord) fetchNextNumber(val); }} />
+              </Form.Item>
+            </Col>
+            <Col span={6}>
+              <Form.Item name="number" label="Số đi">
+                <InputNumber style={{ width: '100%' }} min={1} />
+              </Form.Item>
+            </Col>
+            <Col span={6}>
+              <Form.Item name="sub_number" label="Số phụ">
+                <Input placeholder="VD: a, b, c" />
+              </Form.Item>
+            </Col>
           </Row>
           <Row gutter={16}>
-            <Col span={12}><Form.Item name="notation" label="Số ký hiệu"><Input placeholder="VD: 123/UBND-VP" /></Form.Item></Col>
-            <Col span={12}><Form.Item name="publish_unit" label="Cơ quan ban hành"><Input placeholder="VD: UBND tỉnh Lạng Sơn" /></Form.Item></Col>
+            <Col span={8}>
+              <Form.Item name="received_date" label="Ngày đề">
+                <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
+              </Form.Item>
+            </Col>
+            <Col span={16}>
+              <Form.Item name="notation" label="Ký hiệu">
+                <Input placeholder="VD: 123/UBND-VP" />
+              </Form.Item>
+            </Col>
           </Row>
-          <Form.Item name="abstract" label="Trích yếu nội dung" rules={[{ required: true, message: 'Bắt buộc' }]}><TextArea rows={3} placeholder="Trích yếu nội dung văn bản" /></Form.Item>
+          <Form.Item name="abstract" label="Trích yếu nội dung" rules={[{ required: true, message: 'Bắt buộc' }]}>
+            <TextArea rows={3} placeholder="Trích yếu nội dung văn bản" />
+          </Form.Item>
           <Row gutter={16}>
-            <Col span={8}><Form.Item name="doc_type_id" label="Loại văn bản"><Select placeholder="Chọn loại" allowClear options={docTypes} /></Form.Item></Col>
-            <Col span={8}><Form.Item name="doc_field_id" label="Lĩnh vực"><Select placeholder="Chọn lĩnh vực" allowClear options={docFields} /></Form.Item></Col>
-            <Col span={8}><Form.Item name="signer" label="Người ký"><Input placeholder="Họ tên người ký" /></Form.Item></Col>
+            <Col span={12}>
+              <Form.Item name="drafting_unit_id" label="Đơn vị soạn thảo">
+                <Select
+                  placeholder="Chọn đơn vị soạn thảo"
+                  allowClear
+                  showSearch
+                  optionFilterProp="label"
+                  options={departments}
+                  onChange={(val) => {
+                    form.setFieldsValue({ drafting_user_id: undefined });
+                    if (val) { fetchStaff(val); } else { setStaffList([]); }
+                  }}
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item name="drafting_user_id" label="Người soạn thảo">
+                <Select
+                  placeholder="Chọn người soạn thảo"
+                  allowClear
+                  showSearch
+                  optionFilterProp="label"
+                  options={staffList}
+                  notFoundContent={staffList.length === 0 ? 'Vui lòng chọn đơn vị trước' : 'Không tìm thấy'}
+                />
+              </Form.Item>
+            </Col>
           </Row>
           <Row gutter={16}>
-            <Col span={6}><Form.Item name="sign_date" label="Ngày ký"><DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" /></Form.Item></Col>
-            <Col span={6}><Form.Item name="publish_date" label="Ngày ban hành"><DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" /></Form.Item></Col>
-            <Col span={6}><Form.Item name="expired_date" label="Hạn xử lý"><DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" /></Form.Item></Col>
-            <Col span={6}><Form.Item name="secret_id" label="Độ mật" initialValue={1}><Select options={[{ value: 1, label: 'Thường' }, { value: 2, label: 'Mật' }, { value: 3, label: 'Tối mật' }, { value: 4, label: 'Tuyệt mật' }]} /></Form.Item></Col>
+            <Col span={12}>
+              <Form.Item name="publish_unit_id" label="Đơn vị ban hành">
+                <Select
+                  placeholder="Chọn đơn vị ban hành"
+                  allowClear
+                  showSearch
+                  optionFilterProp="label"
+                  options={departments}
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item name="signer" label="Người ký">
+                <Input placeholder="Họ tên người ký" />
+              </Form.Item>
+            </Col>
           </Row>
           <Row gutter={16}>
-            <Col span={6}><Form.Item name="urgent_id" label="Độ khẩn" initialValue={1}><Select options={[{ value: 1, label: 'Thường' }, { value: 2, label: 'Khẩn' }, { value: 3, label: 'Hỏa tốc' }]} /></Form.Item></Col>
-            <Col span={6}><Form.Item name="number_paper" label="Số tờ" initialValue={1}><InputNumber style={{ width: '100%' }} min={0} /></Form.Item></Col>
-            <Col span={6}><Form.Item name="number_copies" label="Số bản" initialValue={1}><InputNumber style={{ width: '100%' }} min={0} /></Form.Item></Col>
-            <Col span={6}><Form.Item name="is_received_paper" label="Bản giấy"><Select options={[{ value: false, label: 'Chưa nhận' }, { value: true, label: 'Đã nhận' }]} /></Form.Item></Col>
+            <Col span={8}>
+              <Form.Item name="doc_type_id" label="Loại văn bản">
+                <Select placeholder="Chọn loại" allowClear options={docTypes} />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="doc_field_id" label="Lĩnh vực">
+                <Select placeholder="Chọn lĩnh vực" allowClear options={docFields} />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="secret_id" label="Độ mật" initialValue={1}>
+                <Select options={[{ value: 1, label: 'Thường' }, { value: 2, label: 'Mật' }, { value: 3, label: 'Tối mật' }, { value: 4, label: 'Tuyệt mật' }]} />
+              </Form.Item>
+            </Col>
           </Row>
-          <Form.Item name="recipients" label="Nơi nhận"><TextArea rows={2} placeholder="Nơi nhận văn bản" /></Form.Item>
+          <Row gutter={16}>
+            <Col span={6}>
+              <Form.Item name="sign_date" label="Ngày ký">
+                <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
+              </Form.Item>
+            </Col>
+            <Col span={6}>
+              <Form.Item name="publish_date" label="Ngày ban hành">
+                <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
+              </Form.Item>
+            </Col>
+            <Col span={6}>
+              <Form.Item name="expired_date" label="Hạn xử lý">
+                <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
+              </Form.Item>
+            </Col>
+            <Col span={6}>
+              <Form.Item name="urgent_id" label="Độ khẩn" initialValue={1}>
+                <Select options={[{ value: 1, label: 'Thường' }, { value: 2, label: 'Khẩn' }, { value: 3, label: 'Hỏa tốc' }]} />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={16}>
+            <Col span={8}>
+              <Form.Item name="number_paper" label="Số tờ" initialValue={1}>
+                <InputNumber style={{ width: '100%' }} min={0} />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="number_copies" label="Số bản" initialValue={1}>
+                <InputNumber style={{ width: '100%' }} min={0} />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Form.Item name="recipients" label="Nơi nhận">
+            <TextArea rows={2} placeholder="Nơi nhận văn bản" />
+          </Form.Item>
         </Form>
       </Drawer>
     </Card>

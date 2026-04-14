@@ -225,14 +225,14 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
   if (isLoading && !user) {
     return (
-      <div style={{ padding: 48, maxWidth: 800, margin: '120px auto' }}>
+      <div className="main-loading">
         <Skeleton active paragraph={{ rows: 6 }} />
       </div>
     );
   }
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
+    <Layout className="main-layout">
       {/* SIDEBAR */}
       <Sider
         trigger={null}
@@ -240,23 +240,22 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         collapsed={collapsed}
         width={260}
         collapsedWidth={72}
-        style={styles.sider}
+        className="main-sider"
       >
         {/* Logo */}
-        <div style={styles.logo}>
-          <div style={styles.logoIconBox}>
+        <div className="main-sider-logo">
+          <div className="main-sider-logo-icon">
             <FileTextOutlined style={{ fontSize: collapsed ? 20 : 22, color: '#0891B2' }} />
           </div>
           {!collapsed && (
-            <div style={styles.logoText}>
-              <span style={styles.logoTitle}>QLVB</span>
-              <span style={styles.logoSub}>Văn bản điện tử</span>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <span className="main-sider-logo-title">QLVB</span>
+              <span className="main-sider-logo-sub">Văn bản điện tử</span>
             </div>
           )}
         </div>
 
-        {/* Menu — calc height = 100vh minus logo (~65px) */}
-        <div style={{ height: 'calc(100vh - 65px)', overflowY: 'auto', overflowX: 'hidden' }}>
+        <div className="main-sider-menu-wrap">
           <Menu
             theme="dark"
             mode="inline"
@@ -270,13 +269,13 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       </Sider>
 
       {/* MAIN AREA */}
-      <Layout style={{ marginLeft: collapsed ? 72 : 260, transition: 'margin-left 0.2s' }}>
+      <Layout className={`main-area${collapsed ? ' collapsed' : ''}`}>
         {/* HEADER */}
-        <Header style={styles.header}>
-          <div style={styles.headerLeft}>
+        <Header className="main-header">
+          <div className="main-header-left">
             <div
               onClick={() => setCollapsed(!collapsed)}
-              style={styles.collapseBtn}
+              className="main-collapse-btn"
             >
               {collapsed ? (
                 <MenuUnfoldOutlined style={{ fontSize: 18 }} />
@@ -287,16 +286,16 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             <Breadcrumb items={breadcrumbItems} style={{ marginLeft: 8 }} />
           </div>
 
-          <div style={styles.headerRight}>
+          <div className="main-header-right">
             <Badge count={3} size="small">
               <BellOutlined
-                style={styles.headerIcon}
+                className="main-header-icon"
                 onClick={() => {/* TODO: notification drawer */}}
               />
             </Badge>
 
             <Dropdown menu={{ items: userMenuItems }} placement="bottomRight" trigger={['click']}>
-              <div style={styles.userDropdown}>
+              <div className="main-user-dropdown">
                 <Avatar
                   size={32}
                   src={user?.image || undefined}
@@ -304,7 +303,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                   style={{ background: '#1B3A5C' }}
                 />
                 {user && (
-                  <span style={styles.userName}>{user.fullName}</span>
+                  <span className="main-user-name">{user.fullName}</span>
                 )}
               </div>
             </Dropdown>
@@ -312,121 +311,10 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         </Header>
 
         {/* CONTENT */}
-        <Content style={styles.content}>
+        <Content className="main-content">
           {children}
         </Content>
       </Layout>
     </Layout>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  sider: {
-    position: 'fixed',
-    left: 0,
-    top: 0,
-    bottom: 0,
-    height: '100vh',
-    zIndex: 100,
-    overflow: 'hidden',
-    borderRight: '1px solid rgba(255,255,255,0.06)',
-  },
-  logo: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 12,
-    padding: '20px 16px 16px',
-    borderBottom: '1px solid rgba(255,255,255,0.08)',
-  },
-  logoIconBox: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    background: 'rgba(8, 145, 178, 0.15)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  logoText: {
-    display: 'flex',
-    flexDirection: 'column',
-  },
-  logoTitle: {
-    fontSize: 18,
-    fontWeight: 700,
-    color: '#ffffff',
-    letterSpacing: '0.5px',
-    lineHeight: 1.2,
-  },
-  logoSub: {
-    fontSize: 11,
-    color: 'rgba(255,255,255,0.45)',
-    letterSpacing: '0.3px',
-  },
-  // Header
-  header: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: '0 24px',
-    height: 56,
-    background: '#ffffff',
-    borderBottom: '1px solid #e8ecf1',
-    boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
-    position: 'sticky',
-    top: 0,
-    zIndex: 99,
-  },
-  headerLeft: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 4,
-  },
-  collapseBtn: {
-    width: 36,
-    height: 36,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 8,
-    cursor: 'pointer',
-    color: '#64748b',
-    transition: 'all 0.2s',
-  },
-  headerRight: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 20,
-  },
-  headerIcon: {
-    fontSize: 18,
-    color: '#64748b',
-    cursor: 'pointer',
-    padding: 6,
-  },
-  userDropdown: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 8,
-    cursor: 'pointer',
-    padding: '4px 8px',
-    borderRadius: 8,
-    transition: 'background 0.2s',
-  },
-  userName: {
-    fontSize: 13,
-    fontWeight: 600,
-    color: '#1B3A5C',
-    maxWidth: 150,
-    whiteSpace: 'nowrap',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-  },
-  // Content
-  content: {
-    padding: 24,
-    minHeight: 'calc(100vh - 56px)',
-    background: '#F0F2F5',
-  },
-};
