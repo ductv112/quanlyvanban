@@ -28,6 +28,16 @@ export function handleDbError(error: unknown, res: Response): void {
       'uq_delegations_from_to': 'Ủy quyền đã tồn tại',
       // Handling docs
       'handling_doc_links_handling_doc_id_doc_type_doc_id_key': 'Văn bản này đã được liên kết',
+      // Archive (esto)
+      'uq_warehouses_code': 'Mã kho đã tồn tại',
+      'uq_fonds_code': 'Mã phông đã tồn tại',
+      // Documents (iso)
+      'uq_doc_categories_code': 'Mã danh mục đã tồn tại',
+      // Contracts (cont)
+      'uq_contract_types_code': 'Mã loại hợp đồng đã tồn tại',
+      // Meetings (edoc)
+      'uq_rooms_code': 'Mã phòng họp đã tồn tại',
+      'uq_room_schedule_staff': 'Thành viên đã được thêm vào cuộc họp',
     };
     const msg = messageMap[constraint] || 'Dữ liệu đã tồn tại, vui lòng kiểm tra lại';
     res.status(409).json({ success: false, message: msg });
