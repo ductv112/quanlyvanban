@@ -34,7 +34,7 @@ interface Document {
   keyword: string;
   file_name: string;
   file_size: number;
-  file_url: string;
+  file_path: string;
   category_id: number;
   category_name: string;
   creator_name: string;
@@ -258,7 +258,7 @@ export default function TaiLieuPage() {
   const handleDownloadDoc = async (doc: Document) => {
     try {
       const { data: res } = await api.get(`/tai-lieu/${doc.id}`);
-      const url = res.data?.file_url;
+      const url = res.data?.file_path;
       if (url) {
         window.open(url, '_blank');
       } else {
