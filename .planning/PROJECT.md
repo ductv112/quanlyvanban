@@ -27,8 +27,7 @@ Luồng văn bản đến → xử lý → văn bản đi phải hoạt động 
 ### Active
 
 - ✓ Stabilize Sprint 0-4: Shared tree utils + error handler extracted, golden path verified — Phase 1
-- [ ] Sprint 5: Hồ sơ công việc — Core (danh sách, CRUD, chi tiết, workflow)
-- [ ] Sprint 6: Hồ sơ công việc — Workflow & Báo cáo
+- ✓ Sprint 5-6: Hồ sơ công việc — CRUD, 6-tab detail, workflow designer, KPI, 3 reports, Excel export — Phase 2
 - [ ] Sprint 7: Văn bản liên thông & Giao việc từ VB
 - [ ] Sprint 8: Tin nhắn nội bộ & Thông báo
 - [ ] Sprint 9: Lịch & Danh bạ
