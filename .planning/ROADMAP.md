@@ -10,7 +10,7 @@ Rebuild hệ thống quản lý văn bản điện tử (.NET cũ) thành stack 
 - Integer phases (1, 2, 3): Planned milestone work
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
-- [x] **Phase 1: Stabilize Sprint 0-4** - Fix visible bugs, refactor shared patterns, đảm bảo golden path chạy mượt (completed 2026-04-14)
+- [x] **Phase 1: Stabilize Sprint 0-4** - Fix visible bugs, refactor shared patterns, đảm bảo golden path chạy mượt (completed 2026-04-14)
 - [ ] **Phase 2: Hồ sơ công việc** - Module HSCV hoàn chỉnh: danh sách, CRUD, workflow, báo cáo
 - [ ] **Phase 3: Liên thông & Tin nhắn** - Văn bản liên thông, giao việc từ VB, tin nhắn nội bộ & thông báo realtime
 - [ ] **Phase 4: Lịch, Danh bạ & Dashboard** - Lịch 3 loại, danh bạ, dashboard hoàn thiện với widget thật
@@ -45,7 +45,16 @@ Plans:
   3. Người dùng phân công cán bộ qua Transfer panel và chuyển trạng thái HSCV (trình ký → duyệt → hoàn thành)
   4. Admin thiết kế quy trình workflow bằng flowchart kéo thả
   5. Người dùng xem KPI dashboard và xuất được 3 báo cáo thống kê ra Excel
-**Plans**: TBD
+**Plans**: 8 plans
+Plans:
+- [ ] 02-01-PLAN.md — Database: Sprint 5+6 stored procedures + workflow tables
+- [ ] 02-02-PLAN.md — Backend: HSCV core repository + routes (CRUD, assignments, opinions, doc links, status)
+- [ ] 02-03-PLAN.md — Backend: Workflow repository + routes, KPI + report endpoints
+- [ ] 02-04-PLAN.md — Frontend: HSCV list page with filter tabs + Drawer CRUD
+- [ ] 02-05-PLAN.md — Frontend: HSCV detail page with 6 tabs + toolbar actions
+- [ ] 02-06-PLAN.md — Frontend: Workflow list + ReactFlow designer page
+- [ ] 02-07-PLAN.md — Frontend: KPI dashboard + reports + Excel export
+- [ ] 02-08-PLAN.md — Seed data + human verification checkpoint
 **UI hint**: yes
 
 ### Phase 3: Liên thông & Tin nhắn
@@ -115,7 +124,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Stabilize Sprint 0-4 | 3/3 | Complete    | 2026-04-14 |
-| 2. Hồ sơ công việc | 0/TBD | Not started | - |
+| 2. Hồ sơ công việc | 0/8 | Planning complete | - |
 | 3. Liên thông & Tin nhắn | 0/TBD | Not started | - |
 | 4. Lịch, Danh bạ & Dashboard | 0/TBD | Not started | - |
 | 5. Kho lưu trữ, Tài liệu & Họp | 0/TBD | Not started | - |
