@@ -116,17 +116,67 @@
 
 ## Traceability
 
-Updated during roadmap creation.
+Updated during roadmap creation (2026-04-14).
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (populated by roadmapper) | | |
+| STAB-01 | Phase 1 | Pending |
+| STAB-02 | Phase 1 | Pending |
+| STAB-03 | Phase 1 | Pending |
+| HSCV-01 | Phase 2 | Pending |
+| HSCV-02 | Phase 2 | Pending |
+| HSCV-03 | Phase 2 | Pending |
+| HSCV-04 | Phase 2 | Pending |
+| HSCV-05 | Phase 2 | Pending |
+| HSCV-06 | Phase 2 | Pending |
+| HSCV-07 | Phase 2 | Pending |
+| HSCV-08 | Phase 2 | Pending |
+| HSCV-09 | Phase 2 | Pending |
+| HSCV-10 | Phase 2 | Pending |
+| VBLT-01 | Phase 3 | Pending |
+| VBLT-02 | Phase 3 | Pending |
+| VBLT-03 | Phase 3 | Pending |
+| MSG-01 | Phase 3 | Pending |
+| MSG-02 | Phase 3 | Pending |
+| MSG-03 | Phase 3 | Pending |
+| MSG-04 | Phase 3 | Pending |
+| CAL-01 | Phase 4 | Pending |
+| CAL-02 | Phase 4 | Pending |
+| CAL-03 | Phase 4 | Pending |
+| CAL-04 | Phase 4 | Pending |
+| DASH-01 | Phase 4 | Pending |
+| DASH-02 | Phase 4 | Pending |
+| DASH-03 | Phase 4 | Pending |
+| KHO-01 | Phase 5 | Pending |
+| KHO-02 | Phase 5 | Pending |
+| KHO-03 | Phase 5 | Pending |
+| DOC-01 | Phase 5 | Pending |
+| DOC-02 | Phase 5 | Pending |
+| HOP-01 | Phase 5 | Pending |
+| HOP-02 | Phase 5 | Pending |
+| HOP-03 | Phase 5 | Pending |
+| HOP-04 | Phase 5 | Pending |
+| LGSP-01 | Phase 6 | Pending |
+| LGSP-02 | Phase 6 | Pending |
+| LGSP-03 | Phase 6 | Pending |
+| LGSP-04 | Phase 6 | Pending |
+| SIGN-01 | Phase 6 | Pending |
+| SIGN-02 | Phase 6 | Pending |
+| SIGN-03 | Phase 6 | Pending |
+| NOTIF-01 | Phase 6 | Pending |
+| NOTIF-02 | Phase 6 | Pending |
+| NOTIF-03 | Phase 6 | Pending |
+| NOTIF-04 | Phase 6 | Pending |
+| UI-01 | Phase 7 | Pending |
+| UI-02 | Phase 7 | Pending |
+| UI-03 | Phase 7 | Pending |
+| UI-04 | Phase 7 | Pending |
 
 **Coverage:**
-- v1 requirements: 47 total
-- Mapped to phases: 0
-- Unmapped: 47
+- v1 requirements: 51 total (note: header said 47, actual count by ID is 51)
+- Mapped to phases: 51
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-04-14*
-*Last updated: 2026-04-14 after initial definition*
+*Last updated: 2026-04-14 after roadmap creation — traceability populated*
