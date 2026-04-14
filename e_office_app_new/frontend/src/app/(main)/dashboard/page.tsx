@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { Card, Row, Col, Table, List, Tag, Progress, Skeleton, Button } from 'antd';
+import { Card, Row, Col, Table, Tag, Progress, Skeleton, Button } from 'antd';
 import {
   InboxOutlined,
   SendOutlined,
@@ -207,34 +207,37 @@ function TasksWidget({ data, loading }: { data: UpcomingTaskItem[]; loading: boo
     >
       {loading ? (
         <Skeleton active paragraph={{ rows: 4 }} />
+      ) : data.length === 0 ? (
+        <div style={{ textAlign: 'center', color: '#94a3b8', padding: '24px 0', fontSize: 13 }}>
+          Không có việc sắp tới hạn
+        </div>
       ) : (
-        <List
-          dataSource={data}
-          locale={{ emptyText: 'Không có việc sắp tới hạn' }}
-          renderItem={(item) => (
-            <List.Item style={{ padding: '8px 0', borderBottom: '1px solid #f0f0f0' }}>
-              <div style={{ width: '100%' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                  <span style={{ fontWeight: 600, fontSize: 13, color: '#1B3A5C', flex: 1, marginRight: 8 }}>
-                    {item.title}
-                  </span>
-                  <Tag color={statusColor(item.status)} style={{ flexShrink: 0 }}>{item.status || 'Đang xử lý'}</Tag>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Progress
-                    percent={item.progress_percent ?? 0}
-                    size="small"
-                    style={{ flex: 1, margin: 0 }}
-                    strokeColor="#0891B2"
-                  />
-                  <span style={{ fontSize: 11, color: '#94a3b8', flexShrink: 0 }}>
-                    {item.deadline ? dayjs(item.deadline).format('DD/MM') : '—'}
-                  </span>
-                </div>
+        <div>
+          {data.map((item) => (
+            <div
+              key={item.id}
+              style={{ padding: '8px 0', borderBottom: '1px solid #f0f0f0' }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                <span style={{ fontWeight: 600, fontSize: 13, color: '#1B3A5C', flex: 1, marginRight: 8 }}>
+                  {item.title}
+                </span>
+                <Tag color={statusColor(item.status)} style={{ flexShrink: 0 }}>{item.status || 'Đang xử lý'}</Tag>
               </div>
-            </List.Item>
-          )}
-        />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Progress
+                  percent={item.progress_percent ?? 0}
+                  size="small"
+                  style={{ flex: 1, margin: 0 }}
+                  strokeColor="#0891B2"
+                />
+                <span style={{ fontSize: 11, color: '#94a3b8', flexShrink: 0 }}>
+                  {item.deadline ? dayjs(item.deadline).format('DD/MM') : '—'}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
       )}
     </Card>
   );

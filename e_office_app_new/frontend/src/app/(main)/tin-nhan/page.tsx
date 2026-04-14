@@ -84,7 +84,7 @@ export default function TinNhanPage() {
       const { data: res } = await api.get(`/tin-nhan/${folder}`, {
         params: { keyword, page, page_size: pageSize },
       });
-      const list: MessageItem[] = res.data?.list || res.data || [];
+      const list: MessageItem[] = res.data?.data || res.data?.list || (Array.isArray(res.data) ? res.data : []);
       setMessages(list);
       if (folder === 'inbox') {
         setUnreadCount(list.filter((m) => !m.is_read).length);

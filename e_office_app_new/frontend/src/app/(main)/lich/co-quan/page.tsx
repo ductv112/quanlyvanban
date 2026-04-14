@@ -94,46 +94,50 @@ export default function LichCoQuanPage() {
     return events.filter((ev) => dayjs(ev.start_time).isSame(date, 'day'));
   };
 
-  const cellRender = (date: Dayjs) => {
+  const cellRender = (date: Dayjs, info: { type: string; originNode: React.ReactElement }) => {
+    if (info.type !== 'date') return info.originNode;
     const dayEvents = getEventsForDate(date);
-    if (!dayEvents.length) return null;
-    return (
-      <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-        {dayEvents.slice(0, 3).map((ev) => (
-          <li key={ev.id}>
-            <Badge
-              color={ev.color || '#0891B2'}
-              text={
-                <span
-                  style={{
-                    fontSize: 11,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                    maxWidth: 100,
-                    display: 'inline-block',
-                    cursor: 'pointer',
-                    color: '#1B3A5C',
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    openEditDrawer(ev);
-                  }}
-                >
-                  {ev.title}
-                </span>
-              }
-            />
-          </li>
-        ))}
-        {dayEvents.length > 3 && (
-          <li>
-            <Tag color="default" style={{ fontSize: 10, lineHeight: '16px' }}>
-              +{dayEvents.length - 3} sự kiện
-            </Tag>
-          </li>
-        )}
-      </ul>
+    if (!dayEvents.length) return info.originNode;
+    return React.cloneElement(info.originNode, {},
+      <>
+        {info.originNode.props.children}
+        <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+          {dayEvents.slice(0, 3).map((ev) => (
+            <li key={ev.id}>
+              <Badge
+                color={ev.color || '#0891B2'}
+                text={
+                  <span
+                    style={{
+                      fontSize: 11,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      maxWidth: 100,
+                      display: 'inline-block',
+                      cursor: 'pointer',
+                      color: '#1B3A5C',
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openEditDrawer(ev);
+                    }}
+                  >
+                    {ev.title}
+                  </span>
+                }
+              />
+            </li>
+          ))}
+          {dayEvents.length > 3 && (
+            <li>
+              <Tag color="default" style={{ fontSize: 10, lineHeight: '16px' }}>
+                +{dayEvents.length - 3} sự kiện
+              </Tag>
+            </li>
+          )}
+        </ul>
+      </>
     );
   };
 

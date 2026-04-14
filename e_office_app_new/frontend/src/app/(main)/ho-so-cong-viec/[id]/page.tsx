@@ -1437,12 +1437,19 @@ export default function HscvDetailPage() {
       </div>
 
       {/* Main content card with tabs */}
-      <Card className="page-card" bodyStyle={{ padding: 0 }}>
+      <Card className="page-card" styles={{ body: { padding: 0, overflow: 'hidden' } }}>
         <Tabs
           type="card"
           activeKey={activeTab}
           onChange={handleTabChange}
-          items={tabItems}
+          items={tabItems.map((t) => ({
+            ...t,
+            children: (
+              <div style={{ padding: '16px 20px 8px', minWidth: 0, overflow: 'hidden' }}>
+                {t.children}
+              </div>
+            ),
+          }))}
           style={{ padding: '0 0 16px 0' }}
           tabBarStyle={{ marginBottom: 0, paddingLeft: 16, paddingTop: 8 }}
         />

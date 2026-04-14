@@ -274,7 +274,13 @@ export default function ThongBaoPage() {
         rootClassName="drawer-gradient"
         extra={
           <div style={{ display: 'flex', gap: 8 }}>
-            <Button onClick={() => setDrawerOpen(false)}>Hủy</Button>
+            <Button
+              ghost
+              style={{ borderColor: 'rgba(255,255,255,0.6)', color: '#fff' }}
+              onClick={() => setDrawerOpen(false)}
+            >
+              Hủy
+            </Button>
             <Button type="primary" loading={creating} onClick={handleCreate}>
               Tạo thông báo
             </Button>
