@@ -1,7 +1,7 @@
 import { Router, type Request, type Response } from 'express';
 import type { AuthRequest } from '../middleware/auth.js';
 import { upload } from '../middleware/upload.js';
-import { incomingDocRepository } from '../repositories/incoming-doc.repository.js';
+import { draftingDocRepository } from '../repositories/drafting-doc.repository.js';
 import { uploadFile, deleteFile, getFileUrl } from '../lib/minio/client.js';
 import { v4 as uuidv4 } from 'uuid';
 import { handleDbError } from '../lib/error-handler.js';
@@ -9,25 +9,25 @@ import { handleDbError } from '../lib/error-handler.js';
 const router = Router();
 
 // ============================================================
-// 3.1 LIST + READ TRACKING
+// LIST + READ TRACKING
 // ============================================================
 
-// GET / — Danh sách VB đến (phân trang + filter)
+// GET / — Danh sách VB dự thảo (phân trang + filter)
 router.get('/', async (req: Request, res: Response) => {
   try {
     const { staffId, unitId } = (req as AuthRequest).user;
     const {
       doc_book_id, doc_type_id, doc_field_id, urgent_id,
-      is_read, approved, from_date, to_date, keyword,
+      is_released, approved, from_date, to_date, keyword,
       page, page_size,
     } = req.query;
 
-    const rows = await incomingDocRepository.getList(unitId, staffId, {
+    const rows = await draftingDocRepository.getList(unitId, staffId, {
       docBookId: doc_book_id ? Number(doc_book_id) : undefined,
       docTypeId: doc_type_id ? Number(doc_type_id) : undefined,
       docFieldId: doc_field_id ? Number(doc_field_id) : undefined,
       urgentId: urgent_id ? Number(urgent_id) : undefined,
-      isRead: is_read !== undefined ? is_read === 'true' : undefined,
+      isReleased: is_released !== undefined ? is_released === 'true' : undefined,
       approved: approved !== undefined ? approved === 'true' : undefined,
       fromDate: from_date as string || undefined,
       toDate: to_date as string || undefined,
@@ -51,11 +51,11 @@ router.get('/', async (req: Request, res: Response) => {
   }
 });
 
-// GET /chua-doc/count — Đếm chưa đọc (cho badge)
+// GET /chua-doc/count
 router.get('/chua-doc/count', async (req: Request, res: Response) => {
   try {
     const { staffId, unitId } = (req as AuthRequest).user;
-    const count = await incomingDocRepository.countUnread(unitId, staffId);
+    const count = await draftingDocRepository.countUnread(unitId, staffId);
     res.json({ success: true, data: { count } });
   } catch (error) {
     handleDbError(error, res);
@@ -71,7 +71,7 @@ router.patch('/danh-dau-da-doc', async (req: Request, res: Response) => {
       res.status(400).json({ success: false, message: 'Danh sách văn bản không hợp lệ' });
       return;
     }
-    const result = await incomingDocRepository.markReadBulk(doc_ids.map(Number), staffId);
+    const result = await draftingDocRepository.markReadBulk(doc_ids.map(Number), staffId);
     res.json({ success: true, data: result });
   } catch (error) {
     handleDbError(error, res);
@@ -82,15 +82,15 @@ router.patch('/danh-dau-da-doc', async (req: Request, res: Response) => {
 router.get('/danh-dau-ca-nhan', async (req: Request, res: Response) => {
   try {
     const { staffId } = (req as AuthRequest).user;
-    const rows = await incomingDocRepository.getBookmarks(staffId, 'incoming');
+    const rows = await draftingDocRepository.getBookmarks(staffId);
     res.json({ success: true, data: rows });
   } catch (error) {
     handleDbError(error, res);
   }
 });
 
-// GET /so-den-tiep-theo — Lấy số đến tiếp theo
-router.get('/so-den-tiep-theo', async (req: Request, res: Response) => {
+// GET /so-tiep-theo — Lấy số tiếp theo
+router.get('/so-tiep-theo', async (req: Request, res: Response) => {
   try {
     const { unitId } = (req as AuthRequest).user;
     const { doc_book_id } = req.query;
@@ -98,7 +98,7 @@ router.get('/so-den-tiep-theo', async (req: Request, res: Response) => {
       res.status(400).json({ success: false, message: 'Sổ văn bản là bắt buộc' });
       return;
     }
-    const nextNumber = await incomingDocRepository.getNextNumber(Number(doc_book_id), unitId);
+    const nextNumber = await draftingDocRepository.getNextNumber(Number(doc_book_id), unitId);
     res.json({ success: true, data: { number: nextNumber } });
   } catch (error) {
     handleDbError(error, res);
@@ -106,10 +106,10 @@ router.get('/so-den-tiep-theo', async (req: Request, res: Response) => {
 });
 
 // ============================================================
-// 3.2 CRUD
+// CRUD
 // ============================================================
 
-// POST / — Tạo VB đến
+// POST / — Tạo VB dự thảo
 router.post('/', async (req: Request, res: Response) => {
   try {
     const { staffId, unitId } = (req as AuthRequest).user;
@@ -124,14 +124,17 @@ router.post('/', async (req: Request, res: Response) => {
       return;
     }
 
-    const result = await incomingDocRepository.create({
+    const result = await draftingDocRepository.create({
       unitId,
       receivedDate: body.received_date || null,
       number: body.number ? Number(body.number) : undefined,
+      subNumber: body.sub_number || null,
       notation: body.notation || null,
       documentCode: body.document_code || null,
       abstract: body.abstract.trim(),
-      publishUnit: body.publish_unit || null,
+      draftingUnitId: body.drafting_unit_id ? Number(body.drafting_unit_id) : undefined,
+      draftingUserId: body.drafting_user_id ? Number(body.drafting_user_id) : undefined,
+      publishUnitId: body.publish_unit_id ? Number(body.publish_unit_id) : undefined,
       publishDate: body.publish_date || null,
       signer: body.signer || null,
       signDate: body.sign_date || null,
@@ -144,7 +147,6 @@ router.post('/', async (req: Request, res: Response) => {
       numberCopies: body.number_copies ? Number(body.number_copies) : 1,
       expiredDate: body.expired_date || null,
       recipients: body.recipients || null,
-      isReceivedPaper: body.is_received_paper ?? false,
       createdBy: staffId,
     });
 
@@ -158,14 +160,14 @@ router.post('/', async (req: Request, res: Response) => {
   }
 });
 
-// GET /:id — Chi tiết VB đến
+// GET /:id — Chi tiết
 router.get('/:id', async (req: Request, res: Response) => {
   try {
     const { staffId } = (req as AuthRequest).user;
     const id = Number(req.params.id);
-    const doc = await incomingDocRepository.getById(id, staffId);
+    const doc = await draftingDocRepository.getById(id, staffId);
     if (!doc) {
-      res.status(404).json({ success: false, message: 'Không tìm thấy văn bản đến' });
+      res.status(404).json({ success: false, message: 'Không tìm thấy văn bản dự thảo' });
       return;
     }
     res.json({ success: true, data: doc });
@@ -174,7 +176,7 @@ router.get('/:id', async (req: Request, res: Response) => {
   }
 });
 
-// PUT /:id — Cập nhật VB đến
+// PUT /:id — Cập nhật
 router.put('/:id', async (req: Request, res: Response) => {
   try {
     const { staffId } = (req as AuthRequest).user;
@@ -190,13 +192,16 @@ router.put('/:id', async (req: Request, res: Response) => {
       return;
     }
 
-    const result = await incomingDocRepository.update(id, {
+    const result = await draftingDocRepository.update(id, {
       receivedDate: body.received_date || null,
       number: body.number ? Number(body.number) : undefined,
+      subNumber: body.sub_number || null,
       notation: body.notation || null,
       documentCode: body.document_code || null,
       abstract: body.abstract.trim(),
-      publishUnit: body.publish_unit || null,
+      draftingUnitId: body.drafting_unit_id ? Number(body.drafting_unit_id) : undefined,
+      draftingUserId: body.drafting_user_id ? Number(body.drafting_user_id) : undefined,
+      publishUnitId: body.publish_unit_id ? Number(body.publish_unit_id) : undefined,
       publishDate: body.publish_date || null,
       signer: body.signer || null,
       signDate: body.sign_date || null,
@@ -209,7 +214,6 @@ router.put('/:id', async (req: Request, res: Response) => {
       numberCopies: body.number_copies ? Number(body.number_copies) : 1,
       expiredDate: body.expired_date || null,
       recipients: body.recipients || null,
-      isReceivedPaper: body.is_received_paper ?? false,
       updatedBy: staffId,
     });
 
@@ -223,11 +227,11 @@ router.put('/:id', async (req: Request, res: Response) => {
   }
 });
 
-// DELETE /:id — Xóa VB đến
+// DELETE /:id
 router.delete('/:id', async (req: Request, res: Response) => {
   try {
     const id = Number(req.params.id);
-    const result = await incomingDocRepository.delete(id);
+    const result = await draftingDocRepository.delete(id);
     if (!result.success) {
       res.status(400).json({ success: false, message: result.message });
       return;
@@ -239,23 +243,21 @@ router.delete('/:id', async (req: Request, res: Response) => {
 });
 
 // ============================================================
-// 3.3 DETAIL — Recipients + History
+// DETAIL — Recipients + History
 // ============================================================
 
-// GET /:id/nguoi-nhan
 router.get('/:id/nguoi-nhan', async (req: Request, res: Response) => {
   try {
-    const rows = await incomingDocRepository.getRecipients(Number(req.params.id));
+    const rows = await draftingDocRepository.getRecipients(Number(req.params.id));
     res.json({ success: true, data: rows });
   } catch (error) {
     handleDbError(error, res);
   }
 });
 
-// GET /:id/lich-su
 router.get('/:id/lich-su', async (req: Request, res: Response) => {
   try {
-    const rows = await incomingDocRepository.getHistory(Number(req.params.id));
+    const rows = await draftingDocRepository.getHistory(Number(req.params.id));
     res.json({ success: true, data: rows });
   } catch (error) {
     handleDbError(error, res);
@@ -263,20 +265,18 @@ router.get('/:id/lich-su', async (req: Request, res: Response) => {
 });
 
 // ============================================================
-// 3.4 ATTACHMENTS
+// ATTACHMENTS
 // ============================================================
 
-// GET /:id/dinh-kem
 router.get('/:id/dinh-kem', async (req: Request, res: Response) => {
   try {
-    const rows = await incomingDocRepository.getAttachments(Number(req.params.id));
+    const rows = await draftingDocRepository.getAttachments(Number(req.params.id));
     res.json({ success: true, data: rows });
   } catch (error) {
     handleDbError(error, res);
   }
 });
 
-// POST /:id/dinh-kem — Upload file
 router.post('/:id/dinh-kem', upload.single('file'), async (req: Request, res: Response) => {
   try {
     const { staffId } = (req as AuthRequest).user;
@@ -288,13 +288,11 @@ router.post('/:id/dinh-kem', upload.single('file'), async (req: Request, res: Re
       return;
     }
 
-    // Upload to MinIO
     const ext = file.originalname.split('.').pop() || '';
-    const minioPath = `incoming/${docId}/${uuidv4()}.${ext}`;
+    const minioPath = `drafting/${docId}/${uuidv4()}.${ext}`;
     await uploadFile(minioPath, file.buffer, file.mimetype);
 
-    // Save to DB
-    const result = await incomingDocRepository.createAttachment(
+    const result = await draftingDocRepository.createAttachment(
       docId, file.originalname, minioPath, file.size, file.mimetype, staffId,
     );
 
@@ -308,17 +306,15 @@ router.post('/:id/dinh-kem', upload.single('file'), async (req: Request, res: Re
   }
 });
 
-// DELETE /:id/dinh-kem/:attachmentId
 router.delete('/:id/dinh-kem/:attachmentId', async (req: Request, res: Response) => {
   try {
-    const result = await incomingDocRepository.deleteAttachment(Number(req.params.attachmentId));
+    const result = await draftingDocRepository.deleteAttachment(Number(req.params.attachmentId));
     if (!result.success) {
       res.status(400).json({ success: false, message: result.message });
       return;
     }
-    // Delete from MinIO (best-effort)
     if (result.file_path) {
-      try { await deleteFile(result.file_path); } catch { /* ignore MinIO errors */ }
+      try { await deleteFile(result.file_path); } catch { /* ignore */ }
     }
     res.json({ success: true, data: { message: result.message } });
   } catch (error) {
@@ -326,10 +322,9 @@ router.delete('/:id/dinh-kem/:attachmentId', async (req: Request, res: Response)
   }
 });
 
-// GET /:id/dinh-kem/:attachmentId/download — Presigned URL
 router.get('/:id/dinh-kem/:attachmentId/download', async (req: Request, res: Response) => {
   try {
-    const attachments = await incomingDocRepository.getAttachments(Number(req.params.id));
+    const attachments = await draftingDocRepository.getAttachments(Number(req.params.id));
     const att = attachments.find(a => a.id === Number(req.params.attachmentId));
     if (!att) {
       res.status(404).json({ success: false, message: 'Không tìm thấy file' });
@@ -343,21 +338,19 @@ router.get('/:id/dinh-kem/:attachmentId/download', async (req: Request, res: Res
 });
 
 // ============================================================
-// 3.5 SEND / DISTRIBUTE
+// SEND / DISTRIBUTE
 // ============================================================
 
-// GET /:id/danh-sach-gui — DS cán bộ có thể gửi
 router.get('/:id/danh-sach-gui', async (req: Request, res: Response) => {
   try {
     const { unitId } = (req as AuthRequest).user;
-    const rows = await incomingDocRepository.getSendableStaff(unitId);
+    const rows = await draftingDocRepository.getSendableStaff(unitId);
     res.json({ success: true, data: rows });
   } catch (error) {
     handleDbError(error, res);
   }
 });
 
-// POST /:id/gui — Gửi VB cho cán bộ
 router.post('/:id/gui', async (req: Request, res: Response) => {
   try {
     const { staffId } = (req as AuthRequest).user;
@@ -369,7 +362,7 @@ router.post('/:id/gui', async (req: Request, res: Response) => {
       return;
     }
 
-    const result = await incomingDocRepository.send(docId, staff_ids.map(Number), staffId);
+    const result = await draftingDocRepository.send(docId, staff_ids.map(Number), staffId);
     if (!result.success) {
       res.status(400).json({ success: false, message: result.message });
       return;
@@ -381,69 +374,16 @@ router.post('/:id/gui', async (req: Request, res: Response) => {
 });
 
 // ============================================================
-// 3.6 LEADER NOTES
+// BOOKMARKS
 // ============================================================
 
-// GET /:id/but-phe
-router.get('/:id/but-phe', async (req: Request, res: Response) => {
-  try {
-    const rows = await incomingDocRepository.getLeaderNotes(Number(req.params.id));
-    res.json({ success: true, data: rows });
-  } catch (error) {
-    handleDbError(error, res);
-  }
-});
-
-// POST /:id/but-phe
-router.post('/:id/but-phe', async (req: Request, res: Response) => {
-  try {
-    const { staffId } = (req as AuthRequest).user;
-    const docId = Number(req.params.id);
-    const { content } = req.body;
-
-    if (!content?.trim()) {
-      res.status(400).json({ success: false, message: 'Nội dung bút phê là bắt buộc' });
-      return;
-    }
-
-    const result = await incomingDocRepository.createLeaderNote(docId, staffId, content.trim());
-    if (!result.success) {
-      res.status(400).json({ success: false, message: result.message });
-      return;
-    }
-    res.status(201).json({ success: true, data: { id: result.id } });
-  } catch (error) {
-    handleDbError(error, res);
-  }
-});
-
-// DELETE /:id/but-phe/:noteId
-router.delete('/:id/but-phe/:noteId', async (req: Request, res: Response) => {
-  try {
-    const { staffId } = (req as AuthRequest).user;
-    const result = await incomingDocRepository.deleteLeaderNote(Number(req.params.noteId), staffId);
-    if (!result.success) {
-      res.status(400).json({ success: false, message: result.message });
-      return;
-    }
-    res.json({ success: true, data: { message: result.message } });
-  } catch (error) {
-    handleDbError(error, res);
-  }
-});
-
-// ============================================================
-// 3.7 BOOKMARKS
-// ============================================================
-
-// POST /:id/danh-dau — Toggle bookmark
 router.post('/:id/danh-dau', async (req: Request, res: Response) => {
   try {
     const { staffId } = (req as AuthRequest).user;
     const docId = Number(req.params.id);
     const { note } = req.body;
 
-    const result = await incomingDocRepository.toggleBookmark('incoming', docId, staffId, note);
+    const result = await draftingDocRepository.toggleBookmark(docId, staffId, note);
     res.json({ success: true, data: { is_bookmarked: result.is_bookmarked, message: result.message } });
   } catch (error) {
     handleDbError(error, res);
@@ -451,14 +391,13 @@ router.post('/:id/danh-dau', async (req: Request, res: Response) => {
 });
 
 // ============================================================
-// 3.8 APPROVE / UNAPPROVE / RECEIVE PAPER
+// APPROVE / UNAPPROVE / REJECT / RELEASE
 // ============================================================
 
-// PATCH /:id/duyet
 router.patch('/:id/duyet', async (req: Request, res: Response) => {
   try {
     const { staffId } = (req as AuthRequest).user;
-    const result = await incomingDocRepository.approve(Number(req.params.id), staffId);
+    const result = await draftingDocRepository.approve(Number(req.params.id), staffId);
     if (!result.success) {
       res.status(400).json({ success: false, message: result.message });
       return;
@@ -469,11 +408,10 @@ router.patch('/:id/duyet', async (req: Request, res: Response) => {
   }
 });
 
-// PATCH /:id/huy-duyet
 router.patch('/:id/huy-duyet', async (req: Request, res: Response) => {
   try {
     const { staffId } = (req as AuthRequest).user;
-    const result = await incomingDocRepository.unapprove(Number(req.params.id), staffId);
+    const result = await draftingDocRepository.unapprove(Number(req.params.id), staffId);
     if (!result.success) {
       res.status(400).json({ success: false, message: result.message });
       return;
@@ -484,16 +422,37 @@ router.patch('/:id/huy-duyet', async (req: Request, res: Response) => {
   }
 });
 
-// PATCH /:id/nhan-ban-giay
-router.patch('/:id/nhan-ban-giay', async (req: Request, res: Response) => {
+router.patch('/:id/tu-choi', async (req: Request, res: Response) => {
   try {
     const { staffId } = (req as AuthRequest).user;
-    const result = await incomingDocRepository.receivePaper(Number(req.params.id), staffId);
+    const { reason } = req.body;
+    const result = await draftingDocRepository.reject(Number(req.params.id), staffId, reason);
     if (!result.success) {
       res.status(400).json({ success: false, message: result.message });
       return;
     }
     res.json({ success: true, data: { message: result.message } });
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
+
+// POST /:id/phat-hanh — Phát hành → tạo VB đi
+router.post('/:id/phat-hanh', async (req: Request, res: Response) => {
+  try {
+    const { staffId } = (req as AuthRequest).user;
+    const result = await draftingDocRepository.release(Number(req.params.id), staffId);
+    if (!result.success) {
+      res.status(400).json({ success: false, message: result.message });
+      return;
+    }
+    res.json({
+      success: true,
+      data: {
+        message: result.message,
+        outgoing_doc_id: result.outgoing_doc_id,
+      },
+    });
   } catch (error) {
     handleDbError(error, res);
   }

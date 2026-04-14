@@ -13,54 +13,9 @@ import { addressRepository } from '../repositories/address.repository.js';
 import { workCalendarRepository } from '../repositories/work-calendar.repository.js';
 import { templateRepository } from '../repositories/template.repository.js';
 import { configRepository } from '../repositories/config.repository.js';
+import { handleDbError } from '../lib/error-handler.js';
 
 const router = Router();
-
-// ============================================================
-// SHARED: Error handler (same pattern as admin.ts)
-// ============================================================
-function handleDbError(error: unknown, res: Response): void {
-  const err = error as any;
-
-  // PostgreSQL unique violation (error code 23505)
-  if (err?.code === '23505') {
-    const constraint = err?.constraint || '';
-    const messageMap: Record<string, string> = {
-      'uq_doc_books_name': 'Tên sổ văn bản đã tồn tại',
-      'uq_doc_types_code': 'Mã loại văn bản đã tồn tại',
-      'uq_doc_fields_code': 'Mã lĩnh vực đã tồn tại',
-      'uq_provinces_code': 'Mã tỉnh/thành phố đã tồn tại',
-      'uq_districts_code': 'Mã quận/huyện đã tồn tại',
-      'uq_communes_code': 'Mã xã/phường đã tồn tại',
-      'uq_signers_staff': 'Người ký đã tồn tại',
-      'uq_work_groups_name': 'Tên nhóm làm việc đã tồn tại',
-      'uq_delegations_from_to': 'Ủy quyền đã tồn tại',
-    };
-    const msg = messageMap[constraint] || 'Dữ liệu đã tồn tại, vui lòng kiểm tra lại';
-    res.status(409).json({ success: false, message: msg });
-    return;
-  }
-
-  // PostgreSQL foreign key violation (error code 23503)
-  if (err?.code === '23503') {
-    res.status(400).json({ success: false, message: 'Không thể thực hiện: dữ liệu đang được tham chiếu' });
-    return;
-  }
-
-  // PostgreSQL not null violation (error code 23502)
-  if (err?.code === '23502') {
-    const column = err?.column || '';
-    res.status(400).json({ success: false, message: `Trường "${column}" là bắt buộc` });
-    return;
-  }
-
-  // Default — hide raw error in production
-  const isDev = process.env.NODE_ENV !== 'production';
-  res.status(500).json({
-    success: false,
-    message: isDev ? (err as Error).message : 'Có lỗi xảy ra, vui lòng thử lại sau',
-  });
-}
 
 // ============================================================
 // UTILITY: Build tree from flat list
