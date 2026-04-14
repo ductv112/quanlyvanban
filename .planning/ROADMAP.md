@@ -29,7 +29,11 @@ Rebuild hệ thống quản lý văn bản điện tử (.NET cũ) thành stack 
   2. Tree đơn vị/phòng ban render đúng ở tất cả 6 trang admin không có duplicate hoặc sai mapping
   3. Validation lỗi hiển thị inline trên Drawer (không bị mất sau submit)
   4. handleDbError và API response format nhất quán trên toàn backend
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 01-01-PLAN.md — Frontend tree utilities: tạo shared lib/tree-utils.ts + types/tree.ts, cập nhật 4 trang admin
+- [ ] 01-02-PLAN.md — Backend error handler: tạo shared lib/error-handler.ts, cập nhật 5 route files
+- [ ] 01-03-PLAN.md — Golden path & bug fixes: fix backslash paths, kiểm tra Vietnamese text, checkpoint xác nhận
 
 ### Phase 2: Hồ sơ công việc
 **Goal**: Người dùng có thể quản lý toàn bộ vòng đời hồ sơ công việc — tạo, phân công, xử lý, chuyển trạng thái, và xem báo cáo
@@ -110,7 +114,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Stabilize Sprint 0-4 | 0/TBD | Not started | - |
+| 1. Stabilize Sprint 0-4 | 0/3 | In progress | - |
 | 2. Hồ sơ công việc | 0/TBD | Not started | - |
 | 3. Liên thông & Tin nhắn | 0/TBD | Not started | - |
 | 4. Lịch, Danh bạ & Dashboard | 0/TBD | Not started | - |
