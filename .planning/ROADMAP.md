@@ -120,7 +120,14 @@ Plans:
   2. Người dùng gửi VB đi liên thông qua LGSP và xem tracking trạng thái
   3. Người dùng ký số VB qua VNPT SmartCA hoặc EsignNEAC với preview PDF và trạng thái đã ký
   4. Worker gửi thông báo qua ít nhất 2 trong 4 kênh (FCM, Zalo OA, SMS, Email) hoạt động đúng
-**Plans**: TBD
+**Plans**: 5 plans
+Plans:
+- [ ] 06-01-PLAN.md — Database: 3 migrations (Sprint 14 LGSP, Sprint 15 signing, Sprint 16 notifications)
+- [ ] 06-02-PLAN.md — Backend: LGSP service interface + mock + repository + routes + Redis token cache
+- [ ] 06-03-PLAN.md — Backend: Signing service mock + notification channel mocks + BullMQ workers + repositories + routes
+- [ ] 06-04-PLAN.md — Frontend: LGSP pages + signing modal + notification preferences + sidebar update + checkpoint
+- [ ] 06-05-PLAN.md — Seed data: comprehensive seed_full_demo.sql covering all modules Sprint 0-16
+**UI hint**: yes
 
 ### Phase 7: Polish & Redirect
 **Goal**: Hệ thống đạt chất lượng demo — sidebar dynamic, responsive trên mobile, UX smooth, redirect đúng trang đối tác
@@ -146,5 +153,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | 3. Liên thông & Tin nhắn | 5/5 | Complete    | 2026-04-14 |
 | 4. Lịch, Danh bạ & Dashboard | 4/4 | Complete    | 2026-04-14 |
 | 5. Kho lưu trữ, Tài liệu & Họp | 0/6 | Not started | - |
-| 6. Tích hợp hệ thống ngoài | 0/TBD | Not started | - |
+| 6. Tích hợp hệ thống ngoài | 0/5 | Not started | - |
 | 7. Polish & Redirect | 0/TBD | Not started | - |
