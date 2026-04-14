@@ -10,6 +10,8 @@ import {
   AppstoreOutlined, ReloadOutlined, PlusCircleOutlined,
 } from '@ant-design/icons';
 import { api } from '@/lib/api';
+import type { TreeNode } from '@/types/tree';
+import { filterTree } from '@/lib/tree-utils';
 
 interface RightNode {
   id: number;
@@ -23,14 +25,6 @@ interface RightNode {
   default_page: boolean;
   show_in_app: boolean;
   description: string;
-}
-
-interface TreeNode {
-  key: number;
-  title: string;
-  children?: TreeNode[];
-  data?: RightNode;
-  [key: string]: any;
 }
 
 export default function RightsPage() {
@@ -171,20 +165,7 @@ export default function RightsPage() {
     }
   };
 
-  const filterTree = useCallback((nodes: TreeNode[], kw: string): TreeNode[] => {
-    if (!kw) return nodes;
-    return nodes
-      .map((node) => {
-        const children = node.children ? filterTree(node.children, kw) : [];
-        if ((node.title as string).toLowerCase().includes(kw.toLowerCase()) || children.length > 0) {
-          return { ...node, children };
-        }
-        return null;
-      })
-      .filter(Boolean) as TreeNode[];
-  }, []);
-
-  const filteredTree = useMemo(() => filterTree(treeData, searchTree), [treeData, searchTree, filterTree]);
+  const filteredTree = useMemo(() => filterTree(treeData, searchTree), [treeData, searchTree]);
 
   return (
     <div>

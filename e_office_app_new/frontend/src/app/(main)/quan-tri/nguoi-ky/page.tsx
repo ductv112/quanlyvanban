@@ -12,6 +12,8 @@ import {
 } from '@ant-design/icons';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth.store';
+import type { TreeNode } from '@/types/tree';
+import { filterTree } from '@/lib/tree-utils';
 
 interface Signer {
   id: number;
@@ -26,12 +28,6 @@ interface StaffOption {
   full_name: string;
   position_name: string;
   department_name: string;
-}
-
-interface TreeNode {
-  key: number;
-  title: string;
-  children?: TreeNode[];
 }
 
 export default function SignerPage() {
@@ -144,23 +140,7 @@ export default function SignerPage() {
     }
   };
 
-  const filterTree = useCallback((nodes: TreeNode[], keyword: string): TreeNode[] => {
-    if (!keyword) return nodes;
-    return nodes
-      .map((node) => {
-        const children = node.children ? filterTree(node.children, keyword) : [];
-        if (
-          (node.title as string).toLowerCase().includes(keyword.toLowerCase()) ||
-          children.length > 0
-        ) {
-          return { ...node, children };
-        }
-        return null;
-      })
-      .filter(Boolean) as TreeNode[];
-  }, []);
-
-  const filteredTree = useMemo(() => filterTree(treeData, searchTree), [treeData, searchTree, filterTree]);
+  const filteredTree = useMemo(() => filterTree(treeData, searchTree), [treeData, searchTree]);
 
   const columns: ColumnsType<Signer> = [
     {

@@ -12,6 +12,8 @@ import {
   MoreOutlined,
 } from '@ant-design/icons';
 import { api } from '@/lib/api';
+import type { TreeNode } from '@/types/tree';
+import { filterTree, flattenTreeForSelect } from '@/lib/tree-utils';
 
 interface Department {
   id: number;
@@ -30,14 +32,6 @@ interface Department {
   description: string;
   is_locked: boolean;
   staff_count: number;
-}
-
-interface TreeNode {
-  key: number;
-  title: string;
-  children?: TreeNode[];
-  is_unit?: boolean;
-  [key: string]: any;
 }
 
 export default function DepartmentPage() {
@@ -182,31 +176,7 @@ export default function DepartmentPage() {
     }
   };
 
-  const filterTree = useCallback((nodes: TreeNode[], keyword: string): TreeNode[] => {
-    if (!keyword) return nodes;
-    return nodes
-      .map((node) => {
-        const children = node.children ? filterTree(node.children, keyword) : [];
-        if (
-          (node.title as string).toLowerCase().includes(keyword.toLowerCase()) ||
-          children.length > 0
-        ) {
-          return { ...node, children };
-        }
-        return null;
-      })
-      .filter(Boolean) as TreeNode[];
-  }, []);
-
-  const filteredTree = useMemo(() => filterTree(treeData, searchTree), [treeData, searchTree, filterTree]);
-
-  const flattenTreeForSelect = useCallback((nodes: TreeNode[]): any[] => {
-    return nodes.map((n) => ({
-      value: n.key,
-      title: n.title,
-      children: n.children ? flattenTreeForSelect(n.children) : undefined,
-    }));
-  }, []);
+  const filteredTree = useMemo(() => filterTree(treeData, searchTree), [treeData, searchTree]);
 
   const columns: ColumnsType<Department> = [
     {

@@ -15,6 +15,8 @@ import {
 } from '@ant-design/icons';
 import { api } from '@/lib/api';
 import dayjs from 'dayjs';
+import type { TreeNode } from '@/types/tree';
+import { filterTree, flattenTreeForSelect } from '@/lib/tree-utils';
 
 interface Staff {
   id: number;
@@ -40,13 +42,6 @@ interface Staff {
   is_represent_unit: boolean;
   is_represent_department: boolean;
   is_locked: boolean;
-}
-
-interface TreeNode {
-  key: number;
-  title: string;
-  children?: TreeNode[];
-  [key: string]: any;
 }
 
 interface PositionOption {
@@ -342,28 +337,7 @@ export default function StaffPage() {
     }
   };
 
-  const filterTree = useCallback((nodes: TreeNode[], kw: string): TreeNode[] => {
-    if (!kw) return nodes;
-    return nodes
-      .map((node) => {
-        const children = node.children ? filterTree(node.children, kw) : [];
-        if ((node.title as string).toLowerCase().includes(kw.toLowerCase()) || children.length > 0) {
-          return { ...node, children };
-        }
-        return null;
-      })
-      .filter(Boolean) as TreeNode[];
-  }, []);
-
-  const filteredTree = useMemo(() => filterTree(treeData, searchTree), [treeData, searchTree, filterTree]);
-
-  const flattenTreeForSelect = useCallback((nodes: TreeNode[]): any[] => {
-    return nodes.map((n) => ({
-      value: n.key,
-      title: n.title,
-      children: n.children ? flattenTreeForSelect(n.children) : undefined,
-    }));
-  }, []);
+  const filteredTree = useMemo(() => filterTree(treeData, searchTree), [treeData, searchTree]);
 
   const columns: ColumnsType<Staff> = [
     {
