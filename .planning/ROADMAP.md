@@ -68,9 +68,9 @@ Plans:
   4. Bell icon hiển thị badge count và dropdown thông báo cập nhật realtime qua Socket.IO
 **Plans**: 5 plans
 Plans:
-- [ ] 03-01-PLAN.md — Database: Sprint 7+8 migration (VB lien thong + messages + notices tables + 20 stored functions)
-- [ ] 03-02-PLAN.md — Backend: VB lien thong repository + routes, incoming doc action endpoints (giao viec, nhan ban giao, chuyen lai, huy duyet)
-- [ ] 03-03-PLAN.md — Backend: Message + notice repositories + routes, Socket.IO server setup with JWT auth
+- [x] 03-01-PLAN.md — Database: Sprint 7+8 migration (VB lien thong + messages + notices tables + 20 stored functions)
+- [x] 03-02-PLAN.md — Backend: VB lien thong repository + routes, incoming doc action endpoints (giao viec, nhan ban giao, chuyen lai, huy duyet)
+- [x] 03-03-PLAN.md — Backend: Message + notice repositories + routes, Socket.IO server setup with JWT auth
 - [ ] 03-04-PLAN.md — Frontend: VB lien thong list + detail pages, giao viec drawer + action buttons on VB den detail
 - [ ] 03-05-PLAN.md — Frontend: Tin nhan 3-panel mail, thong bao page, bell dropdown, Socket.IO client, sidebar nav updates
 **UI hint**: yes
@@ -131,7 +131,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 |-------|----------------|--------|-----------|
 | 1. Stabilize Sprint 0-4 | 3/3 | Complete    | 2026-04-14 |
 | 2. Hồ sơ công việc | 8/8 | Complete    | 2026-04-14 |
-| 3. Liên thông & Tin nhắn | 0/5 | Planning complete | - |
+| 3. Liên thông & Tin nhắn | 3/5 | In Progress|  |
 | 4. Lịch, Danh bạ & Dashboard | 0/TBD | Not started | - |
 | 5. Kho lưu trữ, Tài liệu & Họp | 0/TBD | Not started | - |
 | 6. Tích hợp hệ thống ngoài | 0/TBD | Not started | - |
