@@ -6,204 +6,246 @@
 
 **Email Delivery:**
 - Nodemailer - Email sending service
-  - SDK/Client: `nodemailer` 8.0.5
-  - Status: Prepared but NOT fully implemented
-  - Worker: `/d/ProjectAI/quanlyvanban/e_office_app_new/workers/src/index.ts` (TODO: implement nodemailer send)
+  - SDK/Client: `nodemailer` ^8.0.5
+  - Status: Worker stub exists, NOT implemented (TODO in `e_office_app_new/workers/src/index.ts` line 22)
   - Queue: BullMQ job `email-send`
 
 **SMS Gateway:**
 - Not implemented
-  - Worker: `/d/ProjectAI/quanlyvanban/e_office_app_new/workers/src/index.ts` (TODO: implement SMS gateway)
+  - Worker stub exists at `e_office_app_new/workers/src/index.ts` line 30
   - Queue: BullMQ job `sms-send`
 
 **Firebase Cloud Messaging (FCM):**
 - Mobile push notifications
-  - Status: Planned but NOT implemented
-  - Worker: `/d/ProjectAI/quanlyvanban/e_office_app_new/workers/src/index.ts` (TODO: implement Firebase FCM)
+  - Status: Worker stub exists, NOT implemented (`e_office_app_new/workers/src/index.ts` line 49)
   - Queue: BullMQ job `fcm-push`
+  - No Firebase SDK installed
 
-**LGSP Integration:**
-- Vietnamese government document exchange system
-  - Status: Planned but NOT implemented
-  - Worker: `/d/ProjectAI/quanlyvanban/e_office_app_new/workers/src/index.ts` (TODO: implement LGSP API polling)
+**LGSP Integration (Lien thong):**
+- Vietnamese government document exchange system (Truc lien thong van ban)
+  - Status: Worker stub exists, NOT implemented (`e_office_app_new/workers/src/index.ts` line 39)
   - Queue: BullMQ job `lgsp-receive`
   - Purpose: Polling for new documents from LGSP service
+  - Frontend module exists: `e_office_app_new/frontend/src/app/(main)/van-ban-lien-thong/`
+  - Backend routes exist: `e_office_app_new/backend/src/routes/inter-incoming.ts`
+  - Repository exists: `e_office_app_new/backend/src/repositories/inter-incoming.repository.ts`
+
+## Real-Time Communication
+
+**Socket.IO (WebSocket):**
+- Actively used for real-time notifications and messaging
+- Backend: `e_office_app_new/backend/src/lib/socket.ts`
+  - Server initialization with JWT authentication middleware
+  - Per-user rooms: `user_{staffId}`
+  - Events: `new_document`, `new_message`, `new_notification`, `doc_status_changed`
+  - Helper functions: `emitToUser()`, `emitToUsers()`
+  - Used in: `e_office_app_new/backend/src/routes/message.ts` (message send triggers socket emit)
+- Frontend: `e_office_app_new/frontend/src/lib/socket.ts`
+  - Client initialization with auth token
+  - Auto-reconnect with 3-second delay
+  - Connected in: `e_office_app_new/frontend/src/components/layout/MainLayout.tsx`
 
 ## Data Storage
 
-**Databases:**
-- PostgreSQL 16
-  - Host: `PG_HOST` (default: localhost:5432)
-  - Database: `qlvb_dev`
-  - Credentials: `PG_USER` / `PG_PASSWORD`
-  - Client: `pg` 8.20.0 (native driver, no ORM)
-  - Connection Pool: max 20 connections, 30s idle timeout
-  - Location: Pool configured at `/d/ProjectAI/quanlyvanban/e_office_app_new/backend/src/lib/db/pool.ts`
-  - Migrations: `/d/ProjectAI/quanlyvanban/e_office_app_new/database/migrations/`
-  - Init Scripts: `/d/ProjectAI/quanlyvanban/e_office_app_new/database/init/`
-  - Stored Procedures: All business logic in PL/pgSQL SPs (no ORM usage per requirement)
+**PostgreSQL 16 (Primary Database):**
+- Docker image: `postgres:16-alpine`
+- Default database: `qlvb_dev`
+- Connection pool: `e_office_app_new/backend/src/lib/db/pool.ts`
+  - Max connections: 20 (configurable via `PG_MAX_CONNECTIONS`)
+  - Idle timeout: 30 seconds
+  - Connection timeout: 5 seconds
+- Client: `pg` ^8.20.0 (native driver, NO ORM)
+- All business logic in PL/pgSQL stored procedures
+- Env vars: `PG_HOST`, `PG_PORT`, `PG_DATABASE`, `PG_USER`, `PG_PASSWORD`, `PG_MAX_CONNECTIONS`
+- Init scripts: `e_office_app_new/database/init/01_create_schemas.sql`
+- Migrations: `e_office_app_new/database/migrations/001_system_tables.sql` through `015_sprint10_dashboard_stats.sql`
+- Seed data: `e_office_app_new/database/seed_demo.sql`
 
-- MongoDB 7
-  - Purpose: Logging and audit trails
-  - URI: `MONGODB_URI`
-  - Database: `qlvb_logs`
-  - Client: `mongoose` 9.4.1 (ODM for schema definition)
-  - Connection: `/d/ProjectAI/quanlyvanban/e_office_app_new/backend/src/lib/mongodb/client.ts`
+**MongoDB 7 (Audit & Logging):**
+- Docker image: `mongo:7`
+- Database: `qlvb_logs`
+- Client: `mongoose` ^9.4.1
+- Connection: `e_office_app_new/backend/src/lib/mongodb/client.ts`
+- Env var: `MONGODB_URI`
+- Purpose: Login audit trails and structured logging
 
-**File Storage:**
-- MinIO (S3-compatible)
-  - Endpoint: `MINIO_ENDPOINT` (default: localhost:9000)
-  - Port: `MINIO_PORT` (default: 9000)
-  - Bucket: `MINIO_BUCKET` (default: `documents`)
-  - Credentials: `MINIO_ACCESS_KEY` / `MINIO_SECRET_KEY`
-  - Client: `minio` 8.0.7
-  - Location: `/d/ProjectAI/quanlyvanban/e_office_app_new/backend/src/lib/minio/client.ts`
-  - Functions:
-    - `uploadFile()` - Store documents
-    - `getFileUrl()` - Presigned URLs (1-hour expiry by default)
-    - `deleteFile()` - Remove documents
-  - Web Console: Accessible on `MINIO_PORT + 1` (e.g., 9001 for localhost)
+**MinIO (S3-Compatible File Storage):**
+- Docker image: `minio/minio:latest`
+- Client: `minio` ^8.0.7
+- Configuration: `e_office_app_new/backend/src/lib/minio/client.ts`
+- Default bucket: `documents` (configurable via `MINIO_BUCKET`)
+- Functions:
+  - `uploadFile(path, buffer, contentType)` - Store documents
+  - `getFileUrl(path, expirySeconds)` - Presigned URLs (default 1-hour expiry)
+  - `deleteFile(path)` - Remove documents
+  - `ensureBucket()` - Auto-create bucket if missing
+- Env vars: `MINIO_ENDPOINT`, `MINIO_PORT`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`, `MINIO_USE_SSL`, `MINIO_BUCKET`
+- Web Console: Port 9001
 
-**Caching:**
-- Redis 7
-  - Host: `REDIS_HOST` (default: localhost:6379)
-  - Port: `REDIS_PORT` (default: 6379)
-  - Password: `REDIS_PASSWORD` (required)
-  - Client: `ioredis` 5.10.1
-  - Configuration: `/d/ProjectAI/quanlyvanban/e_office_app_new/backend/src/lib/redis/client.ts`
-  - Cached Helper: `cached<T>(key, fetcher, ttlSeconds)`
-  - Cache Invalidation: `invalidateCache(pattern)`
-  - Job Queue Backend: For BullMQ workers
-  - Memory Limit: 256MB with LRU eviction policy
+**Redis 7 (Cache + Job Queue):**
+- Docker image: `redis:7-alpine`
+- Client: `ioredis` ^5.10.1
+- Configuration: `e_office_app_new/backend/src/lib/redis/client.ts`
+- Memory limit: 256MB with `allkeys-lru` eviction policy
+- Dual purpose:
+  1. **Caching:** Generic `cached<T>(key, fetcher, ttlSeconds)` helper with 1-hour default TTL
+  2. **Job Queue:** BullMQ backend (requires `maxRetriesPerRequest: null`)
+- Cache invalidation: `invalidateCache(pattern)` using Redis KEYS + DEL
+- Env vars: `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD`
 
 ## Authentication & Identity
 
-**Auth Provider:**
-- Custom JWT-based authentication
-  - Implementation: `/d/ProjectAI/quanlyvanban/e_office_app_new/backend/src/lib/auth/jwt.ts`
-  - Algorithm: HS256 (HMAC with SHA-256)
-  - Secret: `JWT_SECRET` (environment variable, fallback: 'fallback-secret')
-  - Access Token: Expires in `JWT_ACCESS_EXPIRES` (default: 15m)
-  - Refresh Token: Expires in `JWT_REFRESH_EXPIRES` (default: 7d)
-  - Token Payload: Includes staffId, unitId, departmentId, username, roles array
-  - Password Hashing: bcryptjs 3.0.3 with hash/verify functions
-  - Token Verification: `/d/ProjectAI/quanlyvanban/e_office_app_new/backend/src/lib/auth/password.ts`
+**Custom JWT-Based Authentication:**
+- Implementation: `e_office_app_new/backend/src/lib/auth/jwt.ts`
+- Algorithm: HS256 (HMAC with SHA-256) via `jose` ^6.2.2
+- Secret: `JWT_SECRET` env var (fallback: `'fallback-secret'`)
+- Access Token: Configurable expiry via `JWT_ACCESS_EXPIRES` (default: 15m)
+- Refresh Token: Configurable expiry via `JWT_REFRESH_EXPIRES` (default: 7d)
+- Token Payload (`TokenPayload` interface):
+  - `staffId: number`
+  - `unitId: number`
+  - `departmentId: number`
+  - `username: string`
+  - `roles: string[]`
+- Password Hashing: `bcryptjs` ^3.0.3
 
 **Login Flow:**
-- Username/password validation against PostgreSQL
-- Returns accessToken + refreshToken + user profile object
-- Tokens stored in localStorage (frontend) and cookies (httpOnly refresh token planned)
-- Service: `/d/ProjectAI/quanlyvanban/e_office_app_new/backend/src/services/auth.service.ts`
+1. Frontend posts username/password to `/api/auth/login`
+2. Backend validates against PostgreSQL stored procedure
+3. Returns `{ accessToken, user }` object
+4. Frontend stores accessToken in `localStorage`
+5. Auth service: `e_office_app_new/backend/src/services/auth.service.ts`
+6. Auth repository: `e_office_app_new/backend/src/repositories/auth.repository.ts`
 
-**Frontend Token Management:**
-- Axios interceptor: Attaches `Authorization: Bearer {accessToken}` to all requests
-- Auto-refresh: On 401 response, calls `/api/auth/refresh` endpoint
-- Fallback: Redirects to `/login` if refresh fails
-- Location: `/d/ProjectAI/quanlyvanban/e_office_app_new/frontend/src/lib/api.ts`
+**Frontend Token Management:** (`e_office_app_new/frontend/src/lib/api.ts`)
+- Axios request interceptor: Attaches `Authorization: Bearer {token}` from localStorage
+- Axios response interceptor: On 401, attempts refresh via `POST /api/auth/refresh`
+- On refresh failure: Clears localStorage, redirects to `/login`
+- Auth state: Zustand store at `e_office_app_new/frontend/src/stores/auth.store.ts`
+
+**Auth Middleware:** (`e_office_app_new/backend/src/middleware/auth.ts`)
+- Applied to all routes except `/api/health` and `/api/auth`
+
+## Error Handling (Database Layer)
+
+**PostgreSQL Error Mapping:** (`e_office_app_new/backend/src/lib/error-handler.ts`)
+- Unique violation (23505): Maps constraint names to Vietnamese messages
+- Foreign key violation (23503): Generic reference error message
+- Not null violation (23502): Column-specific required field message
+- Default: Hides raw errors in production
 
 ## Monitoring & Observability
 
 **Error Tracking:**
-- None detected - only console error logging
+- None - no Sentry, Datadog, or similar service
 
-**Logs:**
+**Logging:**
 - Structured JSON logging via Pino
-  - Backend: `pino` with `pino-http` middleware
+  - Backend: `pino` with `pino-http` middleware on all requests
   - Workers: `pino` with environment-based verbosity
-  - Dev mode: `pino-pretty` for readable output
-  - Production mode: Raw JSON to stdout
-  - Login Audit: Logged to PostgreSQL via `authRepository.logLogin()`
-  - Middleware: `/d/ProjectAI/quanlyvanban/e_office_app_new/backend/src/server.ts` (line 22-25)
+  - Dev mode: `pino-pretty` for human-readable output
+  - Production: Raw JSON to stdout
+- Login audit: Logged to PostgreSQL via `authRepository.logLogin()`
 
 ## CI/CD & Deployment
 
 **Hosting:**
-- Docker Compose (local/dev environment)
-- Not specified for production (likely manual deployment or CI/CD pipeline not in scope)
+- Docker Compose for local/dev infrastructure (`e_office_app_new/docker-compose.yml`)
+- No production deployment configuration detected
 
 **CI Pipeline:**
-- Not detected - no GitHub Actions, GitLab CI, or Jenkins config files
+- Not configured - no GitHub Actions, GitLab CI, or Jenkins files
 
 ## Environment Configuration
 
-**Required env vars (Backend):**
+**Required env vars (Backend) - template at `e_office_app_new/backend/.env.example`:**
 
-```
-# Server
-PORT=4000
-NODE_ENV=development|production
-CORS_ORIGIN=http://localhost:3000
-
-# PostgreSQL
-PG_HOST=localhost
-PG_PORT=5432
-PG_DATABASE=qlvb_dev
-PG_USER=qlvb_admin
-PG_PASSWORD=your_pg_password
-PG_MAX_CONNECTIONS=20
-
-# MongoDB
-MONGODB_URI=mongodb://user:pass@host:27017/dbname?authSource=admin
-
-# Redis
-REDIS_HOST=localhost
-REDIS_PORT=6379
-REDIS_PASSWORD=your_redis_password
-
-# MinIO
-MINIO_ENDPOINT=localhost
-MINIO_PORT=9000
-MINIO_ACCESS_KEY=qlvb_admin
-MINIO_SECRET_KEY=your_minio_password
-MINIO_USE_SSL=false
-MINIO_BUCKET=documents
-
-# JWT
-JWT_SECRET=change-this-to-random-in-production
-JWT_ACCESS_EXPIRES=15m
-JWT_REFRESH_EXPIRES=7d
-```
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `PORT` | 4000 | Backend server port |
+| `NODE_ENV` | development | Environment mode |
+| `CORS_ORIGIN` | http://localhost:3000 | Allowed CORS origin |
+| `PG_HOST` | localhost | PostgreSQL host |
+| `PG_PORT` | 5432 | PostgreSQL port |
+| `PG_DATABASE` | qlvb_dev | PostgreSQL database name |
+| `PG_USER` | qlvb_admin | PostgreSQL user |
+| `PG_PASSWORD` | (required) | PostgreSQL password |
+| `PG_MAX_CONNECTIONS` | 20 | Connection pool size |
+| `MONGODB_URI` | (required) | MongoDB connection string |
+| `REDIS_HOST` | localhost | Redis host |
+| `REDIS_PORT` | 6379 | Redis port |
+| `REDIS_PASSWORD` | (required) | Redis password |
+| `MINIO_ENDPOINT` | localhost | MinIO endpoint |
+| `MINIO_PORT` | 9000 | MinIO API port |
+| `MINIO_ACCESS_KEY` | (required) | MinIO access key |
+| `MINIO_SECRET_KEY` | (required) | MinIO secret key |
+| `MINIO_USE_SSL` | false | Enable SSL for MinIO |
+| `MINIO_BUCKET` | documents | Default storage bucket |
+| `JWT_SECRET` | fallback-secret | JWT signing secret |
+| `JWT_ACCESS_EXPIRES` | 15m | Access token TTL |
+| `JWT_REFRESH_EXPIRES` | 7d | Refresh token TTL |
 
 **Required env vars (Frontend):**
 
-```
-NEXT_PUBLIC_APP_NAME=Quản lý Văn bản
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-NEXT_PUBLIC_API_URL=http://localhost:4000/api
-```
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `NEXT_PUBLIC_APP_NAME` | Quan ly Van ban | Application display name |
+| `NEXT_PUBLIC_APP_URL` | http://localhost:3000 | Frontend base URL |
+| `NEXT_PUBLIC_API_URL` | http://localhost:4000/api | Backend API base URL |
 
 **Secrets location:**
-- Backend: `.env` file (not committed, example provided in `.env.example`)
-- Frontend: `.env.local` file (not committed, example provided in `.env.example`)
+- Backend: `.env` file (not committed; `.env.example` provided)
+- Frontend: `.env.local` file (not committed)
+
+## Background Jobs & Queue System
+
+**Framework:** BullMQ ^5.73.5 on Redis
+- Worker process: `e_office_app_new/workers/` (separate Node.js process)
+- Run: `npm run dev` (tsx watch) or `npm start` (compiled)
+- Graceful shutdown on SIGTERM
+
+**Job Types (all have TODO stubs):**
+
+| Queue Name | Purpose | Status |
+|------------|---------|--------|
+| `email-send` | Email delivery via nodemailer | Stub only |
+| `sms-send` | SMS delivery via gateway | Stub only |
+| `fcm-push` | Firebase push notifications | Stub only |
+| `lgsp-receive` | LGSP document polling | Stub only |
 
 ## Webhooks & Callbacks
 
 **Incoming:**
-- None detected in current implementation
+- None detected
 
 **Outgoing:**
-- Email notifications (prepared, not implemented)
-- SMS notifications (prepared, not implemented)
-- Push notifications via FCM (prepared, not implemented)
-- LGSP document polling (prepared, not implemented)
+- Email notifications (stub, not implemented)
+- SMS notifications (stub, not implemented)
+- Push notifications via FCM (stub, not implemented)
+- LGSP document polling (stub, not implemented)
 
-## Background Jobs & Queue System
+## API Route Map
 
-**Job Queue Framework:**
-- BullMQ 5.73.5 - Queue management built on Redis
-- Connection: Redis with maxRetriesPerRequest: null (for BullMQ compatibility)
+All backend routes are mounted in `e_office_app_new/backend/src/server.ts`:
 
-**Job Types:**
-- `email-send` - Email delivery via nodemailer (TODO)
-- `sms-send` - SMS delivery (TODO)
-- `fcm-push` - Firebase push notifications (TODO)
-- `lgsp-receive` - LGSP document polling (TODO)
-
-**Worker Process:**
-- Location: `/d/ProjectAI/quanlyvanban/e_office_app_new/workers/`
-- Package: `qlvb-workers` with separate entry point
-- Run: `npm run dev` (tsx watch) or `npm start` (compiled Node.js)
-- Graceful shutdown: Closes all workers on SIGTERM
+| Route Prefix | Auth | Route File | Purpose |
+|-------------|------|------------|---------|
+| `/api/health` | No | `routes/health.ts` | Health check |
+| `/api/auth` | No | `routes/auth.ts` | Login, refresh, logout |
+| `/api/quan-tri` | Yes | `routes/admin.ts` | Admin: departments, positions, roles, staff |
+| `/api/quan-tri` | Yes | `routes/admin-catalog.ts` | Admin: doc books, doc types, fields, signers, etc. |
+| `/api/quan-tri/quy-trinh` | Yes | `routes/workflow.ts` | Workflow designer |
+| `/api/van-ban-den` | Yes | `routes/incoming-doc.ts` | Incoming documents (van ban den) |
+| `/api/van-ban-du-thao` | Yes | `routes/drafting-doc.ts` | Draft documents (van ban du thao) |
+| `/api/van-ban-di` | Yes | `routes/outgoing-doc.ts` | Outgoing documents (van ban di) |
+| `/api/van-ban-lien-thong` | Yes | `routes/inter-incoming.ts` | Inter-agency documents (lien thong) |
+| `/api/ho-so-cong-viec/thong-ke` | Yes | `routes/handling-doc-report.ts` | Work file reports/statistics |
+| `/api/ho-so-cong-viec` | Yes | `routes/handling-doc.ts` | Work files (ho so cong viec) |
+| `/api/tin-nhan` | Yes | `routes/message.ts` | Internal messaging |
+| `/api/thong-bao` | Yes | `routes/notice.ts` | System notices |
+| `/api/lich` | Yes | `routes/calendar.ts` | Calendar/scheduling |
+| `/api/danh-ba` | Yes | `routes/directory.ts` | Staff directory |
+| `/api/dashboard` | Yes | `routes/dashboard.ts` | Dashboard statistics |
 
 ---
 

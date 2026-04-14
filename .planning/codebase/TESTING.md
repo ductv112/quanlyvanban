@@ -1,6 +1,6 @@
 # Testing Patterns
 
-**Analysis Date:** 2026-04-14
+**Analysis Date:** 2026-04-14 (refreshed after Phase 4 completion)
 
 ## Test Framework
 
@@ -11,8 +11,6 @@ Neither the backend nor frontend has a test framework configured:
 - No `jest.config.*` or `vitest.config.*` files exist
 - No `.test.ts`, `.spec.ts`, `.test.tsx`, or `.spec.tsx` files in project source code
 - ESLint `lint` script exists in frontend (`npm run lint`) but no `test` script in either package
-
-**Assertion Library:** None
 
 **Run Commands:**
 ```bash
@@ -25,21 +23,18 @@ cd e_office_app_new/backend && npm run dev   # development only
 
 ## Manual API Testing
 
-The project uses **shell scripts with curl** for manual API integration testing instead of automated test suites.
+### Shell Script: `test_sprint3.sh`
 
-**Location:** `e_office_app_new/backend/test_sprint4.sh`
+**Location:** `e_office_app_new/backend/test_sprint3.sh`
 
 **Pattern:**
 ```bash
 #!/bin/bash
 set -e
-
 BASE="http://localhost:4000"
 
 # Login to get token
-LOGIN=$(curl -s -X POST "$BASE/api/auth/login" \
-  -H 'Content-Type: application/json' \
-  -d '{"username":"admin","password":"Admin@123"}')
+LOGIN=$(curl -s -X POST "$BASE/api/auth/login" ...)
 TOKEN=$(node -e "console.log(JSON.parse(process.argv[1]).data.accessToken)" "$LOGIN")
 AUTH="Authorization: Bearer $TOKEN"
 
@@ -48,34 +43,38 @@ assert_json() {
   local TEST_NAME="$1"
   local EXPR="$2"        # JavaScript expression evaluated against response JSON
   local RESPONSE="$3"
-  # Uses node -e to evaluate and prints pass/fail
 }
 
-# Example test
-RESPONSE=$(curl -s -X GET "$BASE/api/van-ban-du-thao" -H "$AUTH")
-assert_json "List drafting docs" "j.success === true" "$RESPONSE"
+# Tests
+RESPONSE=$(curl -s -X GET "$BASE/api/van-ban-den" -H "$AUTH")
+assert_json "List incoming docs" "j.success === true" "$RESPONSE"
 ```
+
+**Covers:** Sprint 3 incoming document endpoints (list, create, update, detail, workflow actions). ~25 test sections for CRUD operations and edge cases.
 
 **Characteristics:**
 - Requires running backend server (`npm run dev`)
-- Requires seeded database (matching seed scripts like `e_office_app_new/backend/seed_sprint4.js`)
-- Tests are sprint-scoped: one shell script per sprint
+- Requires seeded database
 - Uses `node -e` for JSON assertion evaluation
 - Reports pass/fail count at end
 - Idempotent design (safe to re-run)
+- Only covers happy paths — no error path testing
 
-## Test File Organization
+### Seed Script: `seed_sprint5.js`
 
-**Location:** No test directory structure exists.
+**Location:** `e_office_app_new/backend/seed_sprint5.js`
 
-**Current state:**
-- No `__tests__/` directories
-- No co-located test files
-- No test utilities, fixtures, or factories
+**Purpose:** Creates test data for HSCV module testing:
+- Workflows with steps and links
+- Handling documents (dossiers)
+- Assignments and opinions
+- Document links between HSCV and incoming/outgoing docs
 
-## Coverage
+### Demo Seed: `seed_demo.sql`
 
-**Requirements:** None enforced. No coverage tooling installed.
+**Location:** `e_office_app_new/database/seed_demo.sql`
+
+**Purpose:** SQL-based demo data for general testing.
 
 ## What Exists vs What's Missing
 
@@ -83,101 +82,76 @@ assert_json "List drafting docs" "j.success === true" "$RESPONSE"
 
 | Area | Status |
 |------|--------|
-| Manual API smoke tests | Shell scripts with curl (`test_sprint4.sh`) |
+| Manual API smoke tests | `test_sprint3.sh` (Sprint 3 only) |
+| Seed data scripts | `seed_sprint5.js`, `seed_demo.sql` |
 | Frontend linting | ESLint with Next.js config |
 | TypeScript strict mode | Both backend and frontend |
-| Runtime validation | Zod available in deps (not widely used yet) |
+| Runtime validation | Zod in deps (not used) |
 
 ### Missing — Critical Gaps
 
 **Backend Unit Tests:**
-- No tests for repositories (DB query wrappers)
-- No tests for services (`auth.service.ts` has complex logic untested)
-- No tests for `handleDbError` error mapping
-- No tests for middleware (`authenticate`, `requireRoles`)
-- No tests for `buildTree` utility (duplicated in `admin.ts` and `admin-catalog.ts`)
-- Files at risk: `e_office_app_new/backend/src/services/auth.service.ts`, `e_office_app_new/backend/src/lib/auth/jwt.ts`, `e_office_app_new/backend/src/lib/db/query.ts`
+- No tests for any of the 30 repositories
+- No tests for auth service (complex login/refresh logic)
+- No tests for shared error-handler.ts constraint mapping
+- No tests for middleware (authenticate, requireRoles)
+- No tests for tree-utils, socket.ts
+- Files at risk: `auth.service.ts`, `jwt.ts`, `query.ts`, `error-handler.ts`
 
 **Backend Integration Tests:**
-- Shell scripts cover happy paths only
+- `test_sprint3.sh` covers Sprint 3 only — Sprints 4-10 have no test scripts
 - No error path testing (invalid tokens, constraint violations, concurrent access)
 - No automated CI-compatible test runner
 
 **Frontend Tests:**
-- No component tests for any page
-- No tests for `e_office_app_new/frontend/src/lib/api.ts` interceptor logic (token refresh flow)
-- No tests for `e_office_app_new/frontend/src/stores/auth.store.ts` state management
+- No component tests for any of the 40+ pages
+- No tests for `api.ts` interceptor logic (token refresh flow)
+- No tests for `auth.store.ts` state management
 - No E2E tests (no Playwright/Cypress)
 
 **Database Tests:**
 - No tests for stored procedures
 - No migration rollback testing
-- Files: `e_office_app_new/database/migrations/*.sql`
 
 ## Recommended Test Setup
-
-If testing is to be added, the recommended approach based on the existing stack:
 
 ### Backend (Vitest — recommended for ESM TypeScript)
 
 ```bash
-# Install
 npm install -D vitest @vitest/coverage-v8
 ```
 
-```typescript
-// vitest.config.ts
-import { defineConfig } from 'vitest/config';
-export default defineConfig({
-  test: {
-    globals: true,
-    environment: 'node',
-    include: ['src/**/*.test.ts'],
-  },
-});
-```
-
 **Priority test targets:**
-1. `e_office_app_new/backend/src/services/auth.service.ts` — login, refresh, token rotation
-2. `e_office_app_new/backend/src/lib/auth/jwt.ts` — sign/verify tokens
-3. `e_office_app_new/backend/src/lib/db/query.ts` — callFunction, withTransaction
-4. `handleDbError` — PostgreSQL error code mapping (extract to shared module first)
-5. `buildTree` — tree construction from flat list (extract to shared utility first)
+1. `auth.service.ts` — login, refresh, token rotation
+2. `jwt.ts` — sign/verify tokens
+3. `error-handler.ts` — constraint mapping
+4. `query.ts` — callFunction, withTransaction
+5. Repository methods — correct SP calls with correct params
 
 ### Frontend (Vitest + React Testing Library)
 
 ```bash
-# Install
 npm install -D vitest @testing-library/react @testing-library/jest-dom jsdom
 ```
 
 **Priority test targets:**
-1. `e_office_app_new/frontend/src/lib/api.ts` — interceptor logic
-2. `e_office_app_new/frontend/src/stores/auth.store.ts` — auth state transitions
+1. `api.ts` — interceptor and refresh logic
+2. `auth.store.ts` — auth state transitions
 3. Form validation patterns in admin pages
 
 ### E2E (Playwright)
 
-Not installed. Would be valuable for testing the full login flow, CRUD operations, and drawer interactions.
+Not installed. Would be valuable for testing full login → CRUD → drawer flows.
 
-## Mocking
+## Mocking Targets
 
-**Framework:** Not applicable (no tests exist)
-
-**If added, mock targets would be:**
+If tests are added:
 - `pg` pool for backend repository tests
-- `e_office_app_new/backend/src/lib/db/pool.ts` — database connection
-- `e_office_app_new/frontend/src/lib/api.ts` — Axios instance for frontend tests
+- `lib/db/pool.ts` — database connection
+- `lib/api.ts` — Axios instance for frontend tests
 - `localStorage` for auth store tests
-
-## Seed Data
-
-Test data is managed through seed scripts:
-- `e_office_app_new/backend/seed_sprint4.js` — Sprint 4 test data
-- Database migrations in `e_office_app_new/database/migrations/` — schema setup
-
-No fixture factories or test data builders exist.
+- `globalThis.__io` for socket.ts tests
 
 ---
 
-*Testing analysis: 2026-04-14*
+*Testing analysis: 2026-04-14 (refreshed)*

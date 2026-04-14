@@ -5,131 +5,156 @@
 ## Languages
 
 **Primary:**
-- TypeScript 5.x & 6.x - Backend (Node.js), frontend (Next.js), and worker processes
+- TypeScript 6.0.2 - Backend (`e_office_app_new/backend/`) and workers (`e_office_app_new/workers/`)
+- TypeScript 5.x - Frontend (`e_office_app_new/frontend/`)
 
 **Secondary:**
-- SQL (PostgreSQL with PL/pgSQL) - Stored procedures and migrations
-- CSS (Tailwind CSS) - Frontend styling
+- SQL (PostgreSQL PL/pgSQL) - All stored procedures and migrations (`e_office_app_new/database/`)
+- CSS (Tailwind CSS 4.x) - Frontend styling
 
 ## Runtime
 
 **Environment:**
-- Node.js (version not specified in config, inferred from package.json compatibility)
-- Development: tsx watch for hot reload
-- Production: Compiled JavaScript
+- Node.js 18+ (inferred from ES2022 target and modern package versions)
+- Development: `tsx watch` for hot reload (backend and workers)
+- Development: `next dev` for frontend hot reload
+- Production: Compiled JavaScript via `tsc` (backend/workers), `next build` (frontend)
 
 **Package Manager:**
-- npm (standard package manager)
-- Lockfile: Not detected (no package-lock.json, yarn.lock, or pnpm-lock.yaml in repo)
+- npm (standard)
+- Lockfiles: Present for both backend (`e_office_app_new/backend/package-lock.json`) and frontend (`e_office_app_new/frontend/package-lock.json`)
 
 ## Frameworks
 
 **Core:**
-- Express.js 5.2.1 - Backend REST API server (`/d/ProjectAI/quanlyvanban/e_office_app_new/backend/src/server.ts`)
-- Next.js 16.2.3 - Frontend React app with SSR and routing
-- React 19.2.4 - UI component library
-- React DOM 19.2.4 - DOM rendering
+- Express.js ^5.2.1 - Backend REST API server (`e_office_app_new/backend/src/server.ts`)
+- Next.js 16.2.3 - Frontend React app with App Router (`e_office_app_new/frontend/src/app/`)
+- React 19.2.4 / React DOM 19.2.4 - UI rendering
+
+**UI Library:**
+- Ant Design (antd) ^6.3.5 - Primary component library
+- Ant Design Icons ^6.1.1 - Icon set
+- Ant Design CSS-in-JS ^2.1.2 - Dynamic styling engine
+
+**Visualization & Layout:**
+- @ant-design/charts ^2.6.7 - Charts for dashboard and reports (`e_office_app_new/frontend/src/app/(main)/dashboard/page.tsx`, `e_office_app_new/frontend/src/app/(main)/ho-so-cong-viec/bao-cao/page.tsx`)
+- @xyflow/react ^12.10.2 - Workflow designer with nodes/edges (`e_office_app_new/frontend/src/app/(main)/quan-tri/quy-trinh/[id]/thiet-ke/page.tsx`)
+- react-grid-layout ^2.2.3 - Draggable grid for dashboard layout
 
 **Testing:**
-- Not detected - no test runners configured in package.json (jest, vitest, etc.)
+- Not configured - no test runners (jest, vitest, etc.) in any package.json
 
 **Build/Dev:**
-- TypeScript 5.0 & 6.0.2 - Compilation
-- TSX 4.21.0 - TypeScript execution and hot reload
-- ESLint 9.x - Code linting
-- Tailwind CSS 4.x - Utility-first CSS framework
-- PostCSS 4.x - CSS processing pipeline
+- TypeScript 5.x / 6.0.2 - Compilation
+- TSX ^4.21.0 - TypeScript execution without compilation step (dev mode)
+- ESLint ^9 with eslint-config-next 16.2.3 - Code linting (frontend only)
+- Tailwind CSS ^4 with @tailwindcss/postcss ^4 - Utility-first CSS
+- PostCSS - CSS processing pipeline (`e_office_app_new/frontend/postcss.config.mjs`)
 
 ## Key Dependencies
 
-**Critical:**
-- pg 8.20.0 - PostgreSQL client for direct SQL queries (stored procedures)
-- mongoose 9.4.1 - MongoDB ODM for logging/audit trails
-- ioredis 5.10.1 - Redis client for caching and job queues
-- bullmq 5.73.5 - Job queue built on Redis (email, SMS, notifications)
-- minio 8.0.7 - S3-compatible object storage for documents
+**Critical (Backend):**
+- pg ^8.20.0 - PostgreSQL client; all DB access via stored procedures (no ORM)
+- mongoose ^9.4.1 - MongoDB ODM for audit/logging connection
+- ioredis ^5.10.1 - Redis client for caching and BullMQ backend
+- bullmq ^5.73.5 - Job queue for background workers (email, SMS, FCM, LGSP)
+- minio ^8.0.7 - S3-compatible object storage for document files
+- socket.io ^4.8.3 - Real-time WebSocket server (actively used for messages/notifications)
 
-**Security:**
-- bcryptjs 3.0.3 - Password hashing
-- jose 6.2.2 - JWT token signing and verification (HS256 algorithm)
-- helmet 8.1.0 - Express security headers middleware
+**Security (Backend):**
+- bcryptjs ^3.0.3 - Password hashing
+- jose ^6.2.2 - JWT token signing/verification (HS256)
+- helmet ^8.1.0 - Express security headers
+- cors ^2.8.6 - CORS middleware
+- cookie-parser ^1.4.7 - Cookie parsing
 
-**HTTP & Communication:**
-- axios 1.15.0 - Frontend HTTP client (frontend only)
-- express 5.2.1 - Backend HTTP server
-- cors 2.8.6 - CORS middleware
-- cookie-parser 1.4.7 - Cookie parsing middleware
-- socket.io 4.8.3 - Real-time bidirectional communication (backend dependency exists but not actively used)
-- socket.io-client 4.8.3 - Frontend WebSocket client (not actively used)
+**HTTP & Middleware (Backend):**
+- compression ^1.8.1 - Response gzip compression
+- multer ^2.1.1 - Multipart file upload handling
+- dotenv ^17.4.2 - Environment variable loading
 
-**Data Processing:**
-- exceljs 4.4.0 - Excel file generation/parsing (both backend and frontend)
-- pdf-lib 1.17.1 - PDF manipulation (both backend and frontend)
-- zod 4.3.6 - Runtime schema validation (both backend and frontend)
-- multer 2.1.1 - File upload handling middleware
-- compression 1.8.1 - Response compression middleware
+**Data Processing (Backend):**
+- exceljs ^4.4.0 - Excel file generation/parsing
+- pdf-lib ^1.17.1 - PDF manipulation
+- zod ^4.3.6 - Runtime schema validation
+
+**Logging (Backend):**
+- pino ^10.3.1 - Structured JSON logging
+- pino-http ^11.0.0 - HTTP request/response logging middleware
+- pino-pretty ^13.1.3 - Dev-time pretty printer (devDependency)
 
 **Frontend State & Utilities:**
-- zustand 5.0.12 - Lightweight state management (auth.store.ts)
-- dayjs 1.11.20 - Date manipulation
-- numeral 2.0.6 - Number formatting
-- Ant Design 6.3.5 - Component UI library
-- Ant Design Icons 6.1.1 - Icon set
-- Ant Design CSS-in-JS 2.1.2 - Dynamic styling for Ant Design
+- zustand ^5.0.12 - Lightweight state management (`e_office_app_new/frontend/src/stores/auth.store.ts`)
+- axios ^1.15.0 - HTTP client with interceptors (`e_office_app_new/frontend/src/lib/api.ts`)
+- socket.io-client ^4.8.3 - WebSocket client (`e_office_app_new/frontend/src/lib/socket.ts`)
+- dayjs ^1.11.20 - Date manipulation and formatting
+- numeral ^2.0.6 - Number formatting
+- zod ^4.3.6 - Shared validation schemas
 
-**Logging:**
-- pino 10.3.1 - Structured JSON logging (backend and workers)
-- pino-http 11.0.0 - HTTP request/response logging middleware
-- pino-pretty 13.1.3 - Dev-time pretty printer for logs
+**Frontend (backend-like deps - likely copy-paste, used for shared types only):**
+- pg, mongoose, ioredis, bullmq, minio, nodemailer, pino, bcryptjs, jose - Present in frontend `package.json` but should only be used server-side or for type imports
 
-**Utilities:**
-- uuid 13.0.0 - UUID generation
-- nodemailer 8.0.5 - Email sending (prepared for use, not fully implemented)
-- dotenv 17.4.2 - Environment variable loading
+**Utilities (Backend):**
+- uuid ^13.0.0 - UUID generation
+- nodemailer ^8.0.5 - Email sending (prepared, workers have TODO stubs)
 
 ## Configuration
 
 **Environment:**
-- `.env` file required for backend with postgres, mongodb, redis, minio, and JWT secrets
-  - Location: `/d/ProjectAI/quanlyvanban/e_office_app_new/backend/.env`
-  - Template: `/d/ProjectAI/quanlyvanban/e_office_app_new/backend/.env.example`
-- `.env.local` for frontend configuration
-  - Location: `/d/ProjectAI/quanlyvanban/e_office_app_new/frontend/.env.local`
-  - Template: `/d/ProjectAI/quanlyvanban/e_office_app_new/frontend/.env.example`
+- Backend `.env` file required - template at `e_office_app_new/backend/.env.example`
+- Frontend `.env.local` file required - for `NEXT_PUBLIC_*` variables
+- Workers share same env vars as backend (Redis, PG connections)
 
-**Build:**
-- `tsconfig.json` - Backend TypeScript configuration (`/d/ProjectAI/quanlyvanban/e_office_app_new/backend/tsconfig.json`)
-  - Target: ES2022
-  - Module: ESNext
-  - Strict mode enabled
-  - Path aliases: `@/*` points to `src/`, `@shared/*` points to shared types
-- `tsconfig.json` - Frontend TypeScript configuration (`/d/ProjectAI/quanlyvanban/e_office_app_new/frontend/tsconfig.json`)
-  - Target: ES2017
-  - Module: esnext
-  - Path aliases: `@/*` points to `./src/`
-- `next.config.ts` - Next.js configuration (minimal, no custom middleware)
-- `eslint.config.mjs` - ESLint configuration with Next.js rules
-- `postcss.config.mjs` - PostCSS with Tailwind CSS plugin
+**TypeScript (Backend):** `e_office_app_new/backend/tsconfig.json`
+- Target: ES2022
+- Module: ESNext
+- moduleResolution: bundler
+- Strict mode: enabled
+- Path aliases: `@/*` -> `src/*`, `@shared/*` -> `../../shared/src/*`
+- Output: `dist/`
+
+**TypeScript (Frontend):** `e_office_app_new/frontend/tsconfig.json`
+- Target: ES2017
+- Module: esnext
+- moduleResolution: bundler
+- Strict mode: enabled
+- Path aliases: `@/*` -> `./src/*`
+- Next.js plugin enabled
+
+**Next.js:** `e_office_app_new/frontend/next.config.ts` (minimal config)
+**ESLint:** `e_office_app_new/frontend/eslint.config.mjs` (Next.js preset)
+**PostCSS:** `e_office_app_new/frontend/postcss.config.mjs` (Tailwind CSS plugin)
+
+## Project Structure (Packages)
+
+The project is a **monorepo-style** layout with 4 packages (no workspace manager):
+
+| Package | Location | Purpose |
+|---------|----------|---------|
+| qlvb-backend | `e_office_app_new/backend/` | Express REST API server |
+| frontend | `e_office_app_new/frontend/` | Next.js web application |
+| qlvb-workers | `e_office_app_new/workers/` | BullMQ background job processors |
+| shared | `e_office_app_new/shared/` | Shared types and constants |
+
+Each package has its own `package.json` and `node_modules`. No npm/yarn/pnpm workspaces configured.
 
 ## Platform Requirements
 
 **Development:**
-- Node.js 18+ (inferred from modern package versions)
-- npm or compatible package manager
-- Docker & Docker Compose (for local services: PostgreSQL, MongoDB, Redis, MinIO)
+- Node.js 18+ runtime
+- npm package manager
+- Docker & Docker Compose for infrastructure services (`e_office_app_new/docker-compose.yml`)
+
+**Docker Compose Services:** (`e_office_app_new/docker-compose.yml`)
+- PostgreSQL 16-alpine on port 5432 - Primary relational database
+- MongoDB 7 on port 27017 - Audit and logging
+- Redis 7-alpine on port 6379 - Cache and job queue (256MB, LRU eviction)
+- MinIO latest on ports 9000 (API) / 9001 (Console) - Document file storage
 
 **Production:**
-- Node.js 18+ runtime
-- Separate PostgreSQL 16 instance
-- Separate MongoDB 7 instance
-- Separate Redis 7 instance
-- Separate MinIO S3-compatible storage
-
-**Docker Services (docker-compose.yml):**
-- PostgreSQL 16-alpine - Primary relational database
-- MongoDB 7 - Audit and logging
-- Redis 7-alpine - Cache and job queue
-- MinIO - Document/file storage (S3-compatible)
+- Node.js 18+ for backend, workers
+- Next.js SSR or static export for frontend
+- Managed PostgreSQL, MongoDB, Redis, S3-compatible storage
 
 ---
 
