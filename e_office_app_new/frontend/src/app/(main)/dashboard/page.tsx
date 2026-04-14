@@ -175,9 +175,16 @@ function IncomingWidget({ data, loading }: { data: RecentIncomingItem[]; loading
 function TasksWidget({ data, loading }: { data: UpcomingTaskItem[]; loading: boolean }) {
   const router = useRouter();
 
-  function statusColor(s: string): string {
-    if (!s) return 'default';
-    const n = s.toLowerCase();
+  function statusColor(s: string | number): string {
+    if (s === null || s === undefined) return 'default';
+    if (typeof s === 'number') {
+      if (s === 4) return 'success';
+      if (s === -1 || s === -2) return 'error';
+      if (s === 1 || s === 2) return 'processing';
+      if (s === 3) return 'warning';
+      return 'default';
+    }
+    const n = String(s).toLowerCase();
     if (n.includes('hoàn') || n.includes('xong')) return 'success';
     if (n.includes('quá') || n.includes('hạn')) return 'error';
     if (n.includes('đang')) return 'processing';
@@ -222,7 +229,7 @@ function TasksWidget({ data, loading }: { data: UpcomingTaskItem[]; loading: boo
                 <span style={{ fontWeight: 600, fontSize: 13, color: '#1B3A5C', flex: 1, marginRight: 8 }}>
                   {item.title}
                 </span>
-                <Tag color={statusColor(item.status)} style={{ flexShrink: 0 }}>{item.status || 'Đang xử lý'}</Tag>
+                <Tag color={statusColor(item.status)} style={{ flexShrink: 0 }}>{{ 0: 'Mới', 1: 'Đang xử lý', 2: 'Chờ duyệt', 3: 'Đã duyệt', 4: 'Hoàn thành', [-1]: 'Từ chối', [-2]: 'Trả về' }[item.status as number] || 'Đang xử lý'}</Tag>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Progress
