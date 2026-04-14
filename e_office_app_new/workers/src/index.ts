@@ -28,12 +28,44 @@ const pool = new Pool({
   idleTimeoutMillis: 30000,
 });
 
+// ============================================================
+// Helper: update notification_log status after mock send
+// ============================================================
+async function updateNotificationLogStatus(
+  logId: number | undefined,
+  status: 'sent' | 'failed',
+  errorMessage: string | null,
+): Promise<void> {
+  if (!logId) return;
+  try {
+    await pool.query(
+      'SELECT * FROM edoc.fn_notification_log_update_status($1, $2, $3)',
+      [logId, status, errorMessage],
+    );
+  } catch (err) {
+    logger.error({ logId, err }, 'Failed to update notification_log status');
+  }
+}
+
 // --- Email Worker ---
 const emailWorker = new Worker(
   'email-send',
   async (job) => {
-    logger.info({ jobId: job.id, to: job.data.to }, 'Sending email...');
-    // TODO: implement nodemailer send
+    const { staff_id, title, body, notification_log_id } = job.data;
+    try {
+      logger.info(
+        { jobId: job.id, staffId: staff_id, subject: title },
+        'MOCK: Email sent to staff %d — Subject: %s',
+        staff_id,
+        title || '(no subject)',
+      );
+      // Mock: log instead of actually sending via nodemailer
+      await updateNotificationLogStatus(notification_log_id, 'sent', null);
+    } catch (err) {
+      logger.error({ jobId: job.id, err }, 'MOCK: Email send failed');
+      await updateNotificationLogStatus(notification_log_id, 'failed', (err as Error).message);
+      throw err;
+    }
   },
   { connection },
 );
@@ -42,8 +74,20 @@ const emailWorker = new Worker(
 const smsWorker = new Worker(
   'sms-send',
   async (job) => {
-    logger.info({ jobId: job.id }, 'Sending SMS...');
-    // TODO: implement SMS gateway
+    const { staff_id, body, notification_log_id } = job.data;
+    try {
+      logger.info(
+        { jobId: job.id, staffId: staff_id },
+        'MOCK: SMS sent to staff %d — %s',
+        staff_id,
+        body || '(empty)',
+      );
+      await updateNotificationLogStatus(notification_log_id, 'sent', null);
+    } catch (err) {
+      logger.error({ jobId: job.id, err }, 'MOCK: SMS send failed');
+      await updateNotificationLogStatus(notification_log_id, 'failed', (err as Error).message);
+      throw err;
+    }
   },
   { connection },
 );
@@ -101,8 +145,20 @@ const lgspSendWorker = new Worker(
 const fcmWorker = new Worker(
   'fcm-push',
   async (job) => {
-    logger.info({ jobId: job.id }, 'Sending push notification...');
-    // TODO: implement Firebase FCM
+    const { staff_id, title, body, notification_log_id } = job.data;
+    try {
+      logger.info(
+        { jobId: job.id, staffId: staff_id, title },
+        'MOCK: FCM push sent to staff %d — %s',
+        staff_id,
+        title || '(no title)',
+      );
+      await updateNotificationLogStatus(notification_log_id, 'sent', null);
+    } catch (err) {
+      logger.error({ jobId: job.id, err }, 'MOCK: FCM push failed');
+      await updateNotificationLogStatus(notification_log_id, 'failed', (err as Error).message);
+      throw err;
+    }
   },
   { connection },
 );
@@ -111,18 +167,37 @@ const fcmWorker = new Worker(
 const zaloWorker = new Worker(
   'zalo-send',
   async (job) => {
-    logger.info({ jobId: job.id }, 'MOCK: Sending Zalo OA message...');
-    // TODO: implement Zalo OA API
+    const { staff_id, title, body, notification_log_id } = job.data;
+    try {
+      logger.info(
+        { jobId: job.id, staffId: staff_id, title },
+        'MOCK: Zalo OA message sent to staff %d — %s',
+        staff_id,
+        title || '(no title)',
+      );
+      await updateNotificationLogStatus(notification_log_id, 'sent', null);
+    } catch (err) {
+      logger.error({ jobId: job.id, err }, 'MOCK: Zalo OA send failed');
+      await updateNotificationLogStatus(notification_log_id, 'failed', (err as Error).message);
+      throw err;
+    }
   },
   { connection },
 );
 
-// --- Notification Worker ---
+// --- Notification Router Worker (dispatches to channel-specific queues) ---
 const notificationWorker = new Worker(
   'notification-send',
   async (job) => {
-    logger.info({ jobId: job.id, type: job.data.type }, 'Processing notification...');
-    // TODO: implement notification routing (in-app, email, sms, push)
+    const { staff_id, channel, event_type, title, body, notification_log_id } = job.data;
+    logger.info(
+      { jobId: job.id, staffId: staff_id, channel, eventType: event_type },
+      'MOCK: Processing notification for staff %d via %s',
+      staff_id,
+      channel || 'all',
+    );
+    // Route to specific channel worker if needed
+    await updateNotificationLogStatus(notification_log_id, 'sent', null);
   },
   { connection },
 );

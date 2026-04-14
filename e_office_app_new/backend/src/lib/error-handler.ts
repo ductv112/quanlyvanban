@@ -39,6 +39,11 @@ export function handleDbError(error: unknown, res: Response): void {
       'uq_rooms_code': 'Mã phòng họp đã tồn tại',
       'uq_room_schedule_staff': 'Thành viên đã được thêm vào cuộc họp',
       'room_schedule_staff_room_schedule_id_staff_id_key': 'Thành viên đã được thêm vào cuộc họp',
+      // Phase 6 — LGSP (edoc)
+      'uq_lgsp_org_code': 'Mã cơ quan LGSP đã tồn tại',
+      // Phase 6 — Notifications (edoc)
+      'uq_device_token': 'Device token đã được đăng ký',
+      'uq_notif_pref_staff_channel': 'Cấu hình kênh thông báo đã tồn tại',
     };
     const msg = messageMap[constraint] || 'Dữ liệu đã tồn tại, vui lòng kiểm tra lại';
     res.status(409).json({ success: false, message: msg });
