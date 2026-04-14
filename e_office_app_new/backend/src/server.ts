@@ -15,6 +15,8 @@ import incomingDocRoutes from './routes/incoming-doc.js';
 import draftingDocRoutes from './routes/drafting-doc.js';
 import outgoingDocRoutes from './routes/outgoing-doc.js';
 import handlingDocRoutes from './routes/handling-doc.js';
+import workflowRoutes from './routes/workflow.js';
+import handlingDocReportRoutes from './routes/handling-doc-report.js';
 import { authenticate } from './middleware/auth.js';
 
 const app = express();
@@ -45,7 +47,10 @@ app.use('/api/quan-tri', authenticate, adminCatalogRoutes);
 app.use('/api/van-ban-den', authenticate, incomingDocRoutes);
 app.use('/api/van-ban-du-thao', authenticate, draftingDocRoutes);
 app.use('/api/van-ban-di', authenticate, outgoingDocRoutes);
+// NOTE: /thong-ke must be mounted BEFORE /ho-so-cong-viec to prevent /:id param from catching 'thong-ke'
+app.use('/api/ho-so-cong-viec/thong-ke', authenticate, handlingDocReportRoutes);
 app.use('/api/ho-so-cong-viec', authenticate, handlingDocRoutes);
+app.use('/api/quan-tri/quy-trinh', authenticate, workflowRoutes);
 
 // --- Error handler ---
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
