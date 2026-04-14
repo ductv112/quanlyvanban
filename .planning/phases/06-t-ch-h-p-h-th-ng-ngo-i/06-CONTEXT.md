@@ -61,7 +61,13 @@ Tat ca external APIs deu duoc MOCK cho demo cuoi tuan — code viet du interface
 
 **Downstream agents MUST read these before planning or implementing.**
 
-### Source code cu (.NET) — TAI LIEU THAM CHIEU CHINH
+### Sprint 14-16 Roadmap chi tiet — TAI LIEU THAM CHIEU CHINH
+- `e_office_app_new/ROADMAP.md` (Sprint 14, 15, 16 sections) — Chi tiet SP names, API paths, ref source cu, flow, templates cho LGSP/Ky so/Thong bao. **PHAI doc truoc khi plan/implement.**
+  - Sprint 14: LGSP endpoint `https://apiltvb.langson.gov.vn`, edXML format, Redis TTL 29 min, ref cu `LgspController, LgspEdocController, VNPT.Get/Send services`
+  - Sprint 15: Ref cu `SignPDFController, Vgca controller, EsignNEAC, SmartCA_VNPT`, API `POST /api/ky-so/smart-ca/sign`, Modal SmartCA/Token USB/EsignNEAC
+  - Sprint 16: Ref cu `FcmWindowsService, ZaloMessage, SmsController, EmailMessageController`, SMS template cu the
+
+### Source code cu (.NET) — TAI LIEU THAM CHIEU BO SUNG
 - Source code cu (.NET) — Phai doc Controllers, Services, SPs cu cho LGSP, Ky so, Thong bao truoc khi implement
 
 ### Existing codebase
