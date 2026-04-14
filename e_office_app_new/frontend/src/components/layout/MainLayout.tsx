@@ -35,6 +35,8 @@ import {
   ToolOutlined,
   StarOutlined,
   ContactsOutlined,
+  DatabaseOutlined,
+  AuditOutlined,
 } from '@ant-design/icons';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
@@ -94,6 +96,34 @@ const menuItems: MenuItem[] = [
     key: '/danh-ba',
     icon: <ContactsOutlined />,
     label: 'Danh bạ',
+  },
+  {
+    key: 'kho-luu-tru',
+    icon: <DatabaseOutlined />,
+    label: 'Kho lưu trữ',
+    children: [
+      { key: '/kho-luu-tru', label: 'Danh mục kho/phông' },
+      { key: '/kho-luu-tru/muon-tra', label: 'Mượn/trả hồ sơ' },
+    ],
+  },
+  {
+    key: '/tai-lieu',
+    icon: <FileTextOutlined />,
+    label: 'Tài liệu',
+  },
+  {
+    key: '/hop-dong',
+    icon: <AuditOutlined />,
+    label: 'Hợp đồng',
+  },
+  {
+    key: 'cuoc-hop',
+    icon: <TeamOutlined />,
+    label: 'Cuộc họp',
+    children: [
+      { key: '/cuoc-hop', label: 'Danh sách cuộc họp' },
+      { key: '/cuoc-hop/thong-ke', label: 'Thống kê' },
+    ],
   },
   {
     type: 'divider',
@@ -165,6 +195,12 @@ const breadcrumbMap: Record<string, string> = {
   '/lich/co-quan': 'Lịch cơ quan',
   '/lich/lanh-dao': 'Lịch lãnh đạo',
   '/danh-ba': 'Danh bạ điện thoại',
+  '/kho-luu-tru': 'Kho lưu trữ',
+  '/kho-luu-tru/muon-tra': 'Mượn/trả hồ sơ',
+  '/tai-lieu': 'Tài liệu',
+  '/hop-dong': 'Hợp đồng',
+  '/cuoc-hop': 'Cuộc họp',
+  '/cuoc-hop/thong-ke': 'Thống kê cuộc họp',
 };
 
 function buildBreadcrumbs(pathname: string) {
