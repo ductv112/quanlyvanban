@@ -41,30 +41,34 @@ const { DirectoryTree } = Tree;
 // Types
 // ===========================
 
+// Fields match fn_handling_doc_get_by_id SP output exactly
 interface HscvDetail {
   id: number;
   name: string;
   status: number;
-  open_date: string;
-  deadline: string;
-  field_id: number | null;
-  field_name: string | null;
+  start_date: string;       // SP: start_date (was: open_date)
+  end_date: string;         // SP: end_date (was: deadline)
+  doc_field_id: number | null;   // SP: doc_field_id (was: field_id)
+  doc_field_name: string | null; // SP: doc_field_name (was: field_name)
   doc_type_id: number | null;
   doc_type_name: string | null;
-  process_id: number | null;
-  process_name: string | null;
-  lead_staff_id: number | null;
-  lead_staff_name: string | null;
+  workflow_id: number | null;    // SP: workflow_id (was: process_id)
+  workflow_name: string | null;  // SP: workflow_name (was: process_name)
+  curator_id: number | null;     // SP: curator_id (was: lead_staff_id)
+  curator_name: string | null;   // SP: curator_name (was: lead_staff_name)
   signer_id: number | null;
   signer_name: string | null;
   progress: number;
   comments: string | null;
+  abstract: string | null;
   parent_id: number | null;
   parent_name: string | null;
   created_at: string;
   created_by: number;
-  created_by_name: string;
   unit_id: number;
+  unit_name: string;
+  department_id: number;
+  department_name: string;
 }
 
 interface LinkedDoc {
@@ -124,10 +128,10 @@ interface ChildHscv {
   id: number;
   name: string;
   status: number;
-  open_date: string;
-  deadline: string;
+  start_date: string;    // SP: start_date (was: open_date)
+  end_date: string;      // SP: end_date (was: deadline)
   progress: number;
-  lead_staff_name: string | null;
+  curator_name: string | null;  // SP: curator_name (was: lead_staff_name)
 }
 
 interface SearchDocItem {
@@ -579,12 +583,12 @@ export default function HscvDetailPage() {
     if (!detail) return;
     editForm.setFieldsValue({
       name: detail.name,
-      field_id: detail.field_id,
+      doc_field_id: detail.doc_field_id,
       doc_type_id: detail.doc_type_id,
-      open_date: detail.open_date ? dayjs(detail.open_date) : null,
-      deadline: detail.deadline ? dayjs(detail.deadline) : null,
+      start_date: detail.start_date ? dayjs(detail.start_date) : null,
+      end_date: detail.end_date ? dayjs(detail.end_date) : null,
       comments: detail.comments,
-      lead_staff_id: detail.lead_staff_id,
+      curator_id: detail.curator_id,
       signer_id: detail.signer_id,
     });
     setEditDrawerOpen(true);
@@ -612,8 +616,8 @@ export default function HscvDetailPage() {
       setSaving(true);
       await api.put(`/ho-so-cong-viec/${id}`, {
         ...values,
-        open_date: values.open_date?.toISOString(),
-        deadline: values.deadline?.toISOString(),
+        start_date: values.start_date?.toISOString(),
+        end_date: values.end_date?.toISOString(),
       });
       message.success('Lưu hồ sơ thành công');
       setEditDrawerOpen(false);
@@ -842,8 +846,8 @@ export default function HscvDetailPage() {
       await api.post('/ho-so-cong-viec', {
         ...values,
         parent_id: detail?.id,
-        open_date: values.open_date?.toISOString(),
-        deadline: values.deadline?.toISOString(),
+        start_date: values.start_date?.toISOString(),
+        end_date: values.end_date?.toISOString(),
       });
       message.success('Tạo hồ sơ con thành công');
       setChildDrawerOpen(false);
@@ -910,13 +914,13 @@ export default function HscvDetailPage() {
     },
     {
       title: 'Ngày mở',
-      dataIndex: 'open_date',
+      dataIndex: 'start_date',
       width: 110,
       render: (v: string) => v ? dayjs(v).format('DD/MM/YYYY') : '-',
     },
     {
       title: 'Hạn giải quyết',
-      dataIndex: 'deadline',
+      dataIndex: 'end_date',
       width: 130,
       render: (v: string) => {
         if (!v) return '-';
@@ -984,20 +988,20 @@ export default function HscvDetailPage() {
             <div>
               <div className="info-label">Ngày mở</div>
               <div className="info-value">
-                {detail.open_date ? dayjs(detail.open_date).format('DD/MM/YYYY') : '—'}
+                {detail.start_date ? dayjs(detail.start_date).format('DD/MM/YYYY') : '—'}
               </div>
             </div>
             <div>
               <div className="info-label">Hạn giải quyết</div>
               <div className="info-value" style={{
-                color: detail.deadline && dayjs(detail.deadline).isBefore(dayjs(), 'day') ? '#DC2626' : undefined,
+                color: detail.end_date && dayjs(detail.end_date).isBefore(dayjs(), 'day') ? '#DC2626' : undefined,
               }}>
-                {detail.deadline ? dayjs(detail.deadline).format('DD/MM/YYYY') : '—'}
+                {detail.end_date ? dayjs(detail.end_date).format('DD/MM/YYYY') : '—'}
               </div>
             </div>
             <div>
               <div className="info-label">Lĩnh vực</div>
-              <div className="info-value">{detail.field_name || '—'}</div>
+              <div className="info-value">{detail.doc_field_name || '—'}</div>
             </div>
             <div>
               <div className="info-label">Loại văn bản</div>
@@ -1005,7 +1009,7 @@ export default function HscvDetailPage() {
             </div>
             <div>
               <div className="info-label">Quy trình</div>
-              <div className="info-value">{detail.process_name || '—'}</div>
+              <div className="info-value">{detail.workflow_name || '—'}</div>
             </div>
             <div>
               <div className="info-label">Trạng thái</div>
@@ -1015,7 +1019,7 @@ export default function HscvDetailPage() {
             </div>
             <div>
               <div className="info-label">Người phụ trách</div>
-              <div className="info-value">{detail.lead_staff_name || '—'}</div>
+              <div className="info-value">{detail.curator_name || '—'}</div>
             </div>
             <div>
               <div className="info-label">Lãnh đạo ký</div>
@@ -1525,16 +1529,16 @@ export default function HscvDetailPage() {
                 <Form.Item name="doc_type_id" label="Loại văn bản">
                   <Select options={docTypes} placeholder="Chọn loại văn bản" allowClear />
                 </Form.Item>
-                <Form.Item name="field_id" label="Lĩnh vực">
+                <Form.Item name="doc_field_id" label="Lĩnh vực">
                   <Select options={fields} placeholder="Chọn lĩnh vực" allowClear />
                 </Form.Item>
-                <Form.Item name="open_date" label="Ngày mở" rules={[{ required: true, message: 'Vui lòng chọn ngày mở' }]}>
+                <Form.Item name="start_date" label="Ngày mở" rules={[{ required: true, message: 'Vui lòng chọn ngày mở' }]}>
                   <DatePicker format="DD/MM/YYYY" style={{ width: '100%' }} />
                 </Form.Item>
-                <Form.Item name="deadline" label="Hạn giải quyết" rules={[{ required: true, message: 'Vui lòng chọn hạn' }]}>
+                <Form.Item name="end_date" label="Hạn giải quyết" rules={[{ required: true, message: 'Vui lòng chọn hạn' }]}>
                   <DatePicker format="DD/MM/YYYY" style={{ width: '100%' }} />
                 </Form.Item>
-                <Form.Item name="lead_staff_id" label="Người phụ trách">
+                <Form.Item name="curator_id" label="Người phụ trách">
                   <Select options={staffOptions} placeholder="Chọn người phụ trách" showSearch optionFilterProp="label" allowClear />
                 </Form.Item>
                 <Form.Item name="signer_id" label="Lãnh đạo ký">
@@ -1641,13 +1645,13 @@ export default function HscvDetailPage() {
                 <Input maxLength={500} placeholder="Nhập tên hồ sơ công việc con..." />
               </Form.Item>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px' }}>
-                <Form.Item name="open_date" label="Ngày mở" rules={[{ required: true, message: 'Vui lòng chọn ngày mở' }]}>
+                <Form.Item name="start_date" label="Ngày mở" rules={[{ required: true, message: 'Vui lòng chọn ngày mở' }]}>
                   <DatePicker format="DD/MM/YYYY" style={{ width: '100%' }} />
                 </Form.Item>
-                <Form.Item name="deadline" label="Hạn giải quyết" rules={[{ required: true, message: 'Vui lòng chọn hạn' }]}>
+                <Form.Item name="end_date" label="Hạn giải quyết" rules={[{ required: true, message: 'Vui lòng chọn hạn' }]}>
                   <DatePicker format="DD/MM/YYYY" style={{ width: '100%' }} />
                 </Form.Item>
-                <Form.Item name="lead_staff_id" label="Người phụ trách">
+                <Form.Item name="curator_id" label="Người phụ trách">
                   <Select options={staffOptions} placeholder="Chọn người phụ trách" showSearch optionFilterProp="label" allowClear />
                 </Form.Item>
                 <Form.Item name="signer_id" label="Lãnh đạo ký">
