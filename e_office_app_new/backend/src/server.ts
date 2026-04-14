@@ -21,6 +21,9 @@ import handlingDocReportRoutes from './routes/handling-doc-report.js';
 import interIncomingRoutes from './routes/inter-incoming.js';
 import messageRoutes from './routes/message.js';
 import noticeRoutes from './routes/notice.js';
+import calendarRoutes from './routes/calendar.js';
+import directoryRoutes from './routes/directory.js';
+import dashboardRoutes from './routes/dashboard.js';
 import { authenticate } from './middleware/auth.js';
 import { initSocket } from './lib/socket.js';
 
@@ -59,6 +62,9 @@ app.use('/api/ho-so-cong-viec', authenticate, handlingDocRoutes);
 app.use('/api/quan-tri/quy-trinh', authenticate, workflowRoutes);
 app.use('/api/tin-nhan', authenticate, messageRoutes);
 app.use('/api/thong-bao', authenticate, noticeRoutes);
+app.use('/api/lich', authenticate, calendarRoutes);
+app.use('/api/danh-ba', authenticate, directoryRoutes);
+app.use('/api/dashboard', authenticate, dashboardRoutes);
 
 // --- Error handler ---
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
