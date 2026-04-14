@@ -26,6 +26,8 @@ export function handleDbError(error: unknown, res: Response): void {
       'uq_signers_staff': 'Người ký đã tồn tại',
       'uq_work_groups_name': 'Tên nhóm làm việc đã tồn tại',
       'uq_delegations_from_to': 'Ủy quyền đã tồn tại',
+      // Handling docs
+      'handling_doc_links_handling_doc_id_doc_type_doc_id_key': 'Văn bản này đã được liên kết',
     };
     const msg = messageMap[constraint] || 'Dữ liệu đã tồn tại, vui lòng kiểm tra lại';
     res.status(409).json({ success: false, message: msg });

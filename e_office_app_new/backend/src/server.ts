@@ -14,6 +14,7 @@ import adminCatalogRoutes from './routes/admin-catalog.js';
 import incomingDocRoutes from './routes/incoming-doc.js';
 import draftingDocRoutes from './routes/drafting-doc.js';
 import outgoingDocRoutes from './routes/outgoing-doc.js';
+import handlingDocRoutes from './routes/handling-doc.js';
 import { authenticate } from './middleware/auth.js';
 
 const app = express();
@@ -44,7 +45,7 @@ app.use('/api/quan-tri', authenticate, adminCatalogRoutes);
 app.use('/api/van-ban-den', authenticate, incomingDocRoutes);
 app.use('/api/van-ban-du-thao', authenticate, draftingDocRoutes);
 app.use('/api/van-ban-di', authenticate, outgoingDocRoutes);
-// app.use('/api/ho-so-cong-viec', authenticate, handlingDocRoutes);
+app.use('/api/ho-so-cong-viec', authenticate, handlingDocRoutes);
 
 // --- Error handler ---
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
