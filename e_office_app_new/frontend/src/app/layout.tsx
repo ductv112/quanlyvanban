@@ -1,12 +1,12 @@
 import type { Metadata } from 'next';
-import { Plus_Jakarta_Sans } from 'next/font/google';
+import { Inter } from 'next/font/google';
 import AntdProvider from '@/components/layout/AntdProvider';
 import './globals.css';
 
-const jakartaSans = Plus_Jakarta_Sans({
-  variable: '--font-jakarta',
+const inter = Inter({
+  variable: '--font-inter',
   subsets: ['latin', 'vietnamese'],
-  weight: ['300', '400', '500', '600', '700'],
+  weight: ['400', '600', '700'],
 });
 
 export const metadata: Metadata = {
@@ -20,8 +20,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="vi" className={`${jakartaSans.variable} h-full`}>
-      <body className="min-h-full" style={{ fontFamily: 'var(--font-jakarta), sans-serif' }}>
+    <html lang="vi" className={`${inter.variable} h-full`}>
+      <body className="min-h-full" style={{ fontFamily: 'var(--font-inter), Inter, sans-serif' }}>
         <AntdProvider>{children}</AntdProvider>
       </body>
     </html>

@@ -8,13 +8,13 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-jakarta);
+  --font-sans: var(--font-inter);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-jakarta), 'Plus Jakarta Sans', 'Inter', sans-serif;
+  font-family: var(--font-inter), 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -22,12 +22,27 @@ body {
 /* Ant Design Sider menu customization */
 .ant-layout-sider .ant-menu-item {
   margin: 2px 8px !important;
-  border-radius: 8px !important;
+  border-radius: 6px !important;
+  position: relative;
 }
 
 .ant-layout-sider .ant-menu-submenu-title {
   margin: 2px 8px !important;
-  border-radius: 8px !important;
+  border-radius: 6px !important;
+
+}
+
+/* Active menu item — left indicator bar */
+.ant-layout-sider .ant-menu-item-selected::before {
+  content: '';
+  position: absolute;
+  left: -8px;
+  top: 8px;
+  bottom: 8px;
+  width: 4px;
+  border-radius: 0 4px 4px 0;
+  background: #0891B2;
+}
 }
 
 /* Collapse trigger button hover */

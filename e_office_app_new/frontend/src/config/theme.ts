@@ -16,13 +16,22 @@ export const appTheme: ThemeConfig = {
     colorError: '#DC2626',
     colorLink: '#0891B2',
 
-    // Typography
-    fontFamily: "'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+    // Typography — Inter, 4-level scale
+    fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
     fontSize: 14,
-    fontSizeHeading1: 30,
-    fontSizeHeading2: 24,
-    fontSizeHeading3: 20,
-    fontSizeHeading4: 16,
+    fontSizeHeading1: 20,
+    fontSizeHeading2: 20,
+    fontSizeHeading3: 15,
+    fontSizeHeading4: 15,
+    fontSizeSM: 12,
+    fontSizeLG: 15,
+    fontWeightStrong: 600,
+
+    // Text colors — slate hierarchy
+    colorText: '#1E293B',
+    colorTextSecondary: '#475569',
+    colorTextTertiary: '#94A3B8',
+    colorTextQuaternary: '#CBD5E1',
 
     // Border
     borderRadius: 8,
@@ -57,17 +66,22 @@ export const appTheme: ThemeConfig = {
     },
     Menu: {
       darkItemBg: '#0F1A2E',
-      darkItemSelectedBg: '#1B3A5C',
-      darkItemColor: 'rgba(255, 255, 255, 0.65)',
+      darkItemSelectedBg: 'rgba(8, 145, 178, 0.15)',
+      darkItemColor: 'rgba(255, 255, 255, 0.55)',
+      darkItemHoverBg: 'rgba(255, 255, 255, 0.06)',
       darkItemHoverColor: '#FFFFFF',
       darkItemSelectedColor: '#FFFFFF',
-      itemBorderRadius: 8,
-      iconSize: 18,
-      collapsedIconSize: 20,
+      itemBorderRadius: 6,
+      iconSize: 17,
+      collapsedIconSize: 19,
+      itemMarginInline: 8,
+      itemHeight: 40,
     },
     Button: {
       primaryShadow: '0 2px 4px rgba(27, 58, 92, 0.2)',
       fontWeight: 600,
+      dangerColor: '#FFFFFF',
+      dangerShadow: '0 2px 4px rgba(220, 38, 38, 0.2)',
     },
     Card: {
       borderRadiusLG: 12,
