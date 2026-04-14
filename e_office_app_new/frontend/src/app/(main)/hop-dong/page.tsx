@@ -55,7 +55,7 @@ interface Attachment {
   id: number;
   file_name: string;
   file_size: number;
-  file_url: string;
+  file_path: string;
   created_date: string;
 }
 
@@ -490,7 +490,7 @@ export default function HopDongPage() {
           type="link"
           size="small"
           style={{ padding: 0 }}
-          onClick={() => record.file_url && window.open(record.file_url, '_blank')}
+          onClick={() => record.file_path && window.open(record.file_path, '_blank')}
         >
           {name}
         </Button>
@@ -518,12 +518,12 @@ export default function HopDongPage() {
       align: 'center',
       render: (_, record) => (
         <Space size="small">
-          {record.file_url && (
+          {record.file_path && (
             <Button
               type="text"
               size="small"
               icon={<DownloadOutlined />}
-              onClick={() => window.open(record.file_url, '_blank')}
+              onClick={() => window.open(record.file_path, '_blank')}
             />
           )}
           <Button
