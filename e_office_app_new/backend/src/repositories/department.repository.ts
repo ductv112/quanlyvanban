@@ -20,10 +20,15 @@ export interface DepartmentTreeRow {
   staff_count: number;
 }
 
+// fn_department_get_by_id returns these extra fields vs tree row:
+// description, is_locked (already in tree), lgsp_system_id, lgsp_secret_key, created_at, updated_at
+// NOTE: created_by and updated_by are NOT returned by this SP
 export interface DepartmentDetailRow extends DepartmentTreeRow {
-  created_by: number;
+  description: string;
+  lgsp_system_id: string;
+  lgsp_secret_key: string;
+  created_at: string;
   updated_at: string;
-  updated_by: number;
 }
 
 export const departmentRepository = {

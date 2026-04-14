@@ -1,5 +1,6 @@
 import { callFunction, callFunctionOne } from '../lib/db/query.js';
 
+// fn_staff_get_list returns full set including IDs needed for edit pre-fill
 export interface StaffListRow {
   id: number;
   code: string;
@@ -10,14 +11,20 @@ export interface StaffListRow {
   gender: number;
   email: string;
   phone: string;
-  mobile: string;
   image: string;
-  position_name: string;
+  department_id: number;
   department_name: string;
+  unit_id: number;
   unit_name: string;
+  position_id: number;
+  position_name: string;
   is_admin: boolean;
   is_locked: boolean;
+  is_represent_unit: boolean;
+  is_represent_department: boolean;
   password_changed: boolean;
+  last_login_at: string;
+  created_at: string;
   total_count: number;
 }
 
