@@ -499,4 +499,102 @@ router.patch('/:id/nhan-ban-giay', async (req: Request, res: Response) => {
   }
 });
 
+// ============================================================
+// 3.x VB DEN ACTIONS — Giao viec, Nhan ban giao, Chuyen lai, Huy duyet
+// ============================================================
+
+// POST /:id/giao-viec — Tao ho so cong viec tu VB den
+router.post('/:id/giao-viec', async (req: Request, res: Response) => {
+  try {
+    const { staffId } = (req as AuthRequest).user;
+    const docId = Number(req.params.id);
+    const { name, start_date, end_date, curator_ids, note } = req.body;
+
+    if (!name?.trim()) {
+      res.status(400).json({ success: false, message: 'Tên hồ sơ công việc là bắt buộc' });
+      return;
+    }
+    if (!Array.isArray(curator_ids) || curator_ids.length === 0) {
+      res.status(400).json({ success: false, message: 'Vui lòng chọn ít nhất một người thực hiện' });
+      return;
+    }
+
+    const result = await incomingDocRepository.createHandlingDocFromDoc(
+      docId, 'incoming', name.trim(),
+      start_date ?? null, end_date ?? null,
+      curator_ids.map(Number), note ?? null,
+      staffId,
+    );
+
+    if (!result.success) {
+      res.status(400).json({ success: false, message: result.message });
+      return;
+    }
+    res.status(201).json({ success: true, data: result, message: 'Giao việc thành công' });
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
+
+// POST /:id/nhan-ban-giao — Nhan ban giao VB den
+router.post('/:id/nhan-ban-giao', async (req: Request, res: Response) => {
+  try {
+    const { staffId } = (req as AuthRequest).user;
+    const docId = Number(req.params.id);
+
+    const result = await incomingDocRepository.handover(docId, staffId);
+    if (!result.success) {
+      res.status(400).json({ success: false, message: result.message });
+      return;
+    }
+    res.json({ success: true, message: 'Nhận bàn giao thành công' });
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
+
+// POST /:id/chuyen-lai — Chuyen lai VB den (yeu cau ly do)
+router.post('/:id/chuyen-lai', async (req: Request, res: Response) => {
+  try {
+    const { staffId } = (req as AuthRequest).user;
+    const docId = Number(req.params.id);
+    const { reason } = req.body;
+
+    if (!reason?.trim()) {
+      res.status(400).json({ success: false, message: 'Lý do chuyển lại là bắt buộc' });
+      return;
+    }
+    if (reason.trim().length < 10) {
+      res.status(400).json({ success: false, message: 'Lý do chuyển lại phải có ít nhất 10 ký tự' });
+      return;
+    }
+
+    const result = await incomingDocRepository.returnDoc(docId, staffId, reason.trim());
+    if (!result.success) {
+      res.status(400).json({ success: false, message: result.message });
+      return;
+    }
+    res.json({ success: true, message: 'Chuyển lại văn bản thành công' });
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
+
+// POST /:id/huy-duyet — Huy duyet VB den
+router.post('/:id/huy-duyet', async (req: Request, res: Response) => {
+  try {
+    const { staffId } = (req as AuthRequest).user;
+    const docId = Number(req.params.id);
+
+    const result = await incomingDocRepository.cancelApprove(docId, staffId);
+    if (!result.success) {
+      res.status(400).json({ success: false, message: result.message });
+      return;
+    }
+    res.json({ success: true, message: 'Đã hủy duyệt văn bản' });
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
+
 export default router;

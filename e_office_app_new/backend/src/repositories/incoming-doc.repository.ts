@@ -295,4 +295,36 @@ export const incomingDocRepository = {
     const row = await callFunctionOne<DbResult>('edoc.fn_incoming_doc_receive_paper', [id, staffId]);
     return row ?? { success: false, message: 'Không tìm thấy văn bản' };
   },
+
+  // --- 3.9 Actions — Giao viec, Nhan ban giao, Chuyen lai, Huy duyet ---
+  async createHandlingDocFromDoc(
+    docId: number,
+    docType: string,
+    name: string,
+    startDate: string | null,
+    endDate: string | null,
+    curatorIds: number[],
+    note: string | null,
+    createdBy: number,
+  ): Promise<DbResult> {
+    const row = await callFunctionOne<DbResult>('edoc.fn_handling_doc_create_from_doc', [
+      docId, docType, name, startDate, endDate, curatorIds, note, createdBy,
+    ]);
+    return row ?? { success: false, message: 'Không thể tạo hồ sơ công việc' };
+  },
+
+  async handover(docId: number, staffId: number): Promise<DbResult> {
+    const row = await callFunctionOne<DbResult>('edoc.fn_incoming_doc_handover', [docId, staffId]);
+    return row ?? { success: false, message: 'Không tìm thấy văn bản' };
+  },
+
+  async returnDoc(docId: number, returnedBy: number, reason: string): Promise<DbResult> {
+    const row = await callFunctionOne<DbResult>('edoc.fn_incoming_doc_return', [docId, returnedBy, reason]);
+    return row ?? { success: false, message: 'Không tìm thấy văn bản' };
+  },
+
+  async cancelApprove(docId: number, cancelledBy: number): Promise<DbResult> {
+    const row = await callFunctionOne<DbResult>('edoc.fn_incoming_doc_cancel_approve', [docId, cancelledBy]);
+    return row ?? { success: false, message: 'Không tìm thấy văn bản' };
+  },
 };
