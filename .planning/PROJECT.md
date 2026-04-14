@@ -26,7 +26,7 @@ Luồng văn bản đến → xử lý → văn bản đi phải hoạt động 
 
 ### Active
 
-- [ ] Stabilize Sprint 0-4: Fix bug visible, refactor shared patterns (tree mapping, validation)
+- ✓ Stabilize Sprint 0-4: Shared tree utils + error handler extracted, golden path verified — Phase 1
 - [ ] Sprint 5: Hồ sơ công việc — Core (danh sách, CRUD, chi tiết, workflow)
 - [ ] Sprint 6: Hồ sơ công việc — Workflow & Báo cáo
 - [ ] Sprint 7: Văn bản liên thông & Giao việc từ VB
@@ -91,4 +91,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-14 after initialization*
+*Last updated: 2026-04-14 after Phase 1 completion*
