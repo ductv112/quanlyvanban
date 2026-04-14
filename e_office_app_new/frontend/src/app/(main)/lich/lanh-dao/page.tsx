@@ -115,14 +115,12 @@ export default function LichLanhDaoPage() {
     return events.filter((ev) => dayjs(ev.start_time).isSame(date, 'day'));
   };
 
-  const cellRender = (date: Dayjs, info: { type: string; originNode: React.ReactElement }) => {
-    if (info.type !== 'date') return info.originNode;
+  const cellRender = (date: Dayjs, info: { type: string }) => {
+    if (info.type !== 'date') return null;
     const dayEvents = getEventsForDate(date);
-    if (!dayEvents.length) return info.originNode;
+    if (!dayEvents.length) return null;
     return (
-      <div className="ant-picker-cell-inner">
-        {date.date()}
-        <ul style={{ listStyle: 'none', padding: 0, margin: '4px 0 0' }}>
+      <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
           {dayEvents.slice(0, 3).map((ev) => (
             <li key={ev.id}>
               <Badge
@@ -159,7 +157,6 @@ export default function LichLanhDaoPage() {
             </li>
           )}
         </ul>
-      </div>
     );
   };
 
