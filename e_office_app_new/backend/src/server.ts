@@ -28,6 +28,7 @@ import archiveRoutes from './routes/archive.js';
 import documentRoutes from './routes/document.js';
 import contractRoutes from './routes/contract.js';
 import meetingRoutes from './routes/meeting.js';
+import lgspRoutes from './routes/lgsp.js';
 import { authenticate } from './middleware/auth.js';
 import { initSocket } from './lib/socket.js';
 
@@ -75,6 +76,9 @@ app.use('/api/kho-luu-tru', authenticate, archiveRoutes);
 app.use('/api/tai-lieu', authenticate, documentRoutes);
 app.use('/api/hop-dong', authenticate, contractRoutes);
 app.use('/api/cuoc-hop', authenticate, meetingRoutes);
+
+// --- Phase 6: Tich hop he thong ngoai ---
+app.use('/api/lgsp', authenticate, lgspRoutes);
 
 // --- Error handler ---
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
