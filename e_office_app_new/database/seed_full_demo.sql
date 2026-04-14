@@ -133,16 +133,16 @@ INSERT INTO public.departments (id, parent_id, code, name, short_name, is_unit, 
 -- ---- Staff ----
 -- Password: Admin@123 (bcrypt hash)
 INSERT INTO public.staff (id, department_id, unit_id, position_id, username, password_hash, is_admin, first_name, last_name, gender, email, phone, mobile) VALUES
-  (1,  1, 1, 1, 'admin',       '$2a$10$XOPbrlUPQdwdJUpSrIF6X.LbE14qsMmKGhM1A8W9iq.BELh5GYRxy', true,  'Quản trị',      'Hệ thống',  1, 'admin@laocai.gov.vn',           '02093801001', '0912000001'),
-  (2,  2, 2, 1, 'nguyenvana',  '$2a$10$XOPbrlUPQdwdJUpSrIF6X.LbE14qsMmKGhM1A8W9iq.BELh5GYRxy', false, 'Nguyễn Văn',    'An',         1, 'nguyenvana@snv.laocai.gov.vn',  '02093801002', '0912000002'),
-  (3,  3, 3, 1, 'tranthib',    '$2a$10$XOPbrlUPQdwdJUpSrIF6X.LbE14qsMmKGhM1A8W9iq.BELh5GYRxy', false, 'Trần Thị',      'Bình',       2, 'tranthib@stc.laocai.gov.vn',    '02093801003', '0912000003'),
-  (4,  4, 4, 1, 'levand',      '$2a$10$XOPbrlUPQdwdJUpSrIF6X.LbE14qsMmKGhM1A8W9iq.BELh5GYRxy', false, 'Lê Văn',        'Đức',        1, 'levand@stttt.laocai.gov.vn',    '02093801004', '0912000004'),
-  (5,  5, 5, 3, 'phamvane',    '$2a$10$XOPbrlUPQdwdJUpSrIF6X.LbE14qsMmKGhM1A8W9iq.BELh5GYRxy', false, 'Phạm Văn',      'Em',         1, 'phamvane@vpubnd.laocai.gov.vn', '02093801005', '0912000005'),
-  (6,  6, 2, 5, 'hoangthif',   '$2a$10$XOPbrlUPQdwdJUpSrIF6X.LbE14qsMmKGhM1A8W9iq.BELh5GYRxy', false, 'Hoàng Thị',     'Phương',     2, 'hoangthif@snv.laocai.gov.vn',   '02093801006', '0912000006'),
-  (7,  7, 3, 5, 'dangvang',    '$2a$10$XOPbrlUPQdwdJUpSrIF6X.LbE14qsMmKGhM1A8W9iq.BELh5GYRxy', false, 'Đặng Văn',      'Giang',      1, 'dangvang@stc.laocai.gov.vn',    '02093801007', '0912000007'),
-  (8,  8, 4, 5, 'buithih',     '$2a$10$XOPbrlUPQdwdJUpSrIF6X.LbE14qsMmKGhM1A8W9iq.BELh5GYRxy', false, 'Bùi Thị',       'Hương',      2, 'buithih@stttt.laocai.gov.vn',   '02093801008', '0912000008'),
-  (9,  9, 5, 6, 'vuthik',      '$2a$10$XOPbrlUPQdwdJUpSrIF6X.LbE14qsMmKGhM1A8W9iq.BELh5GYRxy', false, 'Vũ Thị',        'Kim',        2, 'vuthik@vpubnd.laocai.gov.vn',   '02093801009', '0912000009'),
-  (10, 10,2, 4, 'dothil',      '$2a$10$XOPbrlUPQdwdJUpSrIF6X.LbE14qsMmKGhM1A8W9iq.BELh5GYRxy', false, 'Đỗ Thị',        'Lan',        2, 'dothil@snv.laocai.gov.vn',      '02093801010', '0912000010');
+  (1,  1, 1, 1, 'admin',       '$2b$10$xupDqmYXFYRiLmPdbB5N3uJPMdIG3Qz2xj.DN52R1hg1V.DeDxaQi', true,  'Quản trị',      'Hệ thống',  1, 'admin@laocai.gov.vn',           '02093801001', '0912000001'),
+  (2,  2, 2, 1, 'nguyenvana',  '$2b$10$xupDqmYXFYRiLmPdbB5N3uJPMdIG3Qz2xj.DN52R1hg1V.DeDxaQi', false, 'Nguyễn Văn',    'An',         1, 'nguyenvana@snv.laocai.gov.vn',  '02093801002', '0912000002'),
+  (3,  3, 3, 1, 'tranthib',    '$2b$10$xupDqmYXFYRiLmPdbB5N3uJPMdIG3Qz2xj.DN52R1hg1V.DeDxaQi', false, 'Trần Thị',      'Bình',       2, 'tranthib@stc.laocai.gov.vn',    '02093801003', '0912000003'),
+  (4,  4, 4, 1, 'levand',      '$2b$10$xupDqmYXFYRiLmPdbB5N3uJPMdIG3Qz2xj.DN52R1hg1V.DeDxaQi', false, 'Lê Văn',        'Đức',        1, 'levand@stttt.laocai.gov.vn',    '02093801004', '0912000004'),
+  (5,  5, 5, 3, 'phamvane',    '$2b$10$xupDqmYXFYRiLmPdbB5N3uJPMdIG3Qz2xj.DN52R1hg1V.DeDxaQi', false, 'Phạm Văn',      'Em',         1, 'phamvane@vpubnd.laocai.gov.vn', '02093801005', '0912000005'),
+  (6,  6, 2, 5, 'hoangthif',   '$2b$10$xupDqmYXFYRiLmPdbB5N3uJPMdIG3Qz2xj.DN52R1hg1V.DeDxaQi', false, 'Hoàng Thị',     'Phương',     2, 'hoangthif@snv.laocai.gov.vn',   '02093801006', '0912000006'),
+  (7,  7, 3, 5, 'dangvang',    '$2b$10$xupDqmYXFYRiLmPdbB5N3uJPMdIG3Qz2xj.DN52R1hg1V.DeDxaQi', false, 'Đặng Văn',      'Giang',      1, 'dangvang@stc.laocai.gov.vn',    '02093801007', '0912000007'),
+  (8,  8, 4, 5, 'buithih',     '$2b$10$xupDqmYXFYRiLmPdbB5N3uJPMdIG3Qz2xj.DN52R1hg1V.DeDxaQi', false, 'Bùi Thị',       'Hương',      2, 'buithih@stttt.laocai.gov.vn',   '02093801008', '0912000008'),
+  (9,  9, 5, 6, 'vuthik',      '$2b$10$xupDqmYXFYRiLmPdbB5N3uJPMdIG3Qz2xj.DN52R1hg1V.DeDxaQi', false, 'Vũ Thị',        'Kim',        2, 'vuthik@vpubnd.laocai.gov.vn',   '02093801009', '0912000009'),
+  (10, 10,2, 4, 'dothil',      '$2b$10$xupDqmYXFYRiLmPdbB5N3uJPMdIG3Qz2xj.DN52R1hg1V.DeDxaQi', false, 'Đỗ Thị',        'Lan',        2, 'dothil@snv.laocai.gov.vn',      '02093801010', '0912000010');
 
 -- ---- Roles ----
 INSERT INTO public.roles (id, unit_id, name, description) VALUES
@@ -564,62 +564,62 @@ INSERT INTO edoc.notification_preferences (staff_id, channel, is_enabled) VALUES
 -- ============ SEQUENCE RESETS ============
 -- Reset all sequences to max(id) + 1
 
-SELECT setval('public.positions_id_seq',          (SELECT COALESCE(MAX(id), 0) FROM public.positions));
-SELECT setval('public.departments_id_seq',        (SELECT COALESCE(MAX(id), 0) FROM public.departments));
-SELECT setval('public.staff_id_seq',              (SELECT COALESCE(MAX(id), 0) FROM public.staff));
-SELECT setval('public.roles_id_seq',              (SELECT COALESCE(MAX(id), 0) FROM public.roles));
-SELECT setval('public.rights_id_seq',             (SELECT COALESCE(MAX(id), 0) FROM public.rights));
-SELECT setval('public.action_of_role_id_seq',     (SELECT COALESCE(MAX(id), 0) FROM public.action_of_role));
-SELECT setval('public.role_of_staff_id_seq',      (SELECT COALESCE(MAX(id), 0) FROM public.role_of_staff));
-SELECT setval('public.calendar_events_id_seq',    (SELECT COALESCE(MAX(id), 0) FROM public.calendar_events));
-SELECT setval('public.configurations_id_seq',     (SELECT COALESCE(MAX(id), 0) FROM public.configurations));
-SELECT setval('public.work_calendar_id_seq',      (SELECT COALESCE(MAX(id), 0) FROM public.work_calendar));
+SELECT setval('public.positions_id_seq',          (SELECT COALESCE(MAX(id), 1) FROM public.positions));
+SELECT setval('public.departments_id_seq',        (SELECT COALESCE(MAX(id), 1) FROM public.departments));
+SELECT setval('public.staff_id_seq',              (SELECT COALESCE(MAX(id), 1) FROM public.staff));
+SELECT setval('public.roles_id_seq',              (SELECT COALESCE(MAX(id), 1) FROM public.roles));
+SELECT setval('public.rights_id_seq',             (SELECT COALESCE(MAX(id), 1) FROM public.rights));
+SELECT setval('public.action_of_role_id_seq',     (SELECT COALESCE(MAX(id), 1) FROM public.action_of_role));
+SELECT setval('public.role_of_staff_id_seq',      (SELECT COALESCE(MAX(id), 1) FROM public.role_of_staff));
+SELECT setval('public.calendar_events_id_seq',    (SELECT COALESCE(MAX(id), 1) FROM public.calendar_events));
+SELECT setval('public.configurations_id_seq',     (SELECT COALESCE(MAX(id), 1) FROM public.configurations));
+SELECT setval('public.work_calendar_id_seq',      (SELECT COALESCE(MAX(id), 1) FROM public.work_calendar));
 
-SELECT setval('edoc.doc_types_id_seq',            (SELECT COALESCE(MAX(id), 0) FROM edoc.doc_types));
-SELECT setval('edoc.doc_fields_id_seq',           (SELECT COALESCE(MAX(id), 0) FROM edoc.doc_fields));
-SELECT setval('edoc.doc_books_id_seq',            (SELECT COALESCE(MAX(id), 0) FROM edoc.doc_books));
-SELECT setval('edoc.signers_id_seq',              (SELECT COALESCE(MAX(id), 0) FROM edoc.signers));
-SELECT setval('edoc.work_groups_id_seq',          (SELECT COALESCE(MAX(id), 0) FROM edoc.work_groups));
-SELECT setval('edoc.work_group_members_id_seq',   (SELECT COALESCE(MAX(id), 0) FROM edoc.work_group_members));
-SELECT setval('edoc.delegations_id_seq',          (SELECT COALESCE(MAX(id), 0) FROM edoc.delegations));
-SELECT setval('edoc.organizations_id_seq',        (SELECT COALESCE(MAX(id), 0) FROM edoc.organizations));
+SELECT setval('edoc.doc_types_id_seq',            (SELECT COALESCE(MAX(id), 1) FROM edoc.doc_types));
+SELECT setval('edoc.doc_fields_id_seq',           (SELECT COALESCE(MAX(id), 1) FROM edoc.doc_fields));
+SELECT setval('edoc.doc_books_id_seq',            (SELECT COALESCE(MAX(id), 1) FROM edoc.doc_books));
+SELECT setval('edoc.signers_id_seq',              (SELECT COALESCE(MAX(id), 1) FROM edoc.signers));
+SELECT setval('edoc.work_groups_id_seq',          (SELECT COALESCE(MAX(id), 1) FROM edoc.work_groups));
+SELECT setval('edoc.work_group_members_id_seq',   (SELECT COALESCE(MAX(id), 1) FROM edoc.work_group_members));
+SELECT setval('edoc.delegations_id_seq',          (SELECT COALESCE(MAX(id), 1) FROM edoc.delegations));
+SELECT setval('edoc.organizations_id_seq',        (SELECT COALESCE(MAX(id), 1) FROM edoc.organizations));
 
-SELECT setval('edoc.incoming_docs_id_seq',        (SELECT COALESCE(MAX(id), 0) FROM edoc.incoming_docs));
-SELECT setval('edoc.user_incoming_docs_id_seq',   (SELECT COALESCE(MAX(id), 0) FROM edoc.user_incoming_docs));
-SELECT setval('edoc.leader_notes_id_seq',         (SELECT COALESCE(MAX(id), 0) FROM edoc.leader_notes));
-SELECT setval('edoc.drafting_docs_id_seq',        (SELECT COALESCE(MAX(id), 0) FROM edoc.drafting_docs));
-SELECT setval('edoc.outgoing_docs_id_seq',        (SELECT COALESCE(MAX(id), 0) FROM edoc.outgoing_docs));
-SELECT setval('edoc.handling_docs_id_seq',        (SELECT COALESCE(MAX(id), 0) FROM edoc.handling_docs));
-SELECT setval('edoc.handling_doc_links_id_seq',   (SELECT COALESCE(MAX(id), 0) FROM edoc.handling_doc_links));
-SELECT setval('edoc.staff_handling_docs_id_seq',  (SELECT COALESCE(MAX(id), 0) FROM edoc.staff_handling_docs));
-SELECT setval('edoc.opinion_handling_docs_id_seq', (SELECT COALESCE(MAX(id), 0) FROM edoc.opinion_handling_docs));
-SELECT setval('edoc.inter_incoming_docs_id_seq',  (SELECT COALESCE(MAX(id), 0) FROM edoc.inter_incoming_docs));
-SELECT setval('edoc.messages_id_seq',             (SELECT COALESCE(MAX(id), 0) FROM edoc.messages));
-SELECT setval('edoc.message_recipients_id_seq',   (SELECT COALESCE(MAX(id), 0) FROM edoc.message_recipients));
-SELECT setval('edoc.notices_id_seq',              (SELECT COALESCE(MAX(id), 0) FROM edoc.notices));
-SELECT setval('edoc.rooms_id_seq',                (SELECT COALESCE(MAX(id), 0) FROM edoc.rooms));
-SELECT setval('edoc.meeting_types_id_seq',        (SELECT COALESCE(MAX(id), 0) FROM edoc.meeting_types));
-SELECT setval('edoc.room_schedules_id_seq',       (SELECT COALESCE(MAX(id), 0) FROM edoc.room_schedules));
-SELECT setval('edoc.room_schedule_staff_id_seq',  (SELECT COALESCE(MAX(id), 0) FROM edoc.room_schedule_staff));
+SELECT setval('edoc.incoming_docs_id_seq',        (SELECT COALESCE(MAX(id), 1) FROM edoc.incoming_docs));
+SELECT setval('edoc.user_incoming_docs_id_seq',   (SELECT COALESCE(MAX(id), 1) FROM edoc.user_incoming_docs));
+SELECT setval('edoc.leader_notes_id_seq',         (SELECT COALESCE(MAX(id), 1) FROM edoc.leader_notes));
+SELECT setval('edoc.drafting_docs_id_seq',        (SELECT COALESCE(MAX(id), 1) FROM edoc.drafting_docs));
+SELECT setval('edoc.outgoing_docs_id_seq',        (SELECT COALESCE(MAX(id), 1) FROM edoc.outgoing_docs));
+SELECT setval('edoc.handling_docs_id_seq',        (SELECT COALESCE(MAX(id), 1) FROM edoc.handling_docs));
+SELECT setval('edoc.handling_doc_links_id_seq',   (SELECT COALESCE(MAX(id), 1) FROM edoc.handling_doc_links));
+SELECT setval('edoc.staff_handling_docs_id_seq',  (SELECT COALESCE(MAX(id), 1) FROM edoc.staff_handling_docs));
+SELECT setval('edoc.opinion_handling_docs_id_seq', (SELECT COALESCE(MAX(id), 1) FROM edoc.opinion_handling_docs));
+SELECT setval('edoc.inter_incoming_docs_id_seq',  (SELECT COALESCE(MAX(id), 1) FROM edoc.inter_incoming_docs));
+SELECT setval('edoc.messages_id_seq',             (SELECT COALESCE(MAX(id), 1) FROM edoc.messages));
+SELECT setval('edoc.message_recipients_id_seq',   (SELECT COALESCE(MAX(id), 1) FROM edoc.message_recipients));
+SELECT setval('edoc.notices_id_seq',              (SELECT COALESCE(MAX(id), 1) FROM edoc.notices));
+SELECT setval('edoc.rooms_id_seq',                (SELECT COALESCE(MAX(id), 1) FROM edoc.rooms));
+SELECT setval('edoc.meeting_types_id_seq',        (SELECT COALESCE(MAX(id), 1) FROM edoc.meeting_types));
+SELECT setval('edoc.room_schedules_id_seq',       (SELECT COALESCE(MAX(id), 1) FROM edoc.room_schedules));
+SELECT setval('edoc.room_schedule_staff_id_seq',  (SELECT COALESCE(MAX(id), 1) FROM edoc.room_schedule_staff));
 
-SELECT setval('esto.warehouses_id_seq',           (SELECT COALESCE(MAX(id), 0) FROM esto.warehouses));
-SELECT setval('esto.fonds_id_seq',                (SELECT COALESCE(MAX(id), 0) FROM esto.fonds));
-SELECT setval('esto.records_id_seq',              (SELECT COALESCE(MAX(id), 0) FROM esto.records));
-SELECT setval('esto.borrow_requests_id_seq',      (SELECT COALESCE(MAX(id), 0) FROM esto.borrow_requests));
-SELECT setval('esto.borrow_request_records_id_seq', (SELECT COALESCE(MAX(id), 0) FROM esto.borrow_request_records));
+SELECT setval('esto.warehouses_id_seq',           (SELECT COALESCE(MAX(id), 1) FROM esto.warehouses));
+SELECT setval('esto.fonds_id_seq',                (SELECT COALESCE(MAX(id), 1) FROM esto.fonds));
+SELECT setval('esto.records_id_seq',              (SELECT COALESCE(MAX(id), 1) FROM esto.records));
+SELECT setval('esto.borrow_requests_id_seq',      (SELECT COALESCE(MAX(id), 1) FROM esto.borrow_requests));
+SELECT setval('esto.borrow_request_records_id_seq', (SELECT COALESCE(MAX(id), 1) FROM esto.borrow_request_records));
 
-SELECT setval('iso.document_categories_id_seq',   (SELECT COALESCE(MAX(id), 0) FROM iso.document_categories));
-SELECT setval('iso.documents_id_seq',             (SELECT COALESCE(MAX(id), 0) FROM iso.documents));
+SELECT setval('iso.document_categories_id_seq',   (SELECT COALESCE(MAX(id), 1) FROM iso.document_categories));
+SELECT setval('iso.documents_id_seq',             (SELECT COALESCE(MAX(id), 1) FROM iso.documents));
 
-SELECT setval('cont.contract_types_id_seq',       (SELECT COALESCE(MAX(id), 0) FROM cont.contract_types));
-SELECT setval('cont.contracts_id_seq',            (SELECT COALESCE(MAX(id), 0) FROM cont.contracts));
+SELECT setval('cont.contract_types_id_seq',       (SELECT COALESCE(MAX(id), 1) FROM cont.contract_types));
+SELECT setval('cont.contracts_id_seq',            (SELECT COALESCE(MAX(id), 1) FROM cont.contracts));
 
-SELECT setval('edoc.lgsp_organizations_id_seq',   (SELECT COALESCE(MAX(id), 0) FROM edoc.lgsp_organizations));
-SELECT setval('edoc.lgsp_tracking_id_seq',        (SELECT COALESCE(MAX(id), 0) FROM edoc.lgsp_tracking));
-SELECT setval('edoc.digital_signatures_id_seq',   (SELECT COALESCE(MAX(id), 0) FROM edoc.digital_signatures));
-SELECT setval('edoc.device_tokens_id_seq',        (SELECT COALESCE(MAX(id), 0) FROM edoc.device_tokens));
-SELECT setval('edoc.notification_logs_id_seq',    (SELECT COALESCE(MAX(id), 0) FROM edoc.notification_logs));
-SELECT setval('edoc.notification_preferences_id_seq', (SELECT COALESCE(MAX(id), 0) FROM edoc.notification_preferences));
+SELECT setval('edoc.lgsp_organizations_id_seq',   (SELECT COALESCE(MAX(id), 1) FROM edoc.lgsp_organizations));
+SELECT setval('edoc.lgsp_tracking_id_seq',        (SELECT COALESCE(MAX(id), 1) FROM edoc.lgsp_tracking));
+SELECT setval('edoc.digital_signatures_id_seq',   (SELECT COALESCE(MAX(id), 1) FROM edoc.digital_signatures));
+SELECT setval('edoc.device_tokens_id_seq',        (SELECT COALESCE(MAX(id), 1) FROM edoc.device_tokens));
+SELECT setval('edoc.notification_logs_id_seq',    (SELECT COALESCE(MAX(id), 1) FROM edoc.notification_logs));
+SELECT setval('edoc.notification_preferences_id_seq', (SELECT COALESCE(MAX(id), 1) FROM edoc.notification_preferences));
 
 -- ============ VERIFY COUNTS ============
 SELECT 'POSITIONS:       ' || count(*) FROM public.positions;
