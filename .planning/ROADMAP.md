@@ -13,7 +13,7 @@ Rebuild hệ thống quản lý văn bản điện tử (.NET cũ) thành stack 
 - [x] **Phase 1: Stabilize Sprint 0-4** - Fix visible bugs, refactor shared patterns, đảm bảo golden path chạy mượt (completed 2026-04-14)
 - [x] **Phase 2: Hồ sơ công việc** - Module HSCV hoàn chỉnh: danh sách, CRUD, workflow, báo cáo (completed 2026-04-14)
 - [x] **Phase 3: Liên thông & Tin nhắn** - Văn bản liên thông, giao việc từ VB, tin nhắn nội bộ & thông báo realtime (completed 2026-04-14)
-- [ ] **Phase 4: Lịch, Danh bạ & Dashboard** - Lịch 3 loại, danh bạ, dashboard hoàn thiện với widget thật
+- [x] **Phase 4: Lịch, Danh bạ & Dashboard** - Lịch 3 loại, danh bạ, dashboard hoàn thiện với widget thật (completed 2026-04-14)
 - [ ] **Phase 5: Kho lưu trữ, Tài liệu & Họp** - Kho/Phông, tài liệu/hợp đồng, họp không giấy
 - [ ] **Phase 6: Tích hợp hệ thống ngoài** - LGSP liên thông, ký số điện tử, thông báo đa kênh
 - [ ] **Phase 7: Polish & Redirect** - Sidebar dynamic, responsive, skeleton, redirect trang đối tác
@@ -87,9 +87,9 @@ Plans:
 **Plans**: 4 plans
 Plans:
 - [x] 04-01-PLAN.md — Database: Sprint 9+10 migration (calendar_events table + calendar SPs + dashboard stats SPs)
-- [ ] 04-02-PLAN.md — Backend: Calendar + Directory + Dashboard repositories and routes, server.ts mount
-- [ ] 04-03-PLAN.md — Frontend: Dashboard rewrite with real KPI cards + 3 data widgets + react-grid-layout drag-drop
-- [ ] 04-04-PLAN.md — Frontend: Calendar 3 pages (cá nhân/cơ quan/lãnh đạo) + Danh bạ + sidebar nav update + checkpoint
+- [x] 04-02-PLAN.md — Backend: Calendar + Directory + Dashboard repositories and routes, server.ts mount
+- [x] 04-03-PLAN.md — Frontend: Dashboard rewrite with real KPI cards + 3 data widgets + react-grid-layout drag-drop
+- [x] 04-04-PLAN.md — Frontend: Calendar 3 pages (cá nhân/cơ quan/lãnh đạo) + Danh bạ + sidebar nav update + checkpoint
 **UI hint**: yes
 
 ### Phase 5: Kho lưu trữ, Tài liệu & Họp
@@ -137,7 +137,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | 1. Stabilize Sprint 0-4 | 3/3 | Complete    | 2026-04-14 |
 | 2. Hồ sơ công việc | 8/8 | Complete    | 2026-04-14 |
 | 3. Liên thông & Tin nhắn | 5/5 | Complete    | 2026-04-14 |
-| 4. Lịch, Danh bạ & Dashboard | 1/4 | In Progress|  |
+| 4. Lịch, Danh bạ & Dashboard | 4/4 | Complete    | 2026-04-14 |
 | 5. Kho lưu trữ, Tài liệu & Họp | 0/TBD | Not started | - |
 | 6. Tích hợp hệ thống ngoài | 0/TBD | Not started | - |
 | 7. Polish & Redirect | 0/TBD | Not started | - |
