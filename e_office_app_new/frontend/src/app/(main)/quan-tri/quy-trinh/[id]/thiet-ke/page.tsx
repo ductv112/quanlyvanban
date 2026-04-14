@@ -56,7 +56,17 @@ function StartNode({ data, selected }: NodeProps) {
   );
 }
 
-function ProcessNode({ data, selected }: NodeProps) {
+interface ProcessNodeData {
+  label?: string;
+  step_type?: string;
+  allow_sign?: boolean;
+  deadline_days?: number;
+  step_order?: number;
+  [key: string]: unknown;
+}
+
+function ProcessNode({ data: rawData, selected }: NodeProps) {
+  const data = rawData as ProcessNodeData;
   const [hovered, setHovered] = useState(false);
   return (
     <div

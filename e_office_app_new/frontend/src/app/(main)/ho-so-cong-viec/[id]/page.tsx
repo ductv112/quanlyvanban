@@ -8,7 +8,19 @@ import {
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { DataNode } from 'antd/es/tree';
-import type { UploadRequestOption } from 'rc-upload/lib/interface';
+// UploadRequestOption type inline (rc-upload not directly available)
+type UploadRequestOption = {
+  file: File | Blob | string;
+  onSuccess?: (body: unknown, xhr?: XMLHttpRequest) => void;
+  onError?: (error: Error, body?: unknown) => void;
+  onProgress?: (event: { percent: number }) => void;
+  data?: Record<string, unknown>;
+  filename?: string;
+  headers?: Record<string, string>;
+  withCredentials?: boolean;
+  action?: string;
+  method?: string;
+};
 import {
   ArrowLeftOutlined, FolderOutlined, FileTextOutlined, TeamOutlined,
   CommentOutlined, PaperClipOutlined, ApartmentOutlined, SaveOutlined,
