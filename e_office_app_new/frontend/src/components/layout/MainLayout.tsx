@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Layout, Menu, Avatar, Dropdown, Badge, Breadcrumb, Skeleton, App } from 'antd';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Layout, Menu, Avatar, Dropdown, Badge, Breadcrumb, Skeleton, App, Button, List, Typography } from 'antd';
 import type { MenuProps } from 'antd';
 import {
   DashboardOutlined,
@@ -38,8 +38,11 @@ import {
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthStore } from '@/stores/auth.store';
+import { api } from '@/lib/api';
+import { initSocket, disconnectSocket, SOCKET_EVENTS } from '@/lib/socket';
 
 const { Header, Sider, Content } = Layout;
+const { Text } = Typography;
 
 type MenuItem = Required<MenuProps>['items'][number];
 
@@ -57,6 +60,7 @@ const menuItems: MenuItem[] = [
       { key: '/van-ban-den', icon: <InboxOutlined />, label: 'Văn bản đến' },
       { key: '/van-ban-di', icon: <SendOutlined />, label: 'Văn bản đi' },
       { key: '/van-ban-du-thao', icon: <EditOutlined />, label: 'Văn bản dự thảo' },
+      { key: '/van-ban-lien-thong', icon: <SwapOutlined />, label: 'Văn bản liên thông' },
       { key: '/van-ban-danh-dau', icon: <StarOutlined />, label: 'Đánh dấu cá nhân' },
     ],
   },
@@ -64,6 +68,16 @@ const menuItems: MenuItem[] = [
     key: '/ho-so-cong-viec',
     icon: <FolderOpenOutlined />,
     label: 'Hồ sơ công việc',
+  },
+  {
+    key: '/tin-nhan',
+    icon: <MailOutlined />,
+    label: 'Tin nhắn',
+  },
+  {
+    key: '/thong-bao',
+    icon: <BellOutlined />,
+    label: 'Thông báo',
   },
   {
     type: 'divider',
@@ -108,7 +122,10 @@ const breadcrumbMap: Record<string, string> = {
   '/van-ban-danh-dau': 'Đánh dấu cá nhân',
   '/van-ban-di': 'Văn bản đi',
   '/van-ban-du-thao': 'Văn bản dự thảo',
+  '/van-ban-lien-thong': 'Văn bản liên thông',
   '/ho-so-cong-viec': 'Hồ sơ công việc',
+  '/tin-nhan': 'Tin nhắn',
+  '/thong-bao': 'Thông báo',
   '/quan-tri': 'Quản trị',
   '/quan-tri/don-vi': 'Đơn vị',
   '/quan-tri/chuc-vu': 'Chức vụ',
@@ -175,18 +192,104 @@ function getOpenKeys(pathname: string): string[] {
   return [];
 }
 
+// ─── Notification item type ──────────────────────────────────────────────────
+
+interface NotifItem {
+  id: number;
+  title: string;
+  content: string;
+  is_read: boolean;
+  created_at: string;
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
+
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
   const { user, isLoading, fetchMe, logout } = useAuthStore();
-  const { modal } = App.useApp();
+  const { modal, message } = App.useApp();
+
+  // Bell notification state
+  const [notifItems, setNotifItems] = useState<NotifItem[]>([]);
+  const [notifUnreadCount, setNotifUnreadCount] = useState(0);
+  const [bellOpen, setBellOpen] = useState(false);
 
   useEffect(() => {
     if (!user) {
       fetchMe();
     }
   }, [user, fetchMe]);
+
+  // Fetch unread count on mount
+  useEffect(() => {
+    const fetchUnreadCount = async () => {
+      try {
+        const { data: res } = await api.get('/thong-bao/unread-count');
+        setNotifUnreadCount(res.data?.count ?? res.data ?? 0);
+      } catch {
+        // Silent
+      }
+    };
+    fetchUnreadCount();
+  }, []);
+
+  // Socket.IO integration
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const token = localStorage.getItem('accessToken');
+    if (!token) return;
+
+    const socket = initSocket(token);
+
+    socket.on(SOCKET_EVENTS.NEW_MESSAGE, () => {
+      message.info('Bạn có tin nhắn mới');
+    });
+
+    socket.on(SOCKET_EVENTS.NEW_NOTIFICATION, (data: { title?: string }) => {
+      message.info(data?.title || 'Thông báo mới');
+      setNotifUnreadCount((prev) => prev + 1);
+    });
+
+    socket.on(SOCKET_EVENTS.NEW_DOCUMENT, () => {
+      message.info('Có văn bản mới cần xử lý');
+      setNotifUnreadCount((prev) => prev + 1);
+    });
+
+    return () => {
+      disconnectSocket();
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Fetch notifications on bell click
+  const handleBellOpenChange = useCallback(async (open: boolean) => {
+    setBellOpen(open);
+    if (open) {
+      try {
+        const { data: res } = await api.get('/thong-bao', {
+          params: { page: 1, page_size: 10 },
+        });
+        const list: NotifItem[] = res.data?.list || res.data || [];
+        setNotifItems(list);
+      } catch {
+        // Silent
+      }
+    }
+  }, []);
+
+  // Mark all read from bell dropdown
+  const handleBellMarkAllRead = async () => {
+    try {
+      await api.patch('/thong-bao/mark-all-read');
+      setNotifUnreadCount(0);
+      setNotifItems((prev) => prev.map((n) => ({ ...n, is_read: true })));
+      message.success('Đã đánh dấu tất cả là đã đọc');
+    } catch {
+      // Silent
+    }
+  };
 
   const handleMenuClick: MenuProps['onClick'] = ({ key }) => {
     router.push(key);
@@ -230,6 +333,90 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       </div>
     );
   }
+
+  // Bell dropdown overlay content
+  const bellDropdownContent = (
+    <div className="notif-bell-overlay">
+      {/* Header */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: '12px 16px',
+        borderBottom: '1px solid #F1F5F9',
+      }}>
+        <Text style={{ fontSize: 16, fontWeight: 600, color: '#1B3A5C' }}>Thông báo</Text>
+        <Button
+          type="link"
+          size="small"
+          style={{ fontSize: 12, color: '#0891B2', padding: 0 }}
+          onClick={handleBellMarkAllRead}
+        >
+          Đánh dấu tất cả đã đọc
+        </Button>
+      </div>
+
+      {/* Notification items */}
+      <List
+        dataSource={notifItems}
+        locale={{ emptyText: <div style={{ padding: '16px', textAlign: 'center', color: '#94A3B8', fontSize: 13 }}>Không có thông báo</div> }}
+        renderItem={(item) => (
+          <div
+            className={`notif-item${!item.is_read ? ' unread' : ''}`}
+            onClick={() => router.push('/thong-bao')}
+            style={{ cursor: 'pointer' }}
+          >
+            <div style={{
+              width: 28,
+              height: 28,
+              borderRadius: '50%',
+              background: '#EFF8FF',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}>
+              <BellOutlined style={{ color: '#0891B2', fontSize: 12 }} />
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{
+                fontSize: 13,
+                fontWeight: !item.is_read ? 600 : 400,
+                color: '#1B3A5C',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}>
+                {item.title}
+              </div>
+              <div style={{ fontSize: 12, color: '#94A3B8', marginTop: 2 }}>
+                {new Date(item.created_at).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+              </div>
+            </div>
+          </div>
+        )}
+      />
+
+      {/* Footer link */}
+      <div style={{
+        padding: '10px 16px',
+        borderTop: '1px solid #F1F5F9',
+        textAlign: 'center',
+      }}>
+        <Button
+          type="link"
+          size="small"
+          style={{ fontSize: 13, color: '#0891B2' }}
+          onClick={() => {
+            setBellOpen(false);
+            router.push('/thong-bao');
+          }}
+        >
+          Xem tất cả thông báo
+        </Button>
+      </div>
+    </div>
+  );
 
   return (
     <Layout className="main-layout">
@@ -287,12 +474,21 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
           </div>
 
           <div className="main-header-right">
-            <Badge count={3} size="small">
-              <BellOutlined
-                className="main-header-icon"
-                onClick={() => {/* TODO: notification drawer */}}
-              />
-            </Badge>
+            {/* Bell icon with dropdown */}
+            <Dropdown
+              open={bellOpen}
+              onOpenChange={handleBellOpenChange}
+              placement="bottomRight"
+              trigger={['click']}
+              dropdownRender={() => bellDropdownContent}
+            >
+              <Badge count={notifUnreadCount} size="small" overflowCount={99}>
+                <BellOutlined
+                  className="main-header-icon"
+                  style={{ cursor: 'pointer' }}
+                />
+              </Badge>
+            </Dropdown>
 
             <Dropdown menu={{ items: userMenuItems }} placement="bottomRight" trigger={['click']}>
               <div className="main-user-dropdown">
