@@ -211,7 +211,25 @@ router.get('/thong-ke', async (req: Request, res: Response) => {
     const { unitId } = (req as AuthRequest).user;
     const year = req.query.year ? Number(req.query.year) : new Date().getFullYear();
     const rows = await meetingRepository.getMeetingStats(unitId, year);
-    res.json({ success: true, data: rows });
+
+    // Transform flat rows (with stat_type discriminator) into grouped response
+    const byMonth = rows.filter((r: any) => r.stat_type === 'by_month');
+    const byRoom = rows.filter((r: any) => r.stat_type === 'by_room');
+    const byType = rows.filter((r: any) => r.stat_type === 'by_meeting_type');
+    const summary = rows.find((r: any) => r.stat_type === 'summary') as any;
+
+    res.json({
+      success: true,
+      data: {
+        by_month: byMonth,
+        by_room: byRoom,
+        by_type: byType,
+        total: summary?.total || 0,
+        approved: summary?.approved || 0,
+        pending: summary?.pending || 0,
+        rejected: summary?.rejected || 0,
+      },
+    });
   } catch (error) {
     handleDbError(error, res);
   }
@@ -418,6 +436,44 @@ router.patch('/:id/reject', async (req: Request, res: Response) => {
   }
 });
 
+// PATCH /:id/bat-dau-hop — Bắt đầu cuộc họp
+router.patch('/:id/bat-dau-hop', async (req: Request, res: Response) => {
+  try {
+    const id = Number(req.params.id);
+    const { rawQuery } = await import('../lib/db/query.js');
+    const rows = await rawQuery(
+      `UPDATE edoc.room_schedules SET meeting_status = 3, modified_date = NOW() WHERE id = $1 RETURNING id`,
+      [id],
+    );
+    if (!rows || rows.length === 0) {
+      res.status(404).json({ success: false, message: 'Không tìm thấy cuộc họp' });
+      return;
+    }
+    res.json({ success: true, message: 'Bắt đầu cuộc họp thành công' });
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
+
+// PATCH /:id/ket-thuc-hop — Kết thúc cuộc họp
+router.patch('/:id/ket-thuc-hop', async (req: Request, res: Response) => {
+  try {
+    const id = Number(req.params.id);
+    const { rawQuery } = await import('../lib/db/query.js');
+    const rows = await rawQuery(
+      `UPDATE edoc.room_schedules SET meeting_status = 4, modified_date = NOW() WHERE id = $1 RETURNING id`,
+      [id],
+    );
+    if (!rows || rows.length === 0) {
+      res.status(404).json({ success: false, message: 'Không tìm thấy cuộc họp' });
+      return;
+    }
+    res.json({ success: true, message: 'Kết thúc cuộc họp thành công' });
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
+
 // ============================================================
 // THÀNH VIÊN HỌP (STAFF)
 // ============================================================
@@ -483,6 +539,59 @@ router.delete('/:id/thanh-vien/:staffId', async (req: Request, res: Response) =>
 // ============================================================
 // TÀI LIỆU HỌP (ATTACHMENTS)
 // ============================================================
+
+// GET /:id/tai-lieu — Danh sách tài liệu cuộc họp
+router.get('/:id/tai-lieu', async (req: Request, res: Response) => {
+  try {
+    const scheduleId = Number(req.params.id);
+    const { rawQuery } = await import('../lib/db/query.js');
+    const rows = await rawQuery(
+      `SELECT id, file_name, file_path, file_size, mime_type, created_user_id, created_date
+       FROM edoc.room_schedule_attachments
+       WHERE room_schedule_id = $1
+       ORDER BY created_date DESC`,
+      [scheduleId],
+    );
+    res.json({ success: true, data: rows });
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
+
+// DELETE /:id/tai-lieu/:attachmentId — Xóa tài liệu cuộc họp
+router.delete('/:id/tai-lieu/:attachmentId', async (req: Request, res: Response) => {
+  try {
+    const attachmentId = Number(req.params.attachmentId);
+    const { rawQuery } = await import('../lib/db/query.js');
+
+    // Get file_path before deleting to clean up MinIO
+    const existing = await rawQuery<{ file_path: string }>(
+      `SELECT file_path FROM edoc.room_schedule_attachments WHERE id = $1`,
+      [attachmentId],
+    );
+
+    if (!existing || existing.length === 0) {
+      res.status(404).json({ success: false, message: 'Không tìm thấy tài liệu' });
+      return;
+    }
+
+    await rawQuery(`DELETE FROM edoc.room_schedule_attachments WHERE id = $1`, [attachmentId]);
+
+    // Attempt to remove from MinIO (non-blocking)
+    if (existing[0].file_path) {
+      try {
+        const { deleteFile } = await import('../lib/minio/client.js');
+        await deleteFile(existing[0].file_path);
+      } catch {
+        // MinIO cleanup failure is non-critical
+      }
+    }
+
+    res.json({ success: true, message: 'Xóa thành công' });
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
 
 // POST /:id/tai-lieu — Tải lên tài liệu cuộc họp (D-05 pattern)
 router.post('/:id/tai-lieu', upload.single('file'), async (req: Request, res: Response) => {
