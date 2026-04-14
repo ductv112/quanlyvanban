@@ -108,7 +108,7 @@ export default function MuonTraPage() {
       if (keyword) params.keyword = keyword;
       const { data: res } = await api.get('/kho-luu-tru/muon-tra', { params });
       setData(res.data || []);
-      setTotal(res.pagination?.total || 0);
+      setTotal(res.total ?? res.pagination?.total ?? 0);
     } catch {
       message.error('Lỗi tải danh sách mượn/trả');
     } finally {
