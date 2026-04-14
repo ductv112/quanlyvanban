@@ -119,10 +119,10 @@ export default function LichLanhDaoPage() {
     if (info.type !== 'date') return info.originNode;
     const dayEvents = getEventsForDate(date);
     if (!dayEvents.length) return info.originNode;
-    return React.cloneElement(info.originNode, {},
-      <>
-        {info.originNode.props.children}
-        <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+    return (
+      <div className="ant-picker-cell-inner">
+        {date.date()}
+        <ul style={{ listStyle: 'none', padding: 0, margin: '4px 0 0' }}>
           {dayEvents.slice(0, 3).map((ev) => (
             <li key={ev.id}>
               <Badge
@@ -159,7 +159,7 @@ export default function LichLanhDaoPage() {
             </li>
           )}
         </ul>
-      </>
+      </div>
     );
   };
 
