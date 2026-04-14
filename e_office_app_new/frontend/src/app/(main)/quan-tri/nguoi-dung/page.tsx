@@ -590,23 +590,16 @@ export default function StaffPage() {
 
       {/* Drawer add/edit */}
       <Drawer
-        title={<span style={{ color: '#fff', fontWeight: 600 }}>{editingRecord ? `Sửa người dùng — ${editingRecord.code || ''}` : 'Thêm người dùng mới'}</span>}
+        title={editingRecord ? `Sửa người dùng — ${editingRecord.code || ''}` : 'Thêm người dùng mới'}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         destroyOnClose
-        styles={{
-          wrapper: { width: 720 },
-          header: {
-            background: 'linear-gradient(135deg, #1B3A5C 0%, #0891B2 100%)',
-            borderBottom: 'none',
-            padding: '16px 24px',
-          },
-          body: { padding: 24 },
-        }}
+        rootClassName="drawer-gradient"
+        width={720}
         extra={
           <Space>
-            <Button onClick={() => setDrawerOpen(false)} style={{ borderRadius: 8, borderColor: 'rgba(255,255,255,0.5)', color: '#fff' }} ghost>Hủy</Button>
-            <Button type="primary" loading={saving} onClick={handleSave} style={{ borderRadius: 8, background: '#fff', color: '#1B3A5C', borderColor: '#fff', fontWeight: 600 }}>
+            <Button onClick={() => setDrawerOpen(false)} ghost style={{ borderColor: 'rgba(255,255,255,0.6)', color: '#fff' }}>Hủy</Button>
+            <Button type="primary" loading={saving} onClick={handleSave}>
               {editingRecord ? 'Cập nhật' : 'Thêm mới'}
             </Button>
           </Space>
@@ -720,31 +713,18 @@ export default function StaffPage() {
 
       {/* Drawer phân quyền (gán nhóm quyền cho user) */}
       <Drawer
-        title={
-          <div style={{ color: '#fff' }}>
-            <span style={{ fontWeight: 400 }}>Phân quyền: </span>
-            <span style={{ fontWeight: 700, color: '#e0f2fe' }}>{roleStaff?.full_name}</span>
-          </div>
-        }
+        title={<>Phân quyền: <strong>{roleStaff?.full_name}</strong></>}
         open={roleDrawerOpen}
         onClose={() => setRoleDrawerOpen(false)}
         destroyOnClose
-        styles={{
-          wrapper: { width: 480 },
-          header: {
-            background: 'linear-gradient(135deg, #1B3A5C 0%, #0891B2 100%)',
-            borderBottom: 'none',
-            padding: '16px 24px',
-          },
-          body: { padding: 24 },
-        }}
+        rootClassName="drawer-gradient"
+        width={480}
         extra={
           <Button
             type="primary"
             icon={<SaveOutlined />}
             loading={roleSaving}
             onClick={handleSaveRoles}
-            style={{ borderRadius: 8, background: '#fff', color: '#1B3A5C', borderColor: '#fff', fontWeight: 600 }}
           >
             Lưu
           </Button>

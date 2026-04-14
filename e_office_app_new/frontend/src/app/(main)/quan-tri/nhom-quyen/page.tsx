@@ -310,23 +310,16 @@ export default function RolePage() {
 
       {/* Drawer add/edit */}
       <Drawer
-        title={<span style={{ color: '#fff', fontWeight: 600 }}>{editingRecord ? 'Cập nhật nhóm quyền' : 'Thêm nhóm quyền mới'}</span>}
+        title={editingRecord ? 'Cập nhật nhóm quyền' : 'Thêm nhóm quyền mới'}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         destroyOnClose
-        styles={{
-          wrapper: { width: 720 },
-          header: {
-            background: 'linear-gradient(135deg, #1B3A5C 0%, #0891B2 100%)',
-            borderBottom: 'none',
-            padding: '16px 24px',
-          },
-          body: { padding: 24 },
-        }}
+        rootClassName="drawer-gradient"
+        width={720}
         extra={
           <Space>
-            <Button onClick={() => setDrawerOpen(false)} style={{ borderRadius: 8, borderColor: 'rgba(255,255,255,0.5)', color: '#fff' }} ghost>Hủy</Button>
-            <Button type="primary" loading={saving} onClick={handleSave} style={{ borderRadius: 8, background: '#fff', color: '#1B3A5C', borderColor: '#fff', fontWeight: 600 }}>
+            <Button onClick={() => setDrawerOpen(false)} ghost style={{ borderColor: 'rgba(255,255,255,0.6)', color: '#fff' }}>Hủy</Button>
+            <Button type="primary" loading={saving} onClick={handleSave}>
               {editingRecord ? 'Cập nhật' : 'Thêm mới'}
             </Button>
           </Space>
@@ -344,31 +337,18 @@ export default function RolePage() {
 
       {/* Drawer permissions */}
       <Drawer
-        title={
-          <div>
-            <span style={{ color: '#fff' }}>Phân quyền: </span>
-            <span style={{ color: '#e0f2fe', fontWeight: 700 }}>{permRole?.name}</span>
-          </div>
-        }
+        title={<>Phân quyền: <strong>{permRole?.name}</strong></>}
         open={permDrawerOpen}
         onClose={() => setPermDrawerOpen(false)}
         destroyOnClose
-        styles={{
-          wrapper: { width: 720 },
-          header: {
-            background: 'linear-gradient(135deg, #1B3A5C 0%, #0891B2 100%)',
-            borderBottom: 'none',
-            padding: '16px 24px',
-          },
-          body: { padding: 24 },
-        }}
+        rootClassName="drawer-gradient"
+        width={720}
         extra={
           <Button
             type="primary"
             icon={<SaveOutlined />}
             loading={permSaving}
             onClick={handleSavePermissions}
-            style={{ borderRadius: 8, background: '#fff', color: '#1B3A5C', borderColor: '#fff', fontWeight: 600 }}
           >
             Lưu phân quyền
           </Button>
