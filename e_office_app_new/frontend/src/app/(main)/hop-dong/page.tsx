@@ -5,7 +5,7 @@ import {
   Card, Table, Button, Input, Space, Select, DatePicker, Drawer,
   Form, InputNumber, Tag, Modal, App, Row, Col, Dropdown, Upload,
   Divider, Typography,
-} from 'antd';
+Card, } from 'antd';
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
 import type { UploadFile, RcFile } from 'antd/es/upload/interface';
 import {
