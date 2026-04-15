@@ -801,7 +801,7 @@ export default function KhoLuuTruPage() {
         title={drawerTitle}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        destroyOnClose
+        destroyOnHidden
         rootClassName="drawer-gradient"
         size={720}
         extra={

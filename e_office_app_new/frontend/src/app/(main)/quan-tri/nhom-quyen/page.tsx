@@ -313,7 +313,7 @@ export default function RolePage() {
         title={editingRecord ? 'Cập nhật nhóm quyền' : 'Thêm nhóm quyền mới'}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        destroyOnClose
+        destroyOnHidden
         rootClassName="drawer-gradient"
         size={720}
         extra={
@@ -340,7 +340,7 @@ export default function RolePage() {
         title={<>Phân quyền: <strong>{permRole?.name}</strong></>}
         open={permDrawerOpen}
         onClose={() => setPermDrawerOpen(false)}
-        destroyOnClose
+        destroyOnHidden
         rootClassName="drawer-gradient"
         size={720}
         extra={

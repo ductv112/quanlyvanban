@@ -380,7 +380,7 @@ export default function SigningModal({
       onCancel={handleClose}
       footer={null}
       width={640}
-      destroyOnClose
+      destroyOnHidden
     >
       {loading && step === 'choose' ? (
         <div style={{ textAlign: 'center', padding: 40 }}>

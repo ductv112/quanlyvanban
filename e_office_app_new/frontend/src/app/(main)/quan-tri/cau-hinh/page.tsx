@@ -263,7 +263,7 @@ export default function ConfigPage() {
         title={editingRecord ? 'Cập nhật cấu hình' : 'Thêm cấu hình mới'}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        destroyOnClose
+        destroyOnHidden
         rootClassName="drawer-gradient"
         size={720}
         extra={

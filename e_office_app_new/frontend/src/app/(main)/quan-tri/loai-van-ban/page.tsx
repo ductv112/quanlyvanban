@@ -280,7 +280,7 @@ export default function DocTypePage() {
         title={editingRecord ? 'Cập nhật loại văn bản' : 'Thêm loại văn bản mới'}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        destroyOnClose
+        destroyOnHidden
         rootClassName="drawer-gradient"
         size={720}
         extra={

@@ -593,7 +593,7 @@ export default function StaffPage() {
         title={editingRecord ? `Sửa người dùng — ${editingRecord.code || ''}` : 'Thêm người dùng mới'}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        destroyOnClose
+        destroyOnHidden
         rootClassName="drawer-gradient"
         size={720}
         extra={
@@ -716,7 +716,7 @@ export default function StaffPage() {
         title={<>Phân quyền: <strong>{roleStaff?.full_name}</strong></>}
         open={roleDrawerOpen}
         onClose={() => setRoleDrawerOpen(false)}
-        destroyOnClose
+        destroyOnHidden
         rootClassName="drawer-gradient"
         size={480}
         extra={

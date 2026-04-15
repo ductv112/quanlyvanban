@@ -254,7 +254,7 @@ export default function DocFieldPage() {
         title={editingRecord ? 'Cập nhật lĩnh vực' : 'Thêm lĩnh vực mới'}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        destroyOnClose
+        destroyOnHidden
         rootClassName="drawer-gradient"
         size={720}
         extra={

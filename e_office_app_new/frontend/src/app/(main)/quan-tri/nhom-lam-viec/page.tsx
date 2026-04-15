@@ -412,7 +412,7 @@ export default function WorkGroupPage() {
         title={editingRecord ? 'Cập nhật nhóm làm việc' : 'Thêm nhóm làm việc mới'}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        destroyOnClose
+        destroyOnHidden
         rootClassName="drawer-gradient"
         size={720}
         extra={
@@ -448,7 +448,7 @@ export default function WorkGroupPage() {
         title={<>Quản lý thành viên — {currentGroup?.name}</>}
         open={memberDrawerOpen}
         onClose={() => setMemberDrawerOpen(false)}
-        destroyOnClose
+        destroyOnHidden
         rootClassName="drawer-gradient"
         size={720}
         extra={
@@ -481,7 +481,7 @@ export default function WorkGroupPage() {
         okText="Thêm"
         cancelText="Hủy"
         confirmLoading={addingMembers}
-        destroyOnClose
+        destroyOnHidden
       >
         <div style={{ marginBottom: 8, color: '#64748b', fontSize: 13 }}>
           Chọn nhân viên để thêm vào nhóm làm việc
