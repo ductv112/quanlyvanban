@@ -118,8 +118,8 @@ function buildMenuItems(badgeCounts: { vbDen: number; tinNhan: number; thongBao:
       icon: <DatabaseOutlined />,
       label: 'Kho lưu trữ',
       children: [
-        { key: '/kho-luu-tru', label: 'Danh mục kho/phông' },
-        { key: '/kho-luu-tru/muon-tra', label: 'Mượn/trả hồ sơ' },
+        { key: '/kho-luu-tru', icon: <DatabaseOutlined />, label: 'Danh mục kho/phông' },
+        { key: '/kho-luu-tru/muon-tra', icon: <SwapOutlined />, label: 'Mượn/trả hồ sơ' },
       ],
     },
     { key: '/tai-lieu', icon: <FileTextOutlined />, label: 'Tài liệu' },
@@ -129,8 +129,8 @@ function buildMenuItems(badgeCounts: { vbDen: number; tinNhan: number; thongBao:
       icon: <TeamOutlined />,
       label: 'Cuộc họp',
       children: [
-        { key: '/cuoc-hop', label: 'Danh sách cuộc họp' },
-        { key: '/cuoc-hop/thong-ke', label: 'Thống kê' },
+        { key: '/cuoc-hop', icon: <TeamOutlined />, label: 'Danh sách cuộc họp' },
+        { key: '/cuoc-hop/thong-ke', icon: <AppstoreOutlined />, label: 'Thống kê' },
       ],
     },
     // ── TÍCH HỢP ──

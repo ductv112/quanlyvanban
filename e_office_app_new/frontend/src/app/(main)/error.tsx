@@ -19,8 +19,8 @@ export default function MainError({
     }}>
       <Result
         status="error"
-        title="\u0110\u00e3 x\u1ea3y ra l\u1ed7i"
-        subTitle="R\u1ea5t ti\u1ebfc, \u0111\u00e3 c\u00f3 l\u1ed7i x\u1ea3y ra. Vui l\u00f2ng th\u1eed l\u1ea1i ho\u1eb7c li\u00ean h\u1ec7 qu\u1ea3n tr\u1ecb vi\u00ean."
+        title="Đã xảy ra lỗi"
+        subTitle="Rất tiếc, đã có lỗi xảy ra. Vui lòng thử lại hoặc liên hệ quản trị viên."
         extra={[
           <Button
             key="retry"
@@ -28,7 +28,7 @@ export default function MainError({
             icon={<ReloadOutlined />}
             onClick={() => reset()}
           >
-            Th\u1eed l\u1ea1i
+            Thử lại
           </Button>,
         ]}
       />
