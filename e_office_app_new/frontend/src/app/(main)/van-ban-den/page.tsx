@@ -101,19 +101,19 @@ export default function IncomingDocPage() {
   useEffect(() => { fetchDropdowns(); }, [fetchDropdowns]);
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  // Handle ?edit=ID from detail page "Sửa" button
+  // Handle ?edit=ID from detail page "Sửa" button (run once)
+  const [editHandled, setEditHandled] = useState(false);
   useEffect(() => {
     const editId = searchParams.get('edit');
-    if (editId && data.length > 0) {
+    if (editId && data.length > 0 && !editHandled) {
       const record = data.find((d) => String(d.id) === editId);
-      if (record) openDrawer(record);
+      if (record) { openDrawer(record); setEditHandled(true); }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams, data]);
+  }, [searchParams, data, editHandled]);
 
   const closeDrawer = () => {
     setDrawerOpen(false);
-    // Clear ?edit= from URL to prevent re-opening
     if (searchParams.get('edit')) router.replace(pathname);
   };
 
