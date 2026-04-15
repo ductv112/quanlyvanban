@@ -18,7 +18,7 @@ import { filterTree } from '@/lib/tree-utils';
 interface Signer {
   id: number;
   staff_id: number;
-  full_name: string;
+  staff_name: string;
   position_name: string;
   department_name: string;
 }
@@ -145,8 +145,8 @@ export default function SignerPage() {
   const columns: ColumnsType<Signer> = [
     {
       title: 'Họ tên',
-      dataIndex: 'full_name',
-      key: 'full_name',
+      dataIndex: 'staff_name',
+      key: 'staff_name',
       ellipsis: true,
       render: (v) => <span style={{ fontWeight: 600, color: '#1B3A5C' }}>{v}</span>,
     },
@@ -176,7 +176,7 @@ export default function SignerPage() {
           onClick={() => {
             Modal.confirm({
               title: 'Xác nhận xóa',
-              content: `Bạn có chắc chắn muốn xóa người ký "${record.full_name}"?`,
+              content: `Bạn có chắc chắn muốn xóa người ký "${record.staff_name}"?`,
               okText: 'Xóa',
               cancelText: 'Hủy',
               okButtonProps: { danger: true },
