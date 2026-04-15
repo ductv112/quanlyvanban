@@ -29,36 +29,32 @@ interface DashboardStats {
   handling_overdue: number;
 }
 
-// Matches fn_dashboard_recent_incoming returns: (id, number, notation, abstract, publish_unit, received_date, doc_type_name, urgent_id)
+// SP: fn_dashboard_recent_incoming returns: (id, doc_code, abstract, received_date, urgency_name, sender_name)
 interface RecentIncomingItem {
   id: number | string;
-  number: number;
-  notation: string;
+  doc_code: string;
   abstract: string;
-  publish_unit: string;
   received_date: string;
-  doc_type_name: string;
-  urgent_id: number;
+  urgency_name: string;
+  sender_name: string;
 }
 
-// Matches fn_dashboard_upcoming_tasks returns: (id, name, start_date, end_date, status, progress, curator_name)
+// SP: fn_dashboard_upcoming_tasks returns: (id, title, open_date, status, progress_percent, deadline)
 interface UpcomingTaskItem {
   id: number | string;
-  name: string;
-  start_date: string;
-  end_date: string;
+  title: string;
+  open_date: string;
   status: number;
-  progress: number;
-  curator_name: string;
+  progress_percent: number;
+  deadline: string;
 }
 
-// Matches fn_dashboard_recent_outgoing returns: (id, number, notation, abstract, publish_date, doc_type_name)
+// SP: fn_dashboard_recent_outgoing returns: (id, doc_code, abstract, sent_date, doc_type_name)
 interface RecentOutgoingItem {
   id: number | string;
-  number: number;
-  notation: string;
+  doc_code: string;
   abstract: string;
-  publish_date: string;
+  sent_date: string;
   doc_type_name: string;
 }
 
@@ -113,13 +109,11 @@ function IncomingWidget({ data, loading }: { data: RecentIncomingItem[]; loading
   const columns = [
     {
       title: 'Số/Ký hiệu',
-      dataIndex: 'notation',
-      key: 'notation',
-      width: 120,
-      render: (v: string, row: RecentIncomingItem) => (
-        <span style={{ fontWeight: 600, color: '#1B3A5C' }}>
-          {row.number ? `${row.number}` : ''}{v ? `/${v}` : v || '—'}
-        </span>
+      dataIndex: 'doc_code',
+      key: 'doc_code',
+      width: 140,
+      render: (v: string) => (
+        <span style={{ fontWeight: 600, color: '#1B3A5C' }}>{v || '—'}</span>
       ),
     },
     {
@@ -137,10 +131,10 @@ function IncomingWidget({ data, loading }: { data: RecentIncomingItem[]; loading
     },
     {
       title: 'Loại VB',
-      dataIndex: 'doc_type_name',
-      key: 'doc_type_name',
+      dataIndex: 'urgency_name',
+      key: 'urgency_name',
       width: 100,
-      render: (v: string) => v ? <Tag color="blue">{v}</Tag> : null,
+      render: (v: string) => v ? <Tag color={v === 'Hỏa tốc' ? 'red' : v === 'Khẩn' ? 'orange' : 'blue'}>{v}</Tag> : null,
     },
   ];
 
@@ -238,19 +232,19 @@ function TasksWidget({ data, loading }: { data: UpcomingTaskItem[]; loading: boo
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                 <span style={{ fontWeight: 600, fontSize: 13, color: '#1B3A5C', flex: 1, marginRight: 8 }}>
-                  {item.name}
+                  {item.title}
                 </span>
                 <Tag color={statusColor(item.status)} style={{ flexShrink: 0 }}>{{ 0: 'Mới', 1: 'Đang xử lý', 2: 'Chờ duyệt', 3: 'Đã duyệt', 4: 'Hoàn thành', [-1]: 'Từ chối', [-2]: 'Trả về' }[item.status as number] || 'Đang xử lý'}</Tag>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Progress
-                  percent={item.progress ?? 0}
+                  percent={item.progress_percent ?? 0}
                   size="small"
                   style={{ flex: 1, margin: 0 }}
                   strokeColor="#0891B2"
                 />
                 <span style={{ fontSize: 11, color: '#94a3b8', flexShrink: 0 }}>
-                  {item.end_date ? dayjs(item.end_date).format('DD/MM') : '—'}
+                  {item.deadline ? dayjs(item.deadline).format('DD/MM') : '—'}
                 </span>
               </div>
             </div>
@@ -269,13 +263,11 @@ function OutgoingWidget({ data, loading }: { data: RecentOutgoingItem[]; loading
   const columns = [
     {
       title: 'Số/Ký hiệu',
-      dataIndex: 'notation',
-      key: 'notation',
-      width: 120,
-      render: (v: string, row: RecentOutgoingItem) => (
-        <span style={{ fontWeight: 600, color: '#1B3A5C' }}>
-          {row.number ? `${row.number}` : ''}{v ? `/${v}` : v || '—'}
-        </span>
+      dataIndex: 'doc_code',
+      key: 'doc_code',
+      width: 140,
+      render: (v: string) => (
+        <span style={{ fontWeight: 600, color: '#1B3A5C' }}>{v || '—'}</span>
       ),
     },
     {
@@ -286,8 +278,8 @@ function OutgoingWidget({ data, loading }: { data: RecentOutgoingItem[]; loading
     },
     {
       title: 'Ngày ban hành',
-      dataIndex: 'publish_date',
-      key: 'publish_date',
+      dataIndex: 'sent_date',
+      key: 'sent_date',
       width: 110,
       render: (v: string) => v ? dayjs(v).format('DD/MM/YYYY') : '—',
     },

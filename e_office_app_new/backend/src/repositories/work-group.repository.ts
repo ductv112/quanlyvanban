@@ -11,12 +11,15 @@ export interface WorkGroupRow {
   created_at: string;
 }
 
+// SP: fn_work_group_get_members returns: (id, group_id, staff_id, staff_name, position_name, department_name, created_at)
 export interface WorkGroupMemberRow {
   id: number;
+  group_id: number;
   staff_id: number;
-  full_name: string;
+  staff_name: string;
   position_name: string;
   department_name: string;
+  created_at: string;
 }
 
 export const workGroupRepository = {

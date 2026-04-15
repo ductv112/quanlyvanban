@@ -24,14 +24,17 @@ const { TextArea } = Input;
 
 interface MessageItem {
   id: number;
-  from_staff_id: number;
-  from_staff_name: string;
+  from_staff_id?: number;
+  from_staff_name?: string;
   sender_id?: number;
   sender_name?: string;
+  recipient_names?: string;
   subject: string;
   content: string;
-  is_read: boolean;
+  is_read?: boolean;
   created_at: string;
+  parent_id?: number | null;
+  deleted_at?: string;
   to_staff_ids?: number[];
   to_names?: string[];
   replies?: ReplyItem[];
@@ -313,11 +316,11 @@ export default function TinNhanPage() {
                     size={32}
                     style={{ background: '#1B3A5C', flexShrink: 0, fontSize: 13 }}
                   >
-                    {(msg.from_staff_name || msg.sender_name)?.[0]?.toUpperCase() || 'N'}
+                    {(folder === 'sent' ? msg.recipient_names : (msg.from_staff_name || msg.sender_name))?.[0]?.toUpperCase() || 'N'}
                   </Avatar>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span className="mail-item-sender">{(msg.from_staff_name || msg.sender_name)}</span>
+                      <span className="mail-item-sender">{folder === 'sent' ? `Đến: ${msg.recipient_names || ''}` : (msg.from_staff_name || msg.sender_name)}</span>
                       <span className="mail-item-meta">
                         {dayjs(msg.created_at).fromNow()}
                       </span>
@@ -366,9 +369,9 @@ export default function TinNhanPage() {
               {/* Meta */}
               <div style={{ fontSize: 12, color: '#64748B', marginBottom: 16 }}>
                 <span>Từ: <strong>{(messageDetail.from_staff_name || messageDetail.sender_name)}</strong></span>
-                {messageDetail.to_names && messageDetail.to_names.length > 0 && (
+                {messageDetail.recipient_names && (
                   <span style={{ marginLeft: 16 }}>
-                    Đến: <strong>{messageDetail.to_names.join(', ')}</strong>
+                    Đến: <strong>{messageDetail.recipient_names}</strong>
                   </span>
                 )}
                 <span style={{ marginLeft: 16 }}>

@@ -69,7 +69,9 @@ function buildMenuItems(badgeCounts: { vbDen: number; tinNhan: number; thongBao:
         {
           key: '/van-ban-den',
           icon: <InboxOutlined />,
-          label: <Badge count={badgeCounts.vbDen} size="small" offset={[8, 0]}>Văn bản đến</Badge>,
+          label: badgeCounts.vbDen > 0
+            ? <span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>Văn bản đến<span className="sidebar-badge">{badgeCounts.vbDen}</span></span>
+            : 'Văn bản đến',
         },
         { key: '/van-ban-di', icon: <SendOutlined />, label: 'Văn bản đi' },
         { key: '/van-ban-du-thao', icon: <EditOutlined />, label: 'Văn bản dự thảo' },
@@ -85,12 +87,16 @@ function buildMenuItems(badgeCounts: { vbDen: number; tinNhan: number; thongBao:
     {
       key: '/tin-nhan',
       icon: <MailOutlined />,
-      label: <Badge count={badgeCounts.tinNhan} size="small" offset={[8, 0]}>Tin nhắn</Badge>,
+      label: badgeCounts.tinNhan > 0
+        ? <span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>Tin nhắn<span className="sidebar-badge">{badgeCounts.tinNhan}</span></span>
+        : 'Tin nhắn',
     },
     {
       key: '/thong-bao',
       icon: <BellOutlined />,
-      label: <Badge count={badgeCounts.thongBao} size="small" offset={[8, 0]}>Thông báo</Badge>,
+      label: badgeCounts.thongBao > 0
+        ? <span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>Thông báo<span className="sidebar-badge">{badgeCounts.thongBao}</span></span>
+        : 'Thông báo',
     },
     {
       key: 'lich',

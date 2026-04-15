@@ -24,7 +24,7 @@ interface WorkGroup {
 interface Member {
   id: number;
   staff_id: number;
-  full_name: string;
+  staff_name: string;
   position_name: string;
   department_name: string;
 }
@@ -302,8 +302,8 @@ export default function WorkGroupPage() {
   const memberColumns: ColumnsType<Member> = [
     {
       title: 'Họ tên',
-      dataIndex: 'full_name',
-      key: 'full_name',
+      dataIndex: 'staff_name',
+      key: 'staff_name',
       ellipsis: true,
       render: (v) => <span style={{ fontWeight: 600, color: '#1B3A5C' }}>{v}</span>,
     },
@@ -333,7 +333,7 @@ export default function WorkGroupPage() {
           onClick={() => {
             Modal.confirm({
               title: 'Xác nhận xóa',
-              content: `Xóa "${record.full_name}" khỏi nhóm?`,
+              content: `Xóa "${record.staff_name}" khỏi nhóm?`,
               okText: 'Xóa',
               cancelText: 'Hủy',
               okButtonProps: { danger: true },

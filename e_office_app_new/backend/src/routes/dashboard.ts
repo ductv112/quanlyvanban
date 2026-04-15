@@ -14,8 +14,8 @@ router.get('/stats', async (req: Request, res: Response) => {
     // T-04-06: staffId and unitId come from JWT only
     const { staffId, unitId } = (req as AuthRequest).user;
 
-    // fn_dashboard_get_stats signature: (p_unit_id, p_staff_id) — unitId first
-    const stats = await dashboardRepository.getStats(unitId, staffId);
+    // fn_dashboard_get_stats signature: (p_staff_id, p_unit_id) — staffId first
+    const stats = await dashboardRepository.getStats(staffId, unitId);
     res.json({
       success: true,
       data: stats ?? {
@@ -39,10 +39,9 @@ router.get('/recent-incoming', async (req: Request, res: Response) => {
     const { staffId, unitId } = (req as AuthRequest).user;
     const { limit } = req.query;
 
-    // fn_dashboard_recent_incoming signature: (p_unit_id, p_staff_id, p_limit)
+    // fn_dashboard_recent_incoming signature: (p_unit_id, p_limit)
     const rows = await dashboardRepository.getRecentIncoming(
       unitId,
-      staffId,
       limit ? Number(limit) : 10,
     );
     res.json({ success: true, data: rows });
@@ -78,10 +77,9 @@ router.get('/recent-outgoing', async (req: Request, res: Response) => {
     const { staffId, unitId } = (req as AuthRequest).user;
     const { limit } = req.query;
 
-    // fn_dashboard_recent_outgoing signature: (p_unit_id, p_staff_id, p_limit)
+    // fn_dashboard_recent_outgoing signature: (p_unit_id, p_limit)
     const rows = await dashboardRepository.getRecentOutgoing(
       unitId,
-      staffId,
       limit ? Number(limit) : 10,
     );
     res.json({ success: true, data: rows });
