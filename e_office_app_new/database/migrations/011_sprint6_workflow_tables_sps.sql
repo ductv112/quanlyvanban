@@ -648,7 +648,7 @@ BEGIN
     AND h.unit_id = p_unit_id
     AND (p_from_date IS NULL OR h.created_at >= p_from_date)
     AND (p_to_date IS NULL OR h.created_at <= p_to_date)
-  WHERE d.unit_id = p_unit_id AND d.is_unit = FALSE
+  WHERE d.parent_id = p_unit_id AND d.is_unit = FALSE AND d.is_deleted = FALSE
   GROUP BY d.id, d.name
   ORDER BY total DESC, d.name;
 END;
