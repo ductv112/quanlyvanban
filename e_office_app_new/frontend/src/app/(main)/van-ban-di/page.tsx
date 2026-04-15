@@ -12,7 +12,7 @@ import {
 } from '@ant-design/icons';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth.store';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import dayjs from 'dayjs';
 
 const { TextArea } = Input;
@@ -68,6 +68,8 @@ export default function OutgoingDocPage() {
   const { message, modal } = App.useApp();
   const user = useAuthStore((s) => s.user);
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<OutgoingDoc[]>([]);
   const [total, setTotal] = useState(0);
@@ -137,6 +139,11 @@ export default function OutgoingDocPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, data]);
 
+  const closeDrawer = () => {
+    closeDrawer();
+    if (searchParams.get('edit')) router.replace(pathname);
+  };
+
   const fetchNextNumber = async (docBookId: number) => {
     try {
       const { data: res } = await api.get('/van-ban-di/so-tiep-theo', { params: { doc_book_id: docBookId } });
@@ -193,7 +200,7 @@ export default function OutgoingDocPage() {
         if (!res.success) { message.error(res.message); return; }
         message.success('Tạo văn bản đi thành công');
       }
-      setDrawerOpen(false);
+      closeDrawer();
       fetchData();
     } catch (err: any) {
       if (err?.response?.data?.message) message.error(err.response.data.message);
@@ -308,9 +315,9 @@ export default function OutgoingDocPage() {
 
       <Drawer
         title={editingRecord ? 'Sửa văn bản đi' : 'Thêm văn bản đi'}
-        size={720} open={drawerOpen} onClose={() => setDrawerOpen(false)}
+        size={720} open={drawerOpen} onClose={() => closeDrawer()}
         rootClassName="drawer-gradient"
-        extra={<Space><Button onClick={() => setDrawerOpen(false)} ghost style={{ borderColor: 'rgba(255,255,255,0.6)', color: '#fff' }}>Hủy</Button><Button type="primary" loading={saving} onClick={handleSave}>{editingRecord ? 'Cập nhật' : 'Tạo mới'}</Button></Space>}
+        extra={<Space><Button onClick={() => closeDrawer()} ghost style={{ borderColor: 'rgba(255,255,255,0.6)', color: '#fff' }}>Hủy</Button><Button type="primary" loading={saving} onClick={handleSave}>{editingRecord ? 'Cập nhật' : 'Tạo mới'}</Button></Space>}
       >
         <Form form={form} layout="vertical" autoComplete="off">
           <Row gutter={16}>

@@ -13,7 +13,7 @@ import {
 } from '@ant-design/icons';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth.store';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import dayjs from 'dayjs';
 
 const { TextArea } = Input;
@@ -93,6 +93,8 @@ export default function DraftingDocPage() {
   const { message, modal } = App.useApp();
   const user = useAuthStore((s) => s.user);
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<DraftingDoc[]>([]);
   const [total, setTotal] = useState(0);
@@ -164,6 +166,11 @@ export default function DraftingDocPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, data]);
 
+  const closeDrawer = () => {
+    closeDrawer();
+    if (searchParams.get('edit')) router.replace(pathname);
+  };
+
   const fetchNextNumber = async (docBookId: number) => {
     try {
       const { data: res } = await api.get('/van-ban-du-thao/so-tiep-theo', { params: { doc_book_id: docBookId } });
@@ -219,7 +226,7 @@ export default function DraftingDocPage() {
         if (!res.success) { message.error(res.message); return; }
         message.success('Tạo văn bản dự thảo thành công');
       }
-      setDrawerOpen(false);
+      closeDrawer();
       fetchData();
     } catch (err: any) {
       if (err?.response?.data?.errors) {
@@ -482,11 +489,11 @@ export default function DraftingDocPage() {
         title={editingRecord ? 'Sửa văn bản dự thảo' : 'Thêm văn bản dự thảo'}
         size={720}
         open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
+        onClose={() => closeDrawer()}
         rootClassName="drawer-gradient"
         extra={
           <Space>
-            <Button onClick={() => setDrawerOpen(false)} ghost>
+            <Button onClick={() => closeDrawer()} ghost>
               Hủy
             </Button>
             <Button type="primary" loading={saving} onClick={handleSave}>
