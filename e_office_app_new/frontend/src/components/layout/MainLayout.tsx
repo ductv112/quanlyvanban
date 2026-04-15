@@ -53,7 +53,7 @@ const { Text } = Typography;
 
 type MenuItem = Required<MenuProps>['items'][number];
 
-// Static menu builder — badge counts injected via useMemo in component
+// Static menu builder with group labels
 function buildMenuItems(badgeCounts: { vbDen: number; tinNhan: number; thongBao: number }): MenuItem[] {
   return [
     {
@@ -61,6 +61,8 @@ function buildMenuItems(badgeCounts: { vbDen: number; tinNhan: number; thongBao:
       icon: <DashboardOutlined />,
       label: 'Tổng quan',
     },
+    // ── NGHIỆP VỤ ──
+    { key: 'grp-nghiepvu', type: 'group', label: 'NGHIỆP VỤ' },
     {
       key: 'van-ban',
       icon: <FileTextOutlined />,
@@ -75,7 +77,7 @@ function buildMenuItems(badgeCounts: { vbDen: number; tinNhan: number; thongBao:
         },
         { key: '/van-ban-di', icon: <SendOutlined />, label: 'Văn bản đi' },
         { key: '/van-ban-du-thao', icon: <EditOutlined />, label: 'Văn bản dự thảo' },
-        { key: '/van-ban-lien-thong', icon: <SwapOutlined />, label: 'Văn bản liên thông' },
+        { key: '/van-ban-lien-thong', icon: <SwapOutlined />, label: 'Liên thông' },
         { key: '/van-ban-danh-dau', icon: <StarOutlined />, label: 'Đánh dấu cá nhân' },
       ],
     },
@@ -108,11 +110,9 @@ function buildMenuItems(badgeCounts: { vbDen: number; tinNhan: number; thongBao:
         { key: '/lich/lanh-dao', icon: <SolutionOutlined />, label: 'Lịch lãnh đạo' },
       ],
     },
-    {
-      key: '/danh-ba',
-      icon: <ContactsOutlined />,
-      label: 'Danh bạ',
-    },
+    { key: '/danh-ba', icon: <ContactsOutlined />, label: 'Danh bạ' },
+    // ── QUẢN LÝ ──
+    { key: 'grp-quanly', type: 'group', label: 'QUẢN LÝ' },
     {
       key: 'kho-luu-tru',
       icon: <DatabaseOutlined />,
@@ -122,16 +122,8 @@ function buildMenuItems(badgeCounts: { vbDen: number; tinNhan: number; thongBao:
         { key: '/kho-luu-tru/muon-tra', label: 'Mượn/trả hồ sơ' },
       ],
     },
-    {
-      key: '/tai-lieu',
-      icon: <FileTextOutlined />,
-      label: 'Tài liệu',
-    },
-    {
-      key: '/hop-dong',
-      icon: <AuditOutlined />,
-      label: 'Hợp đồng',
-    },
+    { key: '/tai-lieu', icon: <FileTextOutlined />, label: 'Tài liệu' },
+    { key: '/hop-dong', icon: <AuditOutlined />, label: 'Hợp đồng' },
     {
       key: 'cuoc-hop',
       icon: <TeamOutlined />,
@@ -141,46 +133,24 @@ function buildMenuItems(badgeCounts: { vbDen: number; tinNhan: number; thongBao:
         { key: '/cuoc-hop/thong-ke', label: 'Thống kê' },
       ],
     },
-    {
-      key: 'tich-hop',
-      icon: <ApiOutlined />,
-      label: 'Tích hợp',
-      children: [
-        { key: '/lgsp', label: 'Liên thông văn bản', icon: <SwapOutlined /> },
-        { key: '/lgsp/co-quan', label: 'Cơ quan liên thông', icon: <BankOutlined /> },
-        { key: '/thong-bao-kenh', label: 'Cấu hình thông báo', icon: <NotificationOutlined /> },
-      ],
-    },
+    // ── TÍCH HỢP ──
+    { key: 'grp-tichhop', type: 'group', label: 'TÍCH HỢP' },
+    { key: '/lgsp', icon: <SwapOutlined />, label: 'Liên thông LGSP' },
+    { key: '/lgsp/co-quan', icon: <BankOutlined />, label: 'Cơ quan liên thông' },
+    { key: '/thong-bao-kenh', icon: <NotificationOutlined />, label: 'Kênh thông báo' },
     {
       key: 'doi-tac',
       icon: <LinkOutlined />,
       label: 'Đối tác',
       children: [
-        {
-          key: 'ext-vnpt',
-          icon: <LinkOutlined />,
-          label: <a href="https://vinvoice.vn" target="_blank" rel="noopener noreferrer">Hóa đơn VNPT</a>,
-        },
-        {
-          key: 'ext-viettel',
-          icon: <LinkOutlined />,
-          label: <a href="https://sinvoice.viettel.vn" target="_blank" rel="noopener noreferrer">Hóa đơn Viettel</a>,
-        },
-        {
-          key: 'ext-bhxh',
-          icon: <LinkOutlined />,
-          label: <a href="https://dichvucong.baohiemxahoi.gov.vn" target="_blank" rel="noopener noreferrer">Bảo hiểm xã hội</a>,
-        },
-        {
-          key: 'ext-thue',
-          icon: <LinkOutlined />,
-          label: <a href="https://thuedientu.gdt.gov.vn" target="_blank" rel="noopener noreferrer">Thuế điện tử</a>,
-        },
+        { key: 'ext-vnpt', icon: <LinkOutlined />, label: <a href="https://vinvoice.vn" target="_blank" rel="noopener noreferrer">Hóa đơn VNPT</a> },
+        { key: 'ext-viettel', icon: <LinkOutlined />, label: <a href="https://sinvoice.viettel.vn" target="_blank" rel="noopener noreferrer">Hóa đơn Viettel</a> },
+        { key: 'ext-bhxh', icon: <LinkOutlined />, label: <a href="https://dichvucong.baohiemxahoi.gov.vn" target="_blank" rel="noopener noreferrer">Bảo hiểm XH</a> },
+        { key: 'ext-thue', icon: <LinkOutlined />, label: <a href="https://thuedientu.gdt.gov.vn" target="_blank" rel="noopener noreferrer">Thuế điện tử</a> },
       ],
     },
-    {
-      type: 'divider',
-    },
+    // ── HỆ THỐNG ──
+    { key: 'grp-hethong', type: 'group', label: 'HỆ THỐNG' },
     {
       key: 'quan-tri',
       icon: <SettingOutlined />,

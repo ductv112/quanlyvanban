@@ -3,9 +3,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Drawer, Form, Input, Select, Button, Badge, Avatar,
-  Skeleton, App, Popconfirm, Menu,
+  Skeleton, App, Popconfirm,
 } from 'antd';
-import type { MenuProps } from 'antd';
 import {
   EditOutlined, SendOutlined, DeleteOutlined,
   InboxOutlined, MailOutlined,
@@ -203,33 +202,6 @@ export default function TinNhanPage() {
     }
   };
 
-  // ─── Menu items ──────────────────────────────────────────────────────────────
-
-  const sidebarMenuItems: MenuProps['items'] = [
-    {
-      key: 'inbox',
-      icon: <InboxOutlined />,
-      label: (
-        <span>
-          Hộp thư đến{' '}
-          {unreadCount > 0 && (
-            <Badge count={unreadCount} size="small" style={{ marginLeft: 6 }} />
-          )}
-        </span>
-      ),
-    },
-    {
-      key: 'sent',
-      icon: <SendOutlined />,
-      label: 'Đã gửi',
-    },
-    {
-      key: 'trash',
-      icon: <DeleteOutlined />,
-      label: 'Thùng rác',
-    },
-  ];
-
   // ─── Filtered messages ───────────────────────────────────────────────────────
 
   const filteredMessages = messages.filter((m) => {
@@ -246,34 +218,47 @@ export default function TinNhanPage() {
 
   return (
     <>
-      <div className="mail-layout">
-        {/* LEFT: Mail Sidebar */}
-        <div className="mail-sidebar">
-          <Button
-            type="primary"
-            icon={<EditOutlined />}
-            onClick={handleOpenCompose}
-            style={{ margin: '0 12px 16px', width: 'calc(100% - 24px)' }}
-          >
-            Soạn tin nhắn
-          </Button>
-          <Menu
-            theme="dark"
-            mode="inline"
-            selectedKeys={[folder]}
-            items={sidebarMenuItems}
-            onClick={({ key }) => {
-              setFolder(key as Folder);
-              setSelectedId(null);
-              setMessageDetail(null);
-            }}
-            style={{ background: 'transparent', border: 'none' }}
-          />
-        </div>
-
-        {/* MIDDLE: Message List */}
+      <div className="mail-layout mail-layout-2col">
+        {/* LEFT: Tabs + Message List */}
         <div className="mail-list-panel">
-          <div style={{ padding: '12px 16px', borderBottom: '1px solid #F1F5F9' }}>
+          {/* Tabs + Compose button */}
+          <div style={{ display: 'flex', alignItems: 'stretch', borderBottom: '2px solid #E8ECF1', minHeight: 48 }}>
+            {/* Compose button */}
+            <div style={{ display: 'flex', alignItems: 'center', padding: '0 16px', flexShrink: 0 }}>
+              <Button type="primary" icon={<EditOutlined />} size="small" onClick={handleOpenCompose}>
+                Soạn tin
+              </Button>
+            </div>
+            {/* Divider */}
+            <div style={{ width: 1, background: '#D1D5DB', margin: '10px 0', flexShrink: 0 }} />
+            {/* Tabs */}
+            {([
+              { key: 'inbox', label: 'Đến', icon: <InboxOutlined /> },
+              { key: 'sent', label: 'Đã gửi', icon: <SendOutlined /> },
+              { key: 'trash', label: 'Rác', icon: <DeleteOutlined /> },
+            ] as const).map((tab) => (
+              <div
+                key={tab.key}
+                onClick={() => { setFolder(tab.key); setSelectedId(null); setMessageDetail(null); }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 5, whiteSpace: 'nowrap',
+                  padding: '0 14px', cursor: 'pointer', fontSize: 13, fontWeight: folder === tab.key ? 600 : 400,
+                  color: folder === tab.key ? '#1B3A5C' : '#94A3B8',
+                  borderBottom: folder === tab.key ? '2px solid #0891B2' : '2px solid transparent',
+                  marginBottom: -2, transition: 'all 0.15s',
+                }}
+              >
+                {tab.icon}
+                {tab.label}
+                {tab.key === 'inbox' && unreadCount > 0 && (
+                  <Badge count={unreadCount} size="small" />
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Search */}
+          <div style={{ padding: '8px 16px', borderBottom: '1px solid #F1F5F9' }}>
             <Input
               placeholder="Tìm kiếm tin nhắn..."
               value={keyword}
@@ -392,11 +377,32 @@ export default function TinNhanPage() {
                 {messageDetail.content}
               </div>
 
-              {/* Thread Replies */}
+              {/* Reply Box — inline: textarea + button same row */}
+              <div style={{ borderTop: '1px solid #E8ECF1', paddingTop: 12, marginBottom: 16, display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+                <TextArea
+                  rows={2}
+                  placeholder="Nhập nội dung trả lời..."
+                  value={replyContent}
+                  onChange={(e) => setReplyContent(e.target.value)}
+                  style={{ flex: 1 }}
+                />
+                <Button
+                  type="primary"
+                  icon={<SendOutlined />}
+                  loading={replying}
+                  disabled={!replyContent.trim()}
+                  onClick={handleReply}
+                  style={{ flexShrink: 0 }}
+                >
+                  Gửi
+                </Button>
+              </div>
+
+              {/* Thread Replies — newest first */}
               {messageDetail.replies && messageDetail.replies.length > 0 && (
-                <div style={{ marginBottom: 24 }}>
+                <div>
                   <div style={{ fontSize: 13, fontWeight: 600, color: '#1B3A5C', marginBottom: 12 }}>
-                    Trả lời ({messageDetail.replies.length})
+                    Phản hồi ({messageDetail.replies.length})
                   </div>
                   {messageDetail.replies.map((reply) => (
                     <div key={reply.id} className="opinion-item">
@@ -419,29 +425,6 @@ export default function TinNhanPage() {
                   ))}
                 </div>
               )}
-
-              {/* Reply Box */}
-              <div style={{ borderTop: '1px solid #E8ECF1', paddingTop: 16 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: '#1B3A5C', marginBottom: 8 }}>
-                  Trả lời
-                </div>
-                <TextArea
-                  rows={4}
-                  placeholder="Nhập nội dung trả lời..."
-                  value={replyContent}
-                  onChange={(e) => setReplyContent(e.target.value)}
-                  style={{ marginBottom: 8 }}
-                />
-                <Button
-                  type="primary"
-                  icon={<SendOutlined />}
-                  loading={replying}
-                  disabled={!replyContent.trim()}
-                  onClick={handleReply}
-                >
-                  Trả lời
-                </Button>
-              </div>
             </div>
           ) : null}
         </div>

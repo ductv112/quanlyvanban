@@ -2,6 +2,7 @@ import { Router, type Request, type Response } from 'express';
 import type { AuthRequest } from '../middleware/auth.js';
 import { messageRepository } from '../repositories/message.repository.js';
 import { handleDbError } from '../lib/error-handler.js';
+import { rawQuery } from '../lib/db/query.js';
 
 const router = Router();
 
@@ -119,7 +120,23 @@ router.get('/:id', async (req: Request, res: Response) => {
       res.status(404).json({ success: false, message: 'Không tìm thấy tin nhắn' });
       return;
     }
-    res.json({ success: true, data: message });
+
+    // Load replies (child messages with parent_id = this message)
+    const replies = await rawQuery<{
+      id: number;
+      from_staff_name: string;
+      content: string;
+      created_at: string;
+    }>(`
+      SELECT m.id, CONCAT(s.last_name, ' ', s.first_name) AS from_staff_name,
+             m.content, m.created_at
+      FROM edoc.messages m
+      JOIN public.staff s ON s.id = m.from_staff_id
+      WHERE m.parent_id = $1
+      ORDER BY m.created_at DESC
+    `, [id]);
+
+    res.json({ success: true, data: { ...message, replies } });
   } catch (error) {
     handleDbError(error, res);
   }

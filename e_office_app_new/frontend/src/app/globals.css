@@ -149,6 +149,48 @@ input:-webkit-autofill:active {
   flex-shrink: 0;
 }
 
+/* Sidebar menu group labels */
+.main-sider .ant-menu-item-group-title {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: 1.2px !important;
+  color: rgba(255,255,255,0.3) !important;
+  padding: 16px 16px 4px !important;
+  text-transform: uppercase;
+}
+
+/* Active item: teal left border accent */
+.main-sider .ant-menu-item-selected,
+.main-sider .ant-menu-submenu-selected > .ant-menu-submenu-title {
+  border-left: 3px solid #0891B2 !important;
+  background: rgba(8, 145, 178, 0.12) !important;
+}
+
+/* Active item icon: teal color */
+.main-sider .ant-menu-item-selected .anticon,
+.main-sider .ant-menu-submenu-selected > .ant-menu-submenu-title .anticon {
+  color: #0891B2 !important;
+}
+
+/* Inactive items: softer white */
+.main-sider .ant-menu-item:not(.ant-menu-item-selected),
+.main-sider .ant-menu-submenu:not(.ant-menu-submenu-selected) > .ant-menu-submenu-title {
+  color: rgba(255,255,255,0.65) !important;
+  border-left: 3px solid transparent;
+}
+
+/* Hover state */
+.main-sider .ant-menu-item:not(.ant-menu-item-selected):hover,
+.main-sider .ant-menu-submenu:not(.ant-menu-submenu-selected) > .ant-menu-submenu-title:hover {
+  color: #ffffff !important;
+  background: rgba(255,255,255,0.06) !important;
+}
+
+/* Submenu children: slightly indented background */
+.main-sider .ant-menu-sub.ant-menu-inline {
+  background: rgba(0,0,0,0.15) !important;
+}
+
 /* Main area beside sidebar */
 .main-area {
   margin-left: 260px;
@@ -593,26 +635,8 @@ input:-webkit-autofill:active {
   overflow: hidden;
 }
 
-.mail-sidebar {
-  width: 220px;
-  background: #0F1A2E;
-  flex-shrink: 0;
-  padding: 16px 0;
-}
-
-.mail-sidebar .ant-menu {
-  background: transparent;
-  border: none;
-  color: rgba(255, 255, 255, 0.7);
-}
-
-.mail-sidebar .ant-menu-item-selected {
-  background: #1B3A5C !important;
-}
-
-.mail-sidebar .ant-btn-primary {
-  margin: 0 12px 12px;
-  width: calc(100% - 24px);
+.mail-layout.mail-layout-2col .mail-list-panel {
+  width: 400px;
 }
 
 .mail-list-panel {
@@ -620,6 +644,7 @@ input:-webkit-autofill:active {
   border-right: 1px solid #E8ECF1;
   overflow-y: auto;
   background: #fff;
+  flex-shrink: 0;
 }
 
 .mail-detail-pane {
@@ -770,11 +795,7 @@ input:-webkit-autofill:active {
     flex-direction: column;
     height: auto;
   }
-  .mail-sidebar {
-    width: 100%;
-    padding: 8px 0;
-  }
-  .mail-list-panel {
+  .mail-layout .mail-list-panel {
     width: 100%;
     max-height: 300px;
   }
