@@ -70,12 +70,14 @@ export default function CuocHopThongKePage() {
       })
     : [];
 
-  const roomData = stats?.by_room?.map((r) => ({
+  const roomData = stats?.by_room?.map((r, i) => ({
+    _key: `room-${i}`,
     type: r.room_name || 'Không xác định',
     value: r.meeting_count,
   })) || [];
 
-  const typeData = stats?.by_type?.map((t) => ({
+  const typeData = stats?.by_type?.map((t, i) => ({
+    _key: `type-${i}`,
     'Loại cuộc họp': t.meeting_type_name || 'Không xác định',
     'Số cuộc họp': t.meeting_count,
   })) || [];
@@ -159,7 +161,7 @@ export default function CuocHopThongKePage() {
               <Card title={<Title level={5} style={{ margin: 0 }}>Theo phòng họp</Title>}>
                 <Table
                   dataSource={roomData}
-                  rowKey="type"
+                  rowKey="_key"
                   pagination={false}
                   size="small"
                   columns={[
@@ -176,7 +178,7 @@ export default function CuocHopThongKePage() {
               <Card title={<Title level={5} style={{ margin: 0 }}>Theo loại cuộc họp</Title>}>
                 <Table
                   dataSource={typeData}
-                  rowKey="Loại cuộc họp"
+                  rowKey="_key"
                   pagination={false}
                   size="small"
                   columns={[
