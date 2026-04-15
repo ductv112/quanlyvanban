@@ -196,7 +196,7 @@ router.patch('/so-van-ban/:id/mac-dinh', async (req: Request, res: Response) => 
 // GET /loai-van-ban/tree
 router.get('/loai-van-ban/tree', async (req: Request, res: Response) => {
   try {
-    const typeId = req.query.type_id ? Number(req.query.type_id) : 0;
+    const typeId = req.query.type_id ? Number(req.query.type_id) : null;
     const flatList = await docTypeRepository.getTree(typeId);
     const tree = buildTree(flatList);
     res.json({ success: true, data: tree });

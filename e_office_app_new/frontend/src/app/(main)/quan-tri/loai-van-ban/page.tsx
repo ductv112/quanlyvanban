@@ -299,10 +299,7 @@ export default function DocTypePage() {
               allowClear
               showSearch
               optionFilterProp="label"
-              options={[
-                { value: null as any, label: '— Không có (gốc) —' },
-                ...parentOptions,
-              ]}
+              options={parentOptions}
               style={{ borderRadius: 8 }}
             />
           </Form.Item>
