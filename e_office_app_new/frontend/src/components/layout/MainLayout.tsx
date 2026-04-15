@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { Layout, Menu, Avatar, Dropdown, Badge, Breadcrumb, Skeleton, App, Button, Typography } from 'antd';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { Layout, Menu, Avatar, Dropdown, Badge, Breadcrumb, Skeleton, App, Button, Typography, Drawer } from 'antd';
 import type { MenuProps } from 'antd';
 import {
   DashboardOutlined,
@@ -13,6 +13,7 @@ import {
   UserOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
+  MenuOutlined,
   InboxOutlined,
   SendOutlined,
   EditOutlined,
@@ -39,6 +40,7 @@ import {
   AuditOutlined,
   ApiOutlined,
   NotificationOutlined,
+  LinkOutlined,
 } from '@ant-design/icons';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
@@ -51,127 +53,161 @@ const { Text } = Typography;
 
 type MenuItem = Required<MenuProps>['items'][number];
 
-const menuItems: MenuItem[] = [
-  {
-    key: '/dashboard',
-    icon: <DashboardOutlined />,
-    label: 'Tổng quan',
-  },
-  {
-    key: 'van-ban',
-    icon: <FileTextOutlined />,
-    label: 'Văn bản',
-    children: [
-      { key: '/van-ban-den', icon: <InboxOutlined />, label: 'Văn bản đến' },
-      { key: '/van-ban-di', icon: <SendOutlined />, label: 'Văn bản đi' },
-      { key: '/van-ban-du-thao', icon: <EditOutlined />, label: 'Văn bản dự thảo' },
-      { key: '/van-ban-lien-thong', icon: <SwapOutlined />, label: 'Văn bản liên thông' },
-      { key: '/van-ban-danh-dau', icon: <StarOutlined />, label: 'Đánh dấu cá nhân' },
-    ],
-  },
-  {
-    key: '/ho-so-cong-viec',
-    icon: <FolderOpenOutlined />,
-    label: 'Hồ sơ công việc',
-  },
-  {
-    key: '/tin-nhan',
-    icon: <MailOutlined />,
-    label: 'Tin nhắn',
-  },
-  {
-    key: '/thong-bao',
-    icon: <BellOutlined />,
-    label: 'Thông báo',
-  },
-  {
-    key: 'lich',
-    icon: <CalendarOutlined />,
-    label: 'Lịch',
-    children: [
-      { key: '/lich/ca-nhan', icon: <UserOutlined />, label: 'Lịch cá nhân' },
-      { key: '/lich/co-quan', icon: <BankOutlined />, label: 'Lịch cơ quan' },
-      { key: '/lich/lanh-dao', icon: <SolutionOutlined />, label: 'Lịch lãnh đạo' },
-    ],
-  },
-  {
-    key: '/danh-ba',
-    icon: <ContactsOutlined />,
-    label: 'Danh bạ',
-  },
-  {
-    key: 'kho-luu-tru',
-    icon: <DatabaseOutlined />,
-    label: 'Kho lưu trữ',
-    children: [
-      { key: '/kho-luu-tru', label: 'Danh mục kho/phông' },
-      { key: '/kho-luu-tru/muon-tra', label: 'Mượn/trả hồ sơ' },
-    ],
-  },
-  {
-    key: '/tai-lieu',
-    icon: <FileTextOutlined />,
-    label: 'Tài liệu',
-  },
-  {
-    key: '/hop-dong',
-    icon: <AuditOutlined />,
-    label: 'Hợp đồng',
-  },
-  {
-    key: 'cuoc-hop',
-    icon: <TeamOutlined />,
-    label: 'Cuộc họp',
-    children: [
-      { key: '/cuoc-hop', label: 'Danh sách cuộc họp' },
-      { key: '/cuoc-hop/thong-ke', label: 'Thống kê' },
-    ],
-  },
-  {
-    key: 'tich-hop',
-    icon: <ApiOutlined />,
-    label: 'Tích hợp',
-    children: [
-      { key: '/lgsp', label: 'Liên thông văn bản', icon: <SwapOutlined /> },
-      { key: '/lgsp/co-quan', label: 'Cơ quan liên thông', icon: <BankOutlined /> },
-      { key: '/thong-bao-kenh', label: 'Cấu hình thông báo', icon: <NotificationOutlined /> },
-    ],
-  },
-  {
-    type: 'divider',
-  },
-  {
-    key: 'quan-tri',
-    icon: <SettingOutlined />,
-    label: 'Quản trị',
-    children: [
-      { key: '/quan-tri/don-vi', icon: <ApartmentOutlined />, label: 'Đơn vị' },
-      { key: '/quan-tri/chuc-vu', icon: <IdcardOutlined />, label: 'Chức vụ' },
-      { key: '/quan-tri/nguoi-dung', icon: <UserOutlined />, label: 'Người dùng' },
-      { key: '/quan-tri/nhom-quyen', icon: <KeyOutlined />, label: 'Nhóm quyền' },
-      { key: '/quan-tri/chuc-nang', icon: <AppstoreOutlined />, label: 'Chức năng' },
-    ],
-  },
-  {
-    key: 'danh-muc',
-    icon: <BookOutlined />,
-    label: 'Danh mục',
-    children: [
-      { key: '/quan-tri/so-van-ban', icon: <BookOutlined />, label: 'Sổ văn bản' },
-      { key: '/quan-tri/loai-van-ban', icon: <TagsOutlined />, label: 'Loại văn bản' },
-      { key: '/quan-tri/linh-vuc', icon: <ClusterOutlined />, label: 'Lĩnh vực' },
-      { key: '/quan-tri/thuoc-tinh-van-ban', icon: <TableOutlined />, label: 'Thuộc tính VB' },
-      { key: '/quan-tri/co-quan', icon: <BankOutlined />, label: 'Cơ quan' },
-      { key: '/quan-tri/nguoi-ky', icon: <SolutionOutlined />, label: 'Người ký' },
-      { key: '/quan-tri/nhom-lam-viec', icon: <TeamOutlined />, label: 'Nhóm làm việc' },
-      { key: '/quan-tri/uy-quyen', icon: <SwapOutlined />, label: 'Ủy quyền' },
-      { key: '/quan-tri/dia-ban', icon: <EnvironmentOutlined />, label: 'Địa bàn' },
-      { key: '/quan-tri/lich-lam-viec', icon: <CalendarOutlined />, label: 'Lịch làm việc' },
-      { key: '/quan-tri/mau-thong-bao', icon: <MailOutlined />, label: 'Mẫu thông báo' },
-      { key: '/quan-tri/cau-hinh', icon: <ToolOutlined />, label: 'Cấu hình' },
-    ],
-  },
-];
+// Static menu builder — badge counts injected via useMemo in component
+function buildMenuItems(badgeCounts: { vbDen: number; tinNhan: number; thongBao: number }): MenuItem[] {
+  return [
+    {
+      key: '/dashboard',
+      icon: <DashboardOutlined />,
+      label: 'Tổng quan',
+    },
+    {
+      key: 'van-ban',
+      icon: <FileTextOutlined />,
+      label: 'Văn bản',
+      children: [
+        {
+          key: '/van-ban-den',
+          icon: <InboxOutlined />,
+          label: <Badge count={badgeCounts.vbDen} size="small" offset={[8, 0]}>Văn bản đến</Badge>,
+        },
+        { key: '/van-ban-di', icon: <SendOutlined />, label: 'Văn bản đi' },
+        { key: '/van-ban-du-thao', icon: <EditOutlined />, label: 'Văn bản dự thảo' },
+        { key: '/van-ban-lien-thong', icon: <SwapOutlined />, label: 'Văn bản liên thông' },
+        { key: '/van-ban-danh-dau', icon: <StarOutlined />, label: 'Đánh dấu cá nhân' },
+      ],
+    },
+    {
+      key: '/ho-so-cong-viec',
+      icon: <FolderOpenOutlined />,
+      label: 'Hồ sơ công việc',
+    },
+    {
+      key: '/tin-nhan',
+      icon: <MailOutlined />,
+      label: <Badge count={badgeCounts.tinNhan} size="small" offset={[8, 0]}>Tin nhắn</Badge>,
+    },
+    {
+      key: '/thong-bao',
+      icon: <BellOutlined />,
+      label: <Badge count={badgeCounts.thongBao} size="small" offset={[8, 0]}>Thông báo</Badge>,
+    },
+    {
+      key: 'lich',
+      icon: <CalendarOutlined />,
+      label: 'Lịch',
+      children: [
+        { key: '/lich/ca-nhan', icon: <UserOutlined />, label: 'Lịch cá nhân' },
+        { key: '/lich/co-quan', icon: <BankOutlined />, label: 'Lịch cơ quan' },
+        { key: '/lich/lanh-dao', icon: <SolutionOutlined />, label: 'Lịch lãnh đạo' },
+      ],
+    },
+    {
+      key: '/danh-ba',
+      icon: <ContactsOutlined />,
+      label: 'Danh bạ',
+    },
+    {
+      key: 'kho-luu-tru',
+      icon: <DatabaseOutlined />,
+      label: 'Kho lưu trữ',
+      children: [
+        { key: '/kho-luu-tru', label: 'Danh mục kho/phông' },
+        { key: '/kho-luu-tru/muon-tra', label: 'Mượn/trả hồ sơ' },
+      ],
+    },
+    {
+      key: '/tai-lieu',
+      icon: <FileTextOutlined />,
+      label: 'Tài liệu',
+    },
+    {
+      key: '/hop-dong',
+      icon: <AuditOutlined />,
+      label: 'Hợp đồng',
+    },
+    {
+      key: 'cuoc-hop',
+      icon: <TeamOutlined />,
+      label: 'Cuộc họp',
+      children: [
+        { key: '/cuoc-hop', label: 'Danh sách cuộc họp' },
+        { key: '/cuoc-hop/thong-ke', label: 'Thống kê' },
+      ],
+    },
+    {
+      key: 'tich-hop',
+      icon: <ApiOutlined />,
+      label: 'Tích hợp',
+      children: [
+        { key: '/lgsp', label: 'Liên thông văn bản', icon: <SwapOutlined /> },
+        { key: '/lgsp/co-quan', label: 'Cơ quan liên thông', icon: <BankOutlined /> },
+        { key: '/thong-bao-kenh', label: 'Cấu hình thông báo', icon: <NotificationOutlined /> },
+      ],
+    },
+    {
+      key: 'doi-tac',
+      icon: <LinkOutlined />,
+      label: 'Đối tác',
+      children: [
+        {
+          key: 'ext-vnpt',
+          icon: <LinkOutlined />,
+          label: <a href="https://vinvoice.vn" target="_blank" rel="noopener noreferrer">Hóa đơn VNPT</a>,
+        },
+        {
+          key: 'ext-viettel',
+          icon: <LinkOutlined />,
+          label: <a href="https://sinvoice.viettel.vn" target="_blank" rel="noopener noreferrer">Hóa đơn Viettel</a>,
+        },
+        {
+          key: 'ext-bhxh',
+          icon: <LinkOutlined />,
+          label: <a href="https://dichvucong.baohiemxahoi.gov.vn" target="_blank" rel="noopener noreferrer">Bảo hiểm xã hội</a>,
+        },
+        {
+          key: 'ext-thue',
+          icon: <LinkOutlined />,
+          label: <a href="https://thuedientu.gdt.gov.vn" target="_blank" rel="noopener noreferrer">Thuế điện tử</a>,
+        },
+      ],
+    },
+    {
+      type: 'divider',
+    },
+    {
+      key: 'quan-tri',
+      icon: <SettingOutlined />,
+      label: 'Quản trị',
+      children: [
+        { key: '/quan-tri/don-vi', icon: <ApartmentOutlined />, label: 'Đơn vị' },
+        { key: '/quan-tri/chuc-vu', icon: <IdcardOutlined />, label: 'Chức vụ' },
+        { key: '/quan-tri/nguoi-dung', icon: <UserOutlined />, label: 'Người dùng' },
+        { key: '/quan-tri/nhom-quyen', icon: <KeyOutlined />, label: 'Nhóm quyền' },
+        { key: '/quan-tri/chuc-nang', icon: <AppstoreOutlined />, label: 'Chức năng' },
+      ],
+    },
+    {
+      key: 'danh-muc',
+      icon: <BookOutlined />,
+      label: 'Danh mục',
+      children: [
+        { key: '/quan-tri/so-van-ban', icon: <BookOutlined />, label: 'Sổ văn bản' },
+        { key: '/quan-tri/loai-van-ban', icon: <TagsOutlined />, label: 'Loại văn bản' },
+        { key: '/quan-tri/linh-vuc', icon: <ClusterOutlined />, label: 'Lĩnh vực' },
+        { key: '/quan-tri/thuoc-tinh-van-ban', icon: <TableOutlined />, label: 'Thuộc tính VB' },
+        { key: '/quan-tri/co-quan', icon: <BankOutlined />, label: 'Cơ quan' },
+        { key: '/quan-tri/nguoi-ky', icon: <SolutionOutlined />, label: 'Người ký' },
+        { key: '/quan-tri/nhom-lam-viec', icon: <TeamOutlined />, label: 'Nhóm làm việc' },
+        { key: '/quan-tri/uy-quyen', icon: <SwapOutlined />, label: 'Ủy quyền' },
+        { key: '/quan-tri/dia-ban', icon: <EnvironmentOutlined />, label: 'Địa bàn' },
+        { key: '/quan-tri/lich-lam-viec', icon: <CalendarOutlined />, label: 'Lịch làm việc' },
+        { key: '/quan-tri/mau-thong-bao', icon: <MailOutlined />, label: 'Mẫu thông báo' },
+        { key: '/quan-tri/cau-hinh', icon: <ToolOutlined />, label: 'Cấu hình' },
+      ],
+    },
+  ];
+}
 
 // Map pathname to breadcrumb labels
 const breadcrumbMap: Record<string, string> = {
@@ -250,8 +286,8 @@ function buildBreadcrumbs(pathname: string) {
 }
 
 // Find open keys for current path
-function getOpenKeys(pathname: string): string[] {
-  for (const item of menuItems) {
+function getOpenKeys(pathname: string, items: MenuItem[]): string[] {
+  for (const item of items) {
     if (item && 'children' in item && item.children) {
       for (const child of item.children) {
         if (child && 'key' in child && pathname.startsWith(child.key as string)) {
@@ -287,23 +323,57 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const [notifUnreadCount, setNotifUnreadCount] = useState(0);
   const [bellOpen, setBellOpen] = useState(false);
 
+  // Badge counts for sidebar menu items
+  const [badgeCounts, setBadgeCounts] = useState<{ vbDen: number; tinNhan: number }>({ vbDen: 0, tinNhan: 0 });
+
+  // Mobile responsive state
+  const [isMobile, setIsMobile] = useState(false);
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+
+  // Detect mobile viewport
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const mql = window.matchMedia('(max-width: 768px)');
+    setIsMobile(mql.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mql.addEventListener('change', handler);
+    return () => mql.removeEventListener('change', handler);
+  }, []);
+
   useEffect(() => {
     if (!user) {
       fetchMe();
     }
   }, [user, fetchMe]);
 
-  // Fetch unread count on mount
+  // Fetch unread counts on mount (notifications + badge counts)
   useEffect(() => {
-    const fetchUnreadCount = async () => {
+    const fetchCounts = async () => {
       try {
-        const { data: res } = await api.get('/thong-bao/unread-count');
-        setNotifUnreadCount(res.data?.count ?? res.data ?? 0);
+        const [notifRes, vbDenRes, tinNhanRes] = await Promise.allSettled([
+          api.get('/thong-bao/unread-count'),
+          api.get('/van-ban-den', { params: { status: 'pending', page: 1, page_size: 1 } }),
+          api.get('/tin-nhan/unread-count'),
+        ]);
+
+        if (notifRes.status === 'fulfilled') {
+          const d = notifRes.value.data;
+          setNotifUnreadCount(d.data?.count ?? d.data ?? 0);
+        }
+        if (vbDenRes.status === 'fulfilled') {
+          const d = vbDenRes.value.data;
+          const total = d.data?.pagination?.total ?? d.data?.total ?? d.pagination?.total ?? 0;
+          setBadgeCounts((prev) => ({ ...prev, vbDen: total }));
+        }
+        if (tinNhanRes.status === 'fulfilled') {
+          const d = tinNhanRes.value.data;
+          setBadgeCounts((prev) => ({ ...prev, tinNhan: d.data?.count ?? d.data ?? 0 }));
+        }
       } catch {
         // Silent
       }
     };
-    fetchUnreadCount();
+    fetchCounts();
   }, []);
 
   // Socket.IO integration
@@ -316,6 +386,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
     socket.on(SOCKET_EVENTS.NEW_MESSAGE, () => {
       message.info('Bạn có tin nhắn mới');
+      setBadgeCounts((prev) => ({ ...prev, tinNhan: prev.tinNhan + 1 }));
     });
 
     socket.on(SOCKET_EVENTS.NEW_NOTIFICATION, (data: { title?: string }) => {
@@ -325,7 +396,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
     socket.on(SOCKET_EVENTS.NEW_DOCUMENT, () => {
       message.info('Có văn bản mới cần xử lý');
-      setNotifUnreadCount((prev) => prev + 1);
+      setBadgeCounts((prev) => ({ ...prev, vbDen: prev.vbDen + 1 }));
     });
 
     return () => {
@@ -363,7 +434,13 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   };
 
   const handleMenuClick: MenuProps['onClick'] = ({ key }) => {
+    // External links open via <a> tag — skip router navigation
+    if (key.startsWith('ext-')) return;
     router.push(key);
+    // Auto-close mobile drawer on navigation
+    if (isMobile) {
+      setMobileDrawerOpen(false);
+    }
   };
 
   const handleLogout = () => {
@@ -394,8 +471,14 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     },
   ];
 
+  // Memoize menu items with badge counts
+  const menuItems = useMemo(
+    () => buildMenuItems({ vbDen: badgeCounts.vbDen, tinNhan: badgeCounts.tinNhan, thongBao: notifUnreadCount }),
+    [badgeCounts.vbDen, badgeCounts.tinNhan, notifUnreadCount]
+  );
+
   const breadcrumbItems = buildBreadcrumbs(pathname);
-  const openKeys = getOpenKeys(pathname);
+  const openKeys = getOpenKeys(pathname, menuItems);
 
   if (isLoading && !user) {
     return (
@@ -480,58 +563,109 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     </div>
   );
 
+  // Sidebar menu content — shared between Sider and mobile Drawer
+  const sidebarMenuContent = (
+    <>
+      <div className="main-sider-logo">
+        <div className="main-sider-logo-icon">
+          <FileTextOutlined style={{ fontSize: 22, color: '#0891B2' }} />
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <span className="main-sider-logo-title">QLVB</span>
+          <span className="main-sider-logo-sub">Văn bản điện tử</span>
+        </div>
+      </div>
+      <div className="main-sider-menu-wrap">
+        <Menu
+          theme="dark"
+          mode="inline"
+          selectedKeys={[pathname]}
+          defaultOpenKeys={openKeys}
+          items={menuItems}
+          onClick={handleMenuClick}
+          style={{ border: 'none', marginTop: 8 }}
+        />
+      </div>
+    </>
+  );
+
   return (
     <Layout className="main-layout">
-      {/* SIDEBAR */}
-      <Sider
-        trigger={null}
-        collapsible
-        collapsed={collapsed}
-        width={260}
-        collapsedWidth={72}
-        className="main-sider"
-      >
-        {/* Logo */}
-        <div className="main-sider-logo">
-          <div className="main-sider-logo-icon">
-            <FileTextOutlined style={{ fontSize: collapsed ? 20 : 22, color: '#0891B2' }} />
-          </div>
-          {!collapsed && (
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span className="main-sider-logo-title">QLVB</span>
-              <span className="main-sider-logo-sub">Văn bản điện tử</span>
+      {/* SIDEBAR — hidden on mobile */}
+      {!isMobile && (
+        <Sider
+          trigger={null}
+          collapsible
+          collapsed={collapsed}
+          width={260}
+          collapsedWidth={72}
+          className="main-sider"
+        >
+          {/* Logo */}
+          <div className="main-sider-logo">
+            <div className="main-sider-logo-icon">
+              <FileTextOutlined style={{ fontSize: collapsed ? 20 : 22, color: '#0891B2' }} />
             </div>
-          )}
-        </div>
+            {!collapsed && (
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span className="main-sider-logo-title">QLVB</span>
+                <span className="main-sider-logo-sub">Văn bản điện tử</span>
+              </div>
+            )}
+          </div>
 
-        <div className="main-sider-menu-wrap">
-          <Menu
-            theme="dark"
-            mode="inline"
-            selectedKeys={[pathname]}
-            defaultOpenKeys={openKeys}
-            items={menuItems}
-            onClick={handleMenuClick}
-            style={{ border: 'none', marginTop: 8 }}
-          />
-        </div>
-      </Sider>
+          <div className="main-sider-menu-wrap">
+            <Menu
+              theme="dark"
+              mode="inline"
+              selectedKeys={[pathname]}
+              defaultOpenKeys={openKeys}
+              items={menuItems}
+              onClick={handleMenuClick}
+              style={{ border: 'none', marginTop: 8 }}
+            />
+          </div>
+        </Sider>
+      )}
+
+      {/* MOBILE DRAWER */}
+      {isMobile && (
+        <Drawer
+          placement="left"
+          open={mobileDrawerOpen}
+          onClose={() => setMobileDrawerOpen(false)}
+          width={280}
+          closable={false}
+          styles={{ body: { padding: 0, background: '#0F1A2E' } }}
+        >
+          {sidebarMenuContent}
+        </Drawer>
+      )}
 
       {/* MAIN AREA */}
-      <Layout className={`main-area${collapsed ? ' collapsed' : ''}`}>
+      <Layout className={`main-area${!isMobile && collapsed ? ' collapsed' : ''}${isMobile ? ' mobile' : ''}`}>
         {/* HEADER */}
         <Header className="main-header">
           <div className="main-header-left">
-            <div
-              onClick={() => setCollapsed(!collapsed)}
-              className="main-collapse-btn"
-            >
-              {collapsed ? (
-                <MenuUnfoldOutlined style={{ fontSize: 18 }} />
-              ) : (
-                <MenuFoldOutlined style={{ fontSize: 18 }} />
-              )}
-            </div>
+            {isMobile ? (
+              <div
+                onClick={() => setMobileDrawerOpen(true)}
+                className="main-collapse-btn"
+              >
+                <MenuOutlined style={{ fontSize: 18 }} />
+              </div>
+            ) : (
+              <div
+                onClick={() => setCollapsed(!collapsed)}
+                className="main-collapse-btn"
+              >
+                {collapsed ? (
+                  <MenuUnfoldOutlined style={{ fontSize: 18 }} />
+                ) : (
+                  <MenuFoldOutlined style={{ fontSize: 18 }} />
+                )}
+              </div>
+            )}
             <Breadcrumb items={breadcrumbItems} style={{ marginLeft: 8 }} />
           </div>
 
