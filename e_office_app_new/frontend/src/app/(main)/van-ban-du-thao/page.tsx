@@ -167,7 +167,7 @@ export default function DraftingDocPage() {
   }, [searchParams, data]);
 
   const closeDrawer = () => {
-    closeDrawer();
+    setDrawerOpen(false);
     if (searchParams.get('edit')) router.replace(pathname);
   };
 

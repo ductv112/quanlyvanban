@@ -140,7 +140,7 @@ export default function OutgoingDocPage() {
   }, [searchParams, data]);
 
   const closeDrawer = () => {
-    closeDrawer();
+    setDrawerOpen(false);
     if (searchParams.get('edit')) router.replace(pathname);
   };
 

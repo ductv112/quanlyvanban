@@ -112,7 +112,7 @@ export default function IncomingDocPage() {
   }, [searchParams, data]);
 
   const closeDrawer = () => {
-    closeDrawer();
+    setDrawerOpen(false);
     // Clear ?edit= from URL to prevent re-opening
     if (searchParams.get('edit')) router.replace(pathname);
   };
