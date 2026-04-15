@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   Card, Table, Button, Input, Space, Select, DatePicker, Drawer, Form,
   InputNumber, Tag, Modal, App, Row, Col, Tooltip, Dropdown,
-Card, } from 'antd';
+} from 'antd';
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
 import {
   PlusOutlined, EditOutlined, DeleteOutlined, MoreOutlined,

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Card, Row, Col, Descriptions, Avatar, Form, Input, Button, App, Tag,
-Card, } from 'antd';
+} from 'antd';
 import {
   UserOutlined, LockOutlined, MailOutlined, PhoneOutlined,
   IdcardOutlined, ApartmentOutlined, SafetyOutlined,
