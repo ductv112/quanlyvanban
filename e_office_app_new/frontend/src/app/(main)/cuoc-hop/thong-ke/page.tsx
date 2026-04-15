@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Card, Row, Col, Select, Skeleton, App, Typography } from 'antd';
-import { Column, Pie } from '@ant-design/charts';
+import { Card, Row, Col, Select, Skeleton, App, Typography, Table, Tag } from 'antd';
 import { api } from '@/lib/api';
 import dayjs from 'dayjs';
 
@@ -137,70 +136,55 @@ export default function CuocHopThongKePage() {
           )}
 
           <Row gutter={[16, 16]}>
-            {/* Monthly bar chart */}
+            {/* Monthly table */}
             <Col span={24}>
               <Card title={<Title level={5} style={{ margin: 0 }}>Cuộc họp theo tháng — Năm {year}</Title>}>
-                {monthlyData.length > 0 ? (
-                  <Column
-                    data={monthlyData}
-                    xField="month"
-                    yField="Số cuộc họp"
-                    style={{ fill: '#0891B2' }}
-                    label={{
-                      position: 'inside',
-                      style: { fill: '#fff', fontSize: 12 },
-                    }}
-                    xAxis={{ label: { style: { fontSize: 12 } } }}
-                    yAxis={{ grid: { line: { style: { stroke: '#E2E8F0' } } } }}
-                    height={280}
-                  />
-                ) : (
-                  <div className="empty-center" style={{ height: 200 }}>Không có dữ liệu</div>
-                )}
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {monthlyData.map((m) => (
+                    <div key={m.month} style={{
+                      flex: '1 1 70px', textAlign: 'center', padding: '12px 8px',
+                      background: m['Số cuộc họp'] > 0 ? '#0891B2' : '#F1F5F9',
+                      borderRadius: 8, color: m['Số cuộc họp'] > 0 ? '#fff' : '#94A3B8',
+                    }}>
+                      <div style={{ fontSize: 20, fontWeight: 700 }}>{m['Số cuộc họp']}</div>
+                      <div style={{ fontSize: 11, marginTop: 4 }}>{m.month}</div>
+                    </div>
+                  ))}
+                </div>
               </Card>
             </Col>
 
-            {/* Room pie chart */}
+            {/* Room table */}
             <Col xs={24} md={12}>
-              <Card title={<Title level={5} style={{ margin: 0 }}>Cuộc họp theo phòng họp</Title>}>
-                {roomData.length > 0 ? (
-                  <Pie
-                    data={roomData}
-                    angleField="value"
-                    colorField="type"
-                    radius={0.8}
-                    label={{
-                      type: 'outer',
-                      content: '{name}: {value}',
-                    }}
-                    legend={{ position: 'bottom' }}
-                    height={280}
-                    color={['#1B3A5C', '#0891B2', '#059669', '#D97706', '#7C3AED', '#DC2626', '#0E7490']}
-                  />
-                ) : (
-                  <div className="empty-center" style={{ height: 200 }}>Không có dữ liệu</div>
-                )}
+              <Card title={<Title level={5} style={{ margin: 0 }}>Theo phòng họp</Title>}>
+                <Table
+                  dataSource={roomData}
+                  rowKey="type"
+                  pagination={false}
+                  size="small"
+                  columns={[
+                    { title: 'Phòng họp', dataIndex: 'type', ellipsis: true },
+                    { title: 'Số cuộc họp', dataIndex: 'value', width: 100, align: 'center',
+                      render: (v: number) => <Tag color="cyan">{v}</Tag> },
+                  ]}
+                />
               </Card>
             </Col>
 
-            {/* Type bar chart */}
+            {/* Type table */}
             <Col xs={24} md={12}>
-              <Card title={<Title level={5} style={{ margin: 0 }}>Cuộc họp theo loại</Title>}>
-                {typeData.length > 0 ? (
-                  <Column
-                    data={typeData}
-                    xField="Loại cuộc họp"
-                    yField="Số cuộc họp"
-                    style={{ fill: '#1B3A5C' }}
-                    label={{
-                      position: 'inside',
-                      style: { fill: '#fff', fontSize: 12 },
-                    }}
-                    height={280}
-                  />
-                ) : (
-                  <div className="empty-center" style={{ height: 200 }}>Không có dữ liệu</div>
-                )}
+              <Card title={<Title level={5} style={{ margin: 0 }}>Theo loại cuộc họp</Title>}>
+                <Table
+                  dataSource={typeData}
+                  rowKey="Loại cuộc họp"
+                  pagination={false}
+                  size="small"
+                  columns={[
+                    { title: 'Loại', dataIndex: 'Loại cuộc họp', ellipsis: true },
+                    { title: 'Số cuộc họp', dataIndex: 'Số cuộc họp', width: 100, align: 'center',
+                      render: (v: number) => <Tag color="blue">{v}</Tag> },
+                  ]}
+                />
               </Card>
             </Col>
           </Row>
