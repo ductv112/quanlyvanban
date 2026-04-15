@@ -100,8 +100,7 @@ export default function ProfilePage() {
 
             <Descriptions
               column={1}
-              labelStyle={{ fontWeight: 600, color: '#64748b', width: 160 }}
-              contentStyle={{ color: '#1B3A5C' }}
+              styles={{ label: { fontWeight: 600, color: '#64748b', width: 160 }, content: { color: '#1B3A5C' } }}
               size="middle"
             >
               <Descriptions.Item label={<><UserOutlined style={{ marginRight: 6 }} />Họ và tên</>}>
