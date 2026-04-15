@@ -16,10 +16,10 @@ import dayjs from 'dayjs';
 
 interface Delegation {
   id: number;
-  delegator_name: string;
-  delegator_id: number;
-  delegate_name: string;
-  delegate_id: number;
+  from_staff_name: string;
+  from_staff_id: number;
+  to_staff_name: string;
+  to_staff_id: number;
   start_date: string;
   end_date: string;
   note: string;
@@ -114,12 +114,12 @@ export default function DelegationPage() {
 
   const setBackendFieldError = (errorMessage: string): boolean => {
     const fieldErrorMap: Record<string, string> = {
-      'Người ủy quyền là bắt buộc': 'delegator_id',
-      'Vui lòng chọn người ủy quyền và người nhận ủy quyền': 'delegator_id',
-      'Người ủy quyền không tồn tại': 'delegator_id',
-      'Người được ủy quyền là bắt buộc': 'delegate_id',
-      'Không thể ủy quyền cho chính mình': 'delegate_id',
-      'Người nhận ủy quyền không tồn tại': 'delegate_id',
+      'Người ủy quyền là bắt buộc': 'from_staff_id',
+      'Vui lòng chọn người ủy quyền và người nhận ủy quyền': 'from_staff_id',
+      'Người ủy quyền không tồn tại': 'from_staff_id',
+      'Người được ủy quyền là bắt buộc': 'to_staff_id',
+      'Không thể ủy quyền cho chính mình': 'to_staff_id',
+      'Người nhận ủy quyền không tồn tại': 'to_staff_id',
       'Ngày bắt đầu là bắt buộc': 'start_date',
       'Ngày bắt đầu và ngày kết thúc không được để trống': 'start_date',
       'Đã tồn tại ủy quyền trong khoảng thời gian này': 'start_date',
@@ -167,15 +167,15 @@ export default function DelegationPage() {
   const columns: ColumnsType<Delegation> = [
     {
       title: 'Người ủy quyền',
-      dataIndex: 'delegator_name',
-      key: 'delegator_name',
+      dataIndex: 'from_staff_name',
+      key: 'from_staff_name',
       ellipsis: true,
       render: (v) => <span style={{ fontWeight: 600, color: '#1B3A5C' }}>{v}</span>,
     },
     {
       title: 'Người được UQ',
-      dataIndex: 'delegate_name',
-      key: 'delegate_name',
+      dataIndex: 'to_staff_name',
+      key: 'to_staff_name',
       ellipsis: true,
     },
     {
@@ -230,7 +230,7 @@ export default function DelegationPage() {
                   onClick: () => {
                     Modal.confirm({
                       title: 'Xác nhận thu hồi',
-                      content: `Bạn có chắc chắn muốn thu hồi ủy quyền của "${record.delegator_name}" cho "${record.delegate_name}"?`,
+                      content: `Bạn có chắc chắn muốn thu hồi ủy quyền của "${record.from_staff_name}" cho "${record.to_staff_name}"?`,
                       okText: 'Thu hồi',
                       cancelText: 'Hủy',
                       okButtonProps: { danger: true },
@@ -335,7 +335,7 @@ export default function DelegationPage() {
         <Form form={form} layout="vertical" autoComplete="off" validateTrigger="onSubmit">
           <Form.Item
             label="Người ủy quyền"
-            name="delegator_id"
+            name="from_staff_id"
             rules={[{ required: true, message: 'Chọn người ủy quyền' }]}
           >
             <Select
@@ -352,7 +352,7 @@ export default function DelegationPage() {
 
           <Form.Item
             label="Người được ủy quyền"
-            name="delegate_id"
+            name="to_staff_id"
             rules={[{ required: true, message: 'Chọn người được ủy quyền' }]}
           >
             <Select
