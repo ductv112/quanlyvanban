@@ -12,6 +12,7 @@ import {
 } from '@ant-design/icons';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth.store';
+import { useSearchParams } from 'next/navigation';
 import dayjs from 'dayjs';
 
 const { TextArea } = Input;
@@ -43,6 +44,7 @@ const URGENT_MAP: Record<number, { text: string; color: string }> = {
 export default function IncomingDocPage() {
   const { message, modal } = App.useApp();
   const user = useAuthStore((s) => s.user);
+  const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<IncomingDoc[]>([]);
   const [total, setTotal] = useState(0);
@@ -96,6 +98,16 @@ export default function IncomingDocPage() {
 
   useEffect(() => { fetchDropdowns(); }, [fetchDropdowns]);
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  // Handle ?edit=ID from detail page "Sửa" button
+  useEffect(() => {
+    const editId = searchParams.get('edit');
+    if (editId && data.length > 0) {
+      const record = data.find((d) => String(d.id) === editId);
+      if (record) openDrawer(record);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, data]);
 
   const fetchNextNumber = async (docBookId: number) => {
     try {
