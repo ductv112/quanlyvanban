@@ -239,7 +239,64 @@
 
 ---
 
-## 7. SECURITY
+## 7. CSS-FIRST LAYOUT — CHỐNG FOUC (Flash of Unstyled Content)
+
+> **Bắt buộc áp dụng cho toàn bộ dự án.**
+
+### 7.1 Nguyên tắc
+
+Inline styles (`style={{ ... }}`) trên React components chỉ render **SAU** khi JavaScript hydrate xong → gây flash trắng 1-2 giây khi navigate lần đầu. CSS classes render ngay khi browser nhận HTML.
+
+**QUY TẮC:**
+- Layout/structural styles (position, display, flex, grid, width, height, padding, margin, background, border-radius, box-shadow) → **PHẢI dùng CSS class** trong `globals.css`
+- Dynamic/data-driven styles (color thay đổi theo data, conditional visibility) → **ĐƯỢC dùng inline `style={{}}`**
+
+### 7.2 Shared CSS Classes có sẵn trong `globals.css`
+
+| CSS Class | Dùng cho | Thay thế inline |
+|---|---|---|
+| `.main-layout`, `.main-sider`, `.main-header`, `.main-content` | Layout shell (sidebar, header, content) | `style={styles.sider}`, `style={styles.header}` |
+| `.page-header`, `.page-title`, `.page-description` | Tiêu đề + mô tả mỗi trang | `style={{ fontSize: 22, fontWeight: 700 }}` |
+| `.page-card` | Card wrapper (borderRadius 12, shadow) | `style={{ borderRadius: 12, boxShadow: '...' }}` |
+| `.drawer-gradient` | Drawer có header gradient | `styles={{ header: { background: gradient } }}` |
+| `.section-title` | Tiêu đề section trong detail page | `style={sectionTitle}` |
+| `.info-grid`, `.info-grid-full` | Grid 2 cột thông tin | `style={infoRow}` |
+| `.info-label`, `.info-value` | Label + value trong info grid | `style={fieldLabel}`, `style={fieldValue}` |
+| `.doc-abstract-box` | Box highlight trích yếu | `style={{ borderLeft: '4px solid #0891B2', ... }}` |
+| `.stat-card`, `.stat-card-body`, `.stat-card-icon` | Dashboard KPI cards | `style={{ display: 'flex', ... }}` |
+| `.section-card-header`, `.section-card-icon` | Card header có icon | `style={{ display: 'flex', gap: 10 }}` |
+| `.profile-header` | Header gradient trang profile | `style={{ background: gradient, display: 'flex' }}` |
+| `.detail-header`, `.detail-header-left`, `.detail-header-right` | Header bar trang chi tiết | `style={{ display: 'flex', ... }}` |
+| `.filter-row` | Row filter/search | `style={{ marginBottom: 16 }}` |
+| `.empty-center` | Empty state | `style={{ textAlign: 'center', ... }}` |
+
+### 7.3 Cách áp dụng khi tạo trang mới
+
+```tsx
+// ❌ SAI — inline layout styles → FOUC
+<div style={{ display: 'flex', gap: 12, padding: 16, background: '#fff', borderRadius: 12 }}>
+
+// ✅ ĐÚNG — CSS class cho layout, inline chỉ cho dynamic
+<div className="page-card" style={{ borderColor: isActive ? '#52c41a' : undefined }}>
+```
+
+**Drawer:**
+```tsx
+// ❌ SAI
+<Drawer styles={{ header: { background: 'linear-gradient(...)' }, body: { padding: 24 } }}>
+
+// ✅ ĐÚNG — dùng rootClassName
+<Drawer rootClassName="drawer-gradient" width={720}>
+```
+
+### 7.4 Khi nào thêm CSS class mới
+
+Nếu một pattern layout xuất hiện ở **2+ trang trở lên** → tạo CSS class trong `globals.css`.
+Pattern chỉ dùng 1 lần → inline OK (nhưng ưu tiên CSS nếu là structural).
+
+---
+
+## 8. SECURITY
 
 ### 7.1 Authentication
 - JWT access token: 15 phút, Bearer header
@@ -262,7 +319,7 @@
 
 ---
 
-## 8. GIT CONVENTION
+## 9. GIT CONVENTION
 
 ### 8.1 Commit message
 ```

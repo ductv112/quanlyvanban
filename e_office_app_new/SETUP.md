@@ -87,21 +87,21 @@ WHERE username = 'admin';
 " | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
 ```
 
-### Sprint 2-3: Văn bản đến/đi/dự thảo, HSCV
+### Sprint 2-4: Danh mục, Văn bản đến, Dự thảo/Đi
 ```bash
-cat database/migrations/007_sprint2_incoming_doc.sql | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
-cat database/migrations/008_sprint3_handling_doc.sql | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
+cat database/migrations/007_sprint2_catalog_config.sql | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
+cat database/migrations/008_sprint3_incoming_docs.sql | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
 cat database/migrations/009_sprint4_drafting_outgoing.sql | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
 ```
 
-### Sprint 5-10: Danh mục, tin nhắn, lịch, danh bạ, luồng xử lý
+### Sprint 5-10: HSCV, Workflow, Liên thông, Tin nhắn, Lịch, Dashboard
 ```bash
-cat database/migrations/010_sprint5_catalog_sp.sql | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
-cat database/migrations/011_sprint6_inter_incoming.sql | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
-cat database/migrations/012_sprint7_messages_notices.sql | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
-cat database/migrations/013_sprint8_calendar_contacts.sql | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
-cat database/migrations/014_sprint9_doc_flow.sql | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
-cat database/migrations/015_sprint10_sms_email_templates.sql | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
+cat database/migrations/010_sprint5_handling_doc_sps.sql | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
+cat database/migrations/011_sprint6_workflow_tables_sps.sql | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
+cat database/migrations/012_sprint7_inter_incoming.sql | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
+cat database/migrations/013_sprint8_messages_notices.sql | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
+cat database/migrations/014_sprint9_calendar_directory.sql | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
+cat database/migrations/015_sprint10_dashboard_stats.sql | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
 ```
 
 ### Sprint 11-13: Kho lưu trữ, tài liệu, hợp đồng, cuộc họp

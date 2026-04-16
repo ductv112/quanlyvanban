@@ -53,15 +53,33 @@ const { Text } = Typography;
 
 type MenuItem = Required<MenuProps>['items'][number];
 
-// Static menu builder with group labels
-function buildMenuItems(badgeCounts: { vbDen: number; tinNhan: number; thongBao: number }): MenuItem[] {
-  return [
+// Role names from seed data
+const ADMIN_ROLE = 'Quản trị hệ thống';
+const VAN_THU_ROLE = 'Văn thư';
+const LANH_DAO_ROLE = 'Ban Lãnh đạo';
+const CHI_DAO_ROLE = 'Chỉ đạo điều hành';
+
+interface MenuBuildParams {
+  badgeCounts: { vbDen: number; tinNhan: number; thongBao: number };
+  isAdmin: boolean;
+  roles: string[];
+}
+
+// Menu builder filtered by user roles
+function buildMenuItems({ badgeCounts, isAdmin, roles }: MenuBuildParams): MenuItem[] {
+  const hasRole = (name: string) => roles.includes(name);
+  const isLeader = hasRole(LANH_DAO_ROLE) || hasRole(CHI_DAO_ROLE);
+  const isVanThu = hasRole(VAN_THU_ROLE);
+  // Admin, Văn thư, Lãnh đạo can see management sections
+  const canManage = isAdmin || isVanThu || isLeader;
+
+  const items: MenuItem[] = [
     {
       key: '/dashboard',
       icon: <DashboardOutlined />,
       label: 'Tổng quan',
     },
-    // ── NGHIỆP VỤ ──
+    // ── NGHIỆP VỤ ── (everyone sees this)
     { key: 'grp-nghiepvu', type: 'group', label: 'NGHIỆP VỤ' },
     {
       key: 'van-ban',
@@ -107,82 +125,101 @@ function buildMenuItems(badgeCounts: { vbDen: number; tinNhan: number; thongBao:
       children: [
         { key: '/lich/ca-nhan', icon: <UserOutlined />, label: 'Lịch cá nhân' },
         { key: '/lich/co-quan', icon: <BankOutlined />, label: 'Lịch cơ quan' },
-        { key: '/lich/lanh-dao', icon: <SolutionOutlined />, label: 'Lịch lãnh đạo' },
+        ...(isLeader || isAdmin ? [{ key: '/lich/lanh-dao', icon: <SolutionOutlined />, label: 'Lịch lãnh đạo' }] : []),
       ],
     },
     { key: '/danh-ba', icon: <ContactsOutlined />, label: 'Danh bạ' },
-    // ── QUẢN LÝ ──
-    { key: 'grp-quanly', type: 'group', label: 'QUẢN LÝ' },
-    {
-      key: 'kho-luu-tru',
-      icon: <DatabaseOutlined />,
-      label: 'Kho lưu trữ',
-      children: [
-        { key: '/kho-luu-tru', icon: <DatabaseOutlined />, label: 'Danh mục kho/phông' },
-        { key: '/kho-luu-tru/muon-tra', icon: <SwapOutlined />, label: 'Mượn/trả hồ sơ' },
-      ],
-    },
-    { key: '/tai-lieu', icon: <FileTextOutlined />, label: 'Tài liệu' },
-    { key: '/hop-dong', icon: <AuditOutlined />, label: 'Hợp đồng' },
-    {
-      key: 'cuoc-hop',
-      icon: <TeamOutlined />,
-      label: 'Cuộc họp',
-      children: [
-        { key: '/cuoc-hop', icon: <TeamOutlined />, label: 'Danh sách cuộc họp' },
-        { key: '/cuoc-hop/thong-ke', icon: <AppstoreOutlined />, label: 'Thống kê' },
-      ],
-    },
-    // ── TÍCH HỢP ──
-    { key: 'grp-tichhop', type: 'group', label: 'TÍCH HỢP' },
-    { key: '/lgsp', icon: <SwapOutlined />, label: 'Liên thông LGSP' },
-    { key: '/lgsp/co-quan', icon: <BankOutlined />, label: 'Cơ quan liên thông' },
-    { key: '/thong-bao-kenh', icon: <NotificationOutlined />, label: 'Kênh thông báo' },
-    {
-      key: 'doi-tac',
-      icon: <LinkOutlined />,
-      label: 'Đối tác',
-      children: [
-        { key: 'ext-vnpt', icon: <LinkOutlined />, label: <a href="https://vinvoice.vn" target="_blank" rel="noopener noreferrer">Hóa đơn VNPT</a> },
-        { key: 'ext-viettel', icon: <LinkOutlined />, label: <a href="https://sinvoice.viettel.vn" target="_blank" rel="noopener noreferrer">Hóa đơn Viettel</a> },
-        { key: 'ext-bhxh', icon: <LinkOutlined />, label: <a href="https://dichvucong.baohiemxahoi.gov.vn" target="_blank" rel="noopener noreferrer">Bảo hiểm XH</a> },
-        { key: 'ext-thue', icon: <LinkOutlined />, label: <a href="https://thuedientu.gdt.gov.vn" target="_blank" rel="noopener noreferrer">Thuế điện tử</a> },
-      ],
-    },
-    // ── HỆ THỐNG ──
-    { key: 'grp-hethong', type: 'group', label: 'HỆ THỐNG' },
-    {
-      key: 'quan-tri',
-      icon: <SettingOutlined />,
-      label: 'Quản trị',
-      children: [
-        { key: '/quan-tri/don-vi', icon: <ApartmentOutlined />, label: 'Đơn vị' },
-        { key: '/quan-tri/chuc-vu', icon: <IdcardOutlined />, label: 'Chức vụ' },
-        { key: '/quan-tri/nguoi-dung', icon: <UserOutlined />, label: 'Người dùng' },
-        { key: '/quan-tri/nhom-quyen', icon: <KeyOutlined />, label: 'Nhóm quyền' },
-        { key: '/quan-tri/chuc-nang', icon: <AppstoreOutlined />, label: 'Chức năng' },
-      ],
-    },
-    {
-      key: 'danh-muc',
-      icon: <BookOutlined />,
-      label: 'Danh mục',
-      children: [
-        { key: '/quan-tri/so-van-ban', icon: <BookOutlined />, label: 'Sổ văn bản' },
-        { key: '/quan-tri/loai-van-ban', icon: <TagsOutlined />, label: 'Loại văn bản' },
-        { key: '/quan-tri/linh-vuc', icon: <ClusterOutlined />, label: 'Lĩnh vực' },
-        { key: '/quan-tri/thuoc-tinh-van-ban', icon: <TableOutlined />, label: 'Thuộc tính VB' },
-        { key: '/quan-tri/co-quan', icon: <BankOutlined />, label: 'Cơ quan' },
-        { key: '/quan-tri/nguoi-ky', icon: <SolutionOutlined />, label: 'Người ký' },
-        { key: '/quan-tri/nhom-lam-viec', icon: <TeamOutlined />, label: 'Nhóm làm việc' },
-        { key: '/quan-tri/uy-quyen', icon: <SwapOutlined />, label: 'Ủy quyền' },
-        { key: '/quan-tri/dia-ban', icon: <EnvironmentOutlined />, label: 'Địa bàn' },
-        { key: '/quan-tri/lich-lam-viec', icon: <CalendarOutlined />, label: 'Lịch làm việc' },
-        { key: '/quan-tri/mau-thong-bao', icon: <MailOutlined />, label: 'Mẫu thông báo' },
-        { key: '/quan-tri/cau-hinh', icon: <ToolOutlined />, label: 'Cấu hình' },
-      ],
-    },
   ];
+
+  // ── QUẢN LÝ ── (Admin, Lãnh đạo, Văn thư see this)
+  if (canManage) {
+    items.push(
+      { key: 'grp-quanly', type: 'group', label: 'QUẢN LÝ' },
+      {
+        key: 'kho-luu-tru',
+        icon: <DatabaseOutlined />,
+        label: 'Kho lưu trữ',
+        children: [
+          { key: '/kho-luu-tru', icon: <DatabaseOutlined />, label: 'Danh mục kho/phông' },
+          { key: '/kho-luu-tru/muon-tra', icon: <SwapOutlined />, label: 'Mượn/trả hồ sơ' },
+        ],
+      },
+      { key: '/tai-lieu', icon: <FileTextOutlined />, label: 'Tài liệu' },
+      { key: '/hop-dong', icon: <AuditOutlined />, label: 'Hợp đồng' },
+      {
+        key: 'cuoc-hop',
+        icon: <TeamOutlined />,
+        label: 'Cuộc họp',
+        children: [
+          { key: '/cuoc-hop', icon: <TeamOutlined />, label: 'Danh sách cuộc họp' },
+          { key: '/cuoc-hop/thong-ke', icon: <AppstoreOutlined />, label: 'Thống kê' },
+        ],
+      },
+    );
+  }
+
+  // ── TÍCH HỢP ── (Admin only for LGSP/notification config; partner links for everyone)
+  if (isAdmin) {
+    items.push(
+      { key: 'grp-tichhop', type: 'group', label: 'TÍCH HỢP' },
+      { key: '/lgsp', icon: <SwapOutlined />, label: 'Liên thông LGSP' },
+      { key: '/lgsp/co-quan', icon: <BankOutlined />, label: 'Cơ quan liên thông' },
+      { key: '/thong-bao-kenh', icon: <NotificationOutlined />, label: 'Kênh thông báo' },
+    );
+  }
+
+  // Đối tác links — everyone can see
+  items.push({
+    key: 'doi-tac',
+    icon: <LinkOutlined />,
+    label: 'Đối tác',
+    children: [
+      { key: 'ext-vnpt', icon: <LinkOutlined />, label: <a href="https://vinvoice.vn" target="_blank" rel="noopener noreferrer">Hóa đơn VNPT</a> },
+      { key: 'ext-viettel', icon: <LinkOutlined />, label: <a href="https://sinvoice.viettel.vn" target="_blank" rel="noopener noreferrer">Hóa đơn Viettel</a> },
+      { key: 'ext-bhxh', icon: <LinkOutlined />, label: <a href="https://dichvucong.baohiemxahoi.gov.vn" target="_blank" rel="noopener noreferrer">Bảo hiểm XH</a> },
+      { key: 'ext-thue', icon: <LinkOutlined />, label: <a href="https://thuedientu.gdt.gov.vn" target="_blank" rel="noopener noreferrer">Thuế điện tử</a> },
+    ],
+  });
+
+  // ── HỆ THỐNG ── (Admin only)
+  if (isAdmin) {
+    items.push(
+      { key: 'grp-hethong', type: 'group', label: 'HỆ THỐNG' },
+      {
+        key: 'quan-tri',
+        icon: <SettingOutlined />,
+        label: 'Quản trị',
+        children: [
+          { key: '/quan-tri/don-vi', icon: <ApartmentOutlined />, label: 'Đơn vị' },
+          { key: '/quan-tri/chuc-vu', icon: <IdcardOutlined />, label: 'Chức vụ' },
+          { key: '/quan-tri/nguoi-dung', icon: <UserOutlined />, label: 'Người dùng' },
+          { key: '/quan-tri/nhom-quyen', icon: <KeyOutlined />, label: 'Nhóm quyền' },
+          { key: '/quan-tri/chuc-nang', icon: <AppstoreOutlined />, label: 'Chức năng' },
+        ],
+      },
+      {
+        key: 'danh-muc',
+        icon: <BookOutlined />,
+        label: 'Danh mục',
+        children: [
+          { key: '/quan-tri/so-van-ban', icon: <BookOutlined />, label: 'Sổ văn bản' },
+          { key: '/quan-tri/loai-van-ban', icon: <TagsOutlined />, label: 'Loại văn bản' },
+          { key: '/quan-tri/linh-vuc', icon: <ClusterOutlined />, label: 'Lĩnh vực' },
+          { key: '/quan-tri/thuoc-tinh-van-ban', icon: <TableOutlined />, label: 'Thuộc tính VB' },
+          { key: '/quan-tri/co-quan', icon: <BankOutlined />, label: 'Cơ quan' },
+          { key: '/quan-tri/nguoi-ky', icon: <SolutionOutlined />, label: 'Người ký' },
+          { key: '/quan-tri/nhom-lam-viec', icon: <TeamOutlined />, label: 'Nhóm làm việc' },
+          { key: '/quan-tri/uy-quyen', icon: <SwapOutlined />, label: 'Ủy quyền' },
+          { key: '/quan-tri/dia-ban', icon: <EnvironmentOutlined />, label: 'Địa bàn' },
+          { key: '/quan-tri/lich-lam-viec', icon: <CalendarOutlined />, label: 'Lịch làm việc' },
+          { key: '/quan-tri/mau-thong-bao', icon: <MailOutlined />, label: 'Mẫu thông báo' },
+          { key: '/quan-tri/cau-hinh', icon: <ToolOutlined />, label: 'Cấu hình' },
+        ],
+      },
+    );
+  }
+
+  return items;
 }
 
 // Map pathname to breadcrumb labels
@@ -447,10 +484,14 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     },
   ];
 
-  // Memoize menu items with badge counts
+  // Memoize menu items with badge counts + role-based filtering
   const menuItems = useMemo(
-    () => buildMenuItems({ vbDen: badgeCounts.vbDen, tinNhan: badgeCounts.tinNhan, thongBao: notifUnreadCount }),
-    [badgeCounts.vbDen, badgeCounts.tinNhan, notifUnreadCount]
+    () => buildMenuItems({
+      badgeCounts: { vbDen: badgeCounts.vbDen, tinNhan: badgeCounts.tinNhan, thongBao: notifUnreadCount },
+      isAdmin: user?.isAdmin ?? false,
+      roles: user?.roles ?? [],
+    }),
+    [badgeCounts.vbDen, badgeCounts.tinNhan, notifUnreadCount, user?.isAdmin, user?.roles]
   );
 
   const breadcrumbItems = buildBreadcrumbs(pathname);

@@ -44,11 +44,11 @@ export default function ProfilePage() {
 
   return (
     <div>
-      <div style={{ marginBottom: 20 }}>
-        <h2 style={{ fontSize: 22, fontWeight: 700, color: '#1B3A5C', margin: '0 0 4px 0' }}>
+      <div className="page-header">
+        <h2 className="page-title">
           Thông tin cá nhân
         </h2>
-        <p style={{ fontSize: 14, color: '#64748b', margin: 0 }}>
+        <p className="page-description">
           Xem thông tin tài khoản và đổi mật khẩu
         </p>
       </div>
@@ -58,18 +58,10 @@ export default function ProfilePage() {
         <Col xs={24} lg={14}>
           <Card
             variant="borderless"
-            style={{ borderRadius: 12, boxShadow: '0 2px 8px rgba(27,58,92,0.06)' }}
+            className="page-card"
           >
             {/* Profile header */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 20,
-              marginBottom: 24,
-              padding: '20px 24px',
-              background: 'linear-gradient(135deg, #1B3A5C 0%, #0891B2 100%)',
-              borderRadius: 10,
-            }}>
+            <div className="profile-header">
               <Avatar
                 size={72}
                 src={user.image || undefined}
@@ -132,7 +124,7 @@ export default function ProfilePage() {
         <Col xs={24} lg={10}>
           <Card
             variant="borderless"
-            style={{ borderRadius: 12, boxShadow: '0 2px 8px rgba(27,58,92,0.06)' }}
+            className="page-card"
             title={
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <LockOutlined style={{ color: '#0891B2' }} />

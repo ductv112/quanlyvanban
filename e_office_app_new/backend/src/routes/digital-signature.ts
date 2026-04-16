@@ -3,8 +3,27 @@ import type { AuthRequest } from '../middleware/auth.js';
 import { digitalSignatureRepository } from '../repositories/digital-signature.repository.js';
 import { getSigningService } from '../services/signing.service.js';
 import { handleDbError } from '../lib/error-handler.js';
+import { getFileUrl } from '../lib/minio/client.js';
 
 const router = Router();
+
+// ============================================================
+// GET /preview — Presigned URL cho preview file truoc khi ky
+// Query: file_path
+// ============================================================
+router.get('/preview', async (req: Request, res: Response) => {
+  try {
+    const filePath = req.query.file_path as string;
+    if (!filePath) {
+      res.status(400).json({ success: false, message: 'file_path la bat buoc' });
+      return;
+    }
+    const url = await getFileUrl(filePath, 3600);
+    res.json({ success: true, data: { url } });
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
 
 // ============================================================
 // POST /sign/smart-ca — Ky so qua SmartCA (2-step: initiate -> OTP)

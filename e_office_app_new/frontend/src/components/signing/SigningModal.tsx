@@ -12,6 +12,8 @@ import {
   CheckCircleOutlined,
   CloseCircleOutlined,
   LoadingOutlined,
+  EyeOutlined,
+  FilePdfOutlined,
 } from '@ant-design/icons';
 import { api } from '@/lib/api';
 import dayjs from 'dayjs';
@@ -101,6 +103,11 @@ export default function SigningModal({
   const [loading, setLoading] = useState(false);
   const [signResult, setSignResult] = useState<SignResult | null>(null);
 
+  // PDF preview state
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewExpanded, setPreviewExpanded] = useState(false);
+
   // Existing signatures for this doc
   const [signatures, setSignatures] = useState<DigitalSignatureRow[]>([]);
   const [sigLoading, setSigLoading] = useState(false);
@@ -118,9 +125,24 @@ export default function SigningModal({
     }
   }, [docId, docType, open]);
 
+  // Fetch presigned URL for PDF preview
+  const fetchPreviewUrl = useCallback(async () => {
+    if (!filePath || !open) return;
+    setPreviewLoading(true);
+    try {
+      const { data: res } = await api.get('/ky-so/preview', { params: { file_path: filePath } });
+      setPreviewUrl(res.data?.url || null);
+    } catch {
+      setPreviewUrl(null);
+    } finally {
+      setPreviewLoading(false);
+    }
+  }, [filePath, open]);
+
   useEffect(() => {
     if (open) {
       fetchSignatures();
+      fetchPreviewUrl();
       // Reset state when opening
       setStep('choose');
       setMethod('smart_ca');
@@ -128,8 +150,9 @@ export default function SigningModal({
       setOtp('');
       setCaProvider('vnpt-ca');
       setSignResult(null);
+      setPreviewExpanded(false);
     }
-  }, [open, fetchSignatures]);
+  }, [open, fetchSignatures, fetchPreviewUrl]);
 
   // Step 1 -> Step 2: Initiate signing
   const handleInitiateSign = async () => {
@@ -233,8 +256,59 @@ export default function SigningModal({
 
   // ─── Render steps ───
 
+  const renderPdfPreview = () => {
+    if (!filePath) return null;
+    return (
+      <div style={{ marginBottom: 16 }}>
+        <div
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}
+        >
+          <span style={{ fontWeight: 500, color: '#1B3A5C' }}>
+            <FilePdfOutlined style={{ marginRight: 6, color: '#DC2626' }} />
+            Xem trước văn bản
+          </span>
+          <Button
+            type="link"
+            size="small"
+            icon={<EyeOutlined />}
+            onClick={() => setPreviewExpanded(!previewExpanded)}
+            style={{ padding: 0, color: '#0891B2' }}
+          >
+            {previewExpanded ? 'Thu gọn' : 'Mở rộng'}
+          </Button>
+        </div>
+        {previewLoading ? (
+          <div style={{ textAlign: 'center', padding: 24, background: '#F8FAFC', borderRadius: 8 }}>
+            <LoadingOutlined style={{ fontSize: 20, color: '#0891B2' }} />
+            <p style={{ marginTop: 8, color: '#94A3B8', fontSize: 13 }}>Đang tải văn bản...</p>
+          </div>
+        ) : previewUrl ? (
+          <div style={{
+            border: '1px solid #E2E8F0',
+            borderRadius: 8,
+            overflow: 'hidden',
+            height: previewExpanded ? 420 : 200,
+            transition: 'height 0.3s ease',
+          }}>
+            <iframe
+              src={previewUrl}
+              style={{ width: '100%', height: '100%', border: 'none' }}
+              title="Xem trước văn bản"
+            />
+          </div>
+        ) : (
+          <div style={{ textAlign: 'center', padding: 16, background: '#F8FAFC', borderRadius: 8, color: '#94A3B8', fontSize: 13 }}>
+            Không thể tải xem trước văn bản
+          </div>
+        )}
+        <Divider style={{ margin: '16px 0' }} />
+      </div>
+    );
+  };
+
   const renderChooseStep = () => (
     <div>
+      {renderPdfPreview()}
       <h4 style={{ marginBottom: 16 }}>Chọn phương thức ký</h4>
       <Radio.Group
         value={method}
@@ -379,7 +453,7 @@ export default function SigningModal({
       title={modalTitle()}
       onCancel={handleClose}
       footer={null}
-      width={640}
+      width={720}
       destroyOnHidden
     >
       {loading && step === 'choose' ? (
