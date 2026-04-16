@@ -102,7 +102,7 @@ export default function IncomingDocPage() {
     } catch { /* ignore */ }
   }, []);
 
-  useEffect(() => { fetchDropdowns(); }, [fetchDropdowns]);
+  useEffect(() => { fetchDropdowns(); fetchExtraColumns(); }, [fetchDropdowns, fetchExtraColumns]);
   useEffect(() => { fetchData(); }, [fetchData]);
 
   // Handle ?edit=ID from detail page "Sửa" button (run once)
@@ -128,12 +128,13 @@ export default function IncomingDocPage() {
     } catch { /* ignore */ }
   };
 
-  const fetchExtraColumns = async (docTypeId: number) => {
+  // type_id=1 = VB đến (theo doc_columns convention)
+  const fetchExtraColumns = useCallback(async () => {
     try {
-      const { data: res } = await api.get('/van-ban-den/truong-bo-sung', { params: { doc_type_id: docTypeId } });
+      const { data: res } = await api.get('/van-ban-den/truong-bo-sung', { params: { doc_type_id: 1 } });
       setExtraColumns(res.data || []);
     } catch { setExtraColumns([]); }
-  };
+  }, []);
 
   const openDrawer = async (record?: IncomingDoc) => {
     if (record) {
@@ -145,12 +146,10 @@ export default function IncomingDocPage() {
         sign_date: record.sign_date ? dayjs(record.sign_date) : null,
         expired_date: record.expired_date ? dayjs(record.expired_date) : null,
       });
-      if (record.doc_type_id) await fetchExtraColumns(record.doc_type_id);
     } else {
       setEditingRecord(null);
       form.resetFields();
       form.setFieldsValue({ received_date: dayjs(), secret_id: 1, urgent_id: 1, number_paper: 1, number_copies: 1 });
-      setExtraColumns([]);
     }
     setDrawerOpen(true);
   };
@@ -362,7 +361,7 @@ export default function IncomingDocPage() {
           </Row>
           <Form.Item name="abstract" label="Trích yếu nội dung" rules={[{ required: true, message: 'Bắt buộc' }]}><TextArea rows={3} placeholder="Trích yếu nội dung văn bản" /></Form.Item>
           <Row gutter={16}>
-            <Col span={8}><Form.Item name="doc_type_id" label="Loại văn bản"><Select placeholder="Chọn loại" allowClear options={docTypes} onChange={(val) => { if (val) fetchExtraColumns(val); else setExtraColumns([]); }} /></Form.Item></Col>
+            <Col span={8}><Form.Item name="doc_type_id" label="Loại văn bản"><Select placeholder="Chọn loại" allowClear options={docTypes} /></Form.Item></Col>
             <Col span={8}><Form.Item name="doc_field_id" label="Lĩnh vực"><Select placeholder="Chọn lĩnh vực" allowClear options={docFields} /></Form.Item></Col>
             <Col span={8}><Form.Item name="signer" label="Người ký"><Input placeholder="Họ tên người ký" maxLength={200} /></Form.Item></Col>
           </Row>

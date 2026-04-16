@@ -21,10 +21,7 @@ interface DocColumn {
   description: string;
 }
 
-interface DocType {
-  id: number;
-  name: string;
-}
+// Module tabs: 1=VB đến, 2=VB đi, 3=VB dự thảo (theo doc_columns.type_id)
 
 const DATA_TYPE_OPTIONS = [
   { value: 'text', label: 'Văn bản (text)' },
@@ -43,21 +40,18 @@ export default function DocColumnConfigPage() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [data, setData] = useState<DocColumn[]>([]);
-  const [docTypes, setDocTypes] = useState<DocType[]>([]);
-  const [selectedTypeId, setSelectedTypeId] = useState<number | null>(null);
+  // type_id: 1=VB đến, 2=VB đi, 3=VB dự thảo (theo doc_columns convention)
+  const MODULE_TABS = [
+    { key: '1', label: 'Văn bản đến' },
+    { key: '2', label: 'Văn bản đi' },
+    { key: '3', label: 'Văn bản dự thảo' },
+  ];
+  const [selectedTypeId, setSelectedTypeId] = useState<number>(1);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<DocColumn | null>(null);
   const [form] = Form.useForm();
 
-  const fetchDocTypes = useCallback(async () => {
-    try {
-      const { data: res } = await api.get('/quan-tri/loai-van-ban/tree');
-      setDocTypes((res.data || []).map((t: { id: number; name: string }) => ({ id: t.id, name: t.name })));
-    } catch {}
-  }, []);
-
   const fetchColumns = useCallback(async () => {
-    if (!selectedTypeId) { setData([]); return; }
     setLoading(true);
     try {
       const { data: res } = await api.get('/quan-tri/cau-hinh-truong', { params: { type_id: selectedTypeId } });
@@ -66,9 +60,6 @@ export default function DocColumnConfigPage() {
     finally { setLoading(false); }
   }, [selectedTypeId, message]);
 
-  useEffect(() => { fetchDocTypes().then(() => {}); }, [fetchDocTypes]);
-  // Auto-select first tab khi docTypes load
-  useEffect(() => { if (docTypes.length > 0 && !selectedTypeId) setSelectedTypeId(docTypes[0].id); }, [docTypes, selectedTypeId]);
   useEffect(() => { fetchColumns(); }, [fetchColumns]);
 
   const openDrawer = (record?: DocColumn) => {
@@ -144,35 +135,29 @@ export default function DocColumnConfigPage() {
     },
   ];
 
-  const selectedTypeName = docTypes.find(t => t.id === selectedTypeId)?.name;
+  const selectedModuleName = MODULE_TABS.find(t => t.key === String(selectedTypeId))?.label || '';
 
   return (
     <Card
       title={<><SettingOutlined style={{ marginRight: 8 }} />Thuộc tính văn bản</>}
-      extra={selectedTypeId && (
+      extra={
         <Button type="primary" icon={<PlusOutlined />} onClick={() => openDrawer()}>Thêm trường mới</Button>
-      )}
+      }
     >
-      {docTypes.length === 0 ? (
-        <Empty description="Đang tải loại văn bản..." />
-      ) : (
-        <Tabs
-          type="line"
-          activeKey={selectedTypeId ? String(selectedTypeId) : undefined}
-          onChange={(key) => setSelectedTypeId(Number(key))}
-          items={docTypes.map(t => ({
-            key: String(t.id),
-            label: `${t.name} (${selectedTypeId === t.id ? data.length : '...'})`,
-          }))}
-          style={{ marginBottom: 0 }}
-        />
-      )}
+      <Tabs
+        type="line"
+        activeKey={String(selectedTypeId)}
+        onChange={(key) => setSelectedTypeId(Number(key))}
+        items={MODULE_TABS.map(t => ({
+          key: t.key,
+          label: `${t.label} (${String(selectedTypeId) === t.key ? data.length : '...'})`,
+        }))}
+        style={{ marginBottom: 0 }}
+      />
 
-      {selectedTypeId && (
-        <>
-          <div style={{ marginBottom: 12, marginTop: 12, color: '#595959' }}>
-            Các trường bổ sung cho loại <strong>{selectedTypeName}</strong>. Khi tạo/sửa văn bản loại này, các trường dưới đây sẽ hiển thị thêm trong form.
-          </div>
+      <div style={{ marginBottom: 12, marginTop: 12, color: '#595959' }}>
+        Các trường bổ sung cho <strong>{selectedModuleName}</strong>. Khi tạo/sửa văn bản, các trường dưới đây sẽ hiển thị thêm trong form.
+      </div>
           <Table<DocColumn>
             rowKey="id"
             loading={loading}
@@ -180,10 +165,8 @@ export default function DocColumnConfigPage() {
             dataSource={data}
             size="small"
             pagination={false}
-            locale={{ emptyText: <Empty description="Chưa có trường bổ sung nào" /> }}
+            locale={{ emptyText: <Empty description="Chưa có trường bổ sung nào. Bấm 'Thêm trường mới' để tạo." /> }}
           />
-        </>
-      )}
 
       <Drawer
         title={editingRecord ? 'Sửa trường bổ sung' : 'Thêm trường bổ sung'}
