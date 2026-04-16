@@ -9,7 +9,7 @@ import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
 import {
   PlusOutlined, EditOutlined, DeleteOutlined, MoreOutlined,
   CheckCircleOutlined, EyeOutlined, FileTextOutlined, ReloadOutlined,
-  SendOutlined, FormOutlined, StopOutlined,
+  SendOutlined, FormOutlined, StopOutlined, CloseCircleOutlined,
 } from '@ant-design/icons';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth.store';
@@ -273,6 +273,21 @@ export default function DraftingDocPage() {
     });
   };
 
+  const handleUnapprove = async (record: DraftingDoc) => {
+    modal.confirm({
+      title: 'Xác nhận hủy duyệt',
+      content: `Hủy duyệt văn bản dự thảo "${record.abstract?.substring(0, 50)}..."?`,
+      okText: 'Hủy duyệt', okButtonProps: { danger: true }, cancelText: 'Đóng',
+      onOk: async () => {
+        try {
+          await api.patch(`/van-ban-du-thao/${record.id}/huy-duyet`);
+          message.success('Hủy duyệt thành công');
+          fetchData();
+        } catch (err: any) { message.error(err?.response?.data?.message || 'Lỗi hủy duyệt'); }
+      },
+    });
+  };
+
   const handleReject = (record: DraftingDoc) => {
     let reason = '';
     modal.confirm({
@@ -382,6 +397,10 @@ export default function DraftingDocPage() {
             {
               key: 'release', icon: <SendOutlined />, label: 'Phát hành',
               onClick: () => handleRelease(record),
+            },
+            {
+              key: 'unapprove', icon: <CloseCircleOutlined />, label: 'Hủy duyệt',
+              onClick: () => handleUnapprove(record),
             },
           ] : []),
           ...(canEdit ? [
