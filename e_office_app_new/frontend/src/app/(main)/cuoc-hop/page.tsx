@@ -721,7 +721,7 @@ export default function CuocHopPage() {
           onChange: (p, ps) => { setPage(p); setPageSize(ps); },
         }}
         onRow={(record) => ({
-          onDoubleClick: () => router.push(`/cuoc-hop/${record.id}`),
+          onClick: () => router.push(`/cuoc-hop/${record.id}`),
           style: { cursor: 'pointer' },
         })}
         scroll={{ x: 1100 }}
