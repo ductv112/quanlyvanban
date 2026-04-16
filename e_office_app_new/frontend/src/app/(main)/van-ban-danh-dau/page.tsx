@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Card, Table, Button, Tag, Empty, App, Tooltip, Segmented } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { StarFilled, StarOutlined, EyeOutlined, DeleteOutlined } from '@ant-design/icons';
+import { StarFilled, StarOutlined, EyeOutlined, DeleteOutlined, PrinterOutlined } from '@ant-design/icons';
 import { api } from '@/lib/api';
 import dayjs from 'dayjs';
 
@@ -140,7 +140,7 @@ export default function BookmarksPage() {
   ];
 
   return (
-    <Card title={<><StarFilled style={{ color: '#faad14', marginRight: 8 }} />Văn bản đánh dấu cá nhân</>}>
+    <Card title={<><StarFilled style={{ color: '#faad14', marginRight: 8 }} />Văn bản đánh dấu cá nhân</>} extra={<Button icon={<PrinterOutlined />} onClick={() => window.print()}>In</Button>}>
       <div style={{ marginBottom: 16 }}>
         <Segmented
           value={filterType}
@@ -162,6 +162,33 @@ export default function BookmarksPage() {
         pagination={{ pageSize: 20, showTotal: (t) => `Tổng ${t} văn bản` }}
         locale={{ emptyText: <Empty description="Chưa đánh dấu văn bản nào" /> }}
       />
+
+      <div className="print-area">
+        <div className="print-header">
+          <h2>VĂN BẢN ĐÁNH DẤU CÁ NHÂN</h2>
+          <p>Ngày in: {dayjs().format('DD/MM/YYYY HH:mm')}</p>
+        </div>
+        <table>
+          <thead>
+            <tr><th>STT</th><th>Loại</th><th>Số VB</th><th>Ngày</th><th>Số ký hiệu</th><th>Trích yếu</th><th>CQ ban hành</th><th>Ghi chú</th></tr>
+          </thead>
+          <tbody>
+            {filteredData.map((r, i) => (
+              <tr key={`${r.doc_type}-${r.note_id}`}>
+                <td style={{ textAlign: 'center' }}>{i + 1}</td>
+                <td>{DOC_TYPE_LABEL[r.doc_type] || r.doc_type}</td>
+                <td style={{ textAlign: 'center' }}>{r.doc_number}</td>
+                <td>{r.doc_received_date ? dayjs(r.doc_received_date).format('DD/MM/YYYY') : ''}</td>
+                <td>{r.doc_notation}</td>
+                <td>{r.doc_abstract}</td>
+                <td>{r.doc_publish_unit}</td>
+                <td>{r.note}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div className="print-footer">Tổng: {filteredData.length} văn bản</div>
+      </div>
     </Card>
   );
 }

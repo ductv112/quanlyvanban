@@ -6,7 +6,7 @@ import {
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
-  SwapOutlined, ReloadOutlined,
+  SwapOutlined, ReloadOutlined, PrinterOutlined,
 } from '@ant-design/icons';
 import { api } from '@/lib/api';
 import { useRouter } from 'next/navigation';
@@ -165,6 +165,7 @@ export default function LienThongDocPage() {
   return (
     <Card
       title={<><SwapOutlined style={{ marginRight: 8 }} />Văn bản liên thông</>}
+      extra={<Button icon={<PrinterOutlined />} onClick={() => window.print()}>In</Button>}
     >
       <Row gutter={[12, 12]} className="filter-row">
         <Col span={6}>
@@ -243,6 +244,32 @@ export default function LienThongDocPage() {
         })}
         onChange={(p) => { setPage(p.current || 1); setPageSize(p.pageSize || 20); }}
       />
+
+      <div className="print-area">
+        <div className="print-header">
+          <h2>DANH SÁCH VĂN BẢN LIÊN THÔNG</h2>
+          <p>Ngày in: {dayjs().format('DD/MM/YYYY HH:mm')}</p>
+        </div>
+        <table>
+          <thead>
+            <tr><th>STT</th><th>Ngày nhận</th><th>Số ký hiệu</th><th>Trích yếu</th><th>CQ gửi</th><th>Người ký</th><th>Trạng thái</th></tr>
+          </thead>
+          <tbody>
+            {data.map((r, i) => (
+              <tr key={r.id}>
+                <td style={{ textAlign: 'center' }}>{i + 1}</td>
+                <td>{r.received_date ? dayjs(r.received_date).format('DD/MM/YYYY') : ''}</td>
+                <td>{r.notation}</td>
+                <td>{r.abstract}</td>
+                <td>{r.publish_unit}</td>
+                <td>{r.signer}</td>
+                <td>{STATUS_MAP[r.status]?.text || r.status}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div className="print-footer">Tổng: {data.length} văn bản</div>
+      </div>
     </Card>
   );
 }

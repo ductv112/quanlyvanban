@@ -9,7 +9,7 @@ import {
 import type { ColumnsType } from 'antd/es/table';
 import {
   PlusOutlined, MoreOutlined, EyeOutlined, EditOutlined, DeleteOutlined,
-  SearchOutlined, SaveOutlined, ExclamationCircleOutlined,
+  SearchOutlined, SaveOutlined, ExclamationCircleOutlined, PrinterOutlined,
 } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import dayjs from 'dayjs';
@@ -425,13 +425,16 @@ export default function HoSoCongViecPage() {
       {/* Header */}
       <div className="page-header">
         <h1 className="page-title">Hồ sơ công việc</h1>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => openDrawer()}
-        >
-          Tạo hồ sơ mới
-        </Button>
+        <Space>
+          <Button icon={<PrinterOutlined />} onClick={() => window.print()}>In</Button>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => openDrawer()}
+          >
+            Tạo hồ sơ mới
+          </Button>
+        </Space>
       </div>
 
       <div className="page-card">
@@ -708,6 +711,32 @@ export default function HoSoCongViecPage() {
           </Row>
         </Form>
       </Drawer>
+
+      <div className="print-area">
+        <div className="print-header">
+          <h2>DANH SÁCH HỒ SƠ CÔNG VIỆC</h2>
+          <p>Ngày in: {dayjs().format('DD/MM/YYYY HH:mm')}</p>
+        </div>
+        <table>
+          <thead>
+            <tr><th>STT</th><th>Tên hồ sơ</th><th>Ngày bắt đầu</th><th>Hạn hoàn thành</th><th>Người phụ trách</th><th>Tiến độ</th><th>Trạng thái</th></tr>
+          </thead>
+          <tbody>
+            {data.map((r, i) => (
+              <tr key={r.id}>
+                <td style={{ textAlign: 'center' }}>{i + 1}</td>
+                <td>{r.name}</td>
+                <td>{r.start_date ? dayjs(r.start_date).format('DD/MM/YYYY') : ''}</td>
+                <td>{r.end_date ? dayjs(r.end_date).format('DD/MM/YYYY') : ''}</td>
+                <td>{r.curator_name}</td>
+                <td style={{ textAlign: 'center' }}>{r.progress}%</td>
+                <td>{r.status === 0 ? 'Mới' : r.status === 1 ? 'Đang xử lý' : r.status === 2 ? 'Trình duyệt' : r.status === 3 ? 'Hoàn thành' : ''}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div className="print-footer">Tổng: {data.length} hồ sơ</div>
+      </div>
     </div>
   );
 }
