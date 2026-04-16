@@ -372,12 +372,12 @@ INSERT INTO edoc.message_recipients (message_id, staff_id, is_read) VALUES
 
 -- ============ NOTICES (6 system notices) ============
 INSERT INTO edoc.notices (id, unit_id, title, content, notice_type, created_by) VALUES
-  (1, 1, 'Hệ thống e-Office chính thức hoạt động',              'Hệ thống Quản lý văn bản điện tử e-Office triển khai từ 14/04/2026. Đề nghị toàn thể CBCC sử dụng hệ thống mới.',   'system',       1),
-  (2, 1, 'Bảo trì hệ thống ngày 15/04/2026',                   'Hệ thống tạm ngưng từ 22h00 đến 23h00 ngày 15/04/2026 để nâng cấp và bảo trì.',                                      'maintenance',  1),
-  (3, 1, 'Cập nhật phiên bản v2.0 — Module mới',               'Tính năng mới: Họp không giấy, Kho lưu trữ, Tài liệu, Hợp đồng, LGSP, Ký số.',                                      'update',       1),
-  (4, 1, 'Hướng dẫn sử dụng module Ký số điện tử',            'Tài liệu hướng dẫn ký số đã được cập nhật tại mục Tài liệu chung.',                                                   'guide',        1),
-  (5, 1, 'Nhắc nhở đổi mật khẩu định kỳ',                      'Đề nghị toàn bộ CBCC đổi mật khẩu 3 tháng/lần để đảm bảo an toàn thông tin.',                                         'security',     1),
-  (6, 1, 'Demo hệ thống cho Ban lãnh đạo 18-19/04',            'Các phòng ban chuẩn bị dữ liệu demo. Lịch demo: Buổi sáng 18/04 — module VB, buổi chiều — module HSCV và Họp.',      'important',    1);
+  (1, NULL, 'Hệ thống e-Office chính thức hoạt động',              'Hệ thống Quản lý văn bản điện tử e-Office triển khai từ 14/04/2026. Đề nghị toàn thể CBCC sử dụng hệ thống mới.',   'system',       1),
+  (2, NULL, 'Bảo trì hệ thống ngày 15/04/2026',                   'Hệ thống tạm ngưng từ 22h00 đến 23h00 ngày 15/04/2026 để nâng cấp và bảo trì.',                                      'maintenance',  1),
+  (3, NULL, 'Cập nhật phiên bản v2.0 — Module mới',               'Tính năng mới: Họp không giấy, Kho lưu trữ, Tài liệu, Hợp đồng, LGSP, Ký số.',                                      'update',       1),
+  (4, NULL, 'Hướng dẫn sử dụng module Ký số điện tử',            'Tài liệu hướng dẫn ký số đã được cập nhật tại mục Tài liệu chung.',                                                   'guide',        1),
+  (5, NULL, 'Nhắc nhở đổi mật khẩu định kỳ',                      'Đề nghị toàn bộ CBCC đổi mật khẩu 3 tháng/lần để đảm bảo an toàn thông tin.',                                         'security',     1),
+  (6, NULL, 'Demo hệ thống cho Ban lãnh đạo 18-19/04',            'Các phòng ban chuẩn bị dữ liệu demo. Lịch demo: Buổi sáng 18/04 — module VB, buổi chiều — module HSCV và Họp.',      'important',    1);
 
 -- ============ CALENDAR EVENTS (8 events) ============
 INSERT INTO public.calendar_events (id, title, description, start_time, end_time, all_day, color, scope, unit_id, created_by) VALUES
