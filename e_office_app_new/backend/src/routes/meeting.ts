@@ -216,7 +216,8 @@ router.get('/thong-ke', async (req: Request, res: Response) => {
     const byMonth = rows.filter((r: any) => r.stat_type === 'by_month');
     const byRoom = rows.filter((r: any) => r.stat_type === 'by_room');
     const byType = rows.filter((r: any) => r.stat_type === 'by_meeting_type');
-    const summary = rows.find((r: any) => r.stat_type === 'summary') as any;
+    const summaryRows = rows.filter((r: any) => r.stat_type === 'summary');
+    const getSummary = (name: string) => Number((summaryRows.find((r: any) => r.category_name === name) as any)?.count || 0);
 
     res.json({
       success: true,
@@ -224,10 +225,10 @@ router.get('/thong-ke', async (req: Request, res: Response) => {
         by_month: byMonth,
         by_room: byRoom,
         by_type: byType,
-        total: summary?.total || 0,
-        approved: summary?.approved || 0,
-        pending: summary?.pending || 0,
-        rejected: summary?.rejected || 0,
+        total: getSummary('total'),
+        approved: getSummary('approved'),
+        pending: getSummary('pending'),
+        rejected: getSummary('rejected'),
       },
     });
   } catch (error) {
