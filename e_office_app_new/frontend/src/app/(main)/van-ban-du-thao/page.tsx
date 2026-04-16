@@ -195,7 +195,7 @@ export default function DraftingDocPage() {
     } catch { setStaffList([]); }
   };
 
-  const openDrawer = (record?: DraftingDoc) => {
+  const openDrawer = async (record?: DraftingDoc) => {
     if (record) {
       setEditingRecord(record);
       form.setFieldsValue({
