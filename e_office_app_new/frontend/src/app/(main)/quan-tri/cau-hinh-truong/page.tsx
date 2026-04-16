@@ -146,31 +146,35 @@ export default function DocColumnConfigPage() {
 
   return (
     <Card
-      title={<><SettingOutlined style={{ marginRight: 8 }} />Cấu hình trường bổ sung văn bản</>}
-      extra={
-        <Space>
+      title={<><SettingOutlined style={{ marginRight: 8 }} />Thuộc tính văn bản</>}
+    >
+      {/* Chọn loại VB — nổi bật */}
+      <div style={{ marginBottom: 16, padding: 16, background: '#f0f5ff', borderRadius: 8, border: '1px solid #d6e4ff' }}>
+        <Space size={16} align="center" wrap>
+          <span style={{ fontWeight: 600, color: '#1B3A5C' }}>Loại văn bản:</span>
           <Select
-            style={{ width: 250 }}
-            placeholder="Chọn loại văn bản..."
+            style={{ width: 300 }}
+            placeholder="-- Chọn loại văn bản để cấu hình --"
             value={selectedTypeId}
             onChange={setSelectedTypeId}
             options={docTypes.map(t => ({ value: t.id, label: t.name }))}
             allowClear
+            size="large"
           />
           {selectedTypeId && (
             <Button type="primary" icon={<PlusOutlined />} onClick={() => openDrawer()}>
-              Thêm trường
+              Thêm trường mới
             </Button>
           )}
         </Space>
-      }
-    >
+      </div>
+
       {!selectedTypeId ? (
-        <Empty description="Vui lòng chọn loại văn bản để xem cấu hình trường bổ sung" />
+        <Empty description="Chọn loại văn bản ở trên để xem và cấu hình các trường bổ sung" style={{ padding: '40px 0' }} />
       ) : (
         <>
           <div style={{ marginBottom: 12, color: '#595959' }}>
-            Các trường bổ sung cho loại <strong>{selectedTypeName}</strong>. Trường này sẽ hiển thị thêm trong form tạo/sửa văn bản.
+            Các trường bổ sung cho loại <strong>{selectedTypeName}</strong>. Khi tạo/sửa văn bản loại này, các trường dưới đây sẽ hiển thị thêm trong form.
           </div>
           <Table<DocColumn>
             rowKey="id"
