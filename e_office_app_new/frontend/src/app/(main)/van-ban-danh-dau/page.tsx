@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Card, Table, Button, Tag, Empty, App, Tooltip, Segmented } from 'antd';
+import { Card, Table, Button, Tag, Empty, App, Tooltip, Tabs } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { StarFilled, StarOutlined, EyeOutlined, DeleteOutlined, PrinterOutlined } from '@ant-design/icons';
 import { api } from '@/lib/api';
@@ -141,18 +141,18 @@ export default function BookmarksPage() {
 
   return (
     <Card title={<><StarFilled style={{ color: '#faad14', marginRight: 8 }} />Văn bản đánh dấu cá nhân</>} extra={<Button icon={<PrinterOutlined />} onClick={() => window.print()}>In</Button>}>
-      <div style={{ marginBottom: 16 }}>
-        <Segmented
-          value={filterType}
-          onChange={(val) => setFilterType(val as string)}
-          options={[
-            { label: `Tất cả (${data.length})`, value: 'all' },
-            { label: `VB đến (${data.filter(d => d.doc_type === 'incoming').length})`, value: 'incoming' },
-            { label: `VB đi (${data.filter(d => d.doc_type === 'outgoing').length})`, value: 'outgoing' },
-            { label: `Dự thảo (${data.filter(d => d.doc_type === 'drafting').length})`, value: 'drafting' },
-          ]}
-        />
-      </div>
+      <Tabs
+        type="line"
+        activeKey={filterType}
+        onChange={(key) => setFilterType(key)}
+        style={{ marginBottom: 0 }}
+        items={[
+          { key: 'all', label: `Tất cả (${data.length})` },
+          { key: 'incoming', label: `VB đến (${data.filter(d => d.doc_type === 'incoming').length})` },
+          { key: 'outgoing', label: `VB đi (${data.filter(d => d.doc_type === 'outgoing').length})` },
+          { key: 'drafting', label: `Dự thảo (${data.filter(d => d.doc_type === 'drafting').length})` },
+        ]}
+      />
       <Table<Bookmark>
         rowKey={(r) => `${r.doc_type}-${r.note_id}`}
         loading={loading}
