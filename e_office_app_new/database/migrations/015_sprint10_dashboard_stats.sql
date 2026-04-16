@@ -70,7 +70,7 @@ BEGIN
   RETURN QUERY
   SELECT
     d.id,
-    d.document_code::VARCHAR AS doc_code,
+    COALESCE(NULLIF(d.notation, ''), d.document_code, '')::VARCHAR AS doc_code,
     d.abstract,
     d.received_date,
     CASE d.urgent_id
@@ -143,7 +143,7 @@ BEGIN
   RETURN QUERY
   SELECT
     d.id,
-    d.document_code::VARCHAR AS doc_code,
+    COALESCE(NULLIF(d.notation, ''), d.document_code, '')::VARCHAR AS doc_code,
     d.abstract,
     COALESCE(d.publish_date, d.received_date, d.created_at) AS sent_date,
     COALESCE(dt.name, '')::VARCHAR AS doc_type_name
