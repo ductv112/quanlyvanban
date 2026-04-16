@@ -87,14 +87,15 @@ export default function OutgoingDocDetailPage() {
   const [uploading, setUploading] = useState(false);
 
   const fetchDoc = useCallback(async () => { try { const { data: res } = await api.get(`/van-ban-di/${docId}`); setDoc(res.data); } catch { message.error('Không tìm thấy văn bản'); router.push('/van-ban-di'); } }, [docId, message, router]);
+  const fetchBookmarkStatus = useCallback(async () => { try { const { data: res } = await api.get('/van-ban-di/danh-dau-ca-nhan'); const bookmarks: { doc_id: number | string }[] = res.data || []; setIsBookmarked(bookmarks.some((b) => Number(b.doc_id) === Number(docId))); } catch {} }, [docId]);
   const fetchAttachments = useCallback(async () => { try { const { data: res } = await api.get(`/van-ban-di/${docId}/dinh-kem`); setAttachments(res.data || []); } catch {} }, [docId]);
   const fetchRecipients = useCallback(async () => { try { const { data: res } = await api.get(`/van-ban-di/${docId}/nguoi-nhan`); setRecipients(res.data || []); } catch {} }, [docId]);
   const fetchHistory = useCallback(async () => { try { const { data: res } = await api.get(`/van-ban-di/${docId}/lich-su`); setHistory(res.data || []); } catch {} }, [docId]);
 
   useEffect(() => {
     setLoading(true);
-    Promise.all([fetchDoc(), fetchAttachments(), fetchRecipients(), fetchHistory()]).finally(() => setLoading(false));
-  }, [fetchDoc, fetchAttachments, fetchRecipients, fetchHistory]);
+    Promise.all([fetchDoc(), fetchAttachments(), fetchRecipients(), fetchHistory(), fetchBookmarkStatus()]).finally(() => setLoading(false));
+  }, [fetchDoc, fetchAttachments, fetchRecipients, fetchHistory, fetchBookmarkStatus]);
 
   // Actions
   const handleApprove = async () => { try { await api.patch(`/van-ban-di/${docId}/duyet`); message.success('Duyệt thành công'); fetchDoc(); fetchHistory(); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } };
