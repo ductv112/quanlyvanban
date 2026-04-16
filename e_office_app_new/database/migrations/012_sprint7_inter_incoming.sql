@@ -296,6 +296,10 @@ BEGIN
     p_staff_id, NOW()
   ) RETURNING id INTO v_incoming_id;
 
+  -- Phân phối VB đến cho người nhận bàn giao
+  INSERT INTO edoc.user_incoming_docs (incoming_doc_id, staff_id, is_read, created_at)
+  VALUES (v_incoming_id, p_staff_id, FALSE, NOW());
+
   -- Cập nhật trạng thái VB liên thông
   UPDATE edoc.inter_incoming_docs SET status = 'received', updated_at = NOW() WHERE id = p_id;
 
