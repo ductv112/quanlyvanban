@@ -110,7 +110,7 @@ export default function IncomingDocDetailPage() {
   const [actionLoading, setActionLoading] = useState(false);
 
   const fetchDoc = useCallback(async () => { try { const { data: res } = await api.get(`/van-ban-den/${docId}`); setDoc(res.data); } catch { message.error('Không tìm thấy văn bản'); router.push('/van-ban-den'); } }, [docId, message, router]);
-  const fetchBookmarkStatus = useCallback(async () => { try { const { data: res } = await api.get('/van-ban-den/danh-dau-ca-nhan'); const bookmarks: { doc_id: number }[] = res.data || []; setIsBookmarked(bookmarks.some((b) => b.doc_id === Number(docId))); } catch {} }, [docId]);
+  const fetchBookmarkStatus = useCallback(async () => { try { const { data: res } = await api.get('/van-ban-den/danh-dau-ca-nhan'); const bookmarks: { doc_id: number | string }[] = res.data || []; setIsBookmarked(bookmarks.some((b) => Number(b.doc_id) === Number(docId))); } catch {} }, [docId]);
 
   const fetchStaffOptions = useCallback(async () => {
     try {
