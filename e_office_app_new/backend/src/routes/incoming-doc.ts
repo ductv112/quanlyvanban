@@ -451,7 +451,26 @@ router.post('/:id/danh-dau', async (req: Request, res: Response) => {
 });
 
 // ============================================================
-// 3.8 APPROVE / UNAPPROVE / RECEIVE PAPER
+// 3.8 RETRACT (Thu hồi)
+// ============================================================
+
+// POST /:id/thu-hoi — Thu hồi VB đến (xóa người nhận, reset duyệt)
+router.post('/:id/thu-hoi', async (req: Request, res: Response) => {
+  try {
+    const { staffId } = (req as AuthRequest).user;
+    const result = await incomingDocRepository.retract(Number(req.params.id), staffId);
+    if (!result.success) {
+      res.status(400).json({ success: false, message: result.message });
+      return;
+    }
+    res.json({ success: true, data: { message: result.message } });
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
+
+// ============================================================
+// 3.9 APPROVE / UNAPPROVE / RECEIVE PAPER
 // ============================================================
 
 // PATCH /:id/duyet

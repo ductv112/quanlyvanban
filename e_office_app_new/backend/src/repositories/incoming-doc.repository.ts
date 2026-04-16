@@ -280,7 +280,13 @@ export const incomingDocRepository = {
     return callFunction<StaffNoteRow>('edoc.fn_staff_note_get_list', [staffId, docType]);
   },
 
-  // --- 3.8 Approve ---
+  // --- 3.8 Retract ---
+  async retract(id: number, staffId: number): Promise<DbResult> {
+    const row = await callFunctionOne<DbResult>('edoc.fn_incoming_doc_retract', [id, staffId]);
+    return row ?? { success: false, message: 'Không tìm thấy văn bản' };
+  },
+
+  // --- 3.9 Approve ---
   async approve(id: number, staffId: number): Promise<DbResult> {
     const row = await callFunctionOne<DbResult>('edoc.fn_incoming_doc_approve', [id, staffId]);
     return row ?? { success: false, message: 'Không tìm thấy văn bản' };

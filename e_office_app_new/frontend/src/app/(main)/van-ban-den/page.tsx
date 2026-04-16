@@ -9,6 +9,7 @@ import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
 import {
   PlusOutlined, EditOutlined, DeleteOutlined, MoreOutlined,
   CheckCircleOutlined, EyeOutlined, FileTextOutlined, ReloadOutlined,
+  CloseCircleOutlined, RollbackOutlined,
 } from '@ant-design/icons';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth.store';
@@ -180,6 +181,28 @@ export default function IncomingDocPage() {
     });
   };
 
+  const handleUnapprove = async (record: IncomingDoc) => {
+    modal.confirm({
+      title: 'Xác nhận hủy duyệt', content: `Hủy duyệt văn bản "${record.abstract?.substring(0, 50)}..."?`,
+      okText: 'Hủy duyệt', okButtonProps: { danger: true }, cancelText: 'Đóng',
+      onOk: async () => {
+        try { await api.patch(`/van-ban-den/${record.id}/huy-duyet`); message.success('Hủy duyệt thành công'); fetchData(); }
+        catch (err: any) { message.error(err?.response?.data?.message || 'Lỗi hủy duyệt'); }
+      },
+    });
+  };
+
+  const handleRetract = async (record: IncomingDoc) => {
+    modal.confirm({
+      title: 'Thu hồi văn bản đến', content: 'Thu hồi sẽ xóa tất cả người nhận và đặt lại trạng thái chưa duyệt. Bạn chắc chắn?',
+      okText: 'Thu hồi', okButtonProps: { danger: true }, cancelText: 'Hủy',
+      onOk: async () => {
+        try { await api.post(`/van-ban-den/${record.id}/thu-hoi`); message.success('Thu hồi thành công'); fetchData(); }
+        catch (err: any) { message.error(err?.response?.data?.message || 'Lỗi thu hồi'); }
+      },
+    });
+  };
+
   const handleApprove = async (record: IncomingDoc) => {
     try { await api.patch(`/van-ban-den/${record.id}/duyet`); message.success('Duyệt thành công'); fetchData(); }
     catch (err: any) { message.error(err?.response?.data?.message || 'Lỗi duyệt'); }
@@ -232,9 +255,13 @@ export default function IncomingDocPage() {
           ...(!record.approved ? [
             { key: 'edit', icon: <EditOutlined />, label: 'Sửa', onClick: () => openDrawer(record) },
             { key: 'approve', icon: <CheckCircleOutlined />, label: 'Duyệt', onClick: () => handleApprove(record) },
+            { key: 'retract', icon: <RollbackOutlined />, label: 'Thu hồi', onClick: () => handleRetract(record) },
             { type: 'divider' as const },
             { key: 'delete', icon: <DeleteOutlined />, label: 'Xóa', danger: true, onClick: () => handleDelete(record) },
-          ] : []),
+          ] : [
+            { key: 'unapprove', icon: <CloseCircleOutlined />, label: 'Hủy duyệt', onClick: () => handleUnapprove(record) },
+            { key: 'retract', icon: <RollbackOutlined />, label: 'Thu hồi', onClick: () => handleRetract(record) },
+          ]),
         ];
         return (
           <Dropdown trigger={['click']} menu={{ items }}>

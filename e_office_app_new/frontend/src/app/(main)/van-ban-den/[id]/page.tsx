@@ -134,6 +134,7 @@ export default function IncomingDocDetailPage() {
   // Actions
   const handleApprove = async () => { try { await api.patch(`/van-ban-den/${docId}/duyet`); message.success('Duyệt thành công'); fetchDoc(); fetchHistory(); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } };
   const handleUnapprove = async () => { try { await api.patch(`/van-ban-den/${docId}/huy-duyet`); message.success('Hủy duyệt thành công'); fetchDoc(); fetchHistory(); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } };
+  const handleRetract = () => { modal.confirm({ title: 'Thu hồi văn bản đến', content: 'Thu hồi sẽ xóa tất cả người nhận và đặt lại trạng thái chưa duyệt. Bạn chắc chắn?', okText: 'Thu hồi', okButtonProps: { danger: true }, cancelText: 'Hủy', onOk: async () => { try { await api.post(`/van-ban-den/${docId}/thu-hoi`); message.success('Thu hồi thành công'); fetchDoc(); fetchHistory(); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } } }); };
 
   const openGiaoViec = () => {
     giaoViecForm.resetFields();
@@ -337,6 +338,8 @@ export default function IncomingDocDetailPage() {
               <Button icon={<EditOutlined />} onClick={() => router.push(`/van-ban-den?edit=${doc.id}`)}>Sửa</Button>
               <Button type="primary" icon={<CheckCircleOutlined />} onClick={handleApprove}>Duyệt</Button>
               <Dropdown menu={{ items: [
+                { key: 'retract', icon: <RollbackOutlined />, label: 'Thu hồi', onClick: handleRetract },
+                { type: 'divider' as const },
                 { key: 'delete', icon: <DeleteOutlined />, label: 'Xóa văn bản', danger: true, onClick: handleDelete },
               ] }}>
                 <Button icon={<MoreOutlined />} />
@@ -349,6 +352,7 @@ export default function IncomingDocDetailPage() {
               <Button icon={<CommentOutlined />} onClick={() => document.getElementById('note-input')?.focus()}>Bút phê</Button>
               <Dropdown menu={{ items: [
                 ...(!doc.is_received_paper ? [{ key: 'paper', icon: <InboxOutlined />, label: 'Nhận bản giấy', onClick: handleReceivePaper }] : []),
+                { key: 'retract', icon: <RollbackOutlined />, label: 'Thu hồi', onClick: handleRetract },
               ] }}>
                 <Button icon={<MoreOutlined />} />
               </Dropdown>

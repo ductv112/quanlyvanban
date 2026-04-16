@@ -935,3 +935,37 @@ BEGIN
   RETURN QUERY SELECT TRUE, 'Đã xác nhận nhận bản giấy'::TEXT;
 END;
 $$;
+
+-- ==========================================
+-- FN: THU HỒI VĂN BẢN ĐẾN (Retract)
+-- Xóa user_incoming_docs (trừ người tạo), reset approved
+-- ==========================================
+CREATE OR REPLACE FUNCTION edoc.fn_incoming_doc_retract(
+  p_id       BIGINT,
+  p_staff_id INT
+)
+RETURNS TABLE (
+  success BOOLEAN,
+  message TEXT
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_deleted_count INT;
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM edoc.incoming_docs WHERE id = p_id) THEN
+    RETURN QUERY SELECT FALSE, 'Không tìm thấy văn bản đến'::TEXT; RETURN;
+  END IF;
+
+  DELETE FROM edoc.user_incoming_docs
+  WHERE incoming_doc_id = p_id AND staff_id != p_staff_id;
+  GET DIAGNOSTICS v_deleted_count = ROW_COUNT;
+
+  UPDATE edoc.incoming_docs
+  SET approved = FALSE, updated_by = p_staff_id, updated_at = NOW()
+  WHERE id = p_id;
+
+  RETURN QUERY SELECT TRUE, ('Thu hồi thành công — đã xóa ' || v_deleted_count || ' người nhận')::TEXT;
+END;
+$$;

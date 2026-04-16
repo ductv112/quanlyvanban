@@ -391,14 +391,15 @@ DECLARE
   v_id      BIGINT;
   v_unit_id INT;
   v_curator_id INT;
+  v_cid     INT;
 BEGIN
   -- Lấy unit_id từ văn bản gốc
   IF p_doc_type = 'incoming' THEN
-    SELECT unit_id INTO v_unit_id FROM edoc.incoming_docs WHERE id = p_doc_id;
+    SELECT ind.unit_id INTO v_unit_id FROM edoc.incoming_docs ind WHERE ind.id = p_doc_id;
   ELSIF p_doc_type = 'outgoing' THEN
-    SELECT unit_id INTO v_unit_id FROM edoc.outgoing_docs WHERE id = p_doc_id;
+    SELECT od.unit_id INTO v_unit_id FROM edoc.outgoing_docs od WHERE od.id = p_doc_id;
   ELSIF p_doc_type = 'drafting' THEN
-    SELECT unit_id INTO v_unit_id FROM edoc.drafting_docs WHERE id = p_doc_id;
+    SELECT dd.unit_id INTO v_unit_id FROM edoc.drafting_docs dd WHERE dd.id = p_doc_id;
   END IF;
 
   IF v_unit_id IS NULL THEN
@@ -419,7 +420,7 @@ BEGIN
     v_unit_id, p_name, p_note, p_start_date, p_end_date,
     v_curator_id, 0, TRUE, p_created_by, NOW(), NOW()
   )
-  RETURNING handling_docs.id INTO v_id;
+  RETURNING edoc.handling_docs.id INTO v_id;
 
   -- Liên kết văn bản với HSCV
   INSERT INTO edoc.handling_doc_links (handling_doc_id, doc_type, doc_id)
@@ -428,9 +429,9 @@ BEGIN
 
   -- Thêm các người phụ trách vào staff_handling_docs
   IF p_curator_ids IS NOT NULL THEN
-    FOR v_curator_id IN SELECT unnest(p_curator_ids) LOOP
+    FOREACH v_cid IN ARRAY p_curator_ids LOOP
       INSERT INTO edoc.staff_handling_docs (handling_doc_id, staff_id, role, assigned_at)
-      VALUES (v_id, v_curator_id, 1, NOW())
+      VALUES (v_id, v_cid, 1, NOW())
       ON CONFLICT DO NOTHING;
     END LOOP;
   END IF;
