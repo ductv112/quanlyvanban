@@ -184,7 +184,12 @@ export default function OutgoingDocPage() {
     } else {
       setEditingRecord(null);
       form.resetFields();
-      form.setFieldsValue({ received_date: dayjs(), secret_id: 1, urgent_id: 1, number_paper: 1, number_copies: 1 });
+      form.setFieldsValue({
+        received_date: dayjs(), secret_id: 1, urgent_id: 1, number_paper: 1, number_copies: 1,
+        drafting_user_id: user?.staffId,
+        drafting_unit_id: user?.departmentId || user?.unitId,
+        publish_unit_id: user?.unitId,
+      });
       setStaffList([]);
     }
     setDrawerOpen(true);
