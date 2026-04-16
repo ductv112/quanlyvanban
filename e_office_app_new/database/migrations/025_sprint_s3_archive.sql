@@ -60,10 +60,10 @@ BEGIN
   END IF;
 
   -- Kiểm tra VB tồn tại
-  IF p_doc_type = 'incoming' AND NOT EXISTS (SELECT 1 FROM edoc.incoming_docs WHERE id = p_doc_id) THEN
+  IF p_doc_type = 'incoming' AND NOT EXISTS (SELECT 1 FROM edoc.incoming_docs ind WHERE ind.id = p_doc_id) THEN
     RETURN QUERY SELECT FALSE, 'Không tìm thấy văn bản đến'::TEXT, 0::BIGINT; RETURN;
   END IF;
-  IF p_doc_type = 'outgoing' AND NOT EXISTS (SELECT 1 FROM edoc.outgoing_docs WHERE id = p_doc_id) THEN
+  IF p_doc_type = 'outgoing' AND NOT EXISTS (SELECT 1 FROM edoc.outgoing_docs od WHERE od.id = p_doc_id) THEN
     RETURN QUERY SELECT FALSE, 'Không tìm thấy văn bản đi'::TEXT, 0::BIGINT; RETURN;
   END IF;
 
