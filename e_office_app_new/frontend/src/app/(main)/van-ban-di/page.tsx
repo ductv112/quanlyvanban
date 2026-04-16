@@ -317,7 +317,6 @@ export default function OutgoingDocPage() {
             { key: 'edit', icon: <EditOutlined />, label: 'Sửa', onClick: () => openDrawer(record) },
             { key: 'approve', icon: <CheckCircleOutlined />, label: 'Duyệt', onClick: () => handleApprove(record) },
             { key: 'reject', icon: <StopOutlined />, label: 'Từ chối', danger: true, onClick: () => handleReject(record) },
-            { key: 'retract', icon: <RollbackOutlined />, label: 'Thu hồi', onClick: () => handleRetract(record) },
             { type: 'divider' as const },
             { key: 'delete', icon: <DeleteOutlined />, label: 'Xóa', danger: true, onClick: () => handleDelete(record) },
           ] : [

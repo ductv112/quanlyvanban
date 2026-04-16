@@ -418,7 +418,7 @@ export default function DraftingDocPage() {
               onClick: () => handleUnapprove(record),
             },
           ] : []),
-          ...(!record.is_released ? [
+          ...(record.approved && !record.is_released ? [
             {
               key: 'retract', icon: <RollbackOutlined />, label: 'Thu hồi',
               onClick: () => handleRetract(record),

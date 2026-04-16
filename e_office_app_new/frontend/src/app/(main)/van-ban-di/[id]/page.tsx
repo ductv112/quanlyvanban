@@ -164,7 +164,6 @@ export default function OutgoingDocDetailPage() {
               <Button type="primary" icon={<CheckCircleOutlined />} onClick={handleApprove}>Duyệt</Button>
               <Dropdown menu={{ items: [
                 { key: 'reject', icon: <StopOutlined />, label: 'Từ chối', danger: true, onClick: handleReject },
-                { key: 'retract', icon: <RollbackOutlined />, label: 'Thu hồi', onClick: handleRetract },
                 { type: 'divider' as const },
                 { key: 'delete', icon: <DeleteOutlined />, label: 'Xóa văn bản', danger: true, onClick: handleDelete },
               ] }}>
@@ -177,7 +176,7 @@ export default function OutgoingDocDetailPage() {
               <Button type="primary" icon={<SendOutlined />} onClick={openSendModal}>Gửi</Button>
               <Dropdown menu={{ items: [
                 { key: 'unapprove', icon: <CloseCircleOutlined />, label: 'Hủy duyệt', onClick: handleUnapprove },
-                { key: 'retract', icon: <RollbackOutlined />, label: 'Thu hồi', onClick: handleRetract },
+                ...(recipients.length > 0 ? [{ key: 'retract', icon: <RollbackOutlined />, label: 'Thu hồi', onClick: handleRetract }] : []),
               ] }}>
                 <Button icon={<MoreOutlined />} />
               </Dropdown>

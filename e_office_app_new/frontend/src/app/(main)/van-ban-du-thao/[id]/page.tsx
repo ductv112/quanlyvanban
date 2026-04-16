@@ -185,13 +185,13 @@ export default function DraftingDocDetailPage() {
             onClick={handleToggleBookmark}
           />
           {/* Not approved: Edit, Approve, Reject, Delete */}
+          {/* Chưa duyệt, chưa phát hành: Sửa, Duyệt, Từ chối, Xóa */}
           {!doc.approved && !doc.is_released && (
             <>
               <Button icon={<EditOutlined />} onClick={() => router.push(`/van-ban-du-thao?edit=${doc.id}`)}>Sửa</Button>
               <Button type="primary" icon={<CheckCircleOutlined />} onClick={handleApprove}>Duyệt</Button>
               <Dropdown menu={{ items: [
                 { key: 'reject', icon: <StopOutlined />, label: 'Từ chối', danger: true, onClick: () => { setRejectReason(''); setRejectModalOpen(true); } },
-                { key: 'retract', icon: <RollbackOutlined />, label: 'Thu hồi', onClick: handleRetract },
                 { type: 'divider' as const },
                 { key: 'delete', icon: <DeleteOutlined />, label: 'Xóa văn bản', danger: true, onClick: handleDelete },
               ] }}>
@@ -199,7 +199,7 @@ export default function DraftingDocDetailPage() {
               </Dropdown>
             </>
           )}
-          {/* Approved but not released: Release, Unapprove, Send, Retract, Reject */}
+          {/* Đã duyệt, chưa phát hành: Phát hành, Gửi, Hủy duyệt, Thu hồi */}
           {doc.approved && !doc.is_released && (
             <>
               <Button type="primary" style={{ background: '#52c41a', borderColor: '#52c41a' }} icon={<RocketOutlined />} onClick={handleRelease}>Phát hành</Button>
@@ -207,7 +207,6 @@ export default function DraftingDocDetailPage() {
               <Dropdown menu={{ items: [
                 { key: 'unapprove', icon: <CloseCircleOutlined />, label: 'Hủy duyệt', onClick: handleUnapprove },
                 { key: 'retract', icon: <RollbackOutlined />, label: 'Thu hồi', onClick: handleRetract },
-                { key: 'reject', icon: <StopOutlined />, label: 'Từ chối', danger: true, onClick: () => { setRejectReason(''); setRejectModalOpen(true); } },
               ] }}>
                 <Button icon={<MoreOutlined />} />
               </Dropdown>
