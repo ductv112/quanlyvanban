@@ -15,6 +15,10 @@ TRUNCATE edoc.device_tokens CASCADE;
 TRUNCATE edoc.digital_signatures CASCADE;
 TRUNCATE edoc.lgsp_tracking CASCADE;
 TRUNCATE edoc.lgsp_organizations CASCADE;
+TRUNCATE edoc.lgsp_config CASCADE;
+TRUNCATE edoc.send_doc_user_configs CASCADE;
+TRUNCATE edoc.doc_columns CASCADE;
+TRUNCATE esto.document_archives CASCADE;
 
 -- Phase 5 tables (meetings)
 TRUNCATE edoc.room_schedule_votes CASCADE;
@@ -676,6 +680,30 @@ SELECT 'DIGITAL_SIGS:    ' || count(*) FROM edoc.digital_signatures;
 SELECT 'DEVICE_TOKENS:   ' || count(*) FROM edoc.device_tokens;
 SELECT 'NOTIF_LOGS:      ' || count(*) FROM edoc.notification_logs;
 SELECT 'NOTIF_PREFS:     ' || count(*) FROM edoc.notification_preferences;
+-- ============ DYNAMIC FORM — Doc columns (Thuộc tính VB) ============
+-- Xóa cũ nếu có
+DELETE FROM edoc.doc_columns WHERE is_system = false;
+
+-- type_id: 1=VB đến, 2=VB đi, 3=VB dự thảo
+INSERT INTO edoc.doc_columns (type_id, column_name, label, data_type, max_length, sort_order, is_mandatory, is_system, description) VALUES
+  -- VB đến
+  (1, 'old_notation', 'Số hiệu cũ', 'text', 100, 1, false, false, 'Số hiệu từ hệ thống cũ (nếu có)'),
+  -- VB đi
+  (2, 'effective_from', 'Hiệu lực từ ngày', 'date', NULL, 1, false, false, 'Ngày bắt đầu có hiệu lực'),
+  (2, 'effective_to', 'Hiệu lực đến ngày', 'date', NULL, 2, false, false, 'Ngày hết hiệu lực'),
+  -- VB dự thảo
+  (3, 'review_deadline', 'Hạn góp ý', 'date', NULL, 1, false, false, 'Hạn chót gửi ý kiến góp ý'),
+  (3, 'version_number', 'Số phiên bản', 'number', NULL, 2, false, false, 'Phiên bản dự thảo (VD: 1, 2, 3)')
+ON CONFLICT (type_id, column_name) DO NOTHING;
+
+-- ============ LGSP CONFIG ============
+INSERT INTO edoc.lgsp_config (unit_id, endpoint_url, org_code, username, is_active) VALUES
+  (1, 'https://lgsp.laocai.gov.vn/api', 'UBND_LC', 'admin_lgsp', true)
+ON CONFLICT DO NOTHING;
+
+SELECT 'DOC_COLUMNS:     ' || count(*) FROM edoc.doc_columns;
+SELECT 'LGSP_CONFIG:     ' || count(*) FROM edoc.lgsp_config;
+
 SELECT '=== SEED FULL DEMO COMPLETE ===' as result;
 
 COMMIT;
