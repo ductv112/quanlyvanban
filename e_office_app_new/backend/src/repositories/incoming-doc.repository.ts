@@ -343,4 +343,27 @@ export const incomingDocRepository = {
     const row = await callFunctionOne<DbResult>('edoc.fn_incoming_doc_cancel_approve', [docId, cancelledBy]);
     return row ?? { success: false, message: 'Không tìm thấy văn bản' };
   },
+
+  // --- Link to existing HSCV ---
+  async getHandlingDocsForLink(unitId: number, keyword?: string): Promise<{ id: number; name: string; abstract: string; status: number; start_date: string; end_date: string; curator_name: string }[]> {
+    return callFunction('edoc.fn_handling_doc_get_for_link', [unitId, keyword ?? null]);
+  },
+
+  async linkToHandlingDoc(handlingDocId: number, docId: number, docType: string, linkedBy: number): Promise<DbResultWithId> {
+    const row = await callFunctionOne<DbResultWithId>('edoc.fn_handling_doc_link_doc', [handlingDocId, docId, docType, linkedBy]);
+    return row ?? { success: false, message: 'Không thể liên kết', id: 0 };
+  },
+
+  // --- LGSP send ---
+  async sendLgsp(params: { outgoingDocId?: number; incomingDocId?: number; direction: string; destOrgCode: string; destOrgName: string; createdBy: number }): Promise<DbResultWithId> {
+    const row = await callFunctionOne<DbResultWithId>('edoc.fn_lgsp_tracking_create', [
+      params.outgoingDocId ?? null, params.incomingDocId ?? null,
+      params.direction, params.destOrgCode, params.destOrgName, null, params.createdBy,
+    ]);
+    return row ?? { success: false, message: 'Không thể gửi liên thông', id: 0 };
+  },
+
+  async getLgspOrganizations(search?: string): Promise<{ id: number; org_code: string; org_name: string; is_active: boolean }[]> {
+    return callFunction('edoc.fn_lgsp_org_get_list', [search ?? null, 1, 100]);
+  },
 };

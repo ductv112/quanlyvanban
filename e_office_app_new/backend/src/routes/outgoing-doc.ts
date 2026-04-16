@@ -2,6 +2,7 @@ import { Router, type Request, type Response } from 'express';
 import type { AuthRequest } from '../middleware/auth.js';
 import { upload } from '../middleware/upload.js';
 import { outgoingDocRepository } from '../repositories/outgoing-doc.repository.js';
+import { incomingDocRepository } from '../repositories/incoming-doc.repository.js';
 import { uploadFile, deleteFile, getFileUrl } from '../lib/minio/client.js';
 import { v4 as uuidv4 } from 'uuid';
 import { handleDbError } from '../lib/error-handler.js';
@@ -564,6 +565,115 @@ router.delete('/:id/y-kien/:noteId', async (req: Request, res: Response) => {
       return;
     }
     res.json({ success: true, data: { message: result.message } });
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
+
+// ============================================================
+// UNUSED NUMBERS (Số chưa phát hành)
+// ============================================================
+
+router.get('/so-chua-phat-hanh', async (req: Request, res: Response) => {
+  try {
+    const { unitId } = (req as AuthRequest).user;
+    const { doc_book_id } = req.query;
+    if (!doc_book_id) {
+      res.status(400).json({ success: false, message: 'Sổ văn bản là bắt buộc' });
+      return;
+    }
+    const rows = await outgoingDocRepository.getUnusedNumbers(unitId, Number(doc_book_id));
+    res.json({ success: true, data: rows.map(r => r.unused_number) });
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
+
+// ============================================================
+// GIAO VIỆC (tạo HSCV từ VB đi)
+// ============================================================
+
+router.post('/:id/giao-viec', async (req: Request, res: Response) => {
+  try {
+    const { staffId } = (req as AuthRequest).user;
+    const docId = Number(req.params.id);
+    const { name, start_date, end_date, curator_ids, note } = req.body;
+
+    if (!name?.trim()) {
+      res.status(400).json({ success: false, message: 'Tên hồ sơ công việc là bắt buộc' });
+      return;
+    }
+
+    const result = await outgoingDocRepository.createHandlingDocFromDoc(
+      docId, 'outgoing', name.trim(),
+      start_date || null, end_date || null,
+      curator_ids || [], note || null, staffId,
+    );
+    if (!result.success) {
+      res.status(400).json({ success: false, message: result.message });
+      return;
+    }
+    res.status(201).json({ success: true, data: { id: result.id, message: result.message } });
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
+
+// ============================================================
+// LINK TO EXISTING HSCV
+// ============================================================
+
+router.get('/:id/danh-sach-hscv', async (req: Request, res: Response) => {
+  try {
+    const { unitId } = (req as AuthRequest).user;
+    const { keyword } = req.query;
+    const hscvRows = await incomingDocRepository.getHandlingDocsForLink(unitId, keyword as string || undefined);
+    res.json({ success: true, data: hscvRows });
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
+
+router.post('/:id/them-vao-hscv', async (req: Request, res: Response) => {
+  try {
+    const { staffId } = (req as AuthRequest).user;
+    const docId = Number(req.params.id);
+    const { handling_doc_id } = req.body;
+    if (!handling_doc_id) {
+      res.status(400).json({ success: false, message: 'Vui lòng chọn hồ sơ công việc' });
+      return;
+    }
+    const result = await outgoingDocRepository.linkToHandlingDoc(Number(handling_doc_id), docId, staffId);
+    if (!result.success) {
+      res.status(400).json({ success: false, message: result.message });
+      return;
+    }
+    res.json({ success: true, data: { id: result.id, message: result.message } });
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
+
+// ============================================================
+// LGSP — Gửi liên thông VB đi
+// ============================================================
+
+router.post('/:id/gui-lien-thong', async (req: Request, res: Response) => {
+  try {
+    const { staffId } = (req as AuthRequest).user;
+    const docId = Number(req.params.id);
+    const { org_codes } = req.body;
+    if (!Array.isArray(org_codes) || org_codes.length === 0) {
+      res.status(400).json({ success: false, message: 'Vui lòng chọn ít nhất một đơn vị' });
+      return;
+    }
+    const results = [];
+    for (const org of org_codes as { code: string; name: string }[]) {
+      const result = await outgoingDocRepository.sendLgsp(docId, org.code, org.name, staffId);
+      results.push(result);
+    }
+    const successCount = results.filter(r => r.success).length;
+    res.json({ success: true, data: { message: `Đã gửi liên thông cho ${successCount} đơn vị` } });
   } catch (error) {
     handleDbError(error, res);
   }

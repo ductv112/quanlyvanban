@@ -1,6 +1,9 @@
 import { Router, type Request, type Response } from 'express';
 import type { AuthRequest } from '../middleware/auth.js';
+import { upload } from '../middleware/upload.js';
 import { interIncomingRepository } from '../repositories/inter-incoming.repository.js';
+import { uploadFile, deleteFile, getFileUrl } from '../lib/minio/client.js';
+import { v4 as uuidv4 } from 'uuid';
 import { handleDbError } from '../lib/error-handler.js';
 
 const router = Router();
@@ -99,6 +102,80 @@ router.post('/:id/hoan-thanh', async (req: Request, res: Response) => {
       return;
     }
     res.json({ success: true, message: result.message });
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
+
+// ============================================================
+// ATTACHMENTS — File đính kèm VB liên thông
+// ============================================================
+
+router.get('/:id/dinh-kem', async (req: Request, res: Response) => {
+  try {
+    const rows = await interIncomingRepository.getAttachments(Number(req.params.id));
+    res.json({ success: true, data: rows });
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
+
+router.post('/:id/dinh-kem', upload.single('file'), async (req: Request, res: Response) => {
+  try {
+    const { staffId } = (req as AuthRequest).user;
+    const docId = Number(req.params.id);
+    const file = req.file;
+
+    if (!file) {
+      res.status(400).json({ success: false, message: 'Vui lòng chọn file' });
+      return;
+    }
+
+    const ext = file.originalname.split('.').pop() || '';
+    const minioPath = `inter-incoming/${docId}/${uuidv4()}.${ext}`;
+    await uploadFile(minioPath, file.buffer, file.mimetype);
+
+    const { description } = req.body;
+    const result = await interIncomingRepository.createAttachment(
+      docId, file.originalname, minioPath, file.size, file.mimetype, description || null, staffId,
+    );
+
+    if (!result || !result.success) {
+      res.status(400).json({ success: false, message: result?.message || 'Lỗi tải lên' });
+      return;
+    }
+    res.status(201).json({ success: true, data: { id: result.id } });
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
+
+router.delete('/:id/dinh-kem/:attachmentId', async (req: Request, res: Response) => {
+  try {
+    const result = await interIncomingRepository.deleteAttachment(Number(req.params.attachmentId));
+    if (!result || !result.success) {
+      res.status(400).json({ success: false, message: result?.message || 'Lỗi xóa file' });
+      return;
+    }
+    if (result.file_path) {
+      try { await deleteFile(result.file_path); } catch { /* ignore */ }
+    }
+    res.json({ success: true, data: { message: result.message } });
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
+
+router.get('/:id/dinh-kem/:attachmentId/download', async (req: Request, res: Response) => {
+  try {
+    const attachments = await interIncomingRepository.getAttachments(Number(req.params.id));
+    const att = attachments.find(a => a.id === Number(req.params.attachmentId));
+    if (!att) {
+      res.status(404).json({ success: false, message: 'Không tìm thấy file' });
+      return;
+    }
+    const url = await getFileUrl(att.file_path, 3600);
+    res.json({ success: true, data: { url, file_name: att.file_name } });
   } catch (error) {
     handleDbError(error, res);
   }

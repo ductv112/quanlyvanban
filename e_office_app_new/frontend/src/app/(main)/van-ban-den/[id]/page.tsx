@@ -106,6 +106,18 @@ export default function IncomingDocDetailPage() {
   const [chuyenLaiSaving, setChuyenLaiSaving] = useState(false);
   const [chuyenLaiForm] = Form.useForm();
 
+  // Thêm vào HSCV modal
+  const [hscvModalOpen, setHscvModalOpen] = useState(false);
+  const [hscvList, setHscvList] = useState<{ id: number; name: string; status: number }[]>([]);
+  const [selectedHscvId, setSelectedHscvId] = useState<number | null>(null);
+  const [hscvSaving, setHscvSaving] = useState(false);
+
+  // Gửi liên thông modal
+  const [lgspModalOpen, setLgspModalOpen] = useState(false);
+  const [lgspOrgs, setLgspOrgs] = useState<{ id: number; org_code: string; org_name: string }[]>([]);
+  const [selectedLgspOrgs, setSelectedLgspOrgs] = useState<number[]>([]);
+  const [lgspSending, setLgspSending] = useState(false);
+
   // Action loading
   const [actionLoading, setActionLoading] = useState(false);
 
@@ -218,6 +230,50 @@ export default function IncomingDocDetailPage() {
   const handleReceivePaper = async () => { try { await api.patch(`/van-ban-den/${docId}/nhan-ban-giay`); message.success('Đã xác nhận nhận bản giấy'); fetchDoc(); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } };
   const handleToggleBookmark = async () => { try { const { data: res } = await api.post(`/van-ban-den/${docId}/danh-dau`, {}); setIsBookmarked(res.data?.is_bookmarked); message.success(res.data?.message); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } };
 
+  // Thêm vào HSCV sẵn có
+  const openHscvModal = async () => {
+    try {
+      const { data: res } = await api.get(`/van-ban-den/${docId}/danh-sach-hscv`);
+      setHscvList(res.data || []);
+      setSelectedHscvId(null);
+      setHscvModalOpen(true);
+    } catch { message.error('Lỗi tải danh sách HSCV'); }
+  };
+  const handleLinkHscv = async () => {
+    if (!selectedHscvId) { message.warning('Vui lòng chọn hồ sơ công việc'); return; }
+    setHscvSaving(true);
+    try {
+      const { data: res } = await api.post(`/van-ban-den/${docId}/them-vao-hscv`, { handling_doc_id: selectedHscvId });
+      if (res.success) { message.success('Đã thêm vào hồ sơ công việc'); setHscvModalOpen(false); }
+      else message.error(res.message);
+    } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); }
+    finally { setHscvSaving(false); }
+  };
+
+  // Gửi liên thông LGSP
+  const openLgspModal = async () => {
+    try {
+      const { data: res } = await api.get(`/van-ban-den/${docId}/lgsp/don-vi`);
+      setLgspOrgs(res.data || []);
+      setSelectedLgspOrgs([]);
+      setLgspModalOpen(true);
+    } catch { message.error('Lỗi tải danh sách đơn vị liên thông'); }
+  };
+  const handleSendLgsp = async () => {
+    if (selectedLgspOrgs.length === 0) { message.warning('Vui lòng chọn ít nhất một đơn vị'); return; }
+    setLgspSending(true);
+    try {
+      const orgCodes = selectedLgspOrgs.map(id => {
+        const org = lgspOrgs.find(o => o.id === id);
+        return { code: org?.org_code, name: org?.org_name };
+      });
+      const { data: res } = await api.post(`/van-ban-den/${docId}/gui-lien-thong`, { org_codes: orgCodes });
+      message.success(res.data?.message || 'Đã gửi liên thông');
+      setLgspModalOpen(false);
+    } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi gửi liên thông'); }
+    finally { setLgspSending(false); }
+  };
+
   // Attachments
   const handleUpload = async (file: File) => { setUploading(true); try { const fd = new FormData(); fd.append('file', file); await api.post(`/van-ban-den/${docId}/dinh-kem`, fd, { headers: { 'Content-Type': 'multipart/form-data' } }); message.success('Tải lên thành công'); fetchAttachments(); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } finally { setUploading(false); } return false; };
   const handleDownload = async (att: Attachment) => { try { const { data: res } = await api.get(`/van-ban-den/${docId}/dinh-kem/${att.id}/download`); window.open(res.data?.url, '_blank'); } catch { message.error('Lỗi tải file'); } };
@@ -291,6 +347,14 @@ export default function IncomingDocDetailPage() {
           >
             Giao việc
           </Button>
+
+          {/* Thêm vào HSCV sẵn có */}
+          <Button onClick={openHscvModal} icon={<InboxOutlined />}>Thêm vào HSCV</Button>
+
+          {/* Gửi liên thông LGSP — chỉ khi đã duyệt */}
+          {doc.approved && (
+            <Button onClick={openLgspModal} icon={<SendOutlined />} style={{ backgroundColor: '#059669', borderColor: '#059669', color: '#fff' }}>Gửi liên thông</Button>
+          )}
 
           {/* Nhận bàn giao / Chuyển lại — chỉ VB liên thông */}
           {doc.is_inter_doc && (
@@ -652,6 +716,49 @@ export default function IncomingDocDetailPage() {
             />
           </Form.Item>
         </Form>
+      </Modal>
+
+      {/* Modal: Thêm vào HSCV sẵn có */}
+      <Modal
+        title="Thêm vào hồ sơ công việc"
+        open={hscvModalOpen}
+        onCancel={() => setHscvModalOpen(false)}
+        onOk={handleLinkHscv}
+        confirmLoading={hscvSaving}
+        okText="Thêm vào HSCV"
+        cancelText="Hủy"
+      >
+        <Select
+          style={{ width: '100%', marginTop: 8 }}
+          placeholder="Chọn hồ sơ công việc..."
+          showSearch
+          filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
+          value={selectedHscvId}
+          onChange={setSelectedHscvId}
+          options={hscvList.map(h => ({ value: h.id, label: `${h.name} (${h.status === 0 ? 'Mới' : h.status === 1 ? 'Đang xử lý' : 'Trình duyệt'})` }))}
+        />
+      </Modal>
+
+      {/* Modal: Gửi liên thông LGSP */}
+      <Modal
+        title="Gửi liên thông LGSP"
+        open={lgspModalOpen}
+        onCancel={() => setLgspModalOpen(false)}
+        onOk={handleSendLgsp}
+        confirmLoading={lgspSending}
+        okText="Gửi liên thông"
+        cancelText="Hủy"
+      >
+        <Select
+          mode="multiple"
+          style={{ width: '100%', marginTop: 8 }}
+          placeholder="Chọn đơn vị nhận..."
+          showSearch
+          filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
+          value={selectedLgspOrgs}
+          onChange={setSelectedLgspOrgs}
+          options={lgspOrgs.map(o => ({ value: o.id, label: `${o.org_name} (${o.org_code})` }))}
+        />
       </Modal>
     </div>
   );

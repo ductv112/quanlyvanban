@@ -663,6 +663,81 @@ router.post('/:id/chuyen-lai', async (req: Request, res: Response) => {
   }
 });
 
-// NOTE: POST /:id/huy-duyet đã bị loại bỏ (duplicate) — dùng PATCH /:id/huy-duyet ở trên
+// ============================================================
+// LINK TO EXISTING HSCV
+// ============================================================
+
+// GET /:id/danh-sach-hscv — DS HSCV sẵn có để link
+router.get('/:id/danh-sach-hscv', async (req: Request, res: Response) => {
+  try {
+    const { unitId } = (req as AuthRequest).user;
+    const { keyword } = req.query;
+    const rows = await incomingDocRepository.getHandlingDocsForLink(unitId, keyword as string || undefined);
+    res.json({ success: true, data: rows });
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
+
+// POST /:id/them-vao-hscv — Link VB đến vào HSCV sẵn có
+router.post('/:id/them-vao-hscv', async (req: Request, res: Response) => {
+  try {
+    const { staffId } = (req as AuthRequest).user;
+    const docId = Number(req.params.id);
+    const { handling_doc_id } = req.body;
+    if (!handling_doc_id) {
+      res.status(400).json({ success: false, message: 'Vui lòng chọn hồ sơ công việc' });
+      return;
+    }
+    const result = await incomingDocRepository.linkToHandlingDoc(Number(handling_doc_id), docId, 'incoming', staffId);
+    if (!result.success) {
+      res.status(400).json({ success: false, message: result.message });
+      return;
+    }
+    res.json({ success: true, data: { id: result.id, message: result.message } });
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
+
+// ============================================================
+// LGSP — Gửi liên thông
+// ============================================================
+
+// GET /lgsp/don-vi — DS đơn vị LGSP
+router.get('/:id/lgsp/don-vi', async (req: Request, res: Response) => {
+  try {
+    const { search } = req.query;
+    const rows = await incomingDocRepository.getLgspOrganizations(search as string || undefined);
+    res.json({ success: true, data: rows });
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
+
+// POST /:id/gui-lien-thong — Gửi VB đến qua LGSP
+router.post('/:id/gui-lien-thong', async (req: Request, res: Response) => {
+  try {
+    const { staffId } = (req as AuthRequest).user;
+    const docId = Number(req.params.id);
+    const { org_codes } = req.body;
+    if (!Array.isArray(org_codes) || org_codes.length === 0) {
+      res.status(400).json({ success: false, message: 'Vui lòng chọn ít nhất một đơn vị' });
+      return;
+    }
+    const results = [];
+    for (const org of org_codes as { code: string; name: string }[]) {
+      const result = await incomingDocRepository.sendLgsp({
+        incomingDocId: docId, direction: 'send',
+        destOrgCode: org.code, destOrgName: org.name, createdBy: staffId,
+      });
+      results.push(result);
+    }
+    const successCount = results.filter(r => r.success).length;
+    res.json({ success: true, data: { message: `Đã gửi liên thông cho ${successCount} đơn vị` } });
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
 
 export default router;

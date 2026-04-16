@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   Card, Tag, Button, Space, Row, Col, Timeline, Avatar,
   Upload, Modal, Input, Popconfirm, Checkbox, Empty, Spin, App,
-  Badge, Typography, Flex, Dropdown,
+  Badge, Typography, Flex, Dropdown, Drawer, Form, DatePicker, Select,
 } from 'antd';
 import {
   ArrowLeftOutlined, CheckCircleOutlined, CloseCircleOutlined, SendOutlined,
@@ -13,6 +13,7 @@ import {
   ClockCircleOutlined, UserOutlined, FilePdfOutlined,
   FileImageOutlined, FileWordOutlined, FileExcelOutlined, FileOutlined,
   EditOutlined, SafetyCertificateOutlined, StopOutlined, RollbackOutlined,
+  ThunderboltOutlined, InboxOutlined,
 } from '@ant-design/icons';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth.store';
@@ -86,6 +87,22 @@ export default function OutgoingDocDetailPage() {
   const [sending, setSending] = useState(false);
   const [uploading, setUploading] = useState(false);
 
+  // Giao việc
+  const [giaoViecOpen, setGiaoViecOpen] = useState(false);
+  const [giaoViecSaving, setGiaoViecSaving] = useState(false);
+  const [giaoViecForm] = Form.useForm();
+  const [staffOptions, setStaffOptions] = useState<{ value: number; label: string }[]>([]);
+  // Thêm vào HSCV
+  const [hscvModalOpen, setHscvModalOpen] = useState(false);
+  const [hscvList, setHscvList] = useState<{ id: number; name: string; status: number }[]>([]);
+  const [selectedHscvId, setSelectedHscvId] = useState<number | null>(null);
+  const [hscvSaving, setHscvSaving] = useState(false);
+  // Gửi liên thông
+  const [lgspModalOpen, setLgspModalOpen] = useState(false);
+  const [lgspOrgs, setLgspOrgs] = useState<{ id: number; org_code: string; org_name: string }[]>([]);
+  const [selectedLgspOrgs, setSelectedLgspOrgs] = useState<number[]>([]);
+  const [lgspSending, setLgspSending] = useState(false);
+
   const fetchDoc = useCallback(async () => { try { const { data: res } = await api.get(`/van-ban-di/${docId}`); setDoc(res.data); } catch { message.error('Không tìm thấy văn bản'); router.push('/van-ban-di'); } }, [docId, message, router]);
   const fetchBookmarkStatus = useCallback(async () => { try { const { data: res } = await api.get('/van-ban-di/danh-dau-ca-nhan'); const bookmarks: { doc_id: number | string }[] = res.data || []; setIsBookmarked(bookmarks.some((b) => Number(b.doc_id) === Number(docId))); } catch {} }, [docId]);
   const fetchAttachments = useCallback(async () => { try { const { data: res } = await api.get(`/van-ban-di/${docId}/dinh-kem`); setAttachments(res.data || []); } catch {} }, [docId]);
@@ -104,6 +121,42 @@ export default function OutgoingDocDetailPage() {
   const handleReject = () => { let reason = ''; modal.confirm({ title: 'Từ chối văn bản đi', content: (<div style={{ marginTop: 12 }}><div style={{ marginBottom: 8, color: '#595959' }}>Lý do từ chối (không bắt buộc):</div><Input.TextArea rows={3} placeholder="Lý do..." onChange={(e) => { reason = e.target.value; }} /></div>), okText: 'Từ chối', okButtonProps: { danger: true }, cancelText: 'Hủy', onOk: async () => { try { await api.patch(`/van-ban-di/${docId}/tu-choi`, { reason: reason.trim() || undefined }); message.success('Đã từ chối'); fetchDoc(); fetchHistory(); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } } }); };
   const handleDelete = () => { modal.confirm({ title: 'Xác nhận xóa', content: 'Xóa văn bản này?', okText: 'Xóa', okType: 'danger', cancelText: 'Hủy', onOk: async () => { try { await api.delete(`/van-ban-di/${docId}`); message.success('Đã xóa'); router.push('/van-ban-di'); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } } }); };
   const handleToggleBookmark = async () => { try { const { data: res } = await api.post(`/van-ban-di/${docId}/danh-dau`, {}); setIsBookmarked(res.data?.is_bookmarked); message.success(res.data?.message); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } };
+
+  // Giao việc
+  const fetchStaffOptions = async () => {
+    try { const { data: res } = await api.get('/quan-tri/nguoi-dung', { params: { page: 1, pageSize: 200 } }); setStaffOptions((res.data || []).map((s: { id: number; full_name: string; position_name?: string }) => ({ value: s.id, label: s.full_name + (s.position_name ? ` (${s.position_name})` : '') }))); } catch {}
+  };
+  const openGiaoViec = async () => { await fetchStaffOptions(); giaoViecForm.resetFields(); giaoViecForm.setFieldsValue({ name: doc ? `Xử lý VB đi: ${doc.notation || doc.abstract?.substring(0, 50)}` : '' }); setGiaoViecOpen(true); };
+  const handleGiaoViec = async () => {
+    try {
+      const values = await giaoViecForm.validateFields();
+      setGiaoViecSaving(true);
+      await api.post(`/van-ban-di/${docId}/giao-viec`, { name: values.name, start_date: values.start_date?.toISOString() || null, end_date: values.end_date?.toISOString() || null, curator_ids: values.curator_ids || [], note: values.note || null });
+      message.success('Giao việc thành công'); setGiaoViecOpen(false); giaoViecForm.resetFields();
+    } catch (e: any) { if (e?.response?.data?.message) message.error(e.response.data.message); }
+    finally { setGiaoViecSaving(false); }
+  };
+  // Thêm vào HSCV
+  const openHscvModal = async () => { try { const { data: res } = await api.get(`/van-ban-di/${docId}/danh-sach-hscv`); setHscvList(res.data || []); setSelectedHscvId(null); setHscvModalOpen(true); } catch { message.error('Lỗi tải HSCV'); } };
+  const handleLinkHscv = async () => {
+    if (!selectedHscvId) { message.warning('Vui lòng chọn HSCV'); return; }
+    setHscvSaving(true);
+    try { const { data: res } = await api.post(`/van-ban-di/${docId}/them-vao-hscv`, { handling_doc_id: selectedHscvId }); if (res.success) { message.success('Đã thêm vào HSCV'); setHscvModalOpen(false); } else message.error(res.message); }
+    catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); }
+    finally { setHscvSaving(false); }
+  };
+  // Gửi liên thông
+  const openLgspModal = async () => { try { const { data: res } = await api.get(`/van-ban-den/1/lgsp/don-vi`); setLgspOrgs(res.data || []); setSelectedLgspOrgs([]); setLgspModalOpen(true); } catch { message.error('Lỗi tải đơn vị LGSP'); } };
+  const handleSendLgsp = async () => {
+    if (selectedLgspOrgs.length === 0) { message.warning('Vui lòng chọn đơn vị'); return; }
+    setLgspSending(true);
+    try {
+      const orgCodes = selectedLgspOrgs.map(id => { const org = lgspOrgs.find(o => o.id === id); return { code: org?.org_code, name: org?.org_name }; });
+      const { data: res } = await api.post(`/van-ban-di/${docId}/gui-lien-thong`, { org_codes: orgCodes });
+      message.success(res.data?.message || 'Đã gửi liên thông'); setLgspModalOpen(false);
+    } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); }
+    finally { setLgspSending(false); }
+  };
 
   // Attachments
   const handleUpload = async (file: File) => { setUploading(true); try { const fd = new FormData(); fd.append('file', file); await api.post(`/van-ban-di/${docId}/dinh-kem`, fd, { headers: { 'Content-Type': 'multipart/form-data' } }); message.success('Tải lên thành công'); fetchAttachments(); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } finally { setUploading(false); } return false; };
@@ -158,6 +211,9 @@ export default function OutgoingDocDetailPage() {
             icon={isBookmarked ? <StarFilled style={{ color: '#faad14' }} /> : <StarOutlined />}
             onClick={handleToggleBookmark}
           />
+          <Button icon={<ThunderboltOutlined />} type="primary" style={{ backgroundColor: '#0891B2', borderColor: '#0891B2' }} onClick={openGiaoViec}>Giao việc</Button>
+          <Button icon={<InboxOutlined />} onClick={openHscvModal}>Thêm vào HSCV</Button>
+          {doc.approved && <Button icon={<SendOutlined />} style={{ backgroundColor: '#059669', borderColor: '#059669', color: '#fff' }} onClick={openLgspModal}>Gửi liên thông</Button>}
           {!doc.approved && (
             <>
               <Button icon={<EditOutlined />} onClick={() => router.push(`/van-ban-di?edit=${doc.id}`)}>Sửa</Button>
@@ -374,6 +430,34 @@ export default function OutgoingDocDetailPage() {
             </div>
           ))}
         </div>
+      </Modal>
+
+      {/* Drawer: Giao việc */}
+      <Drawer
+        title="Giao việc" size={600} open={giaoViecOpen}
+        onClose={() => { setGiaoViecOpen(false); giaoViecForm.resetFields(); }}
+        rootClassName="drawer-gradient"
+        extra={<Space><Button onClick={() => setGiaoViecOpen(false)} ghost style={{ borderColor: 'rgba(255,255,255,0.6)', color: '#fff' }}>Hủy</Button><Button type="primary" loading={giaoViecSaving} onClick={handleGiaoViec}>Tạo và giao việc</Button></Space>}
+      >
+        <Form form={giaoViecForm} layout="vertical" validateTrigger="onSubmit" autoComplete="off">
+          <Form.Item name="name" label="Tên hồ sơ công việc" rules={[{ required: true, message: 'Bắt buộc' }]}><Input maxLength={500} /></Form.Item>
+          <Row gutter={16}>
+            <Col span={12}><Form.Item name="start_date" label="Ngày bắt đầu"><DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" /></Form.Item></Col>
+            <Col span={12}><Form.Item name="end_date" label="Hạn hoàn thành"><DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" /></Form.Item></Col>
+          </Row>
+          <Form.Item name="curator_ids" label="Người phụ trách"><Select mode="multiple" placeholder="Chọn người phụ trách..." options={staffOptions} filterOption={(input, opt) => (opt?.label ?? '').toLowerCase().includes(input.toLowerCase())} /></Form.Item>
+          <Form.Item name="note" label="Ghi chú"><Input.TextArea rows={3} maxLength={500} showCount /></Form.Item>
+        </Form>
+      </Drawer>
+
+      {/* Modal: Thêm vào HSCV */}
+      <Modal title="Thêm vào hồ sơ công việc" open={hscvModalOpen} onCancel={() => setHscvModalOpen(false)} onOk={handleLinkHscv} confirmLoading={hscvSaving} okText="Thêm vào HSCV" cancelText="Hủy">
+        <Select style={{ width: '100%', marginTop: 8 }} placeholder="Chọn hồ sơ công việc..." showSearch filterOption={(input, opt) => (opt?.label ?? '').toLowerCase().includes(input.toLowerCase())} value={selectedHscvId} onChange={setSelectedHscvId} options={hscvList.map(h => ({ value: h.id, label: `${h.name} (${h.status === 0 ? 'Mới' : h.status === 1 ? 'Đang xử lý' : 'Trình duyệt'})` }))} />
+      </Modal>
+
+      {/* Modal: Gửi liên thông */}
+      <Modal title="Gửi liên thông LGSP" open={lgspModalOpen} onCancel={() => setLgspModalOpen(false)} onOk={handleSendLgsp} confirmLoading={lgspSending} okText="Gửi liên thông" cancelText="Hủy">
+        <Select mode="multiple" style={{ width: '100%', marginTop: 8 }} placeholder="Chọn đơn vị nhận..." showSearch filterOption={(input, opt) => (opt?.label ?? '').toLowerCase().includes(input.toLowerCase())} value={selectedLgspOrgs} onChange={setSelectedLgspOrgs} options={lgspOrgs.map(o => ({ value: o.id, label: `${o.org_name} (${o.org_code})` }))} />
       </Modal>
     </div>
   );

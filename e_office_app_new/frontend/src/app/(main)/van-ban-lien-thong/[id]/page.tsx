@@ -3,11 +3,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Card, Button, Tag, Row, Col, Space, Spin, Empty, App,
-  Popconfirm, Modal, Form, Input, Flex,
+  Popconfirm, Modal, Form, Input, Flex, Upload,
 } from 'antd';
 import {
   ArrowLeftOutlined, SwapOutlined, CheckCircleOutlined,
-  RollbackOutlined, CloseCircleOutlined,
+  RollbackOutlined, CloseCircleOutlined, UploadOutlined,
+  DownloadOutlined, DeleteOutlined, PaperClipOutlined,
+  FilePdfOutlined, FileImageOutlined, FileWordOutlined,
+  FileExcelOutlined, FileOutlined,
 } from '@ant-design/icons';
 import { api } from '@/lib/api';
 import { useParams, useRouter } from 'next/navigation';
@@ -85,6 +88,13 @@ export default function LienThongDocDetailPage() {
   const [chuyenLaiSaving, setChuyenLaiSaving] = useState(false);
   const [chuyenLaiForm] = Form.useForm();
 
+  // Attachments
+  interface Attachment { id: number; file_name: string; file_path: string; file_size: number; content_type: string; created_by_name: string; created_at: string; }
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [uploading, setUploading] = useState(false);
+
+  const fetchAttachments = useCallback(async () => { try { const { data: res } = await api.get(`/van-ban-lien-thong/${docId}/dinh-kem`); setAttachments(res.data || []); } catch {} }, [docId]);
+
   const fetchDoc = useCallback(async () => {
     try {
       const { data: res } = await api.get(`/van-ban-lien-thong/${docId}`);
@@ -97,8 +107,20 @@ export default function LienThongDocDetailPage() {
 
   useEffect(() => {
     setLoading(true);
-    fetchDoc().finally(() => setLoading(false));
-  }, [fetchDoc]);
+    Promise.all([fetchDoc(), fetchAttachments()]).finally(() => setLoading(false));
+  }, [fetchDoc, fetchAttachments]);
+
+  const handleUpload = async (file: File) => {
+    setUploading(true);
+    try {
+      const fd = new FormData(); fd.append('file', file);
+      await api.post(`/van-ban-lien-thong/${docId}/dinh-kem`, fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+      message.success('Tải lên thành công'); fetchAttachments();
+    } catch (e: unknown) { const err = e as { response?: { data?: { message?: string } } }; message.error(err?.response?.data?.message || 'Lỗi'); }
+    finally { setUploading(false); } return false;
+  };
+  const handleDownload = async (att: Attachment) => { try { const { data: res } = await api.get(`/van-ban-lien-thong/${docId}/dinh-kem/${att.id}/download`); window.open(res.data?.url, '_blank'); } catch { message.error('Lỗi tải file'); } };
+  const handleDeleteAttachment = async (att: Attachment) => { try { await api.delete(`/van-ban-lien-thong/${docId}/dinh-kem/${att.id}`); message.success('Đã xóa'); fetchAttachments(); } catch (e: unknown) { const err = e as { response?: { data?: { message?: string } } }; message.error(err?.response?.data?.message || 'Lỗi'); } };
 
   const handleNhanBanGiao = async () => {
     setActionLoading(true);
@@ -317,6 +339,37 @@ export default function LienThongDocDetailPage() {
           </Card>
         </Col>
       </Row>
+
+      {/* FILE ĐÍNH KÈM */}
+      <Card size="small" style={{ marginTop: 16 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+          <div className="section-title"><PaperClipOutlined /> File đính kèm ({attachments.length})</div>
+          <Upload showUploadList={false} beforeUpload={handleUpload as unknown as () => boolean} disabled={uploading}>
+            <Button size="small" icon={<UploadOutlined />} loading={uploading}>Tải lên</Button>
+          </Upload>
+        </div>
+        {attachments.length === 0 ? (
+          <Empty description="Chưa có file đính kèm" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {attachments.map((att) => (
+              <div key={att.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 12px', background: '#fafafa', borderRadius: 6 }}>
+                <Space>
+                  {att.file_name.match(/\.pdf$/i) ? <FilePdfOutlined style={{ color: '#f5222d' }} /> : att.file_name.match(/\.(jpg|jpeg|png|gif)$/i) ? <FileImageOutlined style={{ color: '#1890ff' }} /> : att.file_name.match(/\.(doc|docx)$/i) ? <FileWordOutlined style={{ color: '#2f54eb' }} /> : att.file_name.match(/\.(xls|xlsx)$/i) ? <FileExcelOutlined style={{ color: '#52c41a' }} /> : <FileOutlined />}
+                  <span>{att.file_name}</span>
+                  <span style={{ color: '#8c8c8c', fontSize: 12 }}>{att.file_size ? (att.file_size < 1048576 ? (att.file_size / 1024).toFixed(1) + ' KB' : (att.file_size / 1048576).toFixed(1) + ' MB') : ''}</span>
+                </Space>
+                <Space>
+                  <Button size="small" type="link" icon={<DownloadOutlined />} onClick={() => handleDownload(att)}>Tải</Button>
+                  <Popconfirm title="Xóa file?" onConfirm={() => handleDeleteAttachment(att)}>
+                    <Button size="small" type="link" danger icon={<DeleteOutlined />} />
+                  </Popconfirm>
+                </Space>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
 
       {/* MODAL CHUYỂN LẠI */}
       <Modal

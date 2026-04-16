@@ -1,4 +1,5 @@
 import { callFunction, callFunctionOne } from '../lib/db/query.js';
+import type { AttachmentRow } from './incoming-doc.repository.js';
 
 // ============ Row types ============
 
@@ -100,5 +101,23 @@ export const interIncomingRepository = {
 
   async complete(id: number, staffId: number): Promise<{ success: boolean; message: string } | null> {
     return callFunctionOne<{ success: boolean; message: string }>('edoc.fn_inter_incoming_complete', [id, staffId]);
+  },
+
+  // --- Attachments ---
+  async getAttachments(docId: number): Promise<AttachmentRow[]> {
+    return callFunction<AttachmentRow>('edoc.fn_attachment_inter_incoming_get_list', [docId]);
+  },
+
+  async createAttachment(
+    docId: number, fileName: string, filePath: string,
+    fileSize: number, contentType: string, description: string | null, createdBy: number,
+  ): Promise<{ success: boolean; message: string; id: number } | null> {
+    return callFunctionOne<{ success: boolean; message: string; id: number }>('edoc.fn_attachment_inter_incoming_create', [
+      docId, fileName, filePath, fileSize, contentType, description, createdBy,
+    ]);
+  },
+
+  async deleteAttachment(id: number): Promise<{ success: boolean; message: string; file_path: string } | null> {
+    return callFunctionOne<{ success: boolean; message: string; file_path: string }>('edoc.fn_attachment_inter_incoming_delete', [id]);
   },
 };

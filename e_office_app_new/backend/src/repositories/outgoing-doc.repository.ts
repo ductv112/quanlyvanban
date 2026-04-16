@@ -252,4 +252,33 @@ export const outgoingDocRepository = {
   async getBookmarks(staffId: number): Promise<StaffNoteRow[]> {
     return callFunction<StaffNoteRow>('edoc.fn_staff_note_get_list', [staffId, 'outgoing']);
   },
+
+  // --- Unused numbers ---
+  async getUnusedNumbers(unitId: number, docBookId: number): Promise<{ unused_number: number }[]> {
+    return callFunction<{ unused_number: number }>('edoc.fn_outgoing_doc_get_unused_numbers', [unitId, docBookId]);
+  },
+
+  // --- Giao việc (tạo HSCV từ VB đi) ---
+  async createHandlingDocFromDoc(
+    docId: number, docType: string, name: string,
+    startDate: string | null, endDate: string | null,
+    curatorIds: number[], note: string | null, createdBy: number,
+  ): Promise<DbResultWithId> {
+    const row = await callFunctionOne<DbResultWithId>('edoc.fn_handling_doc_create_from_doc', [
+      docId, docType, name, startDate, endDate, curatorIds, note, createdBy,
+    ]);
+    return row ?? { success: false, message: 'Không thể tạo hồ sơ công việc', id: 0 };
+  },
+
+  // --- Link to existing HSCV ---
+  async linkToHandlingDoc(handlingDocId: number, docId: number, linkedBy: number): Promise<DbResultWithId> {
+    const row = await callFunctionOne<DbResultWithId>('edoc.fn_handling_doc_link_doc', [handlingDocId, docId, 'outgoing', linkedBy]);
+    return row ?? { success: false, message: 'Không thể liên kết', id: 0 };
+  },
+
+  // --- LGSP send ---
+  async sendLgsp(docId: number, destOrgCode: string, destOrgName: string, createdBy: number): Promise<DbResultWithId> {
+    const row = await callFunctionOne<DbResultWithId>('edoc.fn_lgsp_tracking_create', [docId, null, 'send', destOrgCode, destOrgName, null, createdBy]);
+    return row ?? { success: false, message: 'Không thể gửi liên thông', id: 0 };
+  },
 };
