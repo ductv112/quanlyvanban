@@ -127,6 +127,43 @@ cat database/seed_full_demo.sql | docker exec -i qlvb_postgres psql -U qlvb_admi
 > Bao gồm: 10 phòng ban, 10 nhân viên, VB đến/đi/dự thảo, HSCV, cuộc họp, kho lưu trữ, tài liệu ISO, hợp đồng, LGSP, ký số, thông báo.
 > Password tất cả tài khoản: **Admin@123**
 
+### RESET SẠCH (xóa toàn bộ data + chạy lại từ đầu)
+
+Dùng khi pull code mới về hoặc cần reset DB hoàn toàn:
+
+```bash
+cd e_office_app_new
+
+# Bước 1: Reset Docker volumes (XÓA toàn bộ data)
+docker-compose down -v
+docker-compose up -d
+# Đợi ~10s cho PostgreSQL ready
+sleep 10
+
+# Bước 2: Chạy schemas + tất cả migrations + seed
+cat database/init/01_create_schemas.sql | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
+
+for f in database/migrations/*.sql; do
+  echo "Running $f ..."
+  cat "$f" | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev 2>&1 | tail -1
+done
+
+cat database/seed_full_demo.sql | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
+
+# Bước 3: Start backend + frontend
+cd backend && npm install && npm run dev &
+cd ../frontend && npm install && npm run dev &
+```
+
+Tài khoản test sau reset:
+
+| Username | Password | Vai trò | Ghi chú |
+|---|---|---|---|
+| admin | Admin@123 | Quản trị hệ thống | Thấy tất cả menu |
+| nguyenvana | Admin@123 | Ban Lãnh đạo + Chỉ đạo | Thấy Quản lý + Nghiệp vụ |
+| phamvane | Admin@123 | Trưởng phòng + Văn thư | Thấy Quản lý + Nghiệp vụ |
+| hoangthif | Admin@123 | Cán bộ | Chỉ thấy Nghiệp vụ + Đối tác |
+
 ---
 
 ## 5. CẤU HÌNH BACKEND
