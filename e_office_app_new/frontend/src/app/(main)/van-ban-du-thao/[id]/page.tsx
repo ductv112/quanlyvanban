@@ -115,8 +115,18 @@ export default function DraftingDocDetailPage() {
     try {
       const { data: res } = await api.post(`/van-ban-du-thao/${docId}/phat-hanh`);
       const outgoingId = res.data?.outgoing_doc_id;
-      message.success(`Phát hành thành công${outgoingId ? ` — Mã văn bản đi: ${outgoingId}` : ''}`);
       fetchDoc(); fetchHistory();
+      if (outgoingId) {
+        modal.success({
+          title: 'Phát hành thành công',
+          content: `Đã tạo văn bản đi #${outgoingId} từ dự thảo này.`,
+          okText: 'Xem văn bản đi',
+          cancelText: 'Ở lại trang này',
+          onOk: () => router.push(`/van-ban-di/${outgoingId}`),
+        });
+      } else {
+        message.success('Phát hành thành công');
+      }
     } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); }
   };
   const handleReject = async () => {

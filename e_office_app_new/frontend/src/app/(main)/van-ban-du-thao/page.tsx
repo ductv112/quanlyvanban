@@ -345,9 +345,18 @@ export default function DraftingDocPage() {
       okText: 'Phát hành', cancelText: 'Hủy',
       onOk: async () => {
         try {
-          await api.post(`/van-ban-du-thao/${record.id}/phat-hanh`);
-          message.success('Phát hành thành công');
+          const { data: res } = await api.post(`/van-ban-du-thao/${record.id}/phat-hanh`);
+          const outgoingId = res.data?.outgoing_doc_id;
           fetchData();
+          if (outgoingId) {
+            modal.success({
+              title: 'Phát hành thành công',
+              content: `Đã tạo văn bản đi #${outgoingId}.`,
+              okText: 'Xem văn bản đi',
+              cancelText: 'Ở lại',
+              onOk: () => { window.location.href = `/van-ban-di/${outgoingId}`; },
+            });
+          } else { message.success('Phát hành thành công'); }
         } catch (err: any) { message.error(err?.response?.data?.message || 'Lỗi phát hành'); }
       },
     });
