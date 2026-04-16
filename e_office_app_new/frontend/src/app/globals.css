@@ -857,3 +857,23 @@ input:-webkit-autofill:active {
   border-radius: 9px;
   line-height: 1;
 }
+
+/* ====== Print styles ====== */
+@media print {
+  body * { visibility: hidden !important; }
+  .print-area, .print-area * { visibility: visible !important; }
+  .print-area {
+    position: absolute !important;
+    left: 0; top: 0; width: 100%;
+    padding: 20px;
+  }
+  @page { size: landscape; margin: 1cm; }
+  .print-area table { border-collapse: collapse; width: 100%; font-size: 11px; }
+  .print-area th { background: #1B3A5C !important; color: #fff !important; padding: 6px 8px; border: 1px solid #ccc; text-align: center; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .print-area td { padding: 4px 8px; border: 1px solid #ddd; }
+  .print-area .print-header { text-align: center; margin-bottom: 16px; visibility: visible !important; }
+  .print-area .print-header h2 { font-size: 16px; margin: 0; }
+  .print-area .print-header p { font-size: 11px; color: #666; margin: 4px 0 0; }
+  .print-area .print-footer { text-align: right; margin-top: 16px; font-size: 11px; color: #666; }
+  .no-print { display: none !important; }
+}

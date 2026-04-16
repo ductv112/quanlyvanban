@@ -373,4 +373,29 @@ export const incomingDocRepository = {
   async getLgspOrganizations(search?: string): Promise<{ id: number; org_code: string; org_name: string; is_active: boolean }[]> {
     return callFunction('edoc.fn_lgsp_org_get_list', [search ?? null, 1, 100]);
   },
+
+  // --- Archive ---
+  async createArchive(docType: string, docId: number, params: Record<string, unknown>): Promise<DbResultWithId> {
+    const row = await callFunctionOne<DbResultWithId>('esto.fn_document_archive_create', [
+      docType, docId,
+      params.fond_id ?? null, params.warehouse_id ?? null, params.record_id ?? null,
+      params.file_catalog ?? null, params.file_notation ?? null, params.doc_ordinal ?? null,
+      params.language ?? 'Tiếng Việt', params.autograph ?? null, params.keyword ?? null,
+      params.format ?? 'Điện tử', params.confidence_level ?? null, params.is_original ?? true,
+      params.archived_by ?? null,
+    ]);
+    return row ?? { success: false, message: 'Lỗi chuyển lưu trữ', id: 0 };
+  },
+
+  async getArchive(docType: string, docId: number): Promise<Record<string, unknown> | null> {
+    return callFunctionOne('esto.fn_document_archive_get_by_doc', [docType, docId]);
+  },
+
+  async getFonds(unitId?: number): Promise<{ id: number; name: string; code: string }[]> {
+    return callFunction('esto.fn_get_fonds_list', [unitId ?? null]);
+  },
+
+  async getWarehouses(unitId?: number): Promise<{ id: number; name: string; code: string }[]> {
+    return callFunction('esto.fn_get_warehouses_list', [unitId ?? null]);
+  },
 };

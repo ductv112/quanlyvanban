@@ -93,6 +93,10 @@ export default function IncomingDocDetailPage() {
   const [sending, setSending] = useState(false);
   const [noteContent, setNoteContent] = useState('');
   const [addingNote, setAddingNote] = useState(false);
+  const [assignMode, setAssignMode] = useState(false);
+  const [assignStaffIds, setAssignStaffIds] = useState<number[]>([]);
+  const [assignExpiredDate, setAssignExpiredDate] = useState<dayjs.Dayjs | null>(null);
+  const [presetStaff, setPresetStaff] = useState<number[]>([]);
   const [uploading, setUploading] = useState(false);
 
   // Giao việc drawer
@@ -117,6 +121,13 @@ export default function IncomingDocDetailPage() {
   const [lgspOrgs, setLgspOrgs] = useState<{ id: number; org_code: string; org_name: string }[]>([]);
   const [selectedLgspOrgs, setSelectedLgspOrgs] = useState<number[]>([]);
   const [lgspSending, setLgspSending] = useState(false);
+
+  // Lưu trữ modal
+  const [archiveModalOpen, setArchiveModalOpen] = useState(false);
+  const [archiveSaving, setArchiveSaving] = useState(false);
+  const [archiveForm] = Form.useForm();
+  const [fondOptions, setFondOptions] = useState<{ value: number; label: string }[]>([]);
+  const [warehouseOptions, setWarehouseOptions] = useState<{ value: number; label: string }[]>([]);
 
   // Action loading
   const [actionLoading, setActionLoading] = useState(false);
@@ -274,6 +285,31 @@ export default function IncomingDocDetailPage() {
     finally { setLgspSending(false); }
   };
 
+  // Chuyển lưu trữ
+  const openArchiveModal = async () => {
+    try {
+      const [fondRes, whRes] = await Promise.all([
+        api.get(`/van-ban-den/${docId}/luu-tru/phong`),
+        api.get(`/van-ban-den/${docId}/luu-tru/kho`),
+      ]);
+      setFondOptions((fondRes.data.data || []).map((f: { id: number; name: string }) => ({ value: f.id, label: f.name })));
+      setWarehouseOptions((whRes.data.data || []).map((w: { id: number; name: string }) => ({ value: w.id, label: w.name })));
+      archiveForm.resetFields();
+      archiveForm.setFieldsValue({ language: 'Tiếng Việt', format: 'Điện tử', is_original: true });
+      setArchiveModalOpen(true);
+    } catch { message.error('Lỗi tải dữ liệu lưu trữ'); }
+  };
+  const handleArchive = async () => {
+    try {
+      const values = await archiveForm.validateFields();
+      setArchiveSaving(true);
+      const { data: res } = await api.post(`/van-ban-den/${docId}/chuyen-luu-tru`, values);
+      if (res.success) { message.success('Chuyển lưu trữ thành công'); setArchiveModalOpen(false); fetchDoc(); }
+      else message.error(res.message);
+    } catch (e: any) { if (e?.response?.data?.message) message.error(e.response.data.message); }
+    finally { setArchiveSaving(false); }
+  };
+
   // Attachments
   const handleUpload = async (file: File) => { setUploading(true); try { const fd = new FormData(); fd.append('file', file); await api.post(`/van-ban-den/${docId}/dinh-kem`, fd, { headers: { 'Content-Type': 'multipart/form-data' } }); message.success('Tải lên thành công'); fetchAttachments(); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } finally { setUploading(false); } return false; };
   const handleDownload = async (att: Attachment) => { try { const { data: res } = await api.get(`/van-ban-den/${docId}/dinh-kem/${att.id}/download`); window.open(res.data?.url, '_blank'); } catch { message.error('Lỗi tải file'); } };
@@ -289,11 +325,30 @@ export default function IncomingDocDetailPage() {
     finally { setSending(false); }
   };
 
-  // Leader Notes
+  // Leader Notes — load preset khi bật phân công
+  const loadPresetStaff = async () => {
+    try {
+      const { data: res } = await api.get('/cau-hinh-gui-nhanh', { params: { config_type: 'doc' } });
+      const ids = (res.data || []).map((r: { target_user_id: number }) => r.target_user_id);
+      setPresetStaff(ids);
+      setAssignStaffIds(ids);
+    } catch {}
+  };
   const handleAddNote = async () => {
     if (!noteContent.trim()) { message.warning('Nhập nội dung bút phê'); return; }
+    if (assignMode && assignStaffIds.length === 0) { message.warning('Vui lòng chọn cán bộ phân công'); return; }
     setAddingNote(true);
-    try { await api.post(`/van-ban-den/${docId}/but-phe`, { content: noteContent.trim() }); message.success('Thêm bút phê thành công'); setNoteContent(''); fetchLeaderNotes(); fetchHistory(); }
+    try {
+      const payload: Record<string, unknown> = { content: noteContent.trim() };
+      if (assignMode && assignStaffIds.length > 0) {
+        payload.staff_ids = assignStaffIds;
+        if (assignExpiredDate) payload.expired_date = assignExpiredDate.toISOString();
+      }
+      const { data: res } = await api.post(`/van-ban-den/${docId}/but-phe`, payload);
+      message.success(res.data?.message || 'Thêm bút phê thành công');
+      setNoteContent(''); setAssignMode(false); setAssignStaffIds([]); setAssignExpiredDate(null);
+      fetchLeaderNotes(); fetchHistory();
+    }
     catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); }
     finally { setAddingNote(false); }
   };
@@ -355,6 +410,12 @@ export default function IncomingDocDetailPage() {
           {doc.approved && (
             <Button onClick={openLgspModal} icon={<SendOutlined />} style={{ backgroundColor: '#059669', borderColor: '#059669', color: '#fff' }}>Gửi liên thông</Button>
           )}
+
+          {/* Chuyển lưu trữ — chỉ khi đã duyệt và chưa lưu trữ */}
+          {doc.approved && !doc.archive_status && (
+            <Button onClick={openArchiveModal} icon={<InboxOutlined />} style={{ backgroundColor: '#7c3aed', borderColor: '#7c3aed', color: '#fff' }}>Chuyển lưu trữ</Button>
+          )}
+          {doc.archive_status && <Tag color="purple">Đã lưu trữ</Tag>}
 
           {/* Nhận bàn giao / Chuyển lại — chỉ VB liên thông */}
           {doc.is_inter_doc && (
@@ -551,7 +612,28 @@ export default function IncomingDocDetailPage() {
             {doc.approved && (
               <div style={{ marginTop: leaderNotes.length > 0 ? 12 : 0 }}>
                 <TextArea id="note-input" rows={2} placeholder="Nhập nội dung bút phê..." value={noteContent} onChange={(e) => setNoteContent(e.target.value)} style={{ borderRadius: 8 }} />
-                <Button type="primary" size="small" style={{ marginTop: 8 }} loading={addingNote} onClick={handleAddNote} disabled={!noteContent.trim()}>Gửi bút phê</Button>
+                <div style={{ marginTop: 8 }}>
+                  <Checkbox checked={assignMode} onChange={(e) => { setAssignMode(e.target.checked); if (e.target.checked) loadPresetStaff(); }}>
+                    Phân công giải quyết
+                  </Checkbox>
+                </div>
+                {assignMode && (
+                  <div style={{ marginTop: 8, padding: 12, background: '#f0f5ff', borderRadius: 8, border: '1px solid #d6e4ff' }}>
+                    <Row gutter={12}>
+                      <Col span={16}>
+                        <div style={{ marginBottom: 4, fontSize: 12, color: '#595959' }}>Cán bộ xử lý</div>
+                        <Select mode="multiple" style={{ width: '100%' }} placeholder="Chọn cán bộ..." value={assignStaffIds} onChange={setAssignStaffIds} options={staffOptions} filterOption={(input, opt) => (opt?.label ?? '').toLowerCase().includes(input.toLowerCase())} />
+                      </Col>
+                      <Col span={8}>
+                        <div style={{ marginBottom: 4, fontSize: 12, color: '#595959' }}>Hạn giải quyết</div>
+                        <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" value={assignExpiredDate} onChange={setAssignExpiredDate} />
+                      </Col>
+                    </Row>
+                  </div>
+                )}
+                <Button type="primary" size="small" style={{ marginTop: 8 }} loading={addingNote} onClick={handleAddNote} disabled={!noteContent.trim()}>
+                  {assignMode ? 'Bút phê & Phân công' : 'Gửi bút phê'}
+                </Button>
               </div>
             )}
           </div>
@@ -759,6 +841,34 @@ export default function IncomingDocDetailPage() {
           onChange={setSelectedLgspOrgs}
           options={lgspOrgs.map(o => ({ value: o.id, label: `${o.org_name} (${o.org_code})` }))}
         />
+      </Modal>
+
+      {/* Modal: Chuyển lưu trữ */}
+      <Modal
+        title="Chuyển lưu trữ" open={archiveModalOpen} onCancel={() => setArchiveModalOpen(false)}
+        onOk={handleArchive} confirmLoading={archiveSaving} okText="Chuyển lưu trữ" cancelText="Hủy" width={640}
+      >
+        <Form form={archiveForm} layout="vertical" style={{ marginTop: 16 }}>
+          <Row gutter={16}>
+            <Col span={12}><Form.Item name="warehouse_id" label="Kho lưu trữ"><Select placeholder="Chọn kho..." allowClear options={warehouseOptions} /></Form.Item></Col>
+            <Col span={12}><Form.Item name="fond_id" label="Phông lưu trữ"><Select placeholder="Chọn phông..." allowClear options={fondOptions} /></Form.Item></Col>
+          </Row>
+          <Row gutter={16}>
+            <Col span={12}><Form.Item name="file_catalog" label="Mục lục hồ sơ"><Input maxLength={200} /></Form.Item></Col>
+            <Col span={12}><Form.Item name="file_notation" label="Ký hiệu hồ sơ"><Input maxLength={100} /></Form.Item></Col>
+          </Row>
+          <Row gutter={16}>
+            <Col span={8}><Form.Item name="doc_ordinal" label="Thứ tự VB"><InputNumber style={{ width: '100%' }} min={1} /></Form.Item></Col>
+            <Col span={8}><Form.Item name="language" label="Ngôn ngữ"><Input maxLength={50} /></Form.Item></Col>
+            <Col span={8}><Form.Item name="format" label="Định dạng"><Select options={[{ value: 'Điện tử', label: 'Điện tử' }, { value: 'Giấy', label: 'Giấy' }, { value: 'Cả hai', label: 'Cả hai' }]} /></Form.Item></Col>
+          </Row>
+          <Form.Item name="autograph" label="Bút tích"><Input.TextArea rows={2} maxLength={500} showCount /></Form.Item>
+          <Form.Item name="keyword" label="Từ khóa"><Input maxLength={500} /></Form.Item>
+          <Row gutter={16}>
+            <Col span={12}><Form.Item name="confidence_level" label="Mức độ tin cậy"><Input maxLength={50} /></Form.Item></Col>
+            <Col span={12}><Form.Item name="is_original" label="Bản gốc" valuePropName="checked"><Checkbox>Là bản gốc</Checkbox></Form.Item></Col>
+          </Row>
+        </Form>
       </Modal>
     </div>
   );

@@ -687,4 +687,25 @@ router.post('/:id/gui-lien-thong', async (req: Request, res: Response) => {
   }
 });
 
+// ============================================================
+// CHUYỂN LƯU TRỮ
+// ============================================================
+
+router.get('/:id/luu-tru', async (req: Request, res: Response) => {
+  try {
+    const doc = await incomingDocRepository.getArchive('outgoing', Number(req.params.id));
+    res.json({ success: true, data: doc });
+  } catch (error) { handleDbError(error, res); }
+});
+
+router.post('/:id/chuyen-luu-tru', async (req: Request, res: Response) => {
+  try {
+    const { staffId } = (req as AuthRequest).user;
+    const docId = Number(req.params.id);
+    const result = await incomingDocRepository.createArchive('outgoing', docId, { ...req.body, archived_by: staffId });
+    if (!result.success) { res.status(400).json({ success: false, message: result.message }); return; }
+    res.json({ success: true, data: { id: result.id, message: result.message } });
+  } catch (error) { handleDbError(error, res); }
+});
+
 export default router;

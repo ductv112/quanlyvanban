@@ -138,4 +138,42 @@ router.get('/:id', async (req: Request, res: Response) => {
   }
 });
 
+// ============================================================
+// MOCK: Ký số giả lập per-attachment
+// ============================================================
+
+router.post('/mock/sign', async (req: Request, res: Response) => {
+  try {
+    const { attachment_id, attachment_type } = req.body;
+    if (!attachment_id || !attachment_type) {
+      res.status(400).json({ success: false, message: 'attachment_id và attachment_type là bắt buộc' });
+      return;
+    }
+    const { callFunctionOne } = await import('../lib/db/query.js');
+    const result = await callFunctionOne<{ success: boolean; message: string }>(
+      'edoc.fn_attachment_mock_sign', [Number(attachment_id), attachment_type, (req as AuthRequest).user.staffId],
+    );
+    res.json({ success: result?.success ?? false, message: result?.message ?? 'Lỗi' });
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
+
+router.post('/mock/verify', async (req: Request, res: Response) => {
+  try {
+    const { attachment_id, attachment_type } = req.body;
+    if (!attachment_id || !attachment_type) {
+      res.status(400).json({ success: false, message: 'attachment_id và attachment_type là bắt buộc' });
+      return;
+    }
+    const { callFunctionOne } = await import('../lib/db/query.js');
+    const result = await callFunctionOne<{ is_valid: boolean; signer_name: string; sign_date: string; message: string }>(
+      'edoc.fn_attachment_mock_verify', [Number(attachment_id), attachment_type],
+    );
+    res.json({ success: true, data: result });
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
+
 export default router;

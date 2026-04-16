@@ -753,4 +753,41 @@ router.post('/:id/gui-lien-thong', async (req: Request, res: Response) => {
   }
 });
 
+// ============================================================
+// CHUYỂN LƯU TRỮ
+// ============================================================
+
+router.get('/:id/luu-tru', async (req: Request, res: Response) => {
+  try {
+    const doc = await incomingDocRepository.getArchive('incoming', Number(req.params.id));
+    res.json({ success: true, data: doc });
+  } catch (error) { handleDbError(error, res); }
+});
+
+router.get('/:id/luu-tru/phong', async (req: Request, res: Response) => {
+  try {
+    const { unitId } = (req as AuthRequest).user;
+    const fonds = await incomingDocRepository.getFonds(unitId);
+    res.json({ success: true, data: fonds });
+  } catch (error) { handleDbError(error, res); }
+});
+
+router.get('/:id/luu-tru/kho', async (req: Request, res: Response) => {
+  try {
+    const { unitId } = (req as AuthRequest).user;
+    const warehouses = await incomingDocRepository.getWarehouses(unitId);
+    res.json({ success: true, data: warehouses });
+  } catch (error) { handleDbError(error, res); }
+});
+
+router.post('/:id/chuyen-luu-tru', async (req: Request, res: Response) => {
+  try {
+    const { staffId } = (req as AuthRequest).user;
+    const docId = Number(req.params.id);
+    const result = await incomingDocRepository.createArchive('incoming', docId, { ...req.body, archived_by: staffId });
+    if (!result.success) { res.status(400).json({ success: false, message: result.message }); return; }
+    res.json({ success: true, data: { id: result.id, message: result.message } });
+  } catch (error) { handleDbError(error, res); }
+});
+
 export default router;

@@ -9,7 +9,7 @@ import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
 import {
   PlusOutlined, EditOutlined, DeleteOutlined, MoreOutlined,
   CheckCircleOutlined, EyeOutlined, FileTextOutlined, ReloadOutlined,
-  CloseCircleOutlined, RollbackOutlined, DownloadOutlined,
+  CloseCircleOutlined, RollbackOutlined, DownloadOutlined, PrinterOutlined,
 } from '@ant-design/icons';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth.store';
@@ -302,6 +302,7 @@ export default function IncomingDocPage() {
         <Space>
           {selectedRowKeys.length > 0 && <Button onClick={handleMarkReadBulk}>Đánh dấu đã đọc ({selectedRowKeys.length})</Button>}
           <Button icon={<DownloadOutlined />} onClick={handleExportExcel}>Xuất Excel</Button>
+          <Button icon={<PrinterOutlined />} onClick={() => window.print()}>In</Button>
           <Button type="primary" icon={<PlusOutlined />} onClick={() => openDrawer()}>Thêm mới</Button>
         </Space>
       }
@@ -364,6 +365,39 @@ export default function IncomingDocPage() {
           <Form.Item name="recipients" label="Nơi nhận"><TextArea rows={2} placeholder="Nơi nhận văn bản" /></Form.Item>
         </Form>
       </Drawer>
+
+      {/* Hidden print area */}
+      <div className="print-area" style={{ display: 'none' }}>
+        <div className="print-header">
+          <h2>DANH SÁCH VĂN BẢN ĐẾN</h2>
+          <p>Ngày in: {dayjs().format('DD/MM/YYYY HH:mm')}</p>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>STT</th><th>Số đến</th><th>Ngày đến</th><th>Số ký hiệu</th>
+              <th>Trích yếu</th><th>CQ ban hành</th><th>Người ký</th>
+              <th>Loại VB</th><th>Trạng thái</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.map((r, i) => (
+              <tr key={r.id}>
+                <td style={{ textAlign: 'center' }}>{i + 1}</td>
+                <td style={{ textAlign: 'center' }}>{r.number}</td>
+                <td>{r.received_date ? dayjs(r.received_date).format('DD/MM/YYYY') : ''}</td>
+                <td>{r.notation}</td>
+                <td>{r.abstract}</td>
+                <td>{r.publish_unit}</td>
+                <td>{r.signer}</td>
+                <td>{r.doc_type_name}</td>
+                <td>{r.approved ? 'Đã duyệt' : 'Chờ duyệt'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div className="print-footer">Tổng: {data.length} văn bản</div>
+      </div>
     </Card>
   );
 }

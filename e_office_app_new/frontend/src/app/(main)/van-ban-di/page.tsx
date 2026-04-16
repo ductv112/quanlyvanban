@@ -9,7 +9,7 @@ import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
 import {
   PlusOutlined, EditOutlined, DeleteOutlined, MoreOutlined,
   CheckCircleOutlined, EyeOutlined, SendOutlined, ReloadOutlined,
-  CloseCircleOutlined, RollbackOutlined, StopOutlined, DownloadOutlined,
+  CloseCircleOutlined, RollbackOutlined, StopOutlined, DownloadOutlined, PrinterOutlined,
 } from '@ant-design/icons';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth.store';
@@ -355,6 +355,7 @@ export default function OutgoingDocPage() {
         <Space>
           {selectedRowKeys.length > 0 && <Button onClick={handleMarkReadBulk}>Đánh dấu đã đọc ({selectedRowKeys.length})</Button>}
           <Button icon={<DownloadOutlined />} onClick={handleExportExcel}>Xuất Excel</Button>
+          <Button icon={<PrinterOutlined />} onClick={() => window.print()}>In</Button>
           <Button type="primary" icon={<PlusOutlined />} onClick={() => openDrawer()}>Thêm mới</Button>
         </Space>
       }
