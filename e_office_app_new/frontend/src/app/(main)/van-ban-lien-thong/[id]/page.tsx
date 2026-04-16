@@ -97,7 +97,7 @@ export default function LienThongDocDetailPage() {
   const handleNhanBanGiao = async () => {
     setActionLoading(true);
     try {
-      await api.post(`/van-ban-den/${docId}/nhan-ban-giao`, {});
+      await api.post(`/van-ban-lien-thong/${docId}/nhan-ban-giao`, {});
       message.success('Nhận bàn giao thành công');
       fetchDoc();
     } catch (e: unknown) {
@@ -112,7 +112,7 @@ export default function LienThongDocDetailPage() {
     try {
       const values = await chuyenLaiForm.validateFields();
       setChuyenLaiSaving(true);
-      await api.post(`/van-ban-den/${docId}/chuyen-lai`, { reason: values.reason });
+      await api.post(`/van-ban-lien-thong/${docId}/chuyen-lai`, { reason: values.reason });
       message.success('Chuyển lại văn bản thành công');
       setChuyenLaiOpen(false);
       chuyenLaiForm.resetFields();
@@ -125,11 +125,11 @@ export default function LienThongDocDetailPage() {
     }
   };
 
-  const handleHuyDuyet = async () => {
+  const handleHoanThanh = async () => {
     setActionLoading(true);
     try {
-      await api.post(`/van-ban-den/${docId}/huy-duyet`, {});
-      message.success('Đã hủy duyệt văn bản');
+      await api.post(`/van-ban-lien-thong/${docId}/hoan-thanh`, {});
+      message.success('Đã hoàn thành xử lý văn bản liên thông');
       fetchDoc();
     } catch (e: unknown) {
       const err = e as { response?: { data?: { message?: string } } };
@@ -167,44 +167,56 @@ export default function LienThongDocDetailPage() {
         </div>
 
         <div className="detail-header-right">
-          <Popconfirm
-            title="Nhận bàn giao văn bản?"
-            description="Bạn có chắc chắn nhận bàn giao văn bản này?"
-            okText="Xác nhận"
-            cancelText="Hủy"
-            onConfirm={handleNhanBanGiao}
-            disabled={actionLoading}
-          >
-            <Button
-              type="primary"
-              icon={<CheckCircleOutlined />}
-              loading={actionLoading}
-              style={{ backgroundColor: '#059669', borderColor: '#059669' }}
+          {/* Nhận bàn giao — chỉ hiện khi pending */}
+          {doc.status === 'pending' && (
+            <Popconfirm
+              title="Nhận bàn giao văn bản?"
+              description="Văn bản sẽ được chuyển thành VB đến để xử lý."
+              okText="Xác nhận"
+              cancelText="Hủy"
+              onConfirm={handleNhanBanGiao}
+              disabled={actionLoading}
             >
-              Nhận bàn giao
-            </Button>
-          </Popconfirm>
+              <Button
+                type="primary"
+                icon={<CheckCircleOutlined />}
+                loading={actionLoading}
+                style={{ backgroundColor: '#059669', borderColor: '#059669' }}
+              >
+                Nhận bàn giao
+              </Button>
+            </Popconfirm>
+          )}
 
-          <Button
-            icon={<RollbackOutlined />}
-            onClick={() => { chuyenLaiForm.resetFields(); setChuyenLaiOpen(true); }}
-          >
-            Chuyển lại
-          </Button>
-
-          <Popconfirm
-            title="Hủy duyệt văn bản?"
-            description="Văn bản sẽ được chuyển về trạng thái chưa duyệt. Thao tác này không thể hoàn tác."
-            okText="Hủy duyệt"
-            okButtonProps={{ danger: true }}
-            cancelText="Đóng"
-            onConfirm={handleHuyDuyet}
-            disabled={actionLoading}
-          >
-            <Button danger icon={<CloseCircleOutlined />} loading={actionLoading}>
-              Hủy duyệt
+          {/* Chuyển lại (Từ chối) — chỉ hiện khi pending */}
+          {doc.status === 'pending' && (
+            <Button
+              icon={<RollbackOutlined />}
+              onClick={() => { chuyenLaiForm.resetFields(); setChuyenLaiOpen(true); }}
+            >
+              Chuyển lại
             </Button>
-          </Popconfirm>
+          )}
+
+          {/* Hoàn thành — chỉ hiện khi đã nhận (received) */}
+          {doc.status === 'received' && (
+            <Popconfirm
+              title="Hoàn thành xử lý?"
+              description="Đánh dấu văn bản liên thông này đã xử lý xong."
+              okText="Hoàn thành"
+              cancelText="Hủy"
+              onConfirm={handleHoanThanh}
+              disabled={actionLoading}
+            >
+              <Button
+                type="primary"
+                icon={<CheckCircleOutlined />}
+                loading={actionLoading}
+              >
+                Hoàn thành
+              </Button>
+            </Popconfirm>
+          )}
         </div>
       </div>
 

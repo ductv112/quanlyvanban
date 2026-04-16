@@ -1,4 +1,4 @@
-import { callFunction, callFunctionOne } from '../lib/db/query.js';
+import { callFunction, callFunctionOne, rawQuery } from '../lib/db/query.js';
 
 // ============ Row types ============
 
@@ -71,5 +71,12 @@ export const interIncomingRepository = {
 
   async getById(id: number): Promise<InterIncomingDetailRow | null> {
     return callFunctionOne<InterIncomingDetailRow>('edoc.fn_inter_incoming_get_by_id', [id]);
+  },
+
+  async updateStatus(id: number, status: string): Promise<void> {
+    await rawQuery(
+      'UPDATE edoc.inter_incoming_docs SET status = $1, updated_at = NOW() WHERE id = $2',
+      [status, id],
+    );
   },
 };
