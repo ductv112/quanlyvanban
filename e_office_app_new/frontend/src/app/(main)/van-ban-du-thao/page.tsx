@@ -210,8 +210,16 @@ export default function DraftingDocPage() {
     } else {
       setEditingRecord(null);
       form.resetFields();
-      form.setFieldsValue({ secret_id: 1, urgent_id: 1, number_paper: 1, number_copies: 1 });
-      setStaffList([]);
+      form.setFieldsValue({
+        secret_id: 1, urgent_id: 1, number_paper: 1, number_copies: 1,
+        drafting_user_id: user?.staffId,
+        drafting_unit_id: user?.departmentId || user?.unitId,
+        received_date: dayjs(),
+      });
+      // Load staff list cho đơn vị mặc định
+      if (user?.departmentId || user?.unitId) {
+        fetchStaffByUnit(user.departmentId || user.unitId);
+      }
     }
     setDrawerOpen(true);
   };
