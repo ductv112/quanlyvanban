@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Card, Table, Button, Space, Select, Drawer, Form, Input, InputNumber,
-  Switch, App, Popconfirm, Tag, Empty,
+  Switch, App, Popconfirm, Tag, Empty, Tabs,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined, EditOutlined, DeleteOutlined, SettingOutlined } from '@ant-design/icons';
@@ -66,7 +66,9 @@ export default function DocColumnConfigPage() {
     finally { setLoading(false); }
   }, [selectedTypeId, message]);
 
-  useEffect(() => { fetchDocTypes(); }, [fetchDocTypes]);
+  useEffect(() => { fetchDocTypes().then(() => {}); }, [fetchDocTypes]);
+  // Auto-select first tab khi docTypes load
+  useEffect(() => { if (docTypes.length > 0 && !selectedTypeId) setSelectedTypeId(docTypes[0].id); }, [docTypes, selectedTypeId]);
   useEffect(() => { fetchColumns(); }, [fetchColumns]);
 
   const openDrawer = (record?: DocColumn) => {
@@ -147,33 +149,28 @@ export default function DocColumnConfigPage() {
   return (
     <Card
       title={<><SettingOutlined style={{ marginRight: 8 }} />Thuộc tính văn bản</>}
+      extra={selectedTypeId && (
+        <Button type="primary" icon={<PlusOutlined />} onClick={() => openDrawer()}>Thêm trường mới</Button>
+      )}
     >
-      {/* Chọn loại VB — nổi bật */}
-      <div style={{ marginBottom: 16, padding: 16, background: '#f0f5ff', borderRadius: 8, border: '1px solid #d6e4ff' }}>
-        <Space size={16} align="center" wrap>
-          <span style={{ fontWeight: 600, color: '#1B3A5C' }}>Loại văn bản:</span>
-          <Select
-            style={{ width: 300 }}
-            placeholder="-- Chọn loại văn bản để cấu hình --"
-            value={selectedTypeId}
-            onChange={setSelectedTypeId}
-            options={docTypes.map(t => ({ value: t.id, label: t.name }))}
-            allowClear
-            size="large"
-          />
-          {selectedTypeId && (
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => openDrawer()}>
-              Thêm trường mới
-            </Button>
-          )}
-        </Space>
-      </div>
-
-      {!selectedTypeId ? (
-        <Empty description="Chọn loại văn bản ở trên để xem và cấu hình các trường bổ sung" style={{ padding: '40px 0' }} />
+      {docTypes.length === 0 ? (
+        <Empty description="Đang tải loại văn bản..." />
       ) : (
+        <Tabs
+          type="line"
+          activeKey={selectedTypeId ? String(selectedTypeId) : undefined}
+          onChange={(key) => setSelectedTypeId(Number(key))}
+          items={docTypes.map(t => ({
+            key: String(t.id),
+            label: `${t.name} (${selectedTypeId === t.id ? data.length : '...'})`,
+          }))}
+          style={{ marginBottom: 0 }}
+        />
+      )}
+
+      {selectedTypeId && (
         <>
-          <div style={{ marginBottom: 12, color: '#595959' }}>
+          <div style={{ marginBottom: 12, marginTop: 12, color: '#595959' }}>
             Các trường bổ sung cho loại <strong>{selectedTypeName}</strong>. Khi tạo/sửa văn bản loại này, các trường dưới đây sẽ hiển thị thêm trong form.
           </div>
           <Table<DocColumn>
