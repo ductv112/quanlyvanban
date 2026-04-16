@@ -9,7 +9,7 @@ import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
 import {
   PlusOutlined, EditOutlined, DeleteOutlined, MoreOutlined,
   CheckCircleOutlined, EyeOutlined, FileTextOutlined, ReloadOutlined,
-  SendOutlined, FormOutlined,
+  SendOutlined, FormOutlined, StopOutlined,
 } from '@ant-design/icons';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth.store';
@@ -273,6 +273,33 @@ export default function DraftingDocPage() {
     });
   };
 
+  const handleReject = (record: DraftingDoc) => {
+    let reason = '';
+    modal.confirm({
+      title: 'Từ chối văn bản dự thảo',
+      content: (
+        <div style={{ marginTop: 12 }}>
+          <div style={{ marginBottom: 8, color: '#595959' }}>Nhập lý do từ chối (không bắt buộc):</div>
+          <Input.TextArea
+            rows={3}
+            placeholder="Lý do từ chối..."
+            onChange={(e) => { reason = e.target.value; }}
+          />
+        </div>
+      ),
+      okText: 'Từ chối',
+      okButtonProps: { danger: true },
+      cancelText: 'Hủy',
+      onOk: async () => {
+        try {
+          await api.patch(`/van-ban-du-thao/${record.id}/tu-choi`, { reason: reason.trim() || undefined });
+          message.success('Đã từ chối văn bản dự thảo');
+          fetchData();
+        } catch (err: any) { message.error(err?.response?.data?.message || 'Lỗi'); }
+      },
+    });
+  };
+
   const handleRelease = async (record: DraftingDoc) => {
     modal.confirm({
       title: 'Xác nhận phát hành',
@@ -345,6 +372,10 @@ export default function DraftingDocPage() {
             {
               key: 'approve', icon: <CheckCircleOutlined />, label: 'Duyệt',
               onClick: () => handleApprove(record),
+            },
+            {
+              key: 'reject', icon: <StopOutlined />, label: 'Từ chối', danger: true,
+              onClick: () => handleReject(record),
             },
           ] : []),
           ...(canRelease ? [
