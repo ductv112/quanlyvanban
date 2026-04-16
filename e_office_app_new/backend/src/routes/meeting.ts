@@ -222,9 +222,9 @@ router.get('/thong-ke', async (req: Request, res: Response) => {
     res.json({
       success: true,
       data: {
-        by_month: byMonth,
-        by_room: byRoom,
-        by_type: byType,
+        by_month: byMonth.map((r: any) => ({ month: r.month_num, meeting_count: Number(r.count) })),
+        by_room: byRoom.map((r: any) => ({ room_name: r.category_name, meeting_count: Number(r.count) })),
+        by_type: byType.map((r: any) => ({ meeting_type_name: r.category_name, meeting_count: Number(r.count) })),
         total: getSummary('total'),
         approved: getSummary('approved'),
         pending: getSummary('pending'),
