@@ -2,6 +2,7 @@
 -- MIGRATION 015: Sprint 10 — Dashboard thống kê & Widget dữ liệu
 -- Functions: fn_dashboard_get_stats, fn_dashboard_recent_incoming,
 --            fn_dashboard_upcoming_tasks, fn_dashboard_recent_outgoing
+-- Fixed: doc_code→document_code, is_deleted removed, TIMESTAMPTZ, SMALLINT
 -- ================================================================
 
 -- ==========================================
@@ -19,7 +20,6 @@ CREATE OR REPLACE FUNCTION edoc.fn_dashboard_get_stats(
 BEGIN
   RETURN QUERY
   SELECT
-    -- VB đến chưa đọc (per user_incoming_docs join — is_read tracking in sprint 3 design)
     (
       SELECT COUNT(*)
       FROM edoc.user_incoming_docs uid
@@ -28,7 +28,6 @@ BEGIN
         AND uid.is_read = FALSE
     ) AS incoming_unread,
 
-    -- VB đi chưa phê duyệt
     (
       SELECT COUNT(*)
       FROM edoc.outgoing_docs
@@ -36,14 +35,12 @@ BEGIN
         AND approved = FALSE
     ) AS outgoing_pending,
 
-    -- Tổng HSCV đang xử lý
     (
       SELECT COUNT(*)
       FROM edoc.handling_docs
       WHERE unit_id = p_unit_id
     ) AS handling_total,
 
-    -- HSCV quá hạn (end_date < NOW() và chưa hoàn thành — status != 4)
     (
       SELECT COUNT(*)
       FROM edoc.handling_docs
@@ -62,18 +59,18 @@ CREATE OR REPLACE FUNCTION edoc.fn_dashboard_recent_incoming(
   p_unit_id INT,
   p_limit   INT DEFAULT 10
 ) RETURNS TABLE (
-  id           BIGINT,
-  doc_code     VARCHAR,
-  abstract     TEXT,
-  received_date TIMESTAMP,
-  urgency_name VARCHAR,
-  sender_name  VARCHAR
+  id            BIGINT,
+  doc_code      VARCHAR,
+  abstract      TEXT,
+  received_date TIMESTAMPTZ,
+  urgency_name  VARCHAR,
+  sender_name   VARCHAR
 ) LANGUAGE plpgsql SECURITY DEFINER AS $$
 BEGIN
   RETURN QUERY
   SELECT
     d.id,
-    d.doc_code,
+    d.document_code::VARCHAR AS doc_code,
     d.abstract,
     d.received_date,
     CASE d.urgent_id
@@ -85,7 +82,6 @@ BEGIN
     COALESCE(d.publish_unit, '')::VARCHAR AS sender_name
   FROM edoc.incoming_docs d
   WHERE d.unit_id = p_unit_id
-    AND d.is_deleted = FALSE
   ORDER BY d.received_date DESC NULLS LAST, d.created_at DESC
   LIMIT COALESCE(p_limit, 10);
 END;
@@ -100,10 +96,10 @@ CREATE OR REPLACE FUNCTION edoc.fn_dashboard_upcoming_tasks(
 ) RETURNS TABLE (
   id               BIGINT,
   title            VARCHAR,
-  open_date        TIMESTAMP,
-  status           INT,
-  progress_percent INT,
-  deadline         TIMESTAMP
+  open_date        TIMESTAMPTZ,
+  status           SMALLINT,
+  progress_percent SMALLINT,
+  deadline         TIMESTAMPTZ
 ) LANGUAGE plpgsql SECURITY DEFINER AS $$
 BEGIN
   RETURN QUERY
@@ -112,14 +108,13 @@ BEGIN
     hd.name::VARCHAR AS title,
     hd.start_date AS open_date,
     hd.status,
-    COALESCE(hd.progress_percent, 0) AS progress_percent,
+    COALESCE(hd.progress, 0::SMALLINT) AS progress_percent,
     hd.end_date AS deadline
   FROM edoc.handling_docs hd
-  WHERE hd.is_deleted = FALSE
-    AND hd.status != 4
+  WHERE hd.status != 4
     AND hd.end_date >= NOW()
     AND (
-      hd.curator_id = p_staff_id
+      hd.curator = p_staff_id
       OR EXISTS (
         SELECT 1 FROM edoc.staff_handling_docs shd
         WHERE shd.handling_doc_id = hd.id
@@ -141,21 +136,20 @@ CREATE OR REPLACE FUNCTION edoc.fn_dashboard_recent_outgoing(
   id            BIGINT,
   doc_code      VARCHAR,
   abstract      TEXT,
-  sent_date     TIMESTAMP,
+  sent_date     TIMESTAMPTZ,
   doc_type_name VARCHAR
 ) LANGUAGE plpgsql SECURITY DEFINER AS $$
 BEGIN
   RETURN QUERY
   SELECT
     d.id,
-    d.doc_code,
+    d.document_code::VARCHAR AS doc_code,
     d.abstract,
     COALESCE(d.publish_date, d.received_date, d.created_at) AS sent_date,
     COALESCE(dt.name, '')::VARCHAR AS doc_type_name
   FROM edoc.outgoing_docs d
-  LEFT JOIN public.doc_types dt ON dt.id = d.doc_type_id
+  LEFT JOIN edoc.doc_types dt ON dt.id = d.doc_type_id
   WHERE d.unit_id = p_unit_id
-    AND d.is_deleted = FALSE
   ORDER BY COALESCE(d.publish_date, d.received_date, d.created_at) DESC
   LIMIT COALESCE(p_limit, 10);
 END;
