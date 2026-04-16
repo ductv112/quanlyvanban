@@ -243,6 +243,7 @@ $$;
 
 -- ==========================================
 -- 5. FN: NHẬN BÀN GIAO VB LIÊN THÔNG (pending → received)
+--    Tự động tạo VB đến (incoming_docs) từ thông tin VB liên thông
 -- ==========================================
 CREATE OR REPLACE FUNCTION edoc.fn_inter_incoming_receive(
   p_id       BIGINT,
@@ -256,17 +257,49 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 DECLARE
-  v_status VARCHAR;
+  v_inter       edoc.inter_incoming_docs%ROWTYPE;
+  v_unit_id     INT;
+  v_incoming_id BIGINT;
+  v_next_number INT;
 BEGIN
-  SELECT status INTO v_status FROM edoc.inter_incoming_docs WHERE id = p_id;
+  -- Lấy thông tin VB liên thông
+  SELECT * INTO v_inter FROM edoc.inter_incoming_docs WHERE id = p_id;
   IF NOT FOUND THEN
     RETURN QUERY SELECT FALSE, 'Không tìm thấy văn bản liên thông'::TEXT; RETURN;
   END IF;
-  IF v_status != 'pending' THEN
-    RETURN QUERY SELECT FALSE, ('Không thể nhận bàn giao — trạng thái hiện tại: ' || v_status)::TEXT; RETURN;
+  IF v_inter.status != 'pending' THEN
+    RETURN QUERY SELECT FALSE, ('Không thể nhận bàn giao — trạng thái hiện tại: ' || v_inter.status)::TEXT; RETURN;
   END IF;
+
+  -- Lấy unit_id từ staff
+  SELECT s.unit_id INTO v_unit_id FROM public.staff s WHERE s.id = p_staff_id;
+  IF v_unit_id IS NULL THEN v_unit_id := v_inter.unit_id; END IF;
+
+  -- Tính số đến tiếp theo
+  SELECT COALESCE(MAX(number), 0) + 1 INTO v_next_number
+  FROM edoc.incoming_docs WHERE unit_id = v_unit_id;
+
+  -- Tạo VB đến từ VB liên thông
+  INSERT INTO edoc.incoming_docs (
+    unit_id, received_date, number, notation, document_code,
+    abstract, publish_unit, publish_date, signer, sign_date,
+    doc_type_id, expired_date, secret_id, urgent_id,
+    is_inter_doc, inter_doc_id,
+    approved, is_handling, is_received_paper, archive_status,
+    created_by, created_at
+  ) VALUES (
+    v_unit_id, NOW(), v_next_number, v_inter.notation, v_inter.document_code,
+    v_inter.abstract, v_inter.publish_unit, v_inter.publish_date, v_inter.signer, v_inter.sign_date,
+    v_inter.doc_type_id, v_inter.expired_date, 1, 1,
+    TRUE, p_id::INT,
+    FALSE, FALSE, FALSE, FALSE,
+    p_staff_id, NOW()
+  ) RETURNING id INTO v_incoming_id;
+
+  -- Cập nhật trạng thái VB liên thông
   UPDATE edoc.inter_incoming_docs SET status = 'received', updated_at = NOW() WHERE id = p_id;
-  RETURN QUERY SELECT TRUE, 'Nhận bàn giao thành công'::TEXT;
+
+  RETURN QUERY SELECT TRUE, ('Nhận bàn giao thành công — đã tạo văn bản đến số ' || v_next_number)::TEXT;
 END;
 $$;
 
