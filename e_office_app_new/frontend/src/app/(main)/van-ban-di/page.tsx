@@ -518,6 +518,38 @@ export default function OutgoingDocPage() {
           </Form.Item>
         </Form>
       </Drawer>
+
+      <div className="print-area">
+        <div className="print-header">
+          <h2>DANH SÁCH VĂN BẢN ĐI</h2>
+          <p>Ngày in: {dayjs().format('DD/MM/YYYY HH:mm')}</p>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>STT</th><th>Số</th><th>Ngày</th><th>Số ký hiệu</th>
+              <th>Trích yếu</th><th>Đơn vị soạn</th><th>Người ký</th>
+              <th>Loại VB</th><th>Trạng thái</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.map((r, i) => (
+              <tr key={r.id}>
+                <td style={{ textAlign: 'center' }}>{i + 1}</td>
+                <td style={{ textAlign: 'center' }}>{r.number}</td>
+                <td>{r.received_date ? dayjs(r.received_date).format('DD/MM/YYYY') : ''}</td>
+                <td>{r.notation}</td>
+                <td>{r.abstract}</td>
+                <td>{r.drafting_unit_name}</td>
+                <td>{r.signer}</td>
+                <td>{r.doc_type_name}</td>
+                <td>{r.approved ? 'Đã duyệt' : 'Chờ duyệt'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div className="print-footer">Tổng: {data.length} văn bản</div>
+      </div>
     </Card>
   );
 }

@@ -752,6 +752,38 @@ export default function DraftingDocPage() {
           </Form.Item>
         </Form>
       </Drawer>
+
+      <div className="print-area">
+        <div className="print-header">
+          <h2>DANH SÁCH VĂN BẢN DỰ THẢO</h2>
+          <p>Ngày in: {dayjs().format('DD/MM/YYYY HH:mm')}</p>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>STT</th><th>Số</th><th>Ký hiệu</th>
+              <th>Trích yếu</th><th>Đơn vị soạn</th><th>Người soạn</th>
+              <th>Người ký</th><th>Loại VB</th><th>Trạng thái</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.map((r, i) => (
+              <tr key={r.id}>
+                <td style={{ textAlign: 'center' }}>{i + 1}</td>
+                <td style={{ textAlign: 'center' }}>{r.number}</td>
+                <td>{r.notation}</td>
+                <td>{r.abstract}</td>
+                <td>{r.drafting_unit_name}</td>
+                <td>{r.drafting_user_name}</td>
+                <td>{r.signer}</td>
+                <td>{r.doc_type_name}</td>
+                <td>{r.is_released ? 'Đã phát hành' : r.approved ? 'Đã duyệt' : 'Dự thảo'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div className="print-footer">Tổng: {data.length} văn bản</div>
+      </div>
     </Card>
   );
 }

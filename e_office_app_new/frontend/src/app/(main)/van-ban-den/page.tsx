@@ -367,7 +367,7 @@ export default function IncomingDocPage() {
       </Drawer>
 
       {/* Hidden print area */}
-      <div className="print-area" style={{ display: 'none' }}>
+      <div className="print-area">
         <div className="print-header">
           <h2>DANH SÁCH VĂN BẢN ĐẾN</h2>
           <p>Ngày in: {dayjs().format('DD/MM/YYYY HH:mm')}</p>
