@@ -473,7 +473,7 @@ export default function OutgoingDocDetailPage() {
 
       {/* Drawer: Giao việc */}
       <Drawer
-        title="Giao việc" size={600} open={giaoViecOpen}
+        title="Giao việc" size={600} open={giaoViecOpen} forceRender
         onClose={() => { setGiaoViecOpen(false); giaoViecForm.resetFields(); }}
         rootClassName="drawer-gradient"
         extra={<Space><Button onClick={() => setGiaoViecOpen(false)} ghost style={{ borderColor: 'rgba(255,255,255,0.6)', color: '#fff' }}>Hủy</Button><Button type="primary" loading={giaoViecSaving} onClick={handleGiaoViec}>Tạo và giao việc</Button></Space>}

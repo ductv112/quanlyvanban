@@ -742,6 +742,7 @@ export default function IncomingDocDetailPage() {
         title="Giao việc"
         size={720}
         open={giaoViecOpen}
+        forceRender
         onClose={() => { setGiaoViecOpen(false); giaoViecForm.resetFields(); }}
         rootClassName="drawer-gradient"
         extra={
@@ -796,6 +797,7 @@ export default function IncomingDocDetailPage() {
       <Modal
         title="Lý do chuyển lại"
         open={chuyenLaiOpen}
+        forceRender
         onCancel={() => { setChuyenLaiOpen(false); chuyenLaiForm.resetFields(); }}
         onOk={handleChuyenLai}
         okText="Chuyển lại"
@@ -864,7 +866,7 @@ export default function IncomingDocDetailPage() {
 
       {/* Modal: Chuyển lưu trữ */}
       <Modal
-        title="Chuyển lưu trữ" open={archiveModalOpen} onCancel={() => setArchiveModalOpen(false)}
+        title="Chuyển lưu trữ" open={archiveModalOpen} forceRender onCancel={() => setArchiveModalOpen(false)}
         onOk={handleArchive} confirmLoading={archiveSaving} okText="Chuyển lưu trữ" cancelText="Hủy" width={640}
       >
         <Form form={archiveForm} layout="vertical" style={{ marginTop: 16 }}>
