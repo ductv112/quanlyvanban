@@ -31,6 +31,7 @@ import meetingRoutes from './routes/meeting.js';
 import lgspRoutes from './routes/lgsp.js';
 import digitalSignatureRoutes from './routes/digital-signature.js';
 import notificationRoutes from './routes/notification.js';
+import sendConfigRoutes from './routes/send-config.js';
 import { authenticate } from './middleware/auth.js';
 import { initSocket } from './lib/socket.js';
 
@@ -72,6 +73,7 @@ app.use('/api/thong-bao', authenticate, noticeRoutes);
 app.use('/api/lich', authenticate, calendarRoutes);
 app.use('/api/danh-ba', authenticate, directoryRoutes);
 app.use('/api/dashboard', authenticate, dashboardRoutes);
+app.use('/api/cau-hinh-gui-nhanh', authenticate, sendConfigRoutes);
 
 // --- Phase 5: Kho luu tru, Tai lieu, Hop dong, Cuoc hop ---
 app.use('/api/kho-luu-tru', authenticate, archiveRoutes);

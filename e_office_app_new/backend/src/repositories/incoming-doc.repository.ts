@@ -279,6 +279,13 @@ export const incomingDocRepository = {
     return row ?? { success: false, message: 'Không tìm thấy bút phê' };
   },
 
+  async commentAndAssign(docId: number, staffId: number, content: string, docType: string, expiredDate?: string, staffIds?: number[]): Promise<DbResultWithId> {
+    const row = await callFunctionOne<DbResultWithId>('edoc.fn_leader_note_comment_and_assign', [
+      docId, staffId, content, expiredDate ?? null, staffIds ?? null, docType,
+    ]);
+    return row ?? { success: false, message: 'Lỗi bút phê', id: 0 };
+  },
+
   // --- 3.7 Staff Notes / Bookmarks ---
   async toggleBookmark(docType: string, docId: number, staffId: number, note?: string, isImportant?: boolean): Promise<BookmarkToggleResult> {
     const row = await callFunctionOne<BookmarkToggleResult>('edoc.fn_staff_note_toggle', [docType, docId, staffId, note ?? null, isImportant ?? false]);

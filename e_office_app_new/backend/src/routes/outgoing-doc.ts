@@ -544,13 +544,21 @@ router.get('/:id/y-kien', async (req: Request, res: Response) => {
 router.post('/:id/y-kien', async (req: Request, res: Response) => {
   try {
     const { staffId } = (req as AuthRequest).user;
-    const { content } = req.body;
-    const result = await outgoingDocRepository.createLeaderNote(Number(req.params.id), staffId, content);
-    if (!result.success) {
-      res.status(400).json({ success: false, message: result.message });
+    const docId = Number(req.params.id);
+    const { content, expired_date, staff_ids } = req.body;
+    if (!content?.trim()) {
+      res.status(400).json({ success: false, message: 'Nội dung ý kiến là bắt buộc' });
       return;
     }
-    res.status(201).json({ success: true, data: { id: result.id } });
+    if (Array.isArray(staff_ids) && staff_ids.length > 0) {
+      const result = await incomingDocRepository.commentAndAssign(docId, staffId, content.trim(), 'outgoing', expired_date || undefined, staff_ids.map(Number));
+      if (!result.success) { res.status(400).json({ success: false, message: result.message }); return; }
+      res.status(201).json({ success: true, data: { id: result.id, message: result.message } });
+    } else {
+      const result = await outgoingDocRepository.createLeaderNote(docId, staffId, content.trim());
+      if (!result.success) { res.status(400).json({ success: false, message: result.message }); return; }
+      res.status(201).json({ success: true, data: { id: result.id } });
+    }
   } catch (error) {
     handleDbError(error, res);
   }

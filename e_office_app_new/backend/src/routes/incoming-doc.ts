@@ -457,24 +457,37 @@ router.get('/:id/but-phe', async (req: Request, res: Response) => {
   }
 });
 
-// POST /:id/but-phe
+// POST /:id/but-phe — Bút phê (đơn thuần hoặc kết hợp phân công)
 router.post('/:id/but-phe', async (req: Request, res: Response) => {
   try {
     const { staffId } = (req as AuthRequest).user;
     const docId = Number(req.params.id);
-    const { content } = req.body;
+    const { content, expired_date, staff_ids } = req.body;
 
     if (!content?.trim()) {
       res.status(400).json({ success: false, message: 'Nội dung bút phê là bắt buộc' });
       return;
     }
 
-    const result = await incomingDocRepository.createLeaderNote(docId, staffId, content.trim());
-    if (!result.success) {
-      res.status(400).json({ success: false, message: result.message });
-      return;
+    // Nếu có staff_ids → dùng combo SP (bút phê + phân công)
+    if (Array.isArray(staff_ids) && staff_ids.length > 0) {
+      const result = await incomingDocRepository.commentAndAssign(
+        docId, staffId, content.trim(), 'incoming',
+        expired_date || undefined, staff_ids.map(Number),
+      );
+      if (!result.success) {
+        res.status(400).json({ success: false, message: result.message });
+        return;
+      }
+      res.status(201).json({ success: true, data: { id: result.id, message: result.message } });
+    } else {
+      const result = await incomingDocRepository.createLeaderNote(docId, staffId, content.trim());
+      if (!result.success) {
+        res.status(400).json({ success: false, message: result.message });
+        return;
+      }
+      res.status(201).json({ success: true, data: { id: result.id } });
     }
-    res.status(201).json({ success: true, data: { id: result.id } });
   } catch (error) {
     handleDbError(error, res);
   }
