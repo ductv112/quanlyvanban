@@ -86,6 +86,7 @@ export default function OutgoingDocPage() {
   const [docFields, setDocFields] = useState<SelectOption[]>([]);
   const [departments, setDepartments] = useState<SelectOption[]>([]);
   const [staffList, setStaffList] = useState<SelectOption[]>([]);
+  const [extraColumns, setExtraColumns] = useState<{ column_name: string; label: string; data_type: string; max_length: number | null; is_mandatory: boolean }[]>([]);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<OutgoingDoc | null>(null);
   const [saving, setSaving] = useState(false);
@@ -127,7 +128,14 @@ export default function OutgoingDocPage() {
     } catch { /* ignore */ }
   }, []);
 
-  useEffect(() => { fetchDropdowns(); }, [fetchDropdowns]);
+  const fetchExtraColumns = useCallback(async () => {
+    try {
+      const { data: res } = await api.get('/van-ban-di/truong-bo-sung', { params: { doc_type_id: 2 } });
+      setExtraColumns(res.data || []);
+    } catch { setExtraColumns([]); }
+  }, []);
+
+  useEffect(() => { fetchDropdowns(); fetchExtraColumns(); }, [fetchDropdowns, fetchExtraColumns]);
   useEffect(() => { fetchData(); }, [fetchData]);
 
   // Handle ?edit=ID from detail page (run once)
@@ -516,6 +524,35 @@ export default function OutgoingDocPage() {
           <Form.Item name="recipients" label="Nơi nhận">
             <TextArea rows={2} placeholder="Nơi nhận văn bản" />
           </Form.Item>
+
+          {extraColumns.length > 0 && (
+            <>
+              <div style={{ borderTop: '1px dashed #d9d9d9', margin: '16px 0 12px', paddingTop: 12 }}>
+                <span style={{ fontWeight: 600, color: '#1B3A5C', fontSize: 13 }}>Trường bổ sung</span>
+              </div>
+              <Row gutter={16}>
+                {extraColumns.map((col) => (
+                  <Col span={col.data_type === 'textarea' ? 24 : 12} key={col.column_name}>
+                    <Form.Item
+                      name={['extra_fields', col.column_name]}
+                      label={col.label}
+                      rules={col.is_mandatory ? [{ required: true, message: `${col.label} là bắt buộc` }] : undefined}
+                    >
+                      {col.data_type === 'date' ? (
+                        <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
+                      ) : col.data_type === 'number' ? (
+                        <InputNumber style={{ width: '100%' }} />
+                      ) : col.data_type === 'textarea' ? (
+                        <TextArea rows={2} maxLength={col.max_length || undefined} />
+                      ) : (
+                        <Input maxLength={col.max_length || undefined} placeholder={col.label} />
+                      )}
+                    </Form.Item>
+                  </Col>
+                ))}
+              </Row>
+            </>
+          )}
         </Form>
       </Drawer>
 

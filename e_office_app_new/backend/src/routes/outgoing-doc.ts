@@ -7,6 +7,7 @@ import { uploadFile, deleteFile, getFileUrl } from '../lib/minio/client.js';
 import { v4 as uuidv4 } from 'uuid';
 import { handleDbError } from '../lib/error-handler.js';
 import { exportExcel } from '../lib/excel.js';
+import { callFunction } from '../lib/db/query.js';
 import dayjs from 'dayjs';
 
 const router = Router();
@@ -139,6 +140,15 @@ router.get('/xuat-excel', async (req: Request, res: Response) => {
   } catch (error) {
     handleDbError(error, res);
   }
+});
+
+router.get('/truong-bo-sung', async (req: Request, res: Response) => {
+  try {
+    const { doc_type_id } = req.query;
+    if (!doc_type_id) { res.json({ success: true, data: [] }); return; }
+    const rows = await callFunction('edoc.fn_doc_column_get_by_type', [Number(doc_type_id)]);
+    res.json({ success: true, data: rows });
+  } catch (error) { handleDbError(error, res); }
 });
 
 router.get('/so-tiep-theo', async (req: Request, res: Response) => {
