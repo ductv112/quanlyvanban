@@ -12,7 +12,7 @@ import {
   StarOutlined, StarFilled, PaperClipOutlined,
   ClockCircleOutlined, UserOutlined, FilePdfOutlined,
   FileImageOutlined, FileWordOutlined, FileExcelOutlined, FileOutlined,
-  EditOutlined, SafetyCertificateOutlined, RocketOutlined, StopOutlined, RollbackOutlined,
+  EditOutlined, SafetyCertificateOutlined, RocketOutlined, StopOutlined, RollbackOutlined, CommentOutlined,
 } from '@ant-design/icons';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth.store';
@@ -90,16 +90,20 @@ export default function DraftingDocDetailPage() {
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
   const [rejecting, setRejecting] = useState(false);
+  const [leaderNotes, setLeaderNotes] = useState<{ id: number; staff_id: number; staff_name: string; position_name: string; content: string; created_at: string }[]>([]);
+  const [noteContent, setNoteContent] = useState('');
+  const [addingNote, setAddingNote] = useState(false);
 
   const fetchDoc = useCallback(async () => { try { const { data: res } = await api.get(`/van-ban-du-thao/${docId}`); setDoc(res.data); } catch { message.error('Không tìm thấy văn bản'); router.push('/van-ban-du-thao'); } }, [docId, message, router]);
   const fetchBookmarkStatus = useCallback(async () => { try { const { data: res } = await api.get('/van-ban-du-thao/danh-dau-ca-nhan'); const bookmarks: { doc_id: number | string }[] = res.data || []; setIsBookmarked(bookmarks.some((b) => Number(b.doc_id) === Number(docId))); } catch {} }, [docId]);
   const fetchAttachments = useCallback(async () => { try { const { data: res } = await api.get(`/van-ban-du-thao/${docId}/dinh-kem`); setAttachments(res.data || []); } catch {} }, [docId]);
   const fetchRecipients = useCallback(async () => { try { const { data: res } = await api.get(`/van-ban-du-thao/${docId}/nguoi-nhan`); setRecipients(res.data || []); } catch {} }, [docId]);
   const fetchHistory = useCallback(async () => { try { const { data: res } = await api.get(`/van-ban-du-thao/${docId}/lich-su`); setHistory(res.data || []); } catch {} }, [docId]);
+  const fetchLeaderNotes = useCallback(async () => { try { const { data: res } = await api.get(`/van-ban-du-thao/${docId}/y-kien`); setLeaderNotes(res.data || []); } catch {} }, [docId]);
 
   useEffect(() => {
     setLoading(true);
-    Promise.all([fetchDoc(), fetchAttachments(), fetchRecipients(), fetchHistory(), fetchBookmarkStatus()]).finally(() => setLoading(false));
+    Promise.all([fetchDoc(), fetchAttachments(), fetchRecipients(), fetchHistory(), fetchLeaderNotes(), fetchBookmarkStatus()]).finally(() => setLoading(false));
   }, [fetchDoc, fetchAttachments, fetchRecipients, fetchHistory, fetchBookmarkStatus]);
 
   // Actions
@@ -127,6 +131,16 @@ export default function DraftingDocDetailPage() {
     finally { setRejecting(false); }
   };
   const handleToggleBookmark = async () => { try { const { data: res } = await api.post(`/van-ban-du-thao/${docId}/danh-dau`, {}); setIsBookmarked(res.data?.is_bookmarked); message.success(res.data?.message); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } };
+
+  // Leader Notes
+  const handleAddNote = async () => {
+    if (!noteContent.trim()) { message.warning('Nhập nội dung ý kiến'); return; }
+    setAddingNote(true);
+    try { await api.post(`/van-ban-du-thao/${docId}/y-kien`, { content: noteContent.trim() }); message.success('Thêm ý kiến thành công'); setNoteContent(''); fetchLeaderNotes(); fetchHistory(); }
+    catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); }
+    finally { setAddingNote(false); }
+  };
+  const handleDeleteNote = async (noteId: number) => { try { await api.delete(`/van-ban-du-thao/${docId}/y-kien/${noteId}`); message.success('Đã xóa'); fetchLeaderNotes(); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } };
 
   // Attachments
   const handleUpload = async (file: File) => { setUploading(true); try { const fd = new FormData(); fd.append('file', file); await api.post(`/van-ban-du-thao/${docId}/dinh-kem`, fd, { headers: { 'Content-Type': 'multipart/form-data' } }); message.success('Tải lên thành công'); fetchAttachments(); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } finally { setUploading(false); } return false; };
@@ -370,6 +384,31 @@ export default function DraftingDocDetailPage() {
                 ))}
               </div>
             )}
+          </div>
+
+          {/* --- Ý kiến lãnh đạo --- */}
+          <div style={{ background: '#fff', borderRadius: 10, padding: '20px 24px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', marginBottom: 16 }}>
+            <div className="section-title" style={{ marginBottom: 12 }}><CommentOutlined /> Ý kiến lãnh đạo ({leaderNotes.length})</div>
+            {leaderNotes.map((note) => (
+              <div key={note.id} style={{ padding: '8px 12px', background: '#fffbe6', borderRadius: 8, marginBottom: 8, border: '1px solid #ffe58f' }}>
+                <Flex justify="space-between" align="start">
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: 13, color: '#1B3A5C' }}>{note.staff_name}{note.position_name ? ` — ${note.position_name}` : ''}</div>
+                    <div style={{ fontSize: 14, marginTop: 4, color: '#262626' }}>{note.content}</div>
+                    <div style={{ fontSize: 11, color: '#8c8c8c', marginTop: 4 }}>{note.created_at ? dayjs(note.created_at).format('DD/MM/YYYY HH:mm') : ''}</div>
+                  </div>
+                  {Number(note.staff_id) === user?.staffId && (
+                    <Popconfirm title="Xóa ý kiến?" onConfirm={() => handleDeleteNote(note.id)}>
+                      <Button size="small" type="text" danger icon={<DeleteOutlined />} />
+                    </Popconfirm>
+                  )}
+                </Flex>
+              </div>
+            ))}
+            <div style={{ marginTop: leaderNotes.length > 0 ? 8 : 0 }}>
+              <Input.TextArea rows={2} placeholder="Nhập ý kiến..." value={noteContent} onChange={(e) => setNoteContent(e.target.value)} style={{ borderRadius: 8 }} />
+              <Button type="primary" size="small" style={{ marginTop: 8 }} loading={addingNote} onClick={handleAddNote} disabled={!noteContent.trim()}>Gửi ý kiến</Button>
+            </div>
           </div>
 
           {/* --- Lịch sử xử lý --- */}

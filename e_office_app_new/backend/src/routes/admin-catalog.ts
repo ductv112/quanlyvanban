@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import type { Request, Response } from 'express';
+import { callFunction, callFunctionOne } from '../lib/db/query.js';
 import type { AuthRequest } from '../middleware/auth.js';
 import { docBookRepository } from '../repositories/doc-book.repository.js';
 import { docTypeRepository } from '../repositories/doc-type.repository.js';
@@ -1442,6 +1443,45 @@ router.put('/cau-hinh', async (req: Request, res: Response) => {
   } catch (error) {
     handleDbError(error, res);
   }
+});
+
+// ============================================================
+// DOC COLUMNS — Cấu hình trường form per loại VB
+// ============================================================
+
+router.get('/cau-hinh-truong', async (req: Request, res: Response) => {
+  try {
+    const { type_id } = req.query;
+    if (type_id) {
+      const rows = await callFunction('edoc.fn_doc_column_get_by_type', [Number(type_id)]);
+      res.json({ success: true, data: rows });
+    } else {
+      const rows = await callFunction('edoc.fn_doc_column_get_all', []);
+      res.json({ success: true, data: rows });
+    }
+  } catch (error) { handleDbError(error, res); }
+});
+
+router.post('/cau-hinh-truong', async (req: Request, res: Response) => {
+  try {
+    const { id, type_id, column_name, label, data_type, max_length, sort_order, is_mandatory, description } = req.body;
+    const row = await callFunctionOne('edoc.fn_doc_column_save', [
+      id ?? null, type_id ?? null, column_name ?? null, label, data_type ?? 'text',
+      max_length ?? null, sort_order ?? 0, is_mandatory ?? false, description ?? null,
+    ]);
+    const result = row as { success: boolean; message: string; id: number } | null;
+    if (!result?.success) { res.status(400).json({ success: false, message: result?.message || 'Lỗi' }); return; }
+    res.json({ success: true, data: { id: result.id, message: result.message } });
+  } catch (error) { handleDbError(error, res); }
+});
+
+router.delete('/cau-hinh-truong/:id', async (req: Request, res: Response) => {
+  try {
+    const row = await callFunctionOne('edoc.fn_doc_column_delete', [Number(req.params.id)]);
+    const result = row as { success: boolean; message: string } | null;
+    if (!result?.success) { res.status(400).json({ success: false, message: result?.message || 'Lỗi' }); return; }
+    res.json({ success: true, data: { message: result.message } });
+  } catch (error) { handleDbError(error, res); }
 });
 
 export default router;

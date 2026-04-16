@@ -35,7 +35,7 @@ interface DocDetail {
   doc_book_name: string; doc_type_name: string; doc_type_code: string;
   doc_field_name: string; created_by_name: string; is_read: boolean;
 }
-interface Attachment { id: number; file_name: string; file_path: string; file_size: number; content_type: string; created_by_name: string; created_at: string; }
+interface Attachment { id: number; file_name: string; file_path: string; file_size: number; content_type: string; created_by_name: string; created_at: string; is_ca?: boolean; ca_date?: string; }
 interface Recipient { id: number; staff_id: number; staff_name: string; position_name: string; department_name: string; is_read: boolean; read_at: string; created_at: string; }
 interface HistoryEvent { event_type: string; event_time: string; staff_name: string; content: string; }
 interface LeaderNote { id: number; staff_id: number; staff_name: string; position_name: string; content: string; created_at: string; }
@@ -314,6 +314,20 @@ export default function IncomingDocDetailPage() {
   const handleUpload = async (file: File) => { setUploading(true); try { const fd = new FormData(); fd.append('file', file); await api.post(`/van-ban-den/${docId}/dinh-kem`, fd, { headers: { 'Content-Type': 'multipart/form-data' } }); message.success('Tải lên thành công'); fetchAttachments(); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } finally { setUploading(false); } return false; };
   const handleDownload = async (att: Attachment) => { try { const { data: res } = await api.get(`/van-ban-den/${docId}/dinh-kem/${att.id}/download`); window.open(res.data?.url, '_blank'); } catch { message.error('Lỗi tải file'); } };
   const handleDeleteAttachment = async (att: Attachment) => { try { await api.delete(`/van-ban-den/${docId}/dinh-kem/${att.id}`); message.success('Đã xóa'); fetchAttachments(); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } };
+  const handleSignAttachment = async (att: Attachment) => {
+    try {
+      const { data: res } = await api.post('/ky-so/mock/sign', { attachment_id: att.id, attachment_type: 'incoming' });
+      message.success(res.message || 'Ký số thành công'); fetchAttachments();
+    } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi ký số'); }
+  };
+  const handleVerifyAttachment = async (att: Attachment) => {
+    try {
+      const { data: res } = await api.post('/ky-so/mock/verify', { attachment_id: att.id, attachment_type: 'incoming' });
+      const d = res.data;
+      if (d?.is_valid) modal.success({ title: 'Chữ ký hợp lệ', content: `${d.signer_name} • ${d.sign_date ? dayjs(d.sign_date).format('DD/MM/YYYY HH:mm') : ''}` });
+      else modal.warning({ title: 'Chưa ký số', content: d?.message || 'File chưa được ký số' });
+    } catch { message.error('Lỗi xác thực'); }
+  };
 
   // Send
   const openSendModal = async () => { try { const { data: res } = await api.get(`/van-ban-den/${docId}/danh-sach-gui`); setSendableStaff(res.data || []); setSelectedStaffIds([]); setSendModalOpen(true); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } };
@@ -567,11 +581,16 @@ export default function IncomingDocDetailPage() {
                       {fileIcon(att.file_name)}
                       <div style={{ minWidth: 0 }}>
                         <div style={{ fontWeight: 500, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{att.file_name}</div>
-                        <Text type="secondary" style={{ fontSize: 11 }}>{formatSize(att.file_size)} • {fmtDateTime(att.created_at)}</Text>
+                        <Text type="secondary" style={{ fontSize: 11 }}>
+                          {formatSize(att.file_size)} • {fmtDateTime(att.created_at)}
+                          {att.is_ca && <Tag color="green" style={{ marginLeft: 6, fontSize: 10 }}>Đã ký số {att.ca_date ? dayjs(att.ca_date).format('DD/MM/YYYY') : ''}</Tag>}
+                        </Text>
                       </div>
                     </Flex>
                     <Space size={4}>
                       <Button size="small" type="link" icon={<DownloadOutlined />} onClick={() => handleDownload(att)} />
+                      {!att.is_ca && <Button size="small" type="link" style={{ color: '#059669' }} onClick={() => handleSignAttachment(att)}>Ký số</Button>}
+                      {att.is_ca && <Button size="small" type="link" onClick={() => handleVerifyAttachment(att)}>Xác thực</Button>}
                       {!doc.approved && <Popconfirm title="Xóa file?" onConfirm={() => handleDeleteAttachment(att)}><Button size="small" type="link" danger icon={<DeleteOutlined />} /></Popconfirm>}
                     </Space>
                   </Flex>

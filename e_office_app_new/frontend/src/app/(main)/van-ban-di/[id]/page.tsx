@@ -13,7 +13,7 @@ import {
   ClockCircleOutlined, UserOutlined, FilePdfOutlined,
   FileImageOutlined, FileWordOutlined, FileExcelOutlined, FileOutlined,
   EditOutlined, SafetyCertificateOutlined, StopOutlined, RollbackOutlined,
-  ThunderboltOutlined, InboxOutlined,
+  ThunderboltOutlined, InboxOutlined, CommentOutlined,
 } from '@ant-design/icons';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth.store';
@@ -86,6 +86,9 @@ export default function OutgoingDocDetailPage() {
   const [selectedStaffIds, setSelectedStaffIds] = useState<number[]>([]);
   const [sending, setSending] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [leaderNotes, setLeaderNotes] = useState<{ id: number; staff_id: number; staff_name: string; position_name: string; content: string; created_at: string }[]>([]);
+  const [noteContent, setNoteContent] = useState('');
+  const [addingNote, setAddingNote] = useState(false);
 
   // Giao việc
   const [giaoViecOpen, setGiaoViecOpen] = useState(false);
@@ -108,11 +111,12 @@ export default function OutgoingDocDetailPage() {
   const fetchAttachments = useCallback(async () => { try { const { data: res } = await api.get(`/van-ban-di/${docId}/dinh-kem`); setAttachments(res.data || []); } catch {} }, [docId]);
   const fetchRecipients = useCallback(async () => { try { const { data: res } = await api.get(`/van-ban-di/${docId}/nguoi-nhan`); setRecipients(res.data || []); } catch {} }, [docId]);
   const fetchHistory = useCallback(async () => { try { const { data: res } = await api.get(`/van-ban-di/${docId}/lich-su`); setHistory(res.data || []); } catch {} }, [docId]);
+  const fetchLeaderNotes = useCallback(async () => { try { const { data: res } = await api.get(`/van-ban-di/${docId}/y-kien`); setLeaderNotes(res.data || []); } catch {} }, [docId]);
 
   useEffect(() => {
     setLoading(true);
-    Promise.all([fetchDoc(), fetchAttachments(), fetchRecipients(), fetchHistory(), fetchBookmarkStatus()]).finally(() => setLoading(false));
-  }, [fetchDoc, fetchAttachments, fetchRecipients, fetchHistory, fetchBookmarkStatus]);
+    Promise.all([fetchDoc(), fetchAttachments(), fetchRecipients(), fetchHistory(), fetchLeaderNotes(), fetchBookmarkStatus()]).finally(() => setLoading(false));
+  }, [fetchDoc, fetchAttachments, fetchRecipients, fetchHistory, fetchLeaderNotes, fetchBookmarkStatus]);
 
   // Actions
   const handleApprove = async () => { try { await api.patch(`/van-ban-di/${docId}/duyet`); message.success('Duyệt thành công'); fetchDoc(); fetchHistory(); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } };
@@ -121,6 +125,16 @@ export default function OutgoingDocDetailPage() {
   const handleReject = () => { let reason = ''; modal.confirm({ title: 'Từ chối văn bản đi', content: (<div style={{ marginTop: 12 }}><div style={{ marginBottom: 8, color: '#595959' }}>Lý do từ chối (không bắt buộc):</div><Input.TextArea rows={3} placeholder="Lý do..." onChange={(e) => { reason = e.target.value; }} /></div>), okText: 'Từ chối', okButtonProps: { danger: true }, cancelText: 'Hủy', onOk: async () => { try { await api.patch(`/van-ban-di/${docId}/tu-choi`, { reason: reason.trim() || undefined }); message.success('Đã từ chối'); fetchDoc(); fetchHistory(); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } } }); };
   const handleDelete = () => { modal.confirm({ title: 'Xác nhận xóa', content: 'Xóa văn bản này?', okText: 'Xóa', okType: 'danger', cancelText: 'Hủy', onOk: async () => { try { await api.delete(`/van-ban-di/${docId}`); message.success('Đã xóa'); router.push('/van-ban-di'); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } } }); };
   const handleToggleBookmark = async () => { try { const { data: res } = await api.post(`/van-ban-di/${docId}/danh-dau`, {}); setIsBookmarked(res.data?.is_bookmarked); message.success(res.data?.message); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } };
+
+  // Leader Notes
+  const handleAddNote = async () => {
+    if (!noteContent.trim()) { message.warning('Nhập nội dung ý kiến'); return; }
+    setAddingNote(true);
+    try { await api.post(`/van-ban-di/${docId}/y-kien`, { content: noteContent.trim() }); message.success('Thêm ý kiến thành công'); setNoteContent(''); fetchLeaderNotes(); fetchHistory(); }
+    catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); }
+    finally { setAddingNote(false); }
+  };
+  const handleDeleteNote = async (noteId: number) => { try { await api.delete(`/van-ban-di/${docId}/y-kien/${noteId}`); message.success('Đã xóa'); fetchLeaderNotes(); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } };
 
   // Giao việc
   const fetchStaffOptions = async () => {
@@ -384,6 +398,31 @@ export default function OutgoingDocDetailPage() {
                 ))}
               </div>
             )}
+          </div>
+
+          {/* --- Ý kiến lãnh đạo --- */}
+          <div style={{ background: '#fff', borderRadius: 10, padding: '20px 24px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', marginBottom: 16 }}>
+            <div className="section-title" style={{ marginBottom: 12 }}><CommentOutlined /> Ý kiến lãnh đạo ({leaderNotes.length})</div>
+            {leaderNotes.map((note) => (
+              <div key={note.id} style={{ padding: '8px 12px', background: '#fffbe6', borderRadius: 8, marginBottom: 8, border: '1px solid #ffe58f' }}>
+                <Flex justify="space-between" align="start">
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: 13, color: '#1B3A5C' }}>{note.staff_name}{note.position_name ? ` — ${note.position_name}` : ''}</div>
+                    <div style={{ fontSize: 14, marginTop: 4, color: '#262626' }}>{note.content}</div>
+                    <div style={{ fontSize: 11, color: '#8c8c8c', marginTop: 4 }}>{fmtDateTime(note.created_at)}</div>
+                  </div>
+                  {Number(note.staff_id) === user?.staffId && (
+                    <Popconfirm title="Xóa ý kiến?" onConfirm={() => handleDeleteNote(note.id)}>
+                      <Button size="small" type="text" danger icon={<DeleteOutlined />} />
+                    </Popconfirm>
+                  )}
+                </Flex>
+              </div>
+            ))}
+            <div style={{ marginTop: leaderNotes.length > 0 ? 8 : 0 }}>
+              <Input.TextArea rows={2} placeholder="Nhập ý kiến..." value={noteContent} onChange={(e) => setNoteContent(e.target.value)} style={{ borderRadius: 8 }} />
+              <Button type="primary" size="small" style={{ marginTop: 8 }} loading={addingNote} onClick={handleAddNote} disabled={!noteContent.trim()}>Gửi ý kiến</Button>
+            </div>
           </div>
 
           {/* --- Lịch sử xử lý --- */}
