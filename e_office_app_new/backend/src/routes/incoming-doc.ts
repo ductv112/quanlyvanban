@@ -6,6 +6,7 @@ import { uploadFile, deleteFile, getFileUrl } from '../lib/minio/client.js';
 import { v4 as uuidv4 } from 'uuid';
 import { handleDbError } from '../lib/error-handler.js';
 import { exportExcel } from '../lib/excel.js';
+import { callFunction, callFunctionOne, rawQuery } from '../lib/db/query.js';
 import dayjs from 'dayjs';
 
 const router = Router();
@@ -150,6 +151,16 @@ router.get('/xuat-excel', async (req: Request, res: Response) => {
   }
 });
 
+// GET /truong-bo-sung — Lấy custom fields theo loại VB
+router.get('/truong-bo-sung', async (req: Request, res: Response) => {
+  try {
+    const { doc_type_id } = req.query;
+    if (!doc_type_id) { res.json({ success: true, data: [] }); return; }
+    const rows = await callFunction('edoc.fn_doc_column_get_by_type', [Number(doc_type_id)]);
+    res.json({ success: true, data: rows });
+  } catch (error) { handleDbError(error, res); }
+});
+
 // GET /so-den-tiep-theo — Lấy số đến tiếp theo
 router.get('/so-den-tiep-theo', async (req: Request, res: Response) => {
   try {
@@ -214,6 +225,10 @@ router.post('/', async (req: Request, res: Response) => {
       res.status(400).json({ success: false, message: result.message });
       return;
     }
+    // Lưu extra_fields nếu có
+    if (body.extra_fields && Object.keys(body.extra_fields).length > 0) {
+      await callFunctionOne('edoc.fn_doc_save_extra_fields', ['incoming', result.id, JSON.stringify(body.extra_fields)]);
+    }
     res.status(201).json({ success: true, data: { id: result.id } });
   } catch (error) {
     handleDbError(error, res);
@@ -230,7 +245,11 @@ router.get('/:id', async (req: Request, res: Response) => {
       res.status(404).json({ success: false, message: 'Không tìm thấy văn bản đến' });
       return;
     }
-    res.json({ success: true, data: doc });
+    // Lấy extra_fields riêng (SP RETURNS TABLE không có cột này)
+    const efRows = await rawQuery<{ extra_fields: Record<string, unknown> }>(
+      'SELECT extra_fields FROM edoc.incoming_docs WHERE id = $1', [id],
+    ).catch(() => []);
+    res.json({ success: true, data: { ...doc, extra_fields: efRows[0]?.extra_fields || {} } });
   } catch (error) {
     handleDbError(error, res);
   }
@@ -279,6 +298,10 @@ router.put('/:id', async (req: Request, res: Response) => {
     if (!result.success) {
       res.status(400).json({ success: false, message: result.message });
       return;
+    }
+    // Lưu extra_fields nếu có
+    if (body.extra_fields !== undefined) {
+      await callFunctionOne('edoc.fn_doc_save_extra_fields', ['incoming', id, JSON.stringify(body.extra_fields || {})]);
     }
     res.json({ success: true, data: { updated: true } });
   } catch (error) {

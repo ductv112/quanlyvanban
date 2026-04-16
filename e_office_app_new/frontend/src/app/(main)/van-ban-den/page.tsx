@@ -62,6 +62,7 @@ export default function IncomingDocPage() {
   const [docBooks, setDocBooks] = useState<SelectOption[]>([]);
   const [docTypes, setDocTypes] = useState<SelectOption[]>([]);
   const [docFields, setDocFields] = useState<SelectOption[]>([]);
+  const [extraColumns, setExtraColumns] = useState<{ column_name: string; label: string; data_type: string; max_length: number | null; is_mandatory: boolean }[]>([]);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<IncomingDoc | null>(null);
   const [saving, setSaving] = useState(false);
@@ -127,7 +128,14 @@ export default function IncomingDocPage() {
     } catch { /* ignore */ }
   };
 
-  const openDrawer = (record?: IncomingDoc) => {
+  const fetchExtraColumns = async (docTypeId: number) => {
+    try {
+      const { data: res } = await api.get('/van-ban-den/truong-bo-sung', { params: { doc_type_id: docTypeId } });
+      setExtraColumns(res.data || []);
+    } catch { setExtraColumns([]); }
+  };
+
+  const openDrawer = async (record?: IncomingDoc) => {
     if (record) {
       setEditingRecord(record);
       form.setFieldsValue({
@@ -137,10 +145,12 @@ export default function IncomingDocPage() {
         sign_date: record.sign_date ? dayjs(record.sign_date) : null,
         expired_date: record.expired_date ? dayjs(record.expired_date) : null,
       });
+      if (record.doc_type_id) await fetchExtraColumns(record.doc_type_id);
     } else {
       setEditingRecord(null);
       form.resetFields();
       form.setFieldsValue({ received_date: dayjs(), secret_id: 1, urgent_id: 1, number_paper: 1, number_copies: 1 });
+      setExtraColumns([]);
     }
     setDrawerOpen(true);
   };
@@ -149,12 +159,22 @@ export default function IncomingDocPage() {
     try {
       const values = await form.validateFields();
       setSaving(true);
+      // Tách extra_fields ra khỏi payload chính
+      const { extra_fields, ...mainValues } = values;
+      const extraFieldsData: Record<string, unknown> = {};
+      if (extra_fields) {
+        for (const [key, val] of Object.entries(extra_fields)) {
+          // Convert dayjs to ISO string for date fields
+          extraFieldsData[key] = val && typeof val === 'object' && 'toISOString' in (val as object) ? (val as dayjs.Dayjs).toISOString() : val;
+        }
+      }
       const payload = {
-        ...values,
-        received_date: values.received_date?.toISOString(),
-        publish_date: values.publish_date?.toISOString() || null,
-        sign_date: values.sign_date?.toISOString() || null,
-        expired_date: values.expired_date?.toISOString() || null,
+        ...mainValues,
+        received_date: mainValues.received_date?.toISOString(),
+        publish_date: mainValues.publish_date?.toISOString() || null,
+        sign_date: mainValues.sign_date?.toISOString() || null,
+        expired_date: mainValues.expired_date?.toISOString() || null,
+        extra_fields: Object.keys(extraFieldsData).length > 0 ? extraFieldsData : undefined,
       };
       if (editingRecord) {
         const { data: res } = await api.put(`/van-ban-den/${editingRecord.id}`, payload);
@@ -342,7 +362,7 @@ export default function IncomingDocPage() {
           </Row>
           <Form.Item name="abstract" label="Trích yếu nội dung" rules={[{ required: true, message: 'Bắt buộc' }]}><TextArea rows={3} placeholder="Trích yếu nội dung văn bản" /></Form.Item>
           <Row gutter={16}>
-            <Col span={8}><Form.Item name="doc_type_id" label="Loại văn bản"><Select placeholder="Chọn loại" allowClear options={docTypes} /></Form.Item></Col>
+            <Col span={8}><Form.Item name="doc_type_id" label="Loại văn bản"><Select placeholder="Chọn loại" allowClear options={docTypes} onChange={(val) => { if (val) fetchExtraColumns(val); else setExtraColumns([]); }} /></Form.Item></Col>
             <Col span={8}><Form.Item name="doc_field_id" label="Lĩnh vực"><Select placeholder="Chọn lĩnh vực" allowClear options={docFields} /></Form.Item></Col>
             <Col span={8}><Form.Item name="signer" label="Người ký"><Input placeholder="Họ tên người ký" maxLength={200} /></Form.Item></Col>
           </Row>
@@ -363,6 +383,36 @@ export default function IncomingDocPage() {
             <Col span={12}><Form.Item name="sents" label="Nơi gửi"><Input placeholder="Nơi gửi văn bản" /></Form.Item></Col>
           </Row>
           <Form.Item name="recipients" label="Nơi nhận"><TextArea rows={2} placeholder="Nơi nhận văn bản" /></Form.Item>
+
+          {/* Dynamic extra fields */}
+          {extraColumns.length > 0 && (
+            <>
+              <div style={{ borderTop: '1px dashed #d9d9d9', margin: '16px 0 12px', paddingTop: 12 }}>
+                <span style={{ fontWeight: 600, color: '#1B3A5C', fontSize: 13 }}>Trường bổ sung</span>
+              </div>
+              <Row gutter={16}>
+                {extraColumns.map((col) => (
+                  <Col span={col.data_type === 'textarea' ? 24 : 12} key={col.column_name}>
+                    <Form.Item
+                      name={['extra_fields', col.column_name]}
+                      label={col.label}
+                      rules={col.is_mandatory ? [{ required: true, message: `${col.label} là bắt buộc` }] : undefined}
+                    >
+                      {col.data_type === 'date' ? (
+                        <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
+                      ) : col.data_type === 'number' ? (
+                        <InputNumber style={{ width: '100%' }} />
+                      ) : col.data_type === 'textarea' ? (
+                        <TextArea rows={2} maxLength={col.max_length || undefined} />
+                      ) : (
+                        <Input maxLength={col.max_length || undefined} placeholder={col.label} />
+                      )}
+                    </Form.Item>
+                  </Col>
+                ))}
+              </Row>
+            </>
+          )}
         </Form>
       </Drawer>
 
