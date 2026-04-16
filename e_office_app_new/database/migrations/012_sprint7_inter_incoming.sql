@@ -242,7 +242,95 @@ END;
 $$;
 
 -- ==========================================
--- 5. FN: TẠO HSCV TỪ VĂN BẢN ĐẾN (giao việc)
+-- 5. FN: NHẬN BÀN GIAO VB LIÊN THÔNG (pending → received)
+-- ==========================================
+CREATE OR REPLACE FUNCTION edoc.fn_inter_incoming_receive(
+  p_id       BIGINT,
+  p_staff_id INT
+)
+RETURNS TABLE (
+  success BOOLEAN,
+  message TEXT
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_status VARCHAR;
+BEGIN
+  SELECT status INTO v_status FROM edoc.inter_incoming_docs WHERE id = p_id;
+  IF NOT FOUND THEN
+    RETURN QUERY SELECT FALSE, 'Không tìm thấy văn bản liên thông'::TEXT; RETURN;
+  END IF;
+  IF v_status != 'pending' THEN
+    RETURN QUERY SELECT FALSE, ('Không thể nhận bàn giao — trạng thái hiện tại: ' || v_status)::TEXT; RETURN;
+  END IF;
+  UPDATE edoc.inter_incoming_docs SET status = 'received', updated_at = NOW() WHERE id = p_id;
+  RETURN QUERY SELECT TRUE, 'Nhận bàn giao thành công'::TEXT;
+END;
+$$;
+
+-- ==========================================
+-- 6. FN: CHUYỂN LẠI / TỪ CHỐI VB LIÊN THÔNG (pending → returned)
+-- ==========================================
+CREATE OR REPLACE FUNCTION edoc.fn_inter_incoming_return(
+  p_id       BIGINT,
+  p_staff_id INT,
+  p_reason   TEXT DEFAULT NULL
+)
+RETURNS TABLE (
+  success BOOLEAN,
+  message TEXT
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_status VARCHAR;
+BEGIN
+  SELECT status INTO v_status FROM edoc.inter_incoming_docs WHERE id = p_id;
+  IF NOT FOUND THEN
+    RETURN QUERY SELECT FALSE, 'Không tìm thấy văn bản liên thông'::TEXT; RETURN;
+  END IF;
+  IF v_status != 'pending' THEN
+    RETURN QUERY SELECT FALSE, ('Không thể chuyển lại — trạng thái hiện tại: ' || v_status)::TEXT; RETURN;
+  END IF;
+  UPDATE edoc.inter_incoming_docs SET status = 'returned', updated_at = NOW() WHERE id = p_id;
+  RETURN QUERY SELECT TRUE, 'Chuyển lại văn bản thành công'::TEXT;
+END;
+$$;
+
+-- ==========================================
+-- 7. FN: HOÀN THÀNH XỬ LÝ VB LIÊN THÔNG (received → completed)
+-- ==========================================
+CREATE OR REPLACE FUNCTION edoc.fn_inter_incoming_complete(
+  p_id       BIGINT,
+  p_staff_id INT
+)
+RETURNS TABLE (
+  success BOOLEAN,
+  message TEXT
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_status VARCHAR;
+BEGIN
+  SELECT status INTO v_status FROM edoc.inter_incoming_docs WHERE id = p_id;
+  IF NOT FOUND THEN
+    RETURN QUERY SELECT FALSE, 'Không tìm thấy văn bản liên thông'::TEXT; RETURN;
+  END IF;
+  IF v_status != 'received' THEN
+    RETURN QUERY SELECT FALSE, ('Không thể hoàn thành — trạng thái hiện tại: ' || v_status)::TEXT; RETURN;
+  END IF;
+  UPDATE edoc.inter_incoming_docs SET status = 'completed', updated_at = NOW() WHERE id = p_id;
+  RETURN QUERY SELECT TRUE, 'Hoàn thành xử lý văn bản liên thông'::TEXT;
+END;
+$$;
+
+-- ==========================================
+-- 8. FN: TẠO HSCV TỪ VĂN BẢN ĐẾN (giao việc)
 -- ==========================================
 CREATE OR REPLACE FUNCTION edoc.fn_handling_doc_create_from_doc(
   p_doc_id        BIGINT,
