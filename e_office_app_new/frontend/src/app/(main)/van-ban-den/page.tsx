@@ -9,7 +9,7 @@ import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
 import {
   PlusOutlined, EditOutlined, DeleteOutlined, MoreOutlined,
   CheckCircleOutlined, EyeOutlined, FileTextOutlined, ReloadOutlined,
-  CloseCircleOutlined, RollbackOutlined,
+  CloseCircleOutlined, RollbackOutlined, DownloadOutlined,
 } from '@ant-design/icons';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth.store';
@@ -25,7 +25,7 @@ interface IncomingDoc {
   publish_date: string; signer: string; sign_date: string;
   doc_book_id: number; doc_type_id: number; doc_field_id: number;
   secret_id: number; urgent_id: number; number_paper: number;
-  number_copies: number; expired_date: string; recipients: string;
+  number_copies: number; expired_date: string; recipients: string; sents: string;
   approver: string; approved: boolean; is_handling: boolean;
   is_received_paper: boolean; archive_status: boolean;
   created_by: number; created_at: string;
@@ -58,6 +58,7 @@ export default function IncomingDocPage() {
   const [filterDocTypeId, setFilterDocTypeId] = useState<number | undefined>();
   const [filterUrgentId, setFilterUrgentId] = useState<number | undefined>();
   const [filterDateRange, setFilterDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs] | null>(null);
+  const [filterSigner, setFilterSigner] = useState('');
   const [docBooks, setDocBooks] = useState<SelectOption[]>([]);
   const [docTypes, setDocTypes] = useState<SelectOption[]>([]);
   const [docFields, setDocFields] = useState<SelectOption[]>([]);
@@ -79,12 +80,13 @@ export default function IncomingDocPage() {
         params.from_date = filterDateRange[0].startOf('day').toISOString();
         params.to_date = filterDateRange[1].endOf('day').toISOString();
       }
+      if (filterSigner) params.signer = filterSigner;
       const { data: res } = await api.get('/van-ban-den', { params });
       setData(res.data || []);
       setTotal(res.pagination?.total || 0);
     } catch { message.error('Lỗi tải danh sách văn bản đến'); }
     finally { setLoading(false); }
-  }, [page, pageSize, keyword, filterDocBookId, filterDocTypeId, filterUrgentId, filterDateRange, message]);
+  }, [page, pageSize, keyword, filterDocBookId, filterDocTypeId, filterUrgentId, filterDateRange, filterSigner, message]);
 
   const fetchDropdowns = useCallback(async () => {
     try {
@@ -208,6 +210,28 @@ export default function IncomingDocPage() {
     catch (err: any) { message.error(err?.response?.data?.message || 'Lỗi duyệt'); }
   };
 
+  const handleExportExcel = async () => {
+    try {
+      const params: Record<string, unknown> = {};
+      if (filterDocBookId) params.doc_book_id = filterDocBookId;
+      if (filterDocTypeId) params.doc_type_id = filterDocTypeId;
+      if (keyword) params.keyword = keyword;
+      if (filterDateRange) {
+        params.from_date = filterDateRange[0].startOf('day').toISOString();
+        params.to_date = filterDateRange[1].endOf('day').toISOString();
+      }
+      const response = await api.get('/van-ban-den/xuat-excel', { params, responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `VanBanDen_${new Date().toISOString().slice(0, 10)}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch { message.error('Lỗi xuất Excel'); }
+  };
+
   const handleMarkReadBulk = async () => {
     if (selectedRowKeys.length === 0) return;
     try {
@@ -277,6 +301,7 @@ export default function IncomingDocPage() {
       extra={
         <Space>
           {selectedRowKeys.length > 0 && <Button onClick={handleMarkReadBulk}>Đánh dấu đã đọc ({selectedRowKeys.length})</Button>}
+          <Button icon={<DownloadOutlined />} onClick={handleExportExcel}>Xuất Excel</Button>
           <Button type="primary" icon={<PlusOutlined />} onClick={() => openDrawer()}>Thêm mới</Button>
         </Space>
       }
@@ -287,7 +312,8 @@ export default function IncomingDocPage() {
         <Col span={4}><Select style={{ width: '100%' }} placeholder="Loại văn bản" allowClear options={docTypes} value={filterDocTypeId} onChange={(val) => { setFilterDocTypeId(val); setPage(1); }} /></Col>
         <Col span={3}><Select style={{ width: '100%' }} placeholder="Độ khẩn" allowClear options={[{ value: 1, label: 'Thường' }, { value: 2, label: 'Khẩn' }, { value: 3, label: 'Hỏa tốc' }]} value={filterUrgentId} onChange={(val) => { setFilterUrgentId(val); setPage(1); }} /></Col>
         <Col span={5}><RangePicker style={{ width: '100%' }} format="DD/MM/YYYY" placeholder={['Từ ngày', 'Đến ngày']} value={filterDateRange} onChange={(val) => { setFilterDateRange(val as [dayjs.Dayjs, dayjs.Dayjs] | null); setPage(1); }} /></Col>
-        <Col span={2}><Tooltip title="Xóa bộ lọc"><Button icon={<ReloadOutlined />} onClick={() => { setKeyword(''); setFilterDocBookId(undefined); setFilterDocTypeId(undefined); setFilterUrgentId(undefined); setFilterDateRange(null); setPage(1); }} /></Tooltip></Col>
+        <Col span={2}><Tooltip title="Xóa bộ lọc"><Button icon={<ReloadOutlined />} onClick={() => { setKeyword(''); setFilterDocBookId(undefined); setFilterDocTypeId(undefined); setFilterUrgentId(undefined); setFilterDateRange(null); setFilterSigner(''); setPage(1); }} /></Tooltip></Col>
+        <Col span={4}><Input.Search placeholder="Người ký..." allowClear onSearch={(val) => { setFilterSigner(val); setPage(1); }} /></Col>
       </Row>
 
       <Table<IncomingDoc>
@@ -330,6 +356,10 @@ export default function IncomingDocPage() {
             <Col span={6}><Form.Item name="number_paper" label="Số tờ" initialValue={1}><InputNumber style={{ width: '100%' }} min={0} /></Form.Item></Col>
             <Col span={6}><Form.Item name="number_copies" label="Số bản" initialValue={1}><InputNumber style={{ width: '100%' }} min={0} /></Form.Item></Col>
             <Col span={6}><Form.Item name="is_received_paper" label="Bản giấy"><Select options={[{ value: false, label: 'Chưa nhận' }, { value: true, label: 'Đã nhận' }]} /></Form.Item></Col>
+          </Row>
+          <Row gutter={16}>
+            <Col span={12}><Form.Item name="document_code" label="Mã văn bản"><Input placeholder="Mã định danh văn bản" maxLength={100} /></Form.Item></Col>
+            <Col span={12}><Form.Item name="sents" label="Nơi gửi"><Input placeholder="Nơi gửi văn bản" /></Form.Item></Col>
           </Row>
           <Form.Item name="recipients" label="Nơi nhận"><TextArea rows={2} placeholder="Nơi nhận văn bản" /></Form.Item>
         </Form>

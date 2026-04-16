@@ -24,6 +24,7 @@ export interface IncomingDocListRow {
   number_copies: number;
   expired_date: string;
   recipients: string;
+  sents: string;
   approver: string;
   approved: boolean;
   is_handling: boolean;
@@ -43,6 +44,9 @@ export interface IncomingDocListRow {
 }
 
 export interface IncomingDocDetailRow extends Omit<IncomingDocListRow, 'attachment_count' | 'total_count'> {
+  received_paper_date: string;
+  is_inter_doc: boolean;
+  inter_doc_id: number;
   updated_by: number;
   updated_at: string;
 }
@@ -94,6 +98,7 @@ export interface StaffNoteRow {
   note_id: number;
   doc_id: number;
   note: string;
+  is_important: boolean;
   created_at: string;
   doc_number: number;
   doc_notation: string;
@@ -125,6 +130,7 @@ export const incomingDocRepository = {
       docBookId?: number; docTypeId?: number; docFieldId?: number;
       urgentId?: number; isRead?: boolean; approved?: boolean;
       fromDate?: string; toDate?: string; keyword?: string;
+      signer?: string; fromNumber?: number; toNumber?: number;
       page?: number; pageSize?: number;
     } = {},
   ): Promise<IncomingDocListRow[]> {
@@ -133,6 +139,7 @@ export const incomingDocRepository = {
       filters.docBookId ?? null, filters.docTypeId ?? null, filters.docFieldId ?? null,
       filters.urgentId ?? null, filters.isRead ?? null, filters.approved ?? null,
       filters.fromDate ?? null, filters.toDate ?? null, filters.keyword ?? null,
+      filters.signer ?? null, filters.fromNumber ?? null, filters.toNumber ?? null,
       filters.page ?? 1, filters.pageSize ?? 20,
     ]);
   },
@@ -169,7 +176,7 @@ export const incomingDocRepository = {
     signer?: string; signDate?: string; docBookId: number; docTypeId?: number;
     docFieldId?: number; secretId?: number; urgentId?: number; numberPaper?: number;
     numberCopies?: number; expiredDate?: string; recipients?: string;
-    isReceivedPaper?: boolean; createdBy: number;
+    sents?: string; isReceivedPaper?: boolean; createdBy: number;
   }): Promise<DbResultWithId> {
     const row = await callFunctionOne<DbResultWithId>('edoc.fn_incoming_doc_create', [
       params.unitId, params.receivedDate ?? null, params.number ?? null,
@@ -180,6 +187,7 @@ export const incomingDocRepository = {
       params.secretId ?? 1, params.urgentId ?? 1,
       params.numberPaper ?? 1, params.numberCopies ?? 1,
       params.expiredDate ?? null, params.recipients ?? null,
+      params.sents ?? null,
       params.isReceivedPaper ?? false, params.createdBy,
     ]);
     return row ?? { success: false, message: 'Không thể tạo văn bản đến', id: 0 };
@@ -191,7 +199,7 @@ export const incomingDocRepository = {
     signer?: string; signDate?: string; docBookId: number; docTypeId?: number;
     docFieldId?: number; secretId?: number; urgentId?: number; numberPaper?: number;
     numberCopies?: number; expiredDate?: string; recipients?: string;
-    isReceivedPaper?: boolean; updatedBy: number;
+    sents?: string; isReceivedPaper?: boolean; updatedBy: number;
   }): Promise<DbResult> {
     const row = await callFunctionOne<DbResult>('edoc.fn_incoming_doc_update', [
       id, params.receivedDate ?? null, params.number ?? null,
@@ -202,6 +210,7 @@ export const incomingDocRepository = {
       params.secretId ?? 1, params.urgentId ?? 1,
       params.numberPaper ?? 1, params.numberCopies ?? 1,
       params.expiredDate ?? null, params.recipients ?? null,
+      params.sents ?? null,
       params.isReceivedPaper ?? false, params.updatedBy,
     ]);
     return row ?? { success: false, message: 'Không tìm thấy văn bản đến' };
@@ -271,8 +280,8 @@ export const incomingDocRepository = {
   },
 
   // --- 3.7 Staff Notes / Bookmarks ---
-  async toggleBookmark(docType: string, docId: number, staffId: number, note?: string): Promise<BookmarkToggleResult> {
-    const row = await callFunctionOne<BookmarkToggleResult>('edoc.fn_staff_note_toggle', [docType, docId, staffId, note ?? null]);
+  async toggleBookmark(docType: string, docId: number, staffId: number, note?: string, isImportant?: boolean): Promise<BookmarkToggleResult> {
+    const row = await callFunctionOne<BookmarkToggleResult>('edoc.fn_staff_note_toggle', [docType, docId, staffId, note ?? null, isImportant ?? false]);
     return row ?? { success: false, message: 'Lỗi đánh dấu', is_bookmarked: false };
   },
 
@@ -297,8 +306,8 @@ export const incomingDocRepository = {
     return row ?? { success: false, message: 'Không tìm thấy văn bản' };
   },
 
-  async receivePaper(id: number, staffId: number): Promise<DbResult> {
-    const row = await callFunctionOne<DbResult>('edoc.fn_incoming_doc_receive_paper', [id, staffId]);
+  async receivePaper(id: number, staffId: number, receivedPaperDate?: string): Promise<DbResult> {
+    const row = await callFunctionOne<DbResult>('edoc.fn_incoming_doc_receive_paper', [id, staffId, receivedPaperDate ?? null]);
     return row ?? { success: false, message: 'Không tìm thấy văn bản' };
   },
 

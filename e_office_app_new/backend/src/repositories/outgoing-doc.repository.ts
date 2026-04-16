@@ -1,6 +1,6 @@
 import { callFunction, callFunctionOne } from '../lib/db/query.js';
 import type { DbResult, DbResultWithId } from './doc-book.repository.js';
-import type { RecipientRow, HistoryRow, AttachmentRow, AttachmentDeleteResult, BookmarkToggleResult, StaffNoteRow, SendableStaffRow } from './incoming-doc.repository.js';
+import type { RecipientRow, HistoryRow, AttachmentRow, AttachmentDeleteResult, BookmarkToggleResult, StaffNoteRow, SendableStaffRow, LeaderNoteRow } from './incoming-doc.repository.js';
 
 // ============ Row types ============
 
@@ -50,6 +50,7 @@ export interface OutgoingDocListRow {
 export interface OutgoingDocDetailRow extends Omit<OutgoingDocListRow, 'attachment_count' | 'total_count'> {
   is_inter_doc: boolean;
   is_digital_signed: number;
+  publish_unit_name: string;
   updated_by: number;
   updated_at: string;
 }
@@ -194,8 +195,8 @@ export const outgoingDocRepository = {
     return callFunction<SendableStaffRow>('edoc.fn_incoming_doc_get_sendable_staff', [unitId]);
   },
 
-  async send(docId: number, staffIds: number[], sentBy: number): Promise<DbResult> {
-    const row = await callFunctionOne<DbResult>('edoc.fn_outgoing_doc_send', [docId, staffIds, sentBy]);
+  async send(docId: number, staffIds: number[], sentBy: number, expiredDate?: string): Promise<DbResult> {
+    const row = await callFunctionOne<DbResult>('edoc.fn_outgoing_doc_send', [docId, staffIds, sentBy, expiredDate ?? null]);
     return row ?? { success: false, message: 'Không thể gửi văn bản' };
   },
 
@@ -211,14 +212,35 @@ export const outgoingDocRepository = {
   },
 
   // --- Retract & Reject ---
-  async retract(id: number, staffId: number): Promise<DbResult> {
-    const row = await callFunctionOne<DbResult>('edoc.fn_outgoing_doc_retract', [id, staffId]);
+  async retract(id: number, staffId: number, staffIds?: number[]): Promise<DbResult> {
+    const row = await callFunctionOne<DbResult>('edoc.fn_outgoing_doc_retract', [id, staffId, staffIds ?? null]);
     return row ?? { success: false, message: 'Không tìm thấy văn bản' };
   },
 
   async reject(id: number, staffId: number, reason?: string): Promise<DbResult> {
     const row = await callFunctionOne<DbResult>('edoc.fn_outgoing_doc_reject', [id, staffId, reason ?? null]);
     return row ?? { success: false, message: 'Không tìm thấy văn bản' };
+  },
+
+  // --- Check number ---
+  async checkNumber(unitId: number, docBookId: number, number: number, excludeId?: number): Promise<boolean> {
+    const row = await callFunctionOne<{ is_exists: boolean }>('edoc.fn_outgoing_doc_check_number', [unitId, docBookId, number, excludeId ?? null]);
+    return row?.is_exists ?? false;
+  },
+
+  // --- Leader Notes ---
+  async getLeaderNotes(docId: number): Promise<LeaderNoteRow[]> {
+    return callFunction<LeaderNoteRow>('edoc.fn_leader_note_get_by_outgoing_doc', [docId]);
+  },
+
+  async createLeaderNote(docId: number, staffId: number, content: string): Promise<DbResultWithId> {
+    const row = await callFunctionOne<DbResultWithId>('edoc.fn_leader_note_create_outgoing', [docId, staffId, content]);
+    return row ?? { success: false, message: 'Không thể thêm ý kiến', id: 0 };
+  },
+
+  async deleteLeaderNote(id: number, staffId: number): Promise<DbResult> {
+    const row = await callFunctionOne<DbResult>('edoc.fn_leader_note_delete', [id, staffId]);
+    return row ?? { success: false, message: 'Không tìm thấy ý kiến' };
   },
 
   // --- Bookmarks ---

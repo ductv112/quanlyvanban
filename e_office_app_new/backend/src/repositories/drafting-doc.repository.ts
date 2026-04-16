@@ -1,6 +1,6 @@
 import { callFunction, callFunctionOne } from '../lib/db/query.js';
 import type { DbResult, DbResultWithId } from './doc-book.repository.js';
-import type { RecipientRow, HistoryRow, AttachmentRow, AttachmentDeleteResult, BookmarkToggleResult, StaffNoteRow, SendableStaffRow } from './incoming-doc.repository.js';
+import type { RecipientRow, HistoryRow, AttachmentRow, AttachmentDeleteResult, BookmarkToggleResult, StaffNoteRow, SendableStaffRow, LeaderNoteRow } from './incoming-doc.repository.js';
 
 // ============ Row types ============
 
@@ -48,6 +48,8 @@ export interface DraftingDocListRow {
 }
 
 export interface DraftingDocDetailRow extends Omit<DraftingDocListRow, 'attachment_count' | 'total_count'> {
+  reject_reason: string;
+  publish_unit_name: string;
   updated_by: number;
   updated_at: string;
 }
@@ -196,8 +198,8 @@ export const draftingDocRepository = {
     return callFunction<SendableStaffRow>('edoc.fn_incoming_doc_get_sendable_staff', [unitId]);
   },
 
-  async send(docId: number, staffIds: number[], sentBy: number): Promise<DbResult> {
-    const row = await callFunctionOne<DbResult>('edoc.fn_drafting_doc_send', [docId, staffIds, sentBy]);
+  async send(docId: number, staffIds: number[], sentBy: number, expiredDate?: string): Promise<DbResult> {
+    const row = await callFunctionOne<DbResult>('edoc.fn_drafting_doc_send', [docId, staffIds, sentBy, expiredDate ?? null]);
     return row ?? { success: false, message: 'Không thể gửi văn bản' };
   },
 
@@ -217,14 +219,29 @@ export const draftingDocRepository = {
     return row ?? { success: false, message: 'Không tìm thấy văn bản' };
   },
 
-  async retract(id: number, staffId: number): Promise<DbResult> {
-    const row = await callFunctionOne<DbResult>('edoc.fn_drafting_doc_retract', [id, staffId]);
+  async retract(id: number, staffId: number, staffIds?: number[]): Promise<DbResult> {
+    const row = await callFunctionOne<DbResult>('edoc.fn_drafting_doc_retract', [id, staffId, staffIds ?? null]);
     return row ?? { success: false, message: 'Không tìm thấy văn bản' };
   },
 
   async release(id: number, releasedBy: number): Promise<ReleaseResult> {
     const row = await callFunctionOne<ReleaseResult>('edoc.fn_drafting_doc_release', [id, releasedBy]);
     return row ?? { success: false, message: 'Không thể phát hành', outgoing_doc_id: 0 };
+  },
+
+  // --- Leader Notes ---
+  async getLeaderNotes(docId: number): Promise<LeaderNoteRow[]> {
+    return callFunction<LeaderNoteRow>('edoc.fn_leader_note_get_by_drafting_doc', [docId]);
+  },
+
+  async createLeaderNote(docId: number, staffId: number, content: string): Promise<DbResultWithId> {
+    const row = await callFunctionOne<DbResultWithId>('edoc.fn_leader_note_create_drafting', [docId, staffId, content]);
+    return row ?? { success: false, message: 'Không thể thêm ý kiến', id: 0 };
+  },
+
+  async deleteLeaderNote(id: number, staffId: number): Promise<DbResult> {
+    const row = await callFunctionOne<DbResult>('edoc.fn_leader_note_delete', [id, staffId]);
+    return row ?? { success: false, message: 'Không tìm thấy ý kiến' };
   },
 
   // --- Bookmarks ---

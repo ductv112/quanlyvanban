@@ -261,14 +261,14 @@ INSERT INTO public.work_calendar (date, description, is_holiday, created_by) VAL
   ('2026-09-02', 'Ngày Quốc khánh',              true, 1);
 
 -- ============ INCOMING DOCS (7 documents) ============
-INSERT INTO edoc.incoming_docs (id, unit_id, received_date, number, notation, document_code, abstract, publish_unit, publish_date, signer, doc_book_id, doc_type_id, doc_field_id, urgent_id, secret_id, number_paper, number_copies, created_by) VALUES
-  (1, 1, NOW() - interval '1 day',   101, 'CV-101/UBND',   'CV101',  'V/v triển khai Chính phủ điện tử giai đoạn 2026-2030',                       'Văn phòng Chính phủ',    NOW() - interval '2 days',  'Trần Văn Sơn',       1, 1, 4, 1, 1, 5, 1, 1),
-  (2, 1, NOW() - interval '2 days',  102, 'QD-102/STC',    'QD102',  'Quyết định phê duyệt dự toán ngân sách năm 2026',                            'Sở Tài chính',           NOW() - interval '3 days',  'Trần Thị Bình',      1, 3, 2, 2, 1, 3, 2, 1),
-  (3, 1, NOW() - interval '3 days',  103, 'CV-103/STTTT',  'CV103',  'V/v rà soát hạ tầng CNTT các cơ quan nhà nước',                               'Sở TT&TT',              NOW() - interval '4 days',  'Lê Văn Đức',         1, 1, 4, 1, 1, 2, 1, 1),
-  (4, 1, NOW() - interval '1 day',   104, 'CV-104/SNV',    'CV104',  'V/v tuyển dụng viên chức năm 2026',                                           'Sở Nội vụ',              NOW() - interval '2 days',  'Nguyễn Văn An',      1, 1, 3, 1, 1, 4, 1, 5),
-  (5, 1, NOW() - interval '4 days',  105, 'NQ-105/HDND',   'NQ105',  'Nghị quyết về chương trình giám sát năm 2026',                                'HĐND tỉnh Lào Cai',     NOW() - interval '5 days',  'Hoàng Văn Dũng',     1, 2, 1, 1, 1, 8, 2, 1),
-  (6, 1, NOW(),                       106, 'CT-106/TTg',    'CT106',  'Chỉ thị về đẩy mạnh chuyển đổi số quốc gia',                                  'Thủ tướng Chính phủ',    NOW() - interval '1 day',   'Phạm Minh Chính',    1, 4, 4, 3, 1, 6, 3, 1),
-  (7, 2, NOW() - interval '2 days',  201, 'CV-201/BNV',    'CV201',  'V/v hướng dẫn thi nâng ngạch công chức năm 2026',                             'Bộ Nội vụ',              NOW() - interval '3 days',  'Phạm Thị Thanh Trà', 4, 1, 3, 2, 1, 10, 2, 2);
+INSERT INTO edoc.incoming_docs (id, unit_id, received_date, number, notation, document_code, abstract, publish_unit, publish_date, signer, doc_book_id, doc_type_id, doc_field_id, urgent_id, secret_id, number_paper, number_copies, sents, created_by) VALUES
+  (1, 1, NOW() - interval '1 day',   101, 'CV-101/UBND',   'CV101',  'V/v triển khai Chính phủ điện tử giai đoạn 2026-2030',                       'Văn phòng Chính phủ',    NOW() - interval '2 days',  'Trần Văn Sơn',       1, 1, 4, 1, 1, 5, 1, 'UBND tỉnh Lào Cai', 1),
+  (2, 1, NOW() - interval '2 days',  102, 'QD-102/STC',    'QD102',  'Quyết định phê duyệt dự toán ngân sách năm 2026',                            'Sở Tài chính',           NOW() - interval '3 days',  'Trần Thị Bình',      1, 3, 2, 2, 1, 3, 2, 'Phòng Kế hoạch - Tài chính', 1),
+  (3, 1, NOW() - interval '3 days',  103, 'CV-103/STTTT',  'CV103',  'V/v rà soát hạ tầng CNTT các cơ quan nhà nước',                               'Sở TT&TT',              NOW() - interval '4 days',  'Lê Văn Đức',         1, 1, 4, 1, 1, 2, 1, 'Phòng CNTT', 1),
+  (4, 1, NOW() - interval '1 day',   104, 'CV-104/SNV',    'CV104',  'V/v tuyển dụng viên chức năm 2026',                                           'Sở Nội vụ',              NOW() - interval '2 days',  'Nguyễn Văn An',      1, 1, 3, 1, 1, 4, 1, 'Phòng Tổ chức cán bộ', 5),
+  (5, 1, NOW() - interval '4 days',  105, 'NQ-105/HDND',   'NQ105',  'Nghị quyết về chương trình giám sát năm 2026',                                'HĐND tỉnh Lào Cai',     NOW() - interval '5 days',  'Hoàng Văn Dũng',     1, 2, 1, 1, 1, 8, 2, 'UBND tỉnh Lào Cai', 1),
+  (6, 1, NOW(),                       106, 'CT-106/TTg',    'CT106',  'Chỉ thị về đẩy mạnh chuyển đổi số quốc gia',                                  'Thủ tướng Chính phủ',    NOW() - interval '1 day',   'Phạm Minh Chính',    1, 4, 4, 3, 1, 6, 3, 'Văn phòng UBND tỉnh', 1),
+  (7, 2, NOW() - interval '2 days',  201, 'CV-201/BNV',    'CV201',  'V/v hướng dẫn thi nâng ngạch công chức năm 2026',                             'Bộ Nội vụ',              NOW() - interval '3 days',  'Phạm Thị Thanh Trà', 4, 1, 3, 2, 1, 10, 2, 'Phòng HC-QT', 2);
 
 -- Mark some as handling
 UPDATE edoc.incoming_docs SET is_handling = true WHERE id IN (1, 2, 4);
@@ -296,6 +296,14 @@ INSERT INTO edoc.drafting_docs (id, unit_id, received_date, number, notation, ab
   (3, 1, NOW() - interval '1 day',  3, 'DT-03/UBND', 'Dự thảo Báo cáo tình hình ứng dụng CNTT quý I/2026',                      4, 4, 'Lê Văn Đức',        3, 7, 4, 1, 1, 'UBND tỉnh, Bộ TT&TT',             false, false, 4),
   (4, 2, NOW() - interval '2 days', 1, 'DT-01/SNV',  'Dự thảo Kế hoạch tuyển dụng viên chức sự nghiệp GD năm 2026',             2, 6, 'Nguyễn Văn An',     3, 1, 3, 1, 1, 'Sở GD&ĐT, UBND các huyện/TX',     false, false, 6);
 
+-- Set reject_reason for doc #4 (bị từ chối)
+UPDATE edoc.drafting_docs SET reject_reason = 'Cần bổ sung thêm chỉ tiêu tuyển dụng từ các đơn vị sự nghiệp' WHERE id = 4;
+
+-- Leader notes on drafting docs
+INSERT INTO edoc.leader_notes (drafting_doc_id, staff_id, content) VALUES
+  (1, 1, 'Duyệt nội dung. Phát hành ngay.'),
+  (3, 2, 'Cần bổ sung số liệu quý I trước khi trình.');
+
 -- ============ OUTGOING DOCS (4 documents — 2 linked to released drafts) ============
 INSERT INTO edoc.outgoing_docs (id, unit_id, received_date, number, notation, document_code, abstract, drafting_unit_id, drafting_user_id, publish_unit_id, publish_date, signer, sign_date, doc_book_id, doc_type_id, doc_field_id, secret_id, urgent_id, recipients, approved, created_by) VALUES
   (1, 1, NOW() - interval '4 days', 201, 'QD-201/UBND',  'QD201',  'Quyết định ban hành Quy chế quản lý tài liệu điện tử tỉnh Lào Cai',       1, 5,  1, NOW() - interval '4 days', 'Quản trị Hệ thống', NOW() - interval '4 days', 2, 3, 1, 1, 1, 'Các Sở, ngành, UBND huyện/TX',       true,  5),
@@ -305,6 +313,19 @@ INSERT INTO edoc.outgoing_docs (id, unit_id, received_date, number, notation, do
 
 -- Mark outgoing docs 1,2 as digitally signed
 UPDATE edoc.outgoing_docs SET is_digital_signed = 1 WHERE id IN (1, 2);
+
+-- Leader notes on outgoing docs (AFTER outgoing_docs inserted)
+INSERT INTO edoc.leader_notes (outgoing_doc_id, staff_id, content) VALUES
+  (1, 1, 'Ban hành đúng tiến độ. Giao Sở TT&TT hướng dẫn thực hiện.'),
+  (2, 2, 'Đẩy mạnh triển khai chữ ký số tại các đơn vị trực thuộc.');
+
+-- Staff notes (bookmarks) with is_important (AFTER all doc tables populated)
+INSERT INTO edoc.staff_notes (doc_type, doc_id, staff_id, note, is_important) VALUES
+  ('incoming', 1, 2, 'Văn bản quan trọng — Chính phủ điện tử', true),
+  ('incoming', 6, 2, 'Chỉ thị Thủ tướng — cần theo dõi', true),
+  ('incoming', 3, 4, 'Liên quan đến hạ tầng CNTT', false),
+  ('outgoing', 1, 5, 'QĐ do mình soạn', false),
+  ('drafting', 3, 4, 'Báo cáo CNTT quý I', true);
 
 -- ============ HANDLING DOCS / HSCV (6 records, linked to incoming docs) ============
 INSERT INTO edoc.handling_docs (id, unit_id, department_id, name, abstract, doc_type_id, doc_field_id, start_date, end_date, curator, signer, status, progress, is_from_doc, created_by) VALUES
@@ -587,6 +608,7 @@ SELECT setval('edoc.organizations_id_seq',        (SELECT COALESCE(MAX(id), 1) F
 SELECT setval('edoc.incoming_docs_id_seq',        (SELECT COALESCE(MAX(id), 1) FROM edoc.incoming_docs));
 SELECT setval('edoc.user_incoming_docs_id_seq',   (SELECT COALESCE(MAX(id), 1) FROM edoc.user_incoming_docs));
 SELECT setval('edoc.leader_notes_id_seq',         (SELECT COALESCE(MAX(id), 1) FROM edoc.leader_notes));
+SELECT setval('edoc.staff_notes_id_seq',          (SELECT COALESCE(MAX(id), 1) FROM edoc.staff_notes));
 SELECT setval('edoc.drafting_docs_id_seq',        (SELECT COALESCE(MAX(id), 1) FROM edoc.drafting_docs));
 SELECT setval('edoc.outgoing_docs_id_seq',        (SELECT COALESCE(MAX(id), 1) FROM edoc.outgoing_docs));
 SELECT setval('edoc.handling_docs_id_seq',        (SELECT COALESCE(MAX(id), 1) FROM edoc.handling_docs));

@@ -204,7 +204,7 @@ export default function IncomingDocDetailPage() {
   const handleHuyDuyet = async () => {
     setActionLoading(true);
     try {
-      await api.post(`/van-ban-den/${docId}/huy-duyet`, {});
+      await api.patch(`/van-ban-den/${docId}/huy-duyet`);
       message.success('Đã hủy duyệt văn bản');
       fetchDoc();
       fetchHistory();

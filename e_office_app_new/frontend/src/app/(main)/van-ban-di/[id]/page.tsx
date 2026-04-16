@@ -31,7 +31,7 @@ interface DocDetail {
   is_handling: boolean; archive_status: boolean;
   is_inter_doc: boolean; is_digital_signed: boolean | number;
   drafting_unit_id: number; drafting_user_id: number; publish_unit_id: number;
-  drafting_unit_name: string; drafting_user_name: string;
+  drafting_unit_name: string; drafting_user_name: string; publish_unit_name: string;
   created_by: number; created_at: string; updated_by: number; updated_at: string;
   doc_book_name: string; doc_type_name: string; doc_type_code: string;
   doc_field_name: string; created_by_name: string;
@@ -221,7 +221,7 @@ export default function OutgoingDocDetailPage() {
               </div>
               <div className="info-grid-full">
                 <div className="info-label">Đơn vị phát hành</div>
-                <div className="info-value">{doc.publish_unit_id ? `Đơn vị #${doc.publish_unit_id}` : '—'}</div>
+                <div className="info-value">{doc.publish_unit_name || '—'}</div>
               </div>
               <div className="info-grid">
                 <div><div className="info-label">Loại văn bản</div><div className="info-value">{doc.doc_type_name || '—'}</div></div>

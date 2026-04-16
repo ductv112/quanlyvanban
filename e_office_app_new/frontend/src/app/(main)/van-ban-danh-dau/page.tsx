@@ -1,17 +1,18 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Card, Table, Button, Tag, Empty, App, Tooltip } from 'antd';
+import { Card, Table, Button, Tag, Empty, App, Tooltip, Segmented } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { StarFilled, EyeOutlined, DeleteOutlined } from '@ant-design/icons';
+import { StarFilled, StarOutlined, EyeOutlined, DeleteOutlined } from '@ant-design/icons';
 import { api } from '@/lib/api';
 import dayjs from 'dayjs';
 
 interface Bookmark {
-  note_id: number | string;
-  doc_id: number | string;
+  note_id: number;
+  doc_id: number;
   doc_type: string;
   note: string;
+  is_important: boolean;
   created_at: string;
   doc_number: number;
   doc_notation: string;
@@ -42,6 +43,7 @@ export default function BookmarksPage() {
   const { message } = App.useApp();
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<Bookmark[]>([]);
+  const [filterType, setFilterType] = useState<string>('all');
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -63,7 +65,10 @@ export default function BookmarksPage() {
         (draftRes.value.data.data || []).forEach((b: Bookmark) => all.push({ ...b, doc_type: 'drafting' }));
       }
 
-      all.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      all.sort((a, b) => {
+        if (a.is_important !== b.is_important) return a.is_important ? -1 : 1;
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
       setData(all);
     } catch {
       message.error('Lỗi tải dữ liệu');
@@ -83,12 +88,31 @@ export default function BookmarksPage() {
     } catch { message.error('Lỗi'); }
   };
 
+  const filteredData = filterType === 'all' ? data : data.filter((d) => d.doc_type === filterType);
+
+  const handleToggleImportant = async (record: Bookmark) => {
+    const basePath = DOC_TYPE_PATH[record.doc_type] || '/van-ban-den';
+    try {
+      await api.post(`${basePath}/${record.doc_id}/danh-dau`, { is_important: !record.is_important });
+      fetchData();
+    } catch { message.error('Lỗi'); }
+  };
+
   const columns: ColumnsType<Bookmark> = [
+    {
+      title: '', width: 40, align: 'center',
+      render: (_, r) => (
+        <Tooltip title={r.is_important ? 'Bỏ quan trọng' : 'Đánh dấu quan trọng'}>
+          <Button type="text" size="small" onClick={() => handleToggleImportant(r)}
+            icon={r.is_important ? <StarFilled style={{ color: '#faad14' }} /> : <StarOutlined style={{ color: '#d9d9d9' }} />} />
+        </Tooltip>
+      ),
+    },
     {
       title: 'Loại', dataIndex: 'doc_type', width: 100, align: 'center',
       render: (val: string) => <Tag color={DOC_TYPE_COLOR[val]}>{DOC_TYPE_LABEL[val] || val}</Tag>,
     },
-    { title: 'Số đến', dataIndex: 'doc_number', width: 80, align: 'center' },
+    { title: 'Số VB', dataIndex: 'doc_number', width: 80, align: 'center' },
     {
       title: 'Ngày nhận', dataIndex: 'doc_received_date', width: 100,
       render: (d) => d ? dayjs(d).format('DD/MM/YYYY') : '',
@@ -117,11 +141,23 @@ export default function BookmarksPage() {
 
   return (
     <Card title={<><StarFilled style={{ color: '#faad14', marginRight: 8 }} />Văn bản đánh dấu cá nhân</>}>
+      <div style={{ marginBottom: 16 }}>
+        <Segmented
+          value={filterType}
+          onChange={(val) => setFilterType(val as string)}
+          options={[
+            { label: `Tất cả (${data.length})`, value: 'all' },
+            { label: `VB đến (${data.filter(d => d.doc_type === 'incoming').length})`, value: 'incoming' },
+            { label: `VB đi (${data.filter(d => d.doc_type === 'outgoing').length})`, value: 'outgoing' },
+            { label: `Dự thảo (${data.filter(d => d.doc_type === 'drafting').length})`, value: 'drafting' },
+          ]}
+        />
+      </div>
       <Table<Bookmark>
         rowKey={(r) => `${r.doc_type}-${r.note_id}`}
         loading={loading}
         columns={columns}
-        dataSource={data}
+        dataSource={filteredData}
         size="small"
         pagination={{ pageSize: 20, showTotal: (t) => `Tổng ${t} văn bản` }}
         locale={{ emptyText: <Empty description="Chưa đánh dấu văn bản nào" /> }}

@@ -5,6 +5,8 @@ import { incomingDocRepository } from '../repositories/incoming-doc.repository.j
 import { uploadFile, deleteFile, getFileUrl } from '../lib/minio/client.js';
 import { v4 as uuidv4 } from 'uuid';
 import { handleDbError } from '../lib/error-handler.js';
+import { exportExcel } from '../lib/excel.js';
+import dayjs from 'dayjs';
 
 const router = Router();
 
@@ -19,6 +21,7 @@ router.get('/', async (req: Request, res: Response) => {
     const {
       doc_book_id, doc_type_id, doc_field_id, urgent_id,
       is_read, approved, from_date, to_date, keyword,
+      signer: q_signer, from_number, to_number,
       page, page_size,
     } = req.query;
 
@@ -32,6 +35,9 @@ router.get('/', async (req: Request, res: Response) => {
       fromDate: from_date as string || undefined,
       toDate: to_date as string || undefined,
       keyword: keyword as string || undefined,
+      signer: q_signer as string || undefined,
+      fromNumber: from_number ? Number(from_number) : undefined,
+      toNumber: to_number ? Number(to_number) : undefined,
       page: page ? Number(page) : 1,
       pageSize: page_size ? Number(page_size) : 20,
     });
@@ -84,6 +90,61 @@ router.get('/danh-dau-ca-nhan', async (req: Request, res: Response) => {
     const { staffId } = (req as AuthRequest).user;
     const rows = await incomingDocRepository.getBookmarks(staffId, 'incoming');
     res.json({ success: true, data: rows });
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
+
+// GET /xuat-excel — Xuất danh sách VB đến ra Excel
+router.get('/xuat-excel', async (req: Request, res: Response) => {
+  try {
+    const { staffId, unitId } = (req as AuthRequest).user;
+    const { doc_book_id, doc_type_id, from_date, to_date, keyword } = req.query;
+
+    const rows = await incomingDocRepository.getList(unitId, staffId, {
+      docBookId: doc_book_id ? Number(doc_book_id) : undefined,
+      docTypeId: doc_type_id ? Number(doc_type_id) : undefined,
+      fromDate: from_date as string || undefined,
+      toDate: to_date as string || undefined,
+      keyword: keyword as string || undefined,
+      page: 1, pageSize: 10000,
+    });
+
+    const fmtDate = (d: string) => d ? dayjs(d).format('DD/MM/YYYY') : '';
+    const URGENT: Record<number, string> = { 1: 'Thường', 2: 'Khẩn', 3: 'Hỏa tốc' };
+    const SECRET: Record<number, string> = { 1: 'Thường', 2: 'Mật', 3: 'Tối mật', 4: 'Tuyệt mật' };
+
+    await exportExcel(res, `VanBanDen_${dayjs().format('YYYYMMDD')}.xlsx`, 'Văn bản đến', [
+      { header: 'STT', key: 'stt', width: 6 },
+      { header: 'Số đến', key: 'number', width: 10 },
+      { header: 'Ngày đến', key: 'received_date', width: 12 },
+      { header: 'Số ký hiệu', key: 'notation', width: 18 },
+      { header: 'Trích yếu', key: 'abstract', width: 40 },
+      { header: 'CQ ban hành', key: 'publish_unit', width: 25 },
+      { header: 'Người ký', key: 'signer', width: 18 },
+      { header: 'Ngày ban hành', key: 'publish_date', width: 12 },
+      { header: 'Loại VB', key: 'doc_type_name', width: 15 },
+      { header: 'Lĩnh vực', key: 'doc_field_name', width: 15 },
+      { header: 'Sổ VB', key: 'doc_book_name', width: 15 },
+      { header: 'Độ khẩn', key: 'urgent', width: 10 },
+      { header: 'Độ mật', key: 'secret', width: 10 },
+      { header: 'Trạng thái', key: 'status', width: 12 },
+    ], rows.map((r, i) => ({
+      stt: i + 1,
+      number: r.number,
+      received_date: fmtDate(r.received_date),
+      notation: r.notation || '',
+      abstract: r.abstract || '',
+      publish_unit: r.publish_unit || '',
+      signer: r.signer || '',
+      publish_date: fmtDate(r.publish_date),
+      doc_type_name: r.doc_type_name || '',
+      doc_field_name: r.doc_field_name || '',
+      doc_book_name: r.doc_book_name || '',
+      urgent: URGENT[r.urgent_id] || '',
+      secret: SECRET[r.secret_id] || '',
+      status: r.approved ? 'Đã duyệt' : 'Chờ duyệt',
+    })));
   } catch (error) {
     handleDbError(error, res);
   }
@@ -144,6 +205,7 @@ router.post('/', async (req: Request, res: Response) => {
       numberCopies: body.number_copies ? Number(body.number_copies) : 1,
       expiredDate: body.expired_date || null,
       recipients: body.recipients || null,
+      sents: body.sents || null,
       isReceivedPaper: body.is_received_paper ?? false,
       createdBy: staffId,
     });
@@ -209,6 +271,7 @@ router.put('/:id', async (req: Request, res: Response) => {
       numberCopies: body.number_copies ? Number(body.number_copies) : 1,
       expiredDate: body.expired_date || null,
       recipients: body.recipients || null,
+      sents: body.sents || null,
       isReceivedPaper: body.is_received_paper ?? false,
       updatedBy: staffId,
     });
@@ -507,7 +570,8 @@ router.patch('/:id/huy-duyet', async (req: Request, res: Response) => {
 router.patch('/:id/nhan-ban-giay', async (req: Request, res: Response) => {
   try {
     const { staffId } = (req as AuthRequest).user;
-    const result = await incomingDocRepository.receivePaper(Number(req.params.id), staffId);
+    const { received_paper_date } = req.body;
+    const result = await incomingDocRepository.receivePaper(Number(req.params.id), staffId, received_paper_date || undefined);
     if (!result.success) {
       res.status(400).json({ success: false, message: result.message });
       return;
@@ -599,21 +663,6 @@ router.post('/:id/chuyen-lai', async (req: Request, res: Response) => {
   }
 });
 
-// POST /:id/huy-duyet — Huy duyet VB den
-router.post('/:id/huy-duyet', async (req: Request, res: Response) => {
-  try {
-    const { staffId } = (req as AuthRequest).user;
-    const docId = Number(req.params.id);
-
-    const result = await incomingDocRepository.cancelApprove(docId, staffId);
-    if (!result.success) {
-      res.status(400).json({ success: false, message: result.message });
-      return;
-    }
-    res.json({ success: true, message: 'Đã hủy duyệt văn bản' });
-  } catch (error) {
-    handleDbError(error, res);
-  }
-});
+// NOTE: POST /:id/huy-duyet đã bị loại bỏ (duplicate) — dùng PATCH /:id/huy-duyet ở trên
 
 export default router;

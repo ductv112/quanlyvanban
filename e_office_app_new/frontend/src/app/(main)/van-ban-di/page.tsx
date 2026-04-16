@@ -9,7 +9,7 @@ import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
 import {
   PlusOutlined, EditOutlined, DeleteOutlined, MoreOutlined,
   CheckCircleOutlined, EyeOutlined, SendOutlined, ReloadOutlined,
-  CloseCircleOutlined, RollbackOutlined, StopOutlined,
+  CloseCircleOutlined, RollbackOutlined, StopOutlined, DownloadOutlined,
 } from '@ant-design/icons';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth.store';
@@ -273,6 +273,21 @@ export default function OutgoingDocPage() {
     } catch (err: any) { message.error(err?.response?.data?.message || 'Lỗi'); }
   };
 
+  const handleExportExcel = async () => {
+    try {
+      const params: Record<string, unknown> = {};
+      if (keyword) params.keyword = keyword;
+      if (filterDocBookId) params.doc_book_id = filterDocBookId;
+      if (filterDocTypeId) params.doc_type_id = filterDocTypeId;
+      if (filterDateRange) { params.from_date = filterDateRange[0].startOf('day').toISOString(); params.to_date = filterDateRange[1].endOf('day').toISOString(); }
+      const response = await api.get('/van-ban-di/xuat-excel', { params, responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a'); link.href = url;
+      link.setAttribute('download', `VanBanDi_${new Date().toISOString().slice(0, 10)}.xlsx`);
+      document.body.appendChild(link); link.click(); link.remove(); window.URL.revokeObjectURL(url);
+    } catch { message.error('Lỗi xuất Excel'); }
+  };
+
   const columns: ColumnsType<OutgoingDoc> = [
     {
       title: 'Số đi', dataIndex: 'number', width: 80, align: 'center',
@@ -339,6 +354,7 @@ export default function OutgoingDocPage() {
       extra={
         <Space>
           {selectedRowKeys.length > 0 && <Button onClick={handleMarkReadBulk}>Đánh dấu đã đọc ({selectedRowKeys.length})</Button>}
+          <Button icon={<DownloadOutlined />} onClick={handleExportExcel}>Xuất Excel</Button>
           <Button type="primary" icon={<PlusOutlined />} onClick={() => openDrawer()}>Thêm mới</Button>
         </Space>
       }

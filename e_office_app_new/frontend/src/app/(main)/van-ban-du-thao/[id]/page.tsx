@@ -31,8 +31,9 @@ interface DocDetail {
   expired_date: string; recipients: string; approver: string; approved: boolean;
   is_handling: boolean; archive_status: boolean;
   drafting_unit_id: number; drafting_user_id: number; publish_unit_id: number;
-  is_released: boolean; released_date: string;
-  drafting_unit_name: string; drafting_user_name: string;
+  is_released: boolean; released_date: string; reject_reason: string;
+  received_date: string; document_code: string;
+  drafting_unit_name: string; drafting_user_name: string; publish_unit_name: string;
   created_by: number; created_at: string; updated_by: number; updated_at: string;
   doc_book_name: string; doc_type_name: string; doc_type_code: string;
   doc_field_name: string; created_by_name: string; is_read: boolean;
@@ -154,7 +155,9 @@ export default function DraftingDocDetailPage() {
     ? <Tag color="success" icon={<RocketOutlined />}>Đã phát hành</Tag>
     : doc.approved
       ? <Tag color="blue" icon={<SafetyCertificateOutlined />}>Đã duyệt</Tag>
-      : <Tag color="gold">Dự thảo</Tag>;
+      : doc.reject_reason
+        ? <Tag color="red">Từ chối</Tag>
+        : <Tag color="gold">Dự thảo</Tag>;
 
   return (
     <div>
@@ -255,7 +258,7 @@ export default function DraftingDocDetailPage() {
               </div>
               <div className="info-grid">
                 <div><div className="info-label">Người soạn</div><div className="info-value">{doc.drafting_user_name || '—'}</div></div>
-                <div><div className="info-label">Đơn vị phát hành</div><div className="info-value">{doc.publish_unit_id ? `#${doc.publish_unit_id}` : '—'}</div></div>
+                <div><div className="info-label">Đơn vị phát hành</div><div className="info-value">{doc.publish_unit_name || '—'}</div></div>
               </div>
               <div className="info-grid">
                 <div><div className="info-label">Lĩnh vực</div><div className="info-value">{doc.doc_field_name || '—'}</div></div>
@@ -274,6 +277,9 @@ export default function DraftingDocDetailPage() {
                   </div>
                 </div>
                 <div><div className="info-label">Nơi nhận</div><div className="info-value">{doc.recipients || '—'}</div></div>
+                {doc.reject_reason && (
+                  <div><div className="info-label">Lý do từ chối</div><div className="info-value" style={{ color: '#DC2626' }}>{doc.reject_reason}</div></div>
+                )}
               </div>
               <div className="info-grid">
                 <div><div className="info-label">Độ mật</div><Tag color={secretTag.color}>{secretTag.text}</Tag></div>

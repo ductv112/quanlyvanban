@@ -5,6 +5,8 @@ import { draftingDocRepository } from '../repositories/drafting-doc.repository.j
 import { uploadFile, deleteFile, getFileUrl } from '../lib/minio/client.js';
 import { v4 as uuidv4 } from 'uuid';
 import { handleDbError } from '../lib/error-handler.js';
+import { exportExcel } from '../lib/excel.js';
+import dayjs from 'dayjs';
 
 const router = Router();
 
@@ -84,6 +86,53 @@ router.get('/danh-dau-ca-nhan', async (req: Request, res: Response) => {
     const { staffId } = (req as AuthRequest).user;
     const rows = await draftingDocRepository.getBookmarks(staffId);
     res.json({ success: true, data: rows });
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
+
+// GET /xuat-excel — Xuất danh sách VB dự thảo ra Excel
+router.get('/xuat-excel', async (req: Request, res: Response) => {
+  try {
+    const { staffId, unitId } = (req as AuthRequest).user;
+    const { doc_book_id, doc_type_id, from_date, to_date, keyword } = req.query;
+
+    const rows = await draftingDocRepository.getList(unitId, staffId, {
+      docBookId: doc_book_id ? Number(doc_book_id) : undefined,
+      docTypeId: doc_type_id ? Number(doc_type_id) : undefined,
+      fromDate: from_date as string || undefined,
+      toDate: to_date as string || undefined,
+      keyword: keyword as string || undefined,
+      page: 1, pageSize: 10000,
+    });
+
+    const fmtDate = (d: string) => d ? dayjs(d).format('DD/MM/YYYY') : '';
+
+    await exportExcel(res, `VanBanDuThao_${dayjs().format('YYYYMMDD')}.xlsx`, 'Văn bản dự thảo', [
+      { header: 'STT', key: 'stt', width: 6 },
+      { header: 'Số', key: 'number', width: 8 },
+      { header: 'Ký hiệu', key: 'notation', width: 18 },
+      { header: 'Trích yếu', key: 'abstract', width: 40 },
+      { header: 'Đơn vị soạn', key: 'drafting_unit_name', width: 20 },
+      { header: 'Người soạn', key: 'drafting_user_name', width: 18 },
+      { header: 'Người ký', key: 'signer', width: 18 },
+      { header: 'Loại VB', key: 'doc_type_name', width: 15 },
+      { header: 'Sổ VB', key: 'doc_book_name', width: 15 },
+      { header: 'Nơi nhận', key: 'recipients', width: 25 },
+      { header: 'Trạng thái', key: 'status', width: 15 },
+    ], rows.map((r, i) => ({
+      stt: i + 1,
+      number: r.number,
+      notation: r.notation || '',
+      abstract: r.abstract || '',
+      drafting_unit_name: r.drafting_unit_name || '',
+      drafting_user_name: r.drafting_user_name || '',
+      signer: r.signer || '',
+      doc_type_name: r.doc_type_name || '',
+      doc_book_name: r.doc_book_name || '',
+      recipients: r.recipients || '',
+      status: r.is_released ? 'Đã phát hành' : r.approved ? 'Đã duyệt' : 'Dự thảo',
+    })));
   } catch (error) {
     handleDbError(error, res);
   }
@@ -362,7 +411,8 @@ router.post('/:id/gui', async (req: Request, res: Response) => {
       return;
     }
 
-    const result = await draftingDocRepository.send(docId, staff_ids.map(Number), staffId);
+    const { expired_date } = req.body;
+    const result = await draftingDocRepository.send(docId, staff_ids.map(Number), staffId, expired_date || undefined);
     if (!result.success) {
       res.status(400).json({ success: false, message: result.message });
       return;
@@ -441,7 +491,11 @@ router.patch('/:id/tu-choi', async (req: Request, res: Response) => {
 router.post('/:id/thu-hoi', async (req: Request, res: Response) => {
   try {
     const { staffId } = (req as AuthRequest).user;
-    const result = await draftingDocRepository.retract(Number(req.params.id), staffId);
+    const { staff_ids } = req.body;
+    const result = await draftingDocRepository.retract(
+      Number(req.params.id), staffId,
+      Array.isArray(staff_ids) && staff_ids.length > 0 ? staff_ids.map(Number) : undefined,
+    );
     if (!result.success) {
       res.status(400).json({ success: false, message: result.message });
       return;
@@ -468,6 +522,48 @@ router.post('/:id/phat-hanh', async (req: Request, res: Response) => {
         outgoing_doc_id: result.outgoing_doc_id,
       },
     });
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
+
+// ============================================================
+// LEADER NOTES (Ý kiến lãnh đạo)
+// ============================================================
+
+router.get('/:id/y-kien', async (req: Request, res: Response) => {
+  try {
+    const rows = await draftingDocRepository.getLeaderNotes(Number(req.params.id));
+    res.json({ success: true, data: rows });
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
+
+router.post('/:id/y-kien', async (req: Request, res: Response) => {
+  try {
+    const { staffId } = (req as AuthRequest).user;
+    const { content } = req.body;
+    const result = await draftingDocRepository.createLeaderNote(Number(req.params.id), staffId, content);
+    if (!result.success) {
+      res.status(400).json({ success: false, message: result.message });
+      return;
+    }
+    res.status(201).json({ success: true, data: { id: result.id } });
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
+
+router.delete('/:id/y-kien/:noteId', async (req: Request, res: Response) => {
+  try {
+    const { staffId } = (req as AuthRequest).user;
+    const result = await draftingDocRepository.deleteLeaderNote(Number(req.params.noteId), staffId);
+    if (!result.success) {
+      res.status(400).json({ success: false, message: result.message });
+      return;
+    }
+    res.json({ success: true, data: { message: result.message } });
   } catch (error) {
     handleDbError(error, res);
   }

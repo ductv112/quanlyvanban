@@ -17,35 +17,41 @@ const { TextArea } = Input;
 
 interface LienThongDocDetail {
   id: number;
+  unit_id: number;
   received_date: string;
   notation: string;
+  document_code: string;
   abstract: string;
   expired_date: string;
   publish_unit: string;
   publish_date: string;
   signer: string;
   sign_date: string;
-  doc_type_name: string;
-  doc_field_name: string;
+  doc_type_id: number;
+  doc_field_id: number;
   secret_id: number;
   urgent_id: number;
   number_paper: number;
   number_copies: number;
   recipients: string;
   status: string;
-  status_label: string;
-  created_by_name: string;
+  source_system: string;
+  external_doc_id: string;
+  organ_id: string;
+  from_organ_id: string;
+  created_by: number;
   created_at: string;
-  unit_id: number;
+  updated_at: string;
+  doc_type_name: string;
+  doc_field_name: string;
+  created_by_name: string;
 }
 
 const STATUS_MAP: Record<string, { text: string; color: string }> = {
   pending: { text: 'Chờ xử lý', color: 'gold' },
   received: { text: 'Đã nhận', color: 'cyan' },
-  processing: { text: 'Đang xử lý', color: 'blue' },
   completed: { text: 'Hoàn thành', color: 'green' },
   returned: { text: 'Đã chuyển lại', color: 'orange' },
-  cancelled: { text: 'Đã hủy', color: 'red' },
 };
 
 const SECRET_MAP: Record<number, { text: string; color: string }> = {
@@ -142,7 +148,7 @@ export default function LienThongDocDetailPage() {
   if (loading) return <div style={{ textAlign: 'center', padding: 80 }}><Spin size="large" /></div>;
   if (!doc) return <Empty description="Không tìm thấy văn bản liên thông" />;
 
-  const statusInfo = STATUS_MAP[doc.status] || { text: doc.status_label || 'Chờ xử lý', color: 'default' };
+  const statusInfo = STATUS_MAP[doc.status] || { text: doc.status || 'Chờ xử lý', color: 'default' };
   const secretInfo = SECRET_MAP[doc.secret_id] || SECRET_MAP[1];
   const urgentInfo = URGENT_MAP[doc.urgent_id] || URGENT_MAP[1];
   const isOverdue = doc.expired_date && dayjs().isAfter(dayjs(doc.expired_date));

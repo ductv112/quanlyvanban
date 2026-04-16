@@ -13,13 +13,14 @@ const router = Router();
 router.get('/', async (req: Request, res: Response) => {
   try {
     const { unitId } = (req as AuthRequest).user;
-    const { keyword, status, from_date, to_date, page, page_size } = req.query;
+    const { keyword, status, from_date, to_date, doc_type_id, page, page_size } = req.query;
 
     const rows = await interIncomingRepository.getList(unitId, {
       keyword: keyword as string || undefined,
       status: status as string || undefined,
       fromDate: from_date as string || undefined,
       toDate: to_date as string || undefined,
+      docTypeId: doc_type_id ? Number(doc_type_id) : undefined,
       page: page ? Number(page) : 1,
       pageSize: page_size ? Number(page_size) : 20,
     });

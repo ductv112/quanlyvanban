@@ -9,7 +9,7 @@ import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
 import {
   PlusOutlined, EditOutlined, DeleteOutlined, MoreOutlined,
   CheckCircleOutlined, EyeOutlined, FileTextOutlined, ReloadOutlined,
-  SendOutlined, FormOutlined, StopOutlined, CloseCircleOutlined, RollbackOutlined,
+  SendOutlined, FormOutlined, StopOutlined, CloseCircleOutlined, RollbackOutlined, DownloadOutlined,
 } from '@ant-design/icons';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth.store';
@@ -337,7 +337,7 @@ export default function DraftingDocPage() {
       okText: 'Phát hành', cancelText: 'Hủy',
       onOk: async () => {
         try {
-          await api.patch(`/van-ban-du-thao/${record.id}/phat-hanh`);
+          await api.post(`/van-ban-du-thao/${record.id}/phat-hanh`);
           message.success('Phát hành thành công');
           fetchData();
         } catch (err: any) { message.error(err?.response?.data?.message || 'Lỗi phát hành'); }
@@ -441,6 +441,21 @@ export default function DraftingDocPage() {
     },
   ];
 
+  const handleExportExcel = async () => {
+    try {
+      const params: Record<string, unknown> = {};
+      if (keyword) params.keyword = keyword;
+      if (filterDocBookId) params.doc_book_id = filterDocBookId;
+      if (filterDocTypeId) params.doc_type_id = filterDocTypeId;
+      if (filterDateRange) { params.from_date = filterDateRange[0].startOf('day').toISOString(); params.to_date = filterDateRange[1].endOf('day').toISOString(); }
+      const response = await api.get('/van-ban-du-thao/xuat-excel', { params, responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a'); link.href = url;
+      link.setAttribute('download', `VanBanDuThao_${new Date().toISOString().slice(0, 10)}.xlsx`);
+      document.body.appendChild(link); link.click(); link.remove(); window.URL.revokeObjectURL(url);
+    } catch { message.error('Lỗi xuất Excel'); }
+  };
+
   return (
     <Card
       variant="borderless"
@@ -452,6 +467,7 @@ export default function DraftingDocPage() {
       }
       extra={
         <Space>
+          <Button icon={<DownloadOutlined />} onClick={handleExportExcel}>Xuất Excel</Button>
           <Button type="primary" icon={<PlusOutlined />} onClick={() => openDrawer()}>Thêm mới</Button>
         </Space>
       }
@@ -592,20 +608,25 @@ export default function DraftingDocPage() {
             </Col>
             <Col span={6}>
               <Form.Item name="sub_number" label="Số phụ">
-                <Input placeholder="VD: a, b, bis..." />
+                <Input placeholder="VD: a, b, bis..." maxLength={20} />
               </Form.Item>
             </Col>
           </Row>
 
           <Row gutter={16}>
-            <Col span={12}>
+            <Col span={8}>
               <Form.Item name="notation" label="Ký hiệu">
-                <Input placeholder="VD: 123/UBND-VP" />
+                <Input placeholder="VD: 123/UBND-VP" maxLength={100} />
               </Form.Item>
             </Col>
-            <Col span={12}>
+            <Col span={8}>
               <Form.Item name="document_code" label="Mã văn bản">
-                <Input placeholder="Mã văn bản (nếu có)" />
+                <Input placeholder="Mã văn bản (nếu có)" maxLength={100} />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="received_date" label="Ngày soạn">
+                <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
               </Form.Item>
             </Col>
           </Row>
@@ -669,7 +690,7 @@ export default function DraftingDocPage() {
             </Col>
             <Col span={8}>
               <Form.Item name="signer" label="Người ký">
-                <Input placeholder="Họ tên người ký" />
+                <Input placeholder="Họ tên người ký" maxLength={200} />
               </Form.Item>
             </Col>
           </Row>

@@ -20,6 +20,9 @@ export interface InterIncomingListRow {
   external_doc_id: string;
   created_by: number;
   created_at: string;
+  updated_at: string;
+  doc_type_name: string;
+  created_by_name: string;
   total_count: number;
 }
 
@@ -36,11 +39,23 @@ export interface InterIncomingDetailRow {
   sign_date: string;
   expired_date: string;
   doc_type_id: number;
+  doc_field_id: number;
+  secret_id: number;
+  urgent_id: number;
+  number_paper: number;
+  number_copies: number;
+  recipients: string;
   status: string;
   source_system: string;
   external_doc_id: string;
+  organ_id: string;
+  from_organ_id: string;
   created_by: number;
   created_at: string;
+  updated_at: string;
+  doc_type_name: string;
+  doc_field_name: string;
+  created_by_name: string;
 }
 
 // ============ Repository ============
@@ -54,6 +69,7 @@ export const interIncomingRepository = {
       status?: string;
       fromDate?: string;
       toDate?: string;
+      docTypeId?: number;
       page?: number;
       pageSize?: number;
     } = {},
@@ -64,6 +80,7 @@ export const interIncomingRepository = {
       filters.status ?? null,
       filters.fromDate ?? null,
       filters.toDate ?? null,
+      filters.docTypeId ?? null,
       filters.page ?? 1,
       filters.pageSize ?? 20,
     ]);

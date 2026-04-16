@@ -32,10 +32,8 @@ interface LienThongDoc {
 const STATUS_MAP: Record<string, { text: string; color: string }> = {
   pending: { text: 'Chờ xử lý', color: 'gold' },
   received: { text: 'Đã nhận', color: 'cyan' },
-  processing: { text: 'Đang xử lý', color: 'blue' },
   completed: { text: 'Hoàn thành', color: 'green' },
   returned: { text: 'Đã chuyển lại', color: 'orange' },
-  cancelled: { text: 'Đã hủy', color: 'red' },
 };
 
 export default function LienThongDocPage() {
