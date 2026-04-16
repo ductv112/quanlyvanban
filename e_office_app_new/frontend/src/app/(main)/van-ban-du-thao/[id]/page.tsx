@@ -372,7 +372,7 @@ export default function DraftingDocDetailPage() {
             ) : (
               <Timeline items={history.map((h) => ({
                 color: h.event_type === 'created' ? 'blue' : h.event_type === 'approved' ? 'green' : h.event_type === 'sent' ? 'cyan' : h.event_type === 'released' ? 'purple' : h.event_type === 'rejected' ? 'red' : 'gray',
-                children: (
+                content: (
                   <div style={{ paddingBottom: 4 }}>
                     <div style={{ fontSize: 13, color: '#262626' }}>{h.content}</div>
                     <div style={{ fontSize: 11, color: '#8c8c8c' }}>{h.staff_name} • {fmtDateTime(h.event_time)}</div>
