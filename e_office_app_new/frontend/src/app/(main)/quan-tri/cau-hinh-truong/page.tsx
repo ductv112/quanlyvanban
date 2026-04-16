@@ -150,7 +150,7 @@ export default function DocColumnConfigPage() {
         onChange={(key) => setSelectedTypeId(Number(key))}
         items={MODULE_TABS.map(t => ({
           key: t.key,
-          label: `${t.label} (${String(selectedTypeId) === t.key ? data.length : '...'})`,
+          label: t.label,
         }))}
         style={{ marginBottom: 0 }}
       />
