@@ -102,6 +102,14 @@ export default function IncomingDocPage() {
     } catch { /* ignore */ }
   }, []);
 
+  // type_id=1 = VB đến (theo doc_columns convention)
+  const fetchExtraColumns = useCallback(async () => {
+    try {
+      const { data: res } = await api.get('/van-ban-den/truong-bo-sung', { params: { doc_type_id: 1 } });
+      setExtraColumns(res.data || []);
+    } catch { setExtraColumns([]); }
+  }, []);
+
   useEffect(() => { fetchDropdowns(); fetchExtraColumns(); }, [fetchDropdowns, fetchExtraColumns]);
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -127,14 +135,6 @@ export default function IncomingDocPage() {
       form.setFieldsValue({ number: res.data?.number || 1 });
     } catch { /* ignore */ }
   };
-
-  // type_id=1 = VB đến (theo doc_columns convention)
-  const fetchExtraColumns = useCallback(async () => {
-    try {
-      const { data: res } = await api.get('/van-ban-den/truong-bo-sung', { params: { doc_type_id: 1 } });
-      setExtraColumns(res.data || []);
-    } catch { setExtraColumns([]); }
-  }, []);
 
   const openDrawer = async (record?: IncomingDoc) => {
     if (record) {
