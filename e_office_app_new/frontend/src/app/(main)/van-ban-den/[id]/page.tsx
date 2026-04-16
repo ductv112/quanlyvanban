@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   Card, Tag, Button, Space, Row, Col, Timeline, Avatar,
   Upload, Modal, Input, Popconfirm, Checkbox, Empty, Spin, App,
-  Badge, Typography, Flex, Dropdown, Drawer, Form, DatePicker, Select,
+  Badge, Typography, Flex, Dropdown, Drawer, Form, DatePicker, Select, InputNumber,
 } from 'antd';
 import {
   ArrowLeftOutlined, CheckCircleOutlined, CloseCircleOutlined, SendOutlined,
