@@ -183,12 +183,14 @@ export default function DraftingDocDetailPage() {
             icon={isBookmarked ? <StarFilled style={{ color: '#faad14' }} /> : <StarOutlined />}
             onClick={handleToggleBookmark}
           />
-          {/* Not approved: Edit, Approve, Delete */}
+          {/* Not approved: Edit, Approve, Reject, Delete */}
           {!doc.approved && !doc.is_released && (
             <>
               <Button icon={<EditOutlined />} onClick={() => router.push(`/van-ban-du-thao?edit=${doc.id}`)}>Sửa</Button>
               <Button type="primary" icon={<CheckCircleOutlined />} onClick={handleApprove}>Duyệt</Button>
               <Dropdown menu={{ items: [
+                { key: 'reject', icon: <StopOutlined />, label: 'Từ chối', danger: true, onClick: () => { setRejectReason(''); setRejectModalOpen(true); } },
+                { type: 'divider' as const },
                 { key: 'delete', icon: <DeleteOutlined />, label: 'Xóa văn bản', danger: true, onClick: handleDelete },
               ] }}>
                 <Button icon={<MoreOutlined />} />
