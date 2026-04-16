@@ -168,7 +168,7 @@ export default function OutgoingDocPage() {
     } catch { setStaffList([]); }
   };
 
-  const openDrawer = (record?: OutgoingDoc) => {
+  const openDrawer = async (record?: OutgoingDoc) => {
     if (record) {
       setEditingRecord(record);
       form.setFieldsValue({
@@ -186,11 +186,14 @@ export default function OutgoingDocPage() {
       form.resetFields();
       form.setFieldsValue({
         received_date: dayjs(), secret_id: 1, urgent_id: 1, number_paper: 1, number_copies: 1,
-        drafting_user_id: user?.staffId,
         drafting_unit_id: user?.departmentId || user?.unitId,
         publish_unit_id: user?.unitId,
       });
-      setStaffList([]);
+      // Load staff list trước, rồi mới set drafting_user_id
+      if (user?.departmentId || user?.unitId) {
+        await fetchStaff(user.departmentId || user.unitId);
+      }
+      form.setFieldsValue({ drafting_user_id: user?.staffId });
     }
     setDrawerOpen(true);
   };

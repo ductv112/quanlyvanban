@@ -212,14 +212,14 @@ export default function DraftingDocPage() {
       form.resetFields();
       form.setFieldsValue({
         secret_id: 1, urgent_id: 1, number_paper: 1, number_copies: 1,
-        drafting_user_id: user?.staffId,
         drafting_unit_id: user?.departmentId || user?.unitId,
         received_date: dayjs(),
       });
-      // Load staff list cho đơn vị mặc định
+      // Load staff list trước, rồi mới set drafting_user_id (để Select có options)
       if (user?.departmentId || user?.unitId) {
-        fetchStaffByUnit(user.departmentId || user.unitId);
+        await fetchStaffByUnit(user.departmentId || user.unitId);
       }
+      form.setFieldsValue({ drafting_user_id: user?.staffId });
     }
     setDrawerOpen(true);
   };
