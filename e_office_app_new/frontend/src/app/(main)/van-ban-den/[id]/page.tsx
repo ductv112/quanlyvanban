@@ -110,6 +110,7 @@ export default function IncomingDocDetailPage() {
   const [actionLoading, setActionLoading] = useState(false);
 
   const fetchDoc = useCallback(async () => { try { const { data: res } = await api.get(`/van-ban-den/${docId}`); setDoc(res.data); } catch { message.error('Không tìm thấy văn bản'); router.push('/van-ban-den'); } }, [docId, message, router]);
+  const fetchBookmarkStatus = useCallback(async () => { try { const { data: res } = await api.get('/van-ban-den/danh-dau-ca-nhan'); const bookmarks: { doc_id: number }[] = res.data || []; setIsBookmarked(bookmarks.some((b) => b.doc_id === Number(docId))); } catch {} }, [docId]);
 
   const fetchStaffOptions = useCallback(async () => {
     try {
@@ -127,8 +128,8 @@ export default function IncomingDocDetailPage() {
 
   useEffect(() => {
     setLoading(true);
-    Promise.all([fetchDoc(), fetchAttachments(), fetchRecipients(), fetchHistory(), fetchLeaderNotes()]).finally(() => setLoading(false));
-  }, [fetchDoc, fetchAttachments, fetchRecipients, fetchHistory, fetchLeaderNotes]);
+    Promise.all([fetchDoc(), fetchAttachments(), fetchRecipients(), fetchHistory(), fetchLeaderNotes(), fetchBookmarkStatus()]).finally(() => setLoading(false));
+  }, [fetchDoc, fetchAttachments, fetchRecipients, fetchHistory, fetchLeaderNotes, fetchBookmarkStatus]);
 
   // Actions
   const handleApprove = async () => { try { await api.patch(`/van-ban-den/${docId}/duyet`); message.success('Duyệt thành công'); fetchDoc(); fetchHistory(); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } };
