@@ -12,7 +12,7 @@ import {
   StarOutlined, StarFilled, PaperClipOutlined,
   ClockCircleOutlined, UserOutlined, FilePdfOutlined,
   FileImageOutlined, FileWordOutlined, FileExcelOutlined, FileOutlined,
-  EditOutlined, SafetyCertificateOutlined,
+  EditOutlined, SafetyCertificateOutlined, StopOutlined, RollbackOutlined,
 } from '@ant-design/icons';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth.store';
@@ -100,6 +100,8 @@ export default function OutgoingDocDetailPage() {
   // Actions
   const handleApprove = async () => { try { await api.patch(`/van-ban-di/${docId}/duyet`); message.success('Duyệt thành công'); fetchDoc(); fetchHistory(); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } };
   const handleUnapprove = async () => { try { await api.patch(`/van-ban-di/${docId}/huy-duyet`); message.success('Hủy duyệt thành công'); fetchDoc(); fetchHistory(); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } };
+  const handleRetract = () => { modal.confirm({ title: 'Thu hồi văn bản đi', content: 'Thu hồi sẽ xóa tất cả người nhận và đặt lại trạng thái chưa duyệt. Bạn chắc chắn?', okText: 'Thu hồi', okButtonProps: { danger: true }, cancelText: 'Hủy', onOk: async () => { try { await api.post(`/van-ban-di/${docId}/thu-hoi`); message.success('Thu hồi thành công'); fetchDoc(); fetchHistory(); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } } }); };
+  const handleReject = () => { let reason = ''; modal.confirm({ title: 'Từ chối văn bản đi', content: (<div style={{ marginTop: 12 }}><div style={{ marginBottom: 8, color: '#595959' }}>Lý do từ chối (không bắt buộc):</div><Input.TextArea rows={3} placeholder="Lý do..." onChange={(e) => { reason = e.target.value; }} /></div>), okText: 'Từ chối', okButtonProps: { danger: true }, cancelText: 'Hủy', onOk: async () => { try { await api.patch(`/van-ban-di/${docId}/tu-choi`, { reason: reason.trim() || undefined }); message.success('Đã từ chối'); fetchDoc(); fetchHistory(); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } } }); };
   const handleDelete = () => { modal.confirm({ title: 'Xác nhận xóa', content: 'Xóa văn bản này?', okText: 'Xóa', okType: 'danger', cancelText: 'Hủy', onOk: async () => { try { await api.delete(`/van-ban-di/${docId}`); message.success('Đã xóa'); router.push('/van-ban-di'); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } } }); };
   const handleToggleBookmark = async () => { try { const { data: res } = await api.post(`/van-ban-di/${docId}/danh-dau`, {}); setIsBookmarked(res.data?.is_bookmarked); message.success(res.data?.message); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } };
 
@@ -161,6 +163,9 @@ export default function OutgoingDocDetailPage() {
               <Button icon={<EditOutlined />} onClick={() => router.push(`/van-ban-di?edit=${doc.id}`)}>Sửa</Button>
               <Button type="primary" icon={<CheckCircleOutlined />} onClick={handleApprove}>Duyệt</Button>
               <Dropdown menu={{ items: [
+                { key: 'reject', icon: <StopOutlined />, label: 'Từ chối', danger: true, onClick: handleReject },
+                { key: 'retract', icon: <RollbackOutlined />, label: 'Thu hồi', onClick: handleRetract },
+                { type: 'divider' as const },
                 { key: 'delete', icon: <DeleteOutlined />, label: 'Xóa văn bản', danger: true, onClick: handleDelete },
               ] }}>
                 <Button icon={<MoreOutlined />} />
@@ -172,6 +177,7 @@ export default function OutgoingDocDetailPage() {
               <Button type="primary" icon={<SendOutlined />} onClick={openSendModal}>Gửi</Button>
               <Dropdown menu={{ items: [
                 { key: 'unapprove', icon: <CloseCircleOutlined />, label: 'Hủy duyệt', onClick: handleUnapprove },
+                { key: 'retract', icon: <RollbackOutlined />, label: 'Thu hồi', onClick: handleRetract },
               ] }}>
                 <Button icon={<MoreOutlined />} />
               </Dropdown>

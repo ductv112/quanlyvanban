@@ -9,6 +9,7 @@ import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
 import {
   PlusOutlined, EditOutlined, DeleteOutlined, MoreOutlined,
   CheckCircleOutlined, EyeOutlined, SendOutlined, ReloadOutlined,
+  CloseCircleOutlined, RollbackOutlined, StopOutlined,
 } from '@ant-design/icons';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth.store';
@@ -224,6 +225,46 @@ export default function OutgoingDocPage() {
     catch (err: any) { message.error(err?.response?.data?.message || 'Lỗi duyệt'); }
   };
 
+  const handleUnapprove = (record: OutgoingDoc) => {
+    modal.confirm({
+      title: 'Xác nhận hủy duyệt', content: `Hủy duyệt văn bản "${record.abstract?.substring(0, 50)}..."?`,
+      okText: 'Hủy duyệt', okButtonProps: { danger: true }, cancelText: 'Đóng',
+      onOk: async () => {
+        try { await api.patch(`/van-ban-di/${record.id}/huy-duyet`); message.success('Hủy duyệt thành công'); fetchData(); }
+        catch (err: any) { message.error(err?.response?.data?.message || 'Lỗi'); }
+      },
+    });
+  };
+
+  const handleRetract = (record: OutgoingDoc) => {
+    modal.confirm({
+      title: 'Thu hồi văn bản đi', content: 'Thu hồi sẽ xóa tất cả người nhận và đặt lại trạng thái chưa duyệt. Bạn chắc chắn?',
+      okText: 'Thu hồi', okButtonProps: { danger: true }, cancelText: 'Hủy',
+      onOk: async () => {
+        try { await api.post(`/van-ban-di/${record.id}/thu-hoi`); message.success('Thu hồi thành công'); fetchData(); }
+        catch (err: any) { message.error(err?.response?.data?.message || 'Lỗi'); }
+      },
+    });
+  };
+
+  const handleReject = (record: OutgoingDoc) => {
+    let reason = '';
+    modal.confirm({
+      title: 'Từ chối văn bản đi',
+      content: (
+        <div style={{ marginTop: 12 }}>
+          <div style={{ marginBottom: 8, color: '#595959' }}>Nhập lý do từ chối (không bắt buộc):</div>
+          <Input.TextArea rows={3} placeholder="Lý do từ chối..." onChange={(e) => { reason = e.target.value; }} />
+        </div>
+      ),
+      okText: 'Từ chối', okButtonProps: { danger: true }, cancelText: 'Hủy',
+      onOk: async () => {
+        try { await api.patch(`/van-ban-di/${record.id}/tu-choi`, { reason: reason.trim() || undefined }); message.success('Đã từ chối văn bản đi'); fetchData(); }
+        catch (err: any) { message.error(err?.response?.data?.message || 'Lỗi'); }
+      },
+    });
+  };
+
   const handleMarkReadBulk = async () => {
     if (selectedRowKeys.length === 0) return;
     try {
@@ -275,9 +316,14 @@ export default function OutgoingDocPage() {
           ...(!record.approved ? [
             { key: 'edit', icon: <EditOutlined />, label: 'Sửa', onClick: () => openDrawer(record) },
             { key: 'approve', icon: <CheckCircleOutlined />, label: 'Duyệt', onClick: () => handleApprove(record) },
+            { key: 'reject', icon: <StopOutlined />, label: 'Từ chối', danger: true, onClick: () => handleReject(record) },
+            { key: 'retract', icon: <RollbackOutlined />, label: 'Thu hồi', onClick: () => handleRetract(record) },
             { type: 'divider' as const },
             { key: 'delete', icon: <DeleteOutlined />, label: 'Xóa', danger: true, onClick: () => handleDelete(record) },
-          ] : []),
+          ] : [
+            { key: 'unapprove', icon: <CloseCircleOutlined />, label: 'Hủy duyệt', onClick: () => handleUnapprove(record) },
+            { key: 'retract', icon: <RollbackOutlined />, label: 'Thu hồi', onClick: () => handleRetract(record) },
+          ]),
         ];
         return (
           <Dropdown trigger={['click']} menu={{ items }}>

@@ -412,4 +412,37 @@ router.patch('/:id/huy-duyet', async (req: Request, res: Response) => {
   }
 });
 
+// ============================================================
+// RETRACT / REJECT
+// ============================================================
+
+router.post('/:id/thu-hoi', async (req: Request, res: Response) => {
+  try {
+    const { staffId } = (req as AuthRequest).user;
+    const result = await outgoingDocRepository.retract(Number(req.params.id), staffId);
+    if (!result.success) {
+      res.status(400).json({ success: false, message: result.message });
+      return;
+    }
+    res.json({ success: true, data: { message: result.message } });
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
+
+router.patch('/:id/tu-choi', async (req: Request, res: Response) => {
+  try {
+    const { staffId } = (req as AuthRequest).user;
+    const { reason } = req.body;
+    const result = await outgoingDocRepository.reject(Number(req.params.id), staffId, reason);
+    if (!result.success) {
+      res.status(400).json({ success: false, message: result.message });
+      return;
+    }
+    res.json({ success: true, data: { message: result.message } });
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
+
 export default router;

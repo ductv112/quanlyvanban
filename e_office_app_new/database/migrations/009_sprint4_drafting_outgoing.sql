@@ -1691,3 +1691,36 @@ BEGIN
   RETURN QUERY SELECT TRUE, ('Thu hồi thành công — đã xóa ' || v_deleted_count || ' người nhận')::TEXT;
 END;
 $$;
+
+-- ==========================================
+-- FN: THU HỒI VĂN BẢN ĐI (Retract)
+-- ==========================================
+CREATE OR REPLACE FUNCTION edoc.fn_outgoing_doc_retract(
+  p_id BIGINT, p_staff_id INT
+) RETURNS TABLE (success BOOLEAN, message TEXT)
+LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE v_deleted_count INT;
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM edoc.outgoing_docs WHERE id = p_id) THEN
+    RETURN QUERY SELECT FALSE, 'Không tìm thấy văn bản đi'::TEXT; RETURN;
+  END IF;
+  DELETE FROM edoc.user_outgoing_docs WHERE outgoing_doc_id = p_id AND staff_id != p_staff_id;
+  GET DIAGNOSTICS v_deleted_count = ROW_COUNT;
+  UPDATE edoc.outgoing_docs SET approved = FALSE, updated_by = p_staff_id, updated_at = NOW() WHERE id = p_id;
+  RETURN QUERY SELECT TRUE, ('Thu hồi thành công — đã xóa ' || v_deleted_count || ' người nhận')::TEXT;
+END; $$;
+
+-- ==========================================
+-- FN: TỪ CHỐI VĂN BẢN ĐI (Reject)
+-- ==========================================
+CREATE OR REPLACE FUNCTION edoc.fn_outgoing_doc_reject(
+  p_id BIGINT, p_staff_id INT, p_reason TEXT DEFAULT NULL
+) RETURNS TABLE (success BOOLEAN, message TEXT)
+LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM edoc.outgoing_docs WHERE id = p_id) THEN
+    RETURN QUERY SELECT FALSE, 'Không tìm thấy văn bản đi'::TEXT; RETURN;
+  END IF;
+  UPDATE edoc.outgoing_docs SET approved = FALSE, updated_by = p_staff_id, updated_at = NOW() WHERE id = p_id;
+  RETURN QUERY SELECT TRUE, 'Đã từ chối văn bản đi'::TEXT;
+END; $$;

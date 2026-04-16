@@ -210,6 +210,17 @@ export const outgoingDocRepository = {
     return row ?? { success: false, message: 'Không tìm thấy văn bản' };
   },
 
+  // --- Retract & Reject ---
+  async retract(id: number, staffId: number): Promise<DbResult> {
+    const row = await callFunctionOne<DbResult>('edoc.fn_outgoing_doc_retract', [id, staffId]);
+    return row ?? { success: false, message: 'Không tìm thấy văn bản' };
+  },
+
+  async reject(id: number, staffId: number, reason?: string): Promise<DbResult> {
+    const row = await callFunctionOne<DbResult>('edoc.fn_outgoing_doc_reject', [id, staffId, reason ?? null]);
+    return row ?? { success: false, message: 'Không tìm thấy văn bản' };
+  },
+
   // --- Bookmarks ---
   async toggleBookmark(docId: number, staffId: number, note?: string): Promise<BookmarkToggleResult> {
     const row = await callFunctionOne<BookmarkToggleResult>('edoc.fn_staff_note_toggle', ['outgoing', docId, staffId, note ?? null]);
