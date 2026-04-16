@@ -651,7 +651,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
           placement="left"
           open={mobileDrawerOpen}
           onClose={() => setMobileDrawerOpen(false)}
-          width={280}
+          size={280}
           closable={false}
           styles={{ body: { padding: 0, background: '#0F1A2E' } }}
         >
