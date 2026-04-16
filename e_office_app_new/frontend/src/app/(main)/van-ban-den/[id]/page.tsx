@@ -292,53 +292,41 @@ export default function IncomingDocDetailPage() {
             Giao việc
           </Button>
 
-          {/* Nhận bàn giao */}
-          <Popconfirm
-            title="Nhận bàn giao văn bản?"
-            description="Bạn có chắc chắn nhận bàn giao văn bản này?"
-            okText="Xác nhận"
-            cancelText="Hủy"
-            onConfirm={handleNhanBanGiao}
-            disabled={actionLoading}
-          >
-            <Button
-              icon={<CheckCircleOutlined />}
-              loading={actionLoading}
-              style={{ color: '#059669', borderColor: '#059669' }}
-            >
-              Nhận bàn giao
-            </Button>
-          </Popconfirm>
+          {/* Nhận bàn giao / Chuyển lại — chỉ VB liên thông */}
+          {doc.is_inter_doc && (
+            <>
+              <Popconfirm
+                title="Nhận bàn giao văn bản?"
+                description="Bạn có chắc chắn nhận bàn giao văn bản này?"
+                okText="Xác nhận"
+                cancelText="Hủy"
+                onConfirm={handleNhanBanGiao}
+                disabled={actionLoading}
+              >
+                <Button
+                  icon={<CheckCircleOutlined />}
+                  loading={actionLoading}
+                  style={{ color: '#059669', borderColor: '#059669' }}
+                >
+                  Nhận bàn giao
+                </Button>
+              </Popconfirm>
+              <Button
+                icon={<RollbackOutlined />}
+                onClick={() => { chuyenLaiForm.resetFields(); setChuyenLaiOpen(true); }}
+              >
+                Chuyển lại
+              </Button>
+            </>
+          )}
 
-          {/* Chuyển lại */}
-          <Button
-            icon={<RollbackOutlined />}
-            onClick={() => { chuyenLaiForm.resetFields(); setChuyenLaiOpen(true); }}
-          >
-            Chuyển lại
-          </Button>
-
-          {/* Hủy duyệt */}
-          <Popconfirm
-            title="Hủy duyệt văn bản?"
-            description="Văn bản sẽ được chuyển về trạng thái chưa duyệt. Thao tác này không thể hoàn tác."
-            okText="Hủy duyệt"
-            okButtonProps={{ danger: true }}
-            cancelText="Đóng"
-            onConfirm={handleHuyDuyet}
-            disabled={actionLoading}
-          >
-            <Button danger icon={<CloseCircleOutlined />} loading={actionLoading}>
-              Hủy duyệt
-            </Button>
-          </Popconfirm>
-
+          {/* Chưa duyệt: Sửa, Duyệt, Xóa */}
           {!doc.approved && (
             <>
               <Button icon={<EditOutlined />} onClick={() => router.push(`/van-ban-den?edit=${doc.id}`)}>Sửa</Button>
               <Button type="primary" icon={<CheckCircleOutlined />} onClick={handleApprove}>Duyệt</Button>
               <Dropdown menu={{ items: [
-                { key: 'retract', icon: <RollbackOutlined />, label: 'Thu hồi', onClick: handleRetract },
+                ...(recipients.length > 0 ? [{ key: 'retract', icon: <RollbackOutlined />, label: 'Thu hồi', onClick: handleRetract }] : []),
                 { type: 'divider' as const },
                 { key: 'delete', icon: <DeleteOutlined />, label: 'Xóa văn bản', danger: true, onClick: handleDelete },
               ] }}>
@@ -346,12 +334,15 @@ export default function IncomingDocDetailPage() {
               </Dropdown>
             </>
           )}
+
+          {/* Đã duyệt: Gửi, Bút phê, Hủy duyệt, Thu hồi */}
           {doc.approved && (
             <>
               <Button type="primary" icon={<SendOutlined />} onClick={openSendModal}>Gửi</Button>
               <Button icon={<CommentOutlined />} onClick={() => document.getElementById('note-input')?.focus()}>Bút phê</Button>
               <Dropdown menu={{ items: [
                 ...(!doc.is_received_paper ? [{ key: 'paper', icon: <InboxOutlined />, label: 'Nhận bản giấy', onClick: handleReceivePaper }] : []),
+                { key: 'unapprove', icon: <CloseCircleOutlined />, label: 'Hủy duyệt', danger: true, onClick: handleHuyDuyet },
                 { key: 'retract', icon: <RollbackOutlined />, label: 'Thu hồi', onClick: handleRetract },
               ] }}>
                 <Button icon={<MoreOutlined />} />
