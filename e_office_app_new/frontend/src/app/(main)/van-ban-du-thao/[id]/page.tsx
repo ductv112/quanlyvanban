@@ -12,7 +12,7 @@ import {
   StarOutlined, StarFilled, PaperClipOutlined,
   ClockCircleOutlined, UserOutlined, FilePdfOutlined,
   FileImageOutlined, FileWordOutlined, FileExcelOutlined, FileOutlined,
-  EditOutlined, SafetyCertificateOutlined, RocketOutlined, StopOutlined,
+  EditOutlined, SafetyCertificateOutlined, RocketOutlined, StopOutlined, RollbackOutlined,
 } from '@ant-design/icons';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth.store';
@@ -104,6 +104,7 @@ export default function DraftingDocDetailPage() {
   // Actions
   const handleApprove = async () => { try { await api.patch(`/van-ban-du-thao/${docId}/duyet`); message.success('Duyệt thành công'); fetchDoc(); fetchHistory(); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } };
   const handleUnapprove = async () => { try { await api.patch(`/van-ban-du-thao/${docId}/huy-duyet`); message.success('Hủy duyệt thành công'); fetchDoc(); fetchHistory(); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } };
+  const handleRetract = () => { modal.confirm({ title: 'Thu hồi văn bản dự thảo', content: 'Thu hồi sẽ xóa tất cả người nhận và đặt lại trạng thái chưa duyệt. Bạn chắc chắn?', okText: 'Thu hồi', okButtonProps: { danger: true }, cancelText: 'Hủy', onOk: async () => { try { await api.post(`/van-ban-du-thao/${docId}/thu-hoi`); message.success('Thu hồi thành công'); fetchDoc(); fetchHistory(); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } } }); };
   const handleDelete = () => { modal.confirm({ title: 'Xác nhận xóa', content: 'Xóa văn bản dự thảo này?', okText: 'Xóa', okType: 'danger', cancelText: 'Hủy', onOk: async () => { try { await api.delete(`/van-ban-du-thao/${docId}`); message.success('Đã xóa'); router.push('/van-ban-du-thao'); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } } }); };
   const handleRelease = async () => {
     try {
@@ -190,6 +191,7 @@ export default function DraftingDocDetailPage() {
               <Button type="primary" icon={<CheckCircleOutlined />} onClick={handleApprove}>Duyệt</Button>
               <Dropdown menu={{ items: [
                 { key: 'reject', icon: <StopOutlined />, label: 'Từ chối', danger: true, onClick: () => { setRejectReason(''); setRejectModalOpen(true); } },
+                { key: 'retract', icon: <RollbackOutlined />, label: 'Thu hồi', onClick: handleRetract },
                 { type: 'divider' as const },
                 { key: 'delete', icon: <DeleteOutlined />, label: 'Xóa văn bản', danger: true, onClick: handleDelete },
               ] }}>
@@ -197,13 +199,14 @@ export default function DraftingDocDetailPage() {
               </Dropdown>
             </>
           )}
-          {/* Approved but not released: Release, Unapprove, Send, Reject */}
+          {/* Approved but not released: Release, Unapprove, Send, Retract, Reject */}
           {doc.approved && !doc.is_released && (
             <>
               <Button type="primary" style={{ background: '#52c41a', borderColor: '#52c41a' }} icon={<RocketOutlined />} onClick={handleRelease}>Phát hành</Button>
               <Button type="primary" icon={<SendOutlined />} onClick={openSendModal}>Gửi</Button>
               <Dropdown menu={{ items: [
                 { key: 'unapprove', icon: <CloseCircleOutlined />, label: 'Hủy duyệt', onClick: handleUnapprove },
+                { key: 'retract', icon: <RollbackOutlined />, label: 'Thu hồi', onClick: handleRetract },
                 { key: 'reject', icon: <StopOutlined />, label: 'Từ chối', danger: true, onClick: () => { setRejectReason(''); setRejectModalOpen(true); } },
               ] }}>
                 <Button icon={<MoreOutlined />} />

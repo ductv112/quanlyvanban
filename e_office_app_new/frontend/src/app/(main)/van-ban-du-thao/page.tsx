@@ -9,7 +9,7 @@ import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
 import {
   PlusOutlined, EditOutlined, DeleteOutlined, MoreOutlined,
   CheckCircleOutlined, EyeOutlined, FileTextOutlined, ReloadOutlined,
-  SendOutlined, FormOutlined, StopOutlined, CloseCircleOutlined,
+  SendOutlined, FormOutlined, StopOutlined, CloseCircleOutlined, RollbackOutlined,
 } from '@ant-design/icons';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth.store';
@@ -273,6 +273,21 @@ export default function DraftingDocPage() {
     });
   };
 
+  const handleRetract = async (record: DraftingDoc) => {
+    modal.confirm({
+      title: 'Thu hồi văn bản dự thảo',
+      content: 'Thu hồi sẽ xóa tất cả người nhận và đặt lại trạng thái chưa duyệt. Bạn chắc chắn?',
+      okText: 'Thu hồi', okButtonProps: { danger: true }, cancelText: 'Hủy',
+      onOk: async () => {
+        try {
+          await api.post(`/van-ban-du-thao/${record.id}/thu-hoi`);
+          message.success('Thu hồi thành công');
+          fetchData();
+        } catch (err: any) { message.error(err?.response?.data?.message || 'Lỗi thu hồi'); }
+      },
+    });
+  };
+
   const handleUnapprove = async (record: DraftingDoc) => {
     modal.confirm({
       title: 'Xác nhận hủy duyệt',
@@ -401,6 +416,12 @@ export default function DraftingDocPage() {
             {
               key: 'unapprove', icon: <CloseCircleOutlined />, label: 'Hủy duyệt',
               onClick: () => handleUnapprove(record),
+            },
+          ] : []),
+          ...(!record.is_released ? [
+            {
+              key: 'retract', icon: <RollbackOutlined />, label: 'Thu hồi',
+              onClick: () => handleRetract(record),
             },
           ] : []),
           ...(canEdit ? [

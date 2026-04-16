@@ -217,6 +217,11 @@ export const draftingDocRepository = {
     return row ?? { success: false, message: 'Không tìm thấy văn bản' };
   },
 
+  async retract(id: number, staffId: number): Promise<DbResult> {
+    const row = await callFunctionOne<DbResult>('edoc.fn_drafting_doc_retract', [id, staffId]);
+    return row ?? { success: false, message: 'Không tìm thấy văn bản' };
+  },
+
   async release(id: number, releasedBy: number): Promise<ReleaseResult> {
     const row = await callFunctionOne<ReleaseResult>('edoc.fn_drafting_doc_release', [id, releasedBy]);
     return row ?? { success: false, message: 'Không thể phát hành', outgoing_doc_id: 0 };

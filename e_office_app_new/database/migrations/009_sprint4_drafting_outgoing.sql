@@ -1649,3 +1649,45 @@ BEGIN
   END IF;
 END;
 $$;
+
+-- ==========================================
+-- FN: THU HỒI VĂN BẢN DỰ THẢO (Retract)
+-- Xóa user_drafting_docs, reset approved=false
+-- Chỉ thu hồi VB chưa phát hành
+-- ==========================================
+CREATE OR REPLACE FUNCTION edoc.fn_drafting_doc_retract(
+  p_id       BIGINT,
+  p_staff_id INT
+)
+RETURNS TABLE (
+  success BOOLEAN,
+  message TEXT
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_is_released BOOLEAN;
+  v_deleted_count INT;
+BEGIN
+  SELECT d.is_released INTO v_is_released
+  FROM edoc.drafting_docs d WHERE d.id = p_id;
+
+  IF NOT FOUND THEN
+    RETURN QUERY SELECT FALSE, 'Không tìm thấy văn bản dự thảo'::TEXT; RETURN;
+  END IF;
+
+  IF v_is_released THEN
+    RETURN QUERY SELECT FALSE, 'Không thể thu hồi — văn bản đã phát hành'::TEXT; RETURN;
+  END IF;
+
+  DELETE FROM edoc.user_drafting_docs WHERE drafting_doc_id = p_id;
+  GET DIAGNOSTICS v_deleted_count = ROW_COUNT;
+
+  UPDATE edoc.drafting_docs
+  SET approved = FALSE, updated_by = p_staff_id, updated_at = NOW()
+  WHERE id = p_id;
+
+  RETURN QUERY SELECT TRUE, ('Thu hồi thành công — đã xóa ' || v_deleted_count || ' người nhận')::TEXT;
+END;
+$$;

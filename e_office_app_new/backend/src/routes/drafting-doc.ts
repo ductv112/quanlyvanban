@@ -437,6 +437,21 @@ router.patch('/:id/tu-choi', async (req: Request, res: Response) => {
   }
 });
 
+// POST /:id/thu-hoi — Thu hồi VB dự thảo (xóa người nhận, reset duyệt)
+router.post('/:id/thu-hoi', async (req: Request, res: Response) => {
+  try {
+    const { staffId } = (req as AuthRequest).user;
+    const result = await draftingDocRepository.retract(Number(req.params.id), staffId);
+    if (!result.success) {
+      res.status(400).json({ success: false, message: result.message });
+      return;
+    }
+    res.json({ success: true, data: { message: result.message } });
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
+
 // POST /:id/phat-hanh — Phát hành → tạo VB đi
 router.post('/:id/phat-hanh', async (req: Request, res: Response) => {
   try {
