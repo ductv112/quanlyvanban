@@ -480,7 +480,7 @@ export default function IncomingDocDetailPage() {
                       <div style={{ fontSize: 11, color: '#8c8c8c', marginTop: 4 }}>{fmtDateTime(note.created_at)}</div>
                     </div>
                   </Flex>
-                  {note.staff_id === user?.staffId && (
+                  {Number(note.staff_id) === user?.staffId && (
                     <Popconfirm title="Xóa bút phê?" onConfirm={() => handleDeleteNote(note.id)}>
                       <Button size="small" type="text" danger icon={<DeleteOutlined />} />
                     </Popconfirm>
