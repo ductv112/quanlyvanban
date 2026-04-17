@@ -800,7 +800,7 @@ export default function CuocHopDetailPage() {
         open={addQuestionModalOpen}
         onClose={() => { setAddQuestionModalOpen(false); questionForm.resetFields(); }}
         title="Thêm câu hỏi biểu quyết"
-        size={480} rootClassName="drawer-gradient" forceRender
+        size={480} rootClassName="drawer-gradient"
         extra={<Space><Button onClick={() => { setAddQuestionModalOpen(false); questionForm.resetFields(); }}>Hủy</Button><Button type="primary" onClick={handleAddQuestion}>Thêm</Button></Space>}
       >
         <Form form={questionForm} layout="vertical">
@@ -821,7 +821,7 @@ export default function CuocHopDetailPage() {
         open={addAnswerModalOpen}
         onClose={() => { setAddAnswerModalOpen(false); answerForm.resetFields(); }}
         title="Thêm đáp án"
-        size={480} rootClassName="drawer-gradient" forceRender
+        size={480} rootClassName="drawer-gradient"
         extra={<Space><Button onClick={() => { setAddAnswerModalOpen(false); answerForm.resetFields(); }}>Hủy</Button><Button type="primary" onClick={handleAddAnswer}>Thêm</Button></Space>}
       >
         <Form form={answerForm} layout="vertical">

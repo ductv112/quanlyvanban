@@ -17413,3 +17413,41 @@ $$;
 -- Cập nhật fn_dashboard_get_stats: thêm p_dept_ids param
 -- (đã được cập nhật trong migration 030, chỉ ghi chú)
 -- ==========================================
+-- ================================================================
+-- MIGRATION 038: Fix duplicate function overloads
+-- Khi 000_full_schema.sql tạo function cũ, rồi migration 030+
+-- tạo function mới cùng tên nhưng khác signature (thêm p_dept_ids),
+-- PostgreSQL giữ cả 2 overload → backend gọi nhầm bản cũ.
+-- Script này tự động tìm và xóa bản cũ (OID nhỏ hơn).
+-- ================================================================
+
+DO $$
+DECLARE
+  r RECORD;
+  drop_count INTEGER := 0;
+BEGIN
+  FOR r IN
+    SELECT n.nspname, p.proname, p.oid,
+           pg_get_function_identity_arguments(p.oid) as args,
+           ROW_NUMBER() OVER (PARTITION BY n.nspname, p.proname ORDER BY p.oid DESC) as rn
+    FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname IN ('edoc', 'public', 'esto', 'cont', 'iso')
+    AND p.proname LIKE 'fn_%'
+    AND p.proname IN (
+      SELECT p2.proname FROM pg_proc p2
+      JOIN pg_namespace n2 ON n2.oid = p2.pronamespace
+      WHERE n2.nspname IN ('edoc', 'public', 'esto', 'cont', 'iso')
+      AND p2.proname LIKE 'fn_%'
+      GROUP BY n2.nspname, p2.proname HAVING count(*) > 1
+    )
+  LOOP
+    IF r.rn > 1 THEN
+      EXECUTE format('DROP FUNCTION %I.%I(%s)', r.nspname, r.proname, r.args);
+      RAISE NOTICE 'Dropped: %.%(%)', r.nspname, r.proname, r.args;
+      drop_count := drop_count + 1;
+    END IF;
+  END LOOP;
+  RAISE NOTICE 'Total dropped: % duplicate overloads', drop_count;
+END
+$$;
