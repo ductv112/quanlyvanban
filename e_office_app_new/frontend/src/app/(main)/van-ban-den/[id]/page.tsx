@@ -864,12 +864,13 @@ export default function IncomingDocDetailPage() {
         />
       </Modal>
 
-      {/* Modal: Chuyển lưu trữ */}
-      <Modal
-        title="Chuyển lưu trữ" open={archiveModalOpen} forceRender onCancel={() => setArchiveModalOpen(false)}
-        onOk={handleArchive} confirmLoading={archiveSaving} okText="Chuyển lưu trữ" cancelText="Hủy" width={640}
+      {/* Drawer: Chuyển lưu trữ */}
+      <Drawer
+        title="Chuyển lưu trữ" open={archiveModalOpen} onClose={() => setArchiveModalOpen(false)}
+        size={640} rootClassName="drawer-gradient" forceRender
+        extra={<Space><Button onClick={() => setArchiveModalOpen(false)}>Hủy</Button><Button type="primary" onClick={handleArchive} loading={archiveSaving}>Chuyển lưu trữ</Button></Space>}
       >
-        <Form form={archiveForm} layout="vertical" style={{ marginTop: 16 }}>
+        <Form form={archiveForm} layout="vertical">
           <Row gutter={16}>
             <Col span={12}><Form.Item name="warehouse_id" label="Kho lưu trữ"><Select placeholder="Chọn kho..." allowClear options={warehouseOptions} /></Form.Item></Col>
             <Col span={12}><Form.Item name="fond_id" label="Phông lưu trữ"><Select placeholder="Chọn phông..." allowClear options={fondOptions} /></Form.Item></Col>
@@ -890,7 +891,7 @@ export default function IncomingDocDetailPage() {
             <Col span={12}><Form.Item name="is_original" label="Bản gốc" valuePropName="checked"><Checkbox>Là bản gốc</Checkbox></Form.Item></Col>
           </Row>
         </Form>
-      </Modal>
+      </Drawer>
     </div>
   );
 }

@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   Card, Tabs, Table, Button, Form, Input, Select, Tag, Badge,
   Progress, Upload, Divider, Modal, Space, Skeleton, Radio, App, Checkbox,
-  Descriptions, Typography,
+  Descriptions, Typography, Drawer,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { UploadFile } from 'antd/es/upload/interface';
@@ -759,52 +759,49 @@ export default function CuocHopDetailPage() {
         ]}
       />
 
-      {/* ── Add Staff Modal ───────────────────────────────────────────────────── */}
-      <Modal
+      {/* ── Drawer: Thêm thành viên cuộc họp ──────────────────────────────── */}
+      <Drawer
         open={addStaffModalOpen}
-        onCancel={() => { setAddStaffModalOpen(false); setSelectedStaffIds([]); }}
+        onClose={() => { setAddStaffModalOpen(false); setSelectedStaffIds([]); }}
         title="Thêm thành viên cuộc họp"
-        onOk={handleAddStaff}
-        confirmLoading={addStaffLoading}
-        okText="Thêm"
-        cancelText="Hủy"
+        size={480} rootClassName="drawer-gradient"
+        extra={<Space><Button onClick={() => { setAddStaffModalOpen(false); setSelectedStaffIds([]); }}>Hủy</Button><Button type="primary" onClick={handleAddStaff} loading={addStaffLoading}>Thêm</Button></Space>}
       >
-        <div style={{ marginBottom: 12 }}>
-          <label style={{ fontWeight: 500, marginBottom: 4, display: 'block' }}>Vai trò:</label>
-          <Select
-            value={addingUserType}
-            onChange={setAddingUserType}
-            style={{ width: '100%' }}
-            options={[
-              { value: 0, label: 'Thành viên' },
-              { value: 1, label: 'Chủ tọa' },
-              { value: 2, label: 'Thư ký' },
-            ]}
-          />
-        </div>
-        <div>
-          <label style={{ fontWeight: 500, marginBottom: 4, display: 'block' }}>Chọn thành viên:</label>
-          <Select
-            mode="multiple"
-            value={selectedStaffIds}
-            onChange={setSelectedStaffIds}
-            style={{ width: '100%' }}
-            options={staffOptions}
-            showSearch
-            filterOption={(input, opt) => (opt?.label as string || '').toLowerCase().includes(input.toLowerCase())}
-            placeholder="Tìm kiếm và chọn thành viên..."
-          />
-        </div>
-      </Modal>
+        <Form layout="vertical">
+          <Form.Item label="Vai trò">
+            <Select
+              value={addingUserType}
+              onChange={setAddingUserType}
+              style={{ width: '100%' }}
+              options={[
+                { value: 0, label: 'Thành viên' },
+                { value: 1, label: 'Chủ tọa' },
+                { value: 2, label: 'Thư ký' },
+              ]}
+            />
+          </Form.Item>
+          <Form.Item label="Chọn thành viên">
+            <Select
+              mode="multiple"
+              value={selectedStaffIds}
+              onChange={setSelectedStaffIds}
+              style={{ width: '100%' }}
+              options={staffOptions}
+              showSearch
+              filterOption={(input, opt) => (opt?.label as string || '').toLowerCase().includes(input.toLowerCase())}
+              placeholder="Tìm kiếm và chọn thành viên..."
+            />
+          </Form.Item>
+        </Form>
+      </Drawer>
 
-      {/* ── Add Question Modal ────────────────────────────────────────────────── */}
-      <Modal
+      {/* ── Drawer: Thêm câu hỏi biểu quyết ────────────────────────────────── */}
+      <Drawer
         open={addQuestionModalOpen}
-        onCancel={() => { setAddQuestionModalOpen(false); questionForm.resetFields(); }}
+        onClose={() => { setAddQuestionModalOpen(false); questionForm.resetFields(); }}
         title="Thêm câu hỏi biểu quyết"
-        onOk={handleAddQuestion}
-        okText="Thêm"
-        cancelText="Hủy"
+        size={480} rootClassName="drawer-gradient" forceRender
+        extra={<Space><Button onClick={() => { setAddQuestionModalOpen(false); questionForm.resetFields(); }}>Hủy</Button><Button type="primary" onClick={handleAddQuestion}>Thêm</Button></Space>}
       >
         <Form form={questionForm} layout="vertical">
           <Form.Item name="name" label="Nội dung câu hỏi" rules={[{ required: true, message: 'Vui lòng nhập câu hỏi' }]}>
@@ -817,16 +814,15 @@ export default function CuocHopDetailPage() {
             <Input type="number" placeholder="VD: 60" />
           </Form.Item>
         </Form>
-      </Modal>
+      </Drawer>
 
-      {/* ── Add Answer Modal ──────────────────────────────────────────────────── */}
-      <Modal
+      {/* ── Drawer: Thêm đáp án ──────────────────────────────────────────────── */}
+      <Drawer
         open={addAnswerModalOpen}
-        onCancel={() => { setAddAnswerModalOpen(false); answerForm.resetFields(); }}
+        onClose={() => { setAddAnswerModalOpen(false); answerForm.resetFields(); }}
         title="Thêm đáp án"
-        onOk={handleAddAnswer}
-        okText="Thêm"
-        cancelText="Hủy"
+        size={480} rootClassName="drawer-gradient" forceRender
+        extra={<Space><Button onClick={() => { setAddAnswerModalOpen(false); answerForm.resetFields(); }}>Hủy</Button><Button type="primary" onClick={handleAddAnswer}>Thêm</Button></Space>}
       >
         <Form form={answerForm} layout="vertical">
           <Form.Item name="name" label="Tên đáp án" rules={[{ required: true, message: 'Vui lòng nhập đáp án' }]}>
@@ -839,7 +835,7 @@ export default function CuocHopDetailPage() {
             <Checkbox>Cho phép nhập văn bản</Checkbox>
           </Form.Item>
         </Form>
-      </Modal>
+      </Drawer>
     </div>
   );
 }
