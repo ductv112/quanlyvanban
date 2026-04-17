@@ -84,6 +84,49 @@ BEGIN
   RETURN QUERY SELECT TRUE, 'Chuyển lưu trữ thành công'::TEXT, v_id;
 END; $$;
 
-DO $$ BEGIN RAISE NOTICE '034: Fixed ambiguous columns in fn_message_get_by_id + fn_document_archive_create'; END $$;
+-- 3. fn_message_reply — id ambiguous (WHERE id = p_message_id + RETURNING id)
+CREATE OR REPLACE FUNCTION edoc.fn_message_reply(p_message_id BIGINT, p_staff_id INT, p_content TEXT)
+RETURNS TABLE(success BOOLEAN, message TEXT, id BIGINT)
+LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  v_reply_id BIGINT;
+  v_original edoc.messages%ROWTYPE;
+  v_subject VARCHAR(200);
+  v_staff_id INT;
+BEGIN
+  IF p_content IS NULL OR TRIM(p_content) = '' THEN
+    RETURN QUERY SELECT FALSE, 'Nội dung trả lời không được để trống'::TEXT, NULL::BIGINT;
+    RETURN;
+  END IF;
+
+  SELECT * INTO v_original FROM edoc.messages m WHERE m.id = p_message_id;
+  IF NOT FOUND THEN
+    RETURN QUERY SELECT FALSE, 'Không tìm thấy tin nhắn gốc'::TEXT, NULL::BIGINT;
+    RETURN;
+  END IF;
+
+  v_subject := 'Re: ' || v_original.subject;
+
+  INSERT INTO edoc.messages (from_staff_id, subject, content, parent_id, created_at)
+  VALUES (p_staff_id, v_subject, p_content, p_message_id, NOW())
+  RETURNING edoc.messages.id INTO v_reply_id;
+
+  INSERT INTO edoc.message_recipients (message_id, staff_id, is_read, is_deleted)
+  VALUES (v_reply_id, v_original.from_staff_id, FALSE, FALSE)
+  ON CONFLICT (message_id, staff_id) DO NOTHING;
+
+  FOR v_staff_id IN
+    SELECT mr.staff_id FROM edoc.message_recipients mr
+    WHERE mr.message_id = p_message_id AND mr.staff_id <> p_staff_id
+  LOOP
+    INSERT INTO edoc.message_recipients (message_id, staff_id, is_read, is_deleted)
+    VALUES (v_reply_id, v_staff_id, FALSE, FALSE)
+    ON CONFLICT (message_id, staff_id) DO NOTHING;
+  END LOOP;
+
+  RETURN QUERY SELECT TRUE, 'Trả lời tin nhắn thành công'::TEXT, v_reply_id;
+END; $$;
+
+DO $$ BEGIN RAISE NOTICE '034: Fixed ambiguous columns in fn_message_get_by_id + fn_document_archive_create + fn_message_reply'; END $$;
 
 COMMIT;
