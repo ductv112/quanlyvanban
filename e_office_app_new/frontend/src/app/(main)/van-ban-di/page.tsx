@@ -443,7 +443,7 @@ export default function OutgoingDocPage() {
           </Form.Item>
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item name="drafting_unit_id" label="Đơn vị soạn thảo">
+              <Form.Item name="drafting_unit_id" label="Đơn vị soạn thảo" rules={[{ required: true, message: 'Đơn vị soạn là bắt buộc' }]}>
                 <Select
                   placeholder="Chọn đơn vị soạn thảo"
                   allowClear
@@ -458,7 +458,7 @@ export default function OutgoingDocPage() {
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item name="drafting_user_id" label="Người soạn thảo">
+              <Form.Item name="drafting_user_id" label="Người soạn thảo" rules={[{ required: true, message: 'Người soạn là bắt buộc' }]}>
                 <Select
                   placeholder="Chọn người soạn thảo"
                   allowClear

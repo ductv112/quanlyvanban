@@ -872,8 +872,8 @@ export default function IncomingDocDetailPage() {
       >
         <Form form={archiveForm} layout="vertical">
           <Row gutter={16}>
-            <Col span={12}><Form.Item name="warehouse_id" label="Kho lưu trữ"><Select placeholder="Chọn kho..." allowClear options={warehouseOptions} /></Form.Item></Col>
-            <Col span={12}><Form.Item name="fond_id" label="Phông lưu trữ"><Select placeholder="Chọn phông..." allowClear options={fondOptions} /></Form.Item></Col>
+            <Col span={12}><Form.Item name="warehouse_id" label="Kho lưu trữ" rules={[{ required: true, message: 'Vui lòng chọn kho lưu trữ' }]}><Select placeholder="Chọn kho..." allowClear options={warehouseOptions} /></Form.Item></Col>
+            <Col span={12}><Form.Item name="fond_id" label="Phông lưu trữ" rules={[{ required: true, message: 'Vui lòng chọn phông lưu trữ' }]}><Select placeholder="Chọn phông..." allowClear options={fondOptions} /></Form.Item></Col>
           </Row>
           <Row gutter={16}>
             <Col span={12}><Form.Item name="file_catalog" label="Mục lục hồ sơ"><Input maxLength={200} /></Form.Item></Col>
