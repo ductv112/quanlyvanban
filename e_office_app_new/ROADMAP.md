@@ -1,5 +1,8 @@
 # ROADMAP — Hệ thống Quản lý Văn bản điện tử
 
+> **GSD Roadmap (7 phases tổng quan):** `.planning/ROADMAP.md`
+> **Test Report:** `.planning/TEST_REPORT.md` | **Test Plan:** `.planning/TEST_TONG_THE.md`
+
 > Tài liệu tham chiếu chính: Phân tích 47 screenshots + source code cũ (270+ controllers, 10 areas)
 > Mỗi Sprint = 1 nhóm module hoàn chỉnh (SP + API + UI + test)
 > Tiêu chí DONE: Database migration → Stored Procedures → Backend API → Frontend UI → Test trên trình duyệt

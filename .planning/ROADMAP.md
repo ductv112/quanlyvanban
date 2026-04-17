@@ -1,5 +1,7 @@
 # Roadmap: e-Office — Quản lý Văn bản điện tử
 
+> **Xem thêm:** Chi tiết 17 sprints (SP, API, UI) tại `e_office_app_new/ROADMAP.md`
+
 ## Overview
 
 Rebuild hệ thống quản lý văn bản điện tử (.NET cũ) thành stack mới (Next.js + Express + PostgreSQL). Sprint 0-4 đã implemented (hạ tầng, auth, layout, danh mục, VB đến/đi/dự thảo). Roadmap này bao phủ toàn bộ công việc còn lại từ stabilize đến tích hợp, deadline demo cuối tuần 2026-04-18/19. 7 phases theo granularity coarse — mỗi phase là một nhóm sprint có thể verify độc lập.
