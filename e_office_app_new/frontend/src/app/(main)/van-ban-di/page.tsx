@@ -345,18 +345,19 @@ export default function OutgoingDocPage() {
     },
     { title: 'Loại VB', dataIndex: 'doc_type_name', width: 110, ellipsis: true },
     {
-      title: 'Trạng thái', width: 100, align: 'center',
-      render: (_, r) => r.approved ? <Tag color="green">Đã duyệt</Tag> : <Tag color="gold">Chờ duyệt</Tag>,
+      title: 'Trạng thái', width: 110, align: 'center',
+      render: (_, r: any) => r.approved ? <Tag color="green">Đã duyệt</Tag> : r.rejected_by ? <Tag color="red">Từ chối</Tag> : <Tag color="gold">Chờ duyệt</Tag>,
     },
     {
       key: 'actions', width: 50, align: 'center', fixed: 'right',
-      render: (_, record) => {
+      render: (_, record: any) => {
+        const isRejected = !!record.rejected_by;
         const items = [
           { key: 'view', icon: <EyeOutlined />, label: 'Xem chi tiết', onClick: () => { window.location.href = `/van-ban-di/${record.id}`; } },
           ...(!record.approved ? [
             { key: 'edit', icon: <EditOutlined />, label: 'Sửa', onClick: () => openDrawer(record) },
             { key: 'approve', icon: <CheckCircleOutlined />, label: 'Duyệt', onClick: () => handleApprove(record) },
-            { key: 'reject', icon: <StopOutlined />, label: 'Từ chối', danger: true, onClick: () => handleReject(record) },
+            ...(!isRejected ? [{ key: 'reject', icon: <StopOutlined />, label: 'Từ chối', danger: true, onClick: () => handleReject(record) }] : []),
             { type: 'divider' as const },
             { key: 'delete', icon: <DeleteOutlined />, label: 'Xóa', danger: true, onClick: () => handleDelete(record) },
           ] : [

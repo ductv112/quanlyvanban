@@ -378,9 +378,10 @@ export default function DraftingDocPage() {
     });
   };
 
-  const getStatusTag = (record: DraftingDoc) => {
+  const getStatusTag = (record: any) => {
     if (record.is_released) return <Tag color="green">Đã phát hành</Tag>;
     if (record.approved) return <Tag color="blue">Đã duyệt</Tag>;
+    if (record.rejected_by) return <Tag color="red">Từ chối</Tag>;
     return <Tag color="gold">Dự thảo</Tag>;
   };
 
@@ -421,6 +422,7 @@ export default function DraftingDocPage() {
       render: (_, record) => {
         const canEdit = !record.approved && !record.is_released;
         const canRelease = record.approved && !record.is_released;
+        const isRejected = !!(record as any).rejected_by;
 
         const items = [
           {
@@ -436,10 +438,10 @@ export default function DraftingDocPage() {
               key: 'approve', icon: <CheckCircleOutlined />, label: 'Duyệt',
               onClick: () => handleApprove(record),
             },
-            {
+            ...(!isRejected ? [{
               key: 'reject', icon: <StopOutlined />, label: 'Từ chối', danger: true,
               onClick: () => handleReject(record),
-            },
+            }] : []),
           ] : []),
           ...(canRelease ? [
             {

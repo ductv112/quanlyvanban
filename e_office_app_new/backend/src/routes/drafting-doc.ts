@@ -7,7 +7,7 @@ import { uploadFile, deleteFile, getFileUrl } from '../lib/minio/client.js';
 import { v4 as uuidv4 } from 'uuid';
 import { handleDbError } from '../lib/error-handler.js';
 import { exportExcel } from '../lib/excel.js';
-import { callFunction } from '../lib/db/query.js';
+import { callFunction, rawQuery } from '../lib/db/query.js';
 import { resolveDeptSubtree, resolveAncestorUnit } from '../lib/department-subtree.js';
 import dayjs from 'dayjs';
 
@@ -44,6 +44,16 @@ router.get('/', async (req: Request, res: Response) => {
       pageSize: page_size ? Number(page_size) : 20,
       deptIds,
     });
+
+    // Enrich rejected_by info
+    if (rows.length > 0) {
+      const ids = rows.map(r => r.id);
+      const rejections = await rawQuery<{ id: number; rejected_by: number | null; rejection_reason: string | null }>(
+        `SELECT id, rejected_by, rejection_reason FROM edoc.drafting_docs WHERE id = ANY($1)`, [ids]
+      );
+      const rejMap = new Map(rejections.map(r => [r.id, r]));
+      rows.forEach((r: any) => { const rej = rejMap.get(r.id); r.rejected_by = rej?.rejected_by ?? null; r.rejection_reason = rej?.rejection_reason ?? null; });
+    }
 
     const total = rows[0]?.total_count ?? 0;
     res.json({

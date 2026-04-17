@@ -298,8 +298,8 @@ export default function IncomingDocPage() {
       render: (val: number) => { const u = URGENT_MAP[val]; return u && val > 1 ? <Tag color={u.color}>{u.text}</Tag> : null; },
     },
     {
-      title: 'Trạng thái', width: 100, align: 'center',
-      render: (_, r) => r.approved ? <Tag color="green">Đã duyệt</Tag> : <Tag color="gold">Chờ duyệt</Tag>,
+      title: 'Trạng thái', width: 110, align: 'center',
+      render: (_, r: any) => r.approved ? <Tag color="green">Đã duyệt</Tag> : r.rejected_by ? <Tag color="red">Từ chối</Tag> : <Tag color="gold">Chờ duyệt</Tag>,
     },
     {
       key: 'actions', width: 50, align: 'center', fixed: 'right',
