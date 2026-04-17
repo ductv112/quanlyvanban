@@ -171,25 +171,72 @@ docker-compose up -d     # Tạo lại
 
 ---
 
-## 9. CẤU TRÚC THƯ MỤC
+## 9. QUICK START (Pull về máy mới / máy nhà)
+
+```bash
+git pull
+cd e_office_app_new
+
+# 1. Reset Docker + DB
+docker-compose down -v
+docker-compose up -d
+sleep 10
+
+# 2. Migration + Seed (chỉ 2 lệnh)
+cat database/migrations/000_full_schema.sql | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
+cat database/seed_full_demo.sql | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
+
+# 3. Backend
+cd backend
+cp .env.example .env
+npm install
+npm run dev &
+
+# 4. Frontend
+cd ../frontend
+cp .env.example .env.local
+npm install
+npm run dev &
+```
+
+Sau đó mở http://localhost:3000 → login bằng `admin` / `Admin@123`.
+
+**Test plan:** `.planning/TEST_TONG_THE.md` (284 test cases)
+**Test report (lần gần nhất):** `.planning/TEST_REPORT.md` (119/119 PASS — 100%)
+
+---
+
+## 10. CẤU TRÚC THƯ MỤC
 
 ```
-e_office_app_new/
-├── docker-compose.yml          # 4 services: PG, Mongo, Redis, MinIO
-├── ROADMAP.md                  # Sprint plan (17 sprints)
-├── SETUP.md                    # File này
-├── backend/                    # Express 5 + TypeScript (port 4000)
-│   ├── .env.example
-│   ├── package.json
-│   └── src/
-├── frontend/                   # Next.js 16 + Ant Design 6 (port 3000)
-│   ├── .env.example
-│   ├── package.json
-│   └── src/
-├── database/                   # SQL migrations + SPs
-│   ├── init/
-│   └── migrations/
-├── shared/                     # Types + constants dùng chung
-├── workers/                    # BullMQ background jobs
-└── docs/                       # Tài liệu (quy ước chung...)
+quanlyvanban/
+├── CLAUDE.md                          # Config cho Claude Code
+├── .planning/                         # GSD workflow (planning, tracking, test)
+│   ├── PROJECT.md                     # Mô tả dự án
+│   ├── REQUIREMENTS.md                # Yêu cầu nghiệp vụ
+│   ├── ROADMAP.md                     # 7 phases tổng quan (GSD)
+│   ├── STATE.md                       # Trạng thái GSD hiện tại
+│   ├── TEST_REPORT.md                 # Báo cáo test (119/119 PASS)
+│   ├── TEST_TONG_THE.md               # Test plan 284 cases
+│   ├── API-AUDIT.md                   # Audit API endpoints
+│   ├── FIELD-AUDIT.md                 # Audit field mismatches
+│   ├── codebase/                      # GSD codebase analysis
+│   └── phases/                        # GSD phase execution history
+│
+├── docs/source_code_cu/               # Source code hệ thống cũ (.NET) — tham khảo
+│
+└── e_office_app_new/                  # SOURCE CODE DỰ ÁN
+    ├── docker-compose.yml             # 4 services: PG, Mongo, Redis, MinIO
+    ├── ROADMAP.md                     # 17 sprints chi tiết (SP, API, UI)
+    ├── SETUP.md                       # File này
+    ├── database/
+    │   ├── init/01_create_schemas.sql
+    │   ├── migrations/
+    │   │   └── 000_full_schema.sql    # 1 file gộp (443 SPs, 17k dòng)
+    │   ├── migrations_archive/        # 29 files gốc (tra lại nếu cần)
+    │   └── seed_full_demo.sql         # Seed data demo đầy đủ
+    ├── backend/                       # Express 5 + TypeScript (port 4000)
+    ├── frontend/                      # Next.js 16 + Ant Design 6 (port 3000)
+    ├── shared/                        # Types + constants dùng chung
+    └── workers/                       # BullMQ background jobs
 ```
