@@ -336,7 +336,7 @@ export default function LichCoQuanPage() {
       </div>
 
       {/* Drawer */}
-      <Drawer
+      <Drawer forceRender
         title={editingEvent ? 'Chỉnh sửa sự kiện' : 'Thêm sự kiện mới'}
         size={720}
         open={drawerOpen}

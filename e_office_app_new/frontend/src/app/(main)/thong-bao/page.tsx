@@ -241,7 +241,7 @@ export default function ThongBaoPage() {
       </div>
 
       {/* Create Drawer (Admin only) */}
-      <Drawer
+      <Drawer forceRender
         title="Tạo thông báo mới"
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}

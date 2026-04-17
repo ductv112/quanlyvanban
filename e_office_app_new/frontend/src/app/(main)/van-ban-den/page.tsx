@@ -354,7 +354,7 @@ export default function IncomingDocPage() {
         onChange={(p) => { setPage(p.current || 1); setPageSize(p.pageSize || 20); }}
       />
 
-      <Drawer
+      <Drawer forceRender
         title={editingRecord ? 'Sửa văn bản đến' : 'Thêm văn bản đến'}
         size={800} open={drawerOpen} onClose={() => closeDrawer()}
         rootClassName="drawer-gradient"

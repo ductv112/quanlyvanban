@@ -250,7 +250,7 @@ export default function DocFieldPage() {
         />
       </Card>
 
-      <Drawer
+      <Drawer forceRender
         title={editingRecord ? 'Cập nhật lĩnh vực' : 'Thêm lĩnh vực mới'}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}

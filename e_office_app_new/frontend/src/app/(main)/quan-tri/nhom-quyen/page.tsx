@@ -309,7 +309,7 @@ export default function RolePage() {
       </Card>
 
       {/* Drawer add/edit */}
-      <Drawer
+      <Drawer forceRender
         title={editingRecord ? 'Cập nhật nhóm quyền' : 'Thêm nhóm quyền mới'}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
@@ -336,7 +336,7 @@ export default function RolePage() {
       </Drawer>
 
       {/* Drawer permissions */}
-      <Drawer
+      <Drawer forceRender
         title={<>Phân quyền: <strong>{permRole?.name}</strong></>}
         open={permDrawerOpen}
         onClose={() => setPermDrawerOpen(false)}

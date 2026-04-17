@@ -431,7 +431,7 @@ export default function TinNhanPage() {
       </div>
 
       {/* Compose Drawer */}
-      <Drawer
+      <Drawer forceRender
         title="Soạn tin nhắn mới"
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}

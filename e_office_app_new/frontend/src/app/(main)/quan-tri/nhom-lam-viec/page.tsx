@@ -408,7 +408,7 @@ export default function WorkGroupPage() {
       </Card>
 
       {/* Drawer add/edit group */}
-      <Drawer
+      <Drawer forceRender
         title={editingRecord ? 'Cập nhật nhóm làm việc' : 'Thêm nhóm làm việc mới'}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
@@ -444,7 +444,7 @@ export default function WorkGroupPage() {
       </Drawer>
 
       {/* Drawer manage members */}
-      <Drawer
+      <Drawer forceRender
         title={<>Quản lý thành viên — {currentGroup?.name}</>}
         open={memberDrawerOpen}
         onClose={() => setMemberDrawerOpen(false)}

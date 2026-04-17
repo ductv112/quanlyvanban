@@ -554,7 +554,7 @@ export default function HoSoCongViecPage() {
       </div>
 
       {/* Drawer tạo/sửa HSCV */}
-      <Drawer
+      <Drawer forceRender
         title={editingRecord ? 'Chỉnh sửa hồ sơ công việc' : 'Tạo hồ sơ công việc'}
         size={720}
         open={drawerOpen}

@@ -738,7 +738,7 @@ export default function IncomingDocDetailPage() {
       </Modal>
 
       {/* ====== DRAWER GIAO VIỆC ====== */}
-      <Drawer
+      <Drawer forceRender
         title="Giao việc"
         size={720}
         open={giaoViecOpen}
@@ -865,7 +865,7 @@ export default function IncomingDocDetailPage() {
       </Modal>
 
       {/* Drawer: Chuyển lưu trữ */}
-      <Drawer
+      <Drawer forceRender
         title="Chuyển lưu trữ" open={archiveModalOpen} onClose={() => setArchiveModalOpen(false)}
         size={640} rootClassName="drawer-gradient" forceRender
         extra={<Space><Button onClick={() => setArchiveModalOpen(false)}>Hủy</Button><Button type="primary" onClick={handleArchive} loading={archiveSaving}>Chuyển lưu trữ</Button></Space>}

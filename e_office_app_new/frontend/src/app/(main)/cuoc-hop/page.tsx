@@ -729,7 +729,7 @@ export default function CuocHopPage() {
       />
 
       {/* ── Create/Edit Meeting Drawer ─────────────────────────────────────────── */}
-      <Drawer
+      <Drawer forceRender
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         title={editingRecord ? 'Chỉnh sửa cuộc họp' : 'Đăng ký cuộc họp'}
@@ -823,7 +823,7 @@ export default function CuocHopPage() {
       </Drawer>
 
       {/* ── Room Management Drawer ────────────────────────────────────────────── */}
-      <Drawer
+      <Drawer forceRender
         open={roomDrawerOpen}
         onClose={() => setRoomDrawerOpen(false)}
         title="Quản lý phòng họp"
@@ -870,7 +870,7 @@ export default function CuocHopPage() {
       </Drawer>
 
       {/* ── Meeting Type Management Drawer ───────────────────────────────────── */}
-      <Drawer
+      <Drawer forceRender
         open={typeDrawerOpen}
         onClose={() => { setTypeDrawerOpen(false); setEditingType(null); typeForm.resetFields(); }}
         title="Quản lý loại cuộc họp"

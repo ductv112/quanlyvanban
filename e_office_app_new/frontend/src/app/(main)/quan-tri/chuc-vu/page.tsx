@@ -285,7 +285,7 @@ export default function PositionPage() {
       </Card>
 
       {/* Drawer add/edit */}
-      <Drawer
+      <Drawer forceRender
         title={editingRecord ? 'Cập nhật chức vụ' : 'Thêm chức vụ mới'}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}

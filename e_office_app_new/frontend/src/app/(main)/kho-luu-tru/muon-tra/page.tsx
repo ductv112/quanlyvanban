@@ -507,7 +507,7 @@ export default function MuonTraPage() {
       </div>
 
       {/* Create borrow request drawer */}
-      <Drawer
+      <Drawer forceRender
         title="Tạo yêu cầu mượn hồ sơ"
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}

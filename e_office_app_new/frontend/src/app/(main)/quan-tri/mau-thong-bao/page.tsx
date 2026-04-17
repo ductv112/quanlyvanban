@@ -430,7 +430,7 @@ export default function NotificationTemplatePage() {
         />
       </Card>
 
-      <Drawer
+      <Drawer forceRender
         title={drawerTitle}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}

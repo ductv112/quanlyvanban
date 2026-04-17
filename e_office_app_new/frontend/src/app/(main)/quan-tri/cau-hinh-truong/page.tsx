@@ -168,7 +168,7 @@ export default function DocColumnConfigPage() {
             locale={{ emptyText: <Empty description="Chưa có trường bổ sung nào. Bấm 'Thêm trường mới' để tạo." /> }}
           />
 
-      <Drawer
+      <Drawer forceRender
         title={editingRecord ? 'Sửa trường bổ sung' : 'Thêm trường bổ sung'}
         size={500}
         open={drawerOpen}

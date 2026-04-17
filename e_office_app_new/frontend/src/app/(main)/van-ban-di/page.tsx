@@ -402,7 +402,7 @@ export default function OutgoingDocPage() {
         onChange={(p) => { setPage(p.current || 1); setPageSize(p.pageSize || 20); }}
       />
 
-      <Drawer
+      <Drawer forceRender
         title={editingRecord ? 'Sửa văn bản đi' : 'Thêm văn bản đi'}
         size={720} open={drawerOpen} onClose={() => closeDrawer()}
         rootClassName="drawer-gradient"

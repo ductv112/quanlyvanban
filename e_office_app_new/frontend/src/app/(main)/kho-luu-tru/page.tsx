@@ -797,7 +797,7 @@ export default function KhoLuuTruPage() {
       </Row>
 
       {/* Drawer */}
-      <Drawer
+      <Drawer forceRender
         title={drawerTitle}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}

@@ -760,7 +760,7 @@ export default function CuocHopDetailPage() {
       />
 
       {/* ── Drawer: Thêm thành viên cuộc họp ──────────────────────────────── */}
-      <Drawer
+      <Drawer forceRender
         open={addStaffModalOpen}
         onClose={() => { setAddStaffModalOpen(false); setSelectedStaffIds([]); }}
         title="Thêm thành viên cuộc họp"
@@ -796,7 +796,7 @@ export default function CuocHopDetailPage() {
       </Drawer>
 
       {/* ── Drawer: Thêm câu hỏi biểu quyết ────────────────────────────────── */}
-      <Drawer
+      <Drawer forceRender
         open={addQuestionModalOpen}
         onClose={() => { setAddQuestionModalOpen(false); questionForm.resetFields(); }}
         title="Thêm câu hỏi biểu quyết"
@@ -817,7 +817,7 @@ export default function CuocHopDetailPage() {
       </Drawer>
 
       {/* ── Drawer: Thêm đáp án ──────────────────────────────────────────────── */}
-      <Drawer
+      <Drawer forceRender
         open={addAnswerModalOpen}
         onClose={() => { setAddAnswerModalOpen(false); answerForm.resetFields(); }}
         title="Thêm đáp án"

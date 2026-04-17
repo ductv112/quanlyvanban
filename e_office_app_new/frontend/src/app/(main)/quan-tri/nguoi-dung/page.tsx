@@ -589,7 +589,7 @@ export default function StaffPage() {
       </Row>
 
       {/* Drawer add/edit */}
-      <Drawer
+      <Drawer forceRender
         title={editingRecord ? `Sửa người dùng — ${editingRecord.code || ''}` : 'Thêm người dùng mới'}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
@@ -712,7 +712,7 @@ export default function StaffPage() {
       </Drawer>
 
       {/* Drawer phân quyền (gán nhóm quyền cho user) */}
-      <Drawer
+      <Drawer forceRender
         title={<>Phân quyền: <strong>{roleStaff?.full_name}</strong></>}
         open={roleDrawerOpen}
         onClose={() => setRoleDrawerOpen(false)}

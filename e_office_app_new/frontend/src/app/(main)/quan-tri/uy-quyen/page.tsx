@@ -316,7 +316,7 @@ export default function DelegationPage() {
       </Card>
 
       {/* Drawer add delegation */}
-      <Drawer
+      <Drawer forceRender
         title="Thêm ủy quyền mới"
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}

@@ -395,7 +395,7 @@ export default function AddressPage() {
         </Col>
       </Row>
 
-      <Drawer
+      <Drawer forceRender
         title={drawerTitle}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}

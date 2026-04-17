@@ -644,7 +644,7 @@ export default function HopDongPage() {
       </div>
 
       {/* Contract Type Management Drawer */}
-      <Drawer
+      <Drawer forceRender
         title="Quản lý loại hợp đồng"
         open={typeDrawerOpen}
         onClose={() => { setTypeDrawerOpen(false); setEditingType(null); typeForm.resetFields(); }}
@@ -707,7 +707,7 @@ export default function HopDongPage() {
       </Drawer>
 
       {/* Contract CRUD Drawer */}
-      <Drawer
+      <Drawer forceRender
         title={editingContract ? 'Chỉnh sửa hợp đồng' : 'Thêm hợp đồng mới'}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
@@ -828,7 +828,7 @@ export default function HopDongPage() {
       </Drawer>
 
       {/* Contract Detail Drawer */}
-      <Drawer
+      <Drawer forceRender
         title={`Chi tiết hợp đồng: ${selectedContract?.name || ''}`}
         open={detailDrawerOpen}
         onClose={() => setDetailDrawerOpen(false)}

@@ -259,7 +259,7 @@ export default function ConfigPage() {
         />
       </Card>
 
-      <Drawer
+      <Drawer forceRender
         title={editingRecord ? 'Cập nhật cấu hình' : 'Thêm cấu hình mới'}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}

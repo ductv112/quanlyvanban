@@ -594,7 +594,7 @@ export default function TaiLieuPage() {
       </Row>
 
       {/* Category Drawer */}
-      <Drawer
+      <Drawer forceRender
         title={editingCategory ? 'Chỉnh sửa danh mục' : 'Thêm danh mục tài liệu'}
         open={catDrawerOpen}
         onClose={() => setCatDrawerOpen(false)}
@@ -639,7 +639,7 @@ export default function TaiLieuPage() {
       </Drawer>
 
       {/* Document Drawer */}
-      <Drawer
+      <Drawer forceRender
         title={editingDoc ? 'Chỉnh sửa tài liệu' : 'Thêm tài liệu mới'}
         open={docDrawerOpen}
         onClose={() => setDocDrawerOpen(false)}

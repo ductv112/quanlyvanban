@@ -298,7 +298,7 @@ export default function WorkflowPage() {
         />
       </Card>
 
-      <Drawer
+      <Drawer forceRender
         title={editingRecord ? 'Chỉnh sửa quy trình' : 'Thêm quy trình'}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}

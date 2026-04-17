@@ -609,7 +609,7 @@ export default function DraftingDocPage() {
         onChange={(p) => { setPage(p.current || 1); setPageSize(p.pageSize || 20); }}
       />
 
-      <Drawer
+      <Drawer forceRender
         title={editingRecord ? 'Sửa văn bản dự thảo' : 'Thêm văn bản dự thảo'}
         size={720}
         open={drawerOpen}

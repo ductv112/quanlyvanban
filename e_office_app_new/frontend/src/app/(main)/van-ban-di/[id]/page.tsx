@@ -473,7 +473,7 @@ export default function OutgoingDocDetailPage() {
       </Modal>
 
       {/* Drawer: Giao việc */}
-      <Drawer
+      <Drawer forceRender
         title="Giao việc" size={600} open={giaoViecOpen} forceRender
         onClose={() => { setGiaoViecOpen(false); giaoViecForm.resetFields(); }}
         rootClassName="drawer-gradient"

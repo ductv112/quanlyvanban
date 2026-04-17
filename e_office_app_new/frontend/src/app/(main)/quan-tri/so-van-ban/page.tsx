@@ -271,7 +271,7 @@ export default function DocBookPage() {
         />
       </Card>
 
-      <Drawer
+      <Drawer forceRender
         title={editingRecord ? 'Cập nhật sổ văn bản' : 'Thêm sổ văn bản mới'}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
