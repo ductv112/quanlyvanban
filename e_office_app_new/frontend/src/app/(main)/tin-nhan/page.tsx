@@ -399,26 +399,30 @@ export default function TinNhanPage() {
                 {messageDetail.content}
               </div>
 
-              {/* Reply Box — inline: textarea + button same row */}
-              <div style={{ borderTop: '1px solid #E8ECF1', paddingTop: 12, marginBottom: 16, display: 'flex', gap: 8, alignItems: 'flex-end' }}>
-                <TextArea
-                  rows={2}
-                  placeholder="Nhập nội dung trả lời..."
-                  value={replyContent}
-                  onChange={(e) => setReplyContent(e.target.value)}
-                  style={{ flex: 1 }}
-                />
-                <Button
-                  type="primary"
-                  icon={<SendOutlined />}
-                  loading={replying}
-                  disabled={!replyContent.trim()}
-                  onClick={handleReply}
-                  style={{ flexShrink: 0 }}
-                >
-                  Gửi
-                </Button>
-              </div>
+              {/* Reply Box — ẩn trong thùng rác */}
+              {folder !== 'trash' && (
+                <div style={{ borderTop: '1px solid #E8ECF1', paddingTop: 12, marginBottom: 16, display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+                  <TextArea
+                    rows={2}
+                    placeholder="Nhập nội dung trả lời..."
+                    value={replyContent}
+                    onChange={(e) => setReplyContent(e.target.value)}
+                    style={{ flex: 1 }}
+                    maxLength={2000}
+                    showCount
+                  />
+                  <Button
+                    type="primary"
+                    icon={<SendOutlined />}
+                    loading={replying}
+                    disabled={!replyContent.trim()}
+                    onClick={handleReply}
+                    style={{ flexShrink: 0 }}
+                  >
+                    Gửi
+                  </Button>
+                </div>
+              )}
 
               {/* Thread Replies — newest first */}
               {messageDetail.replies && messageDetail.replies.length > 0 && (
