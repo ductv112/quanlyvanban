@@ -56,12 +56,14 @@ router.get('/recent-incoming', async (req: Request, res: Response) => {
 // ============================================================
 router.get('/upcoming-tasks', async (req: Request, res: Response) => {
   try {
-    const { staffId } = (req as AuthRequest).user;
+    const { staffId, departmentId, isAdmin } = (req as AuthRequest).user;
     const { limit } = req.query;
+    const deptIds = await resolveDeptSubtree(departmentId, isAdmin);
 
     const rows = await dashboardRepository.getUpcomingTasks(
       staffId,
       limit ? Number(limit) : 10,
+      deptIds,
     );
     res.json({ success: true, data: rows });
   } catch (error) {

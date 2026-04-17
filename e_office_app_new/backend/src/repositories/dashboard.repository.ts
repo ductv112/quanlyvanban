@@ -58,11 +58,11 @@ export const dashboardRepository = {
     );
   },
 
-  // SP: fn_dashboard_upcoming_tasks(p_staff_id, p_limit)
-  async getUpcomingTasks(staffId: number, limit = 10): Promise<UpcomingTaskRow[]> {
+  // SP: fn_dashboard_upcoming_tasks(p_staff_id, p_limit, p_dept_ids)
+  async getUpcomingTasks(staffId: number, limit = 10, deptIds?: number[] | null): Promise<UpcomingTaskRow[]> {
     return callFunction<UpcomingTaskRow>(
       'edoc.fn_dashboard_upcoming_tasks',
-      [staffId, limit],
+      [staffId, limit, deptIds ?? null],
     );
   },
 
