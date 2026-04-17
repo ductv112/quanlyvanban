@@ -7,7 +7,7 @@ import { uploadFile, deleteFile, getFileUrl } from '../lib/minio/client.js';
 import { v4 as uuidv4 } from 'uuid';
 import { handleDbError } from '../lib/error-handler.js';
 import { exportExcel } from '../lib/excel.js';
-import { callFunction } from '../lib/db/query.js';
+import { callFunction, rawQuery } from '../lib/db/query.js';
 import { resolveDeptSubtree, resolveAncestorUnit } from '../lib/department-subtree.js';
 import dayjs from 'dayjs';
 
