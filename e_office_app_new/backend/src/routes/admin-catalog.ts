@@ -15,6 +15,7 @@ import { workCalendarRepository } from '../repositories/work-calendar.repository
 import { templateRepository } from '../repositories/template.repository.js';
 import { configRepository } from '../repositories/config.repository.js';
 import { handleDbError } from '../lib/error-handler.js';
+import { resolveAncestorUnit } from '../lib/department-subtree.js';
 
 const router = Router();
 
@@ -61,9 +62,10 @@ function buildTree<T extends { id: number; parent_id: number | null }>(flatList:
 // GET /so-van-ban
 router.get('/so-van-ban', async (req: Request, res: Response) => {
   try {
-    const { unitId } = (req as AuthRequest).user;
+    const { departmentId } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
     const typeId = req.query.type_id ? Number(req.query.type_id) : null;
-    const uId = req.query.unit_id ? Number(req.query.unit_id) : unitId;
+    const uId = req.query.unit_id ? Number(req.query.unit_id) : ancestorUnitId;
     const data = await docBookRepository.getList(typeId, uId);
     res.json({ success: true, data });
   } catch (error) {
@@ -89,7 +91,8 @@ router.get('/so-van-ban/:id', async (req: Request, res: Response) => {
 // POST /so-van-ban
 router.post('/so-van-ban', async (req: Request, res: Response) => {
   try {
-    const { staffId, unitId } = (req as AuthRequest).user;
+    const { staffId, departmentId } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
     const { type_id, unit_id, name, is_default, description } = req.body;
 
     if (!name?.trim()) {
@@ -107,7 +110,7 @@ router.post('/so-van-ban', async (req: Request, res: Response) => {
 
     const result = await docBookRepository.create(
       type_id,
-      unit_id ?? unitId,
+      unit_id ?? ancestorUnitId,
       name.trim(),
       is_default ?? false,
       description ?? '',
@@ -175,11 +178,12 @@ router.delete('/so-van-ban/:id', async (req: Request, res: Response) => {
 // PATCH /so-van-ban/:id/mac-dinh
 router.patch('/so-van-ban/:id/mac-dinh', async (req: Request, res: Response) => {
   try {
-    const { unitId } = (req as AuthRequest).user;
+    const { departmentId } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
     const id = Number(req.params.id);
     const { type_id, unit_id } = req.body;
 
-    const result = await docBookRepository.setDefault(id, type_id ?? 0, unit_id ?? unitId);
+    const result = await docBookRepository.setDefault(id, type_id ?? 0, unit_id ?? ancestorUnitId);
     if (!result) {
       res.status(404).json({ success: false, message: 'Không tìm thấy sổ văn bản' });
       return;
@@ -328,8 +332,9 @@ router.delete('/loai-van-ban/:id', async (req: Request, res: Response) => {
 // GET /linh-vuc
 router.get('/linh-vuc', async (req: Request, res: Response) => {
   try {
-    const { unitId } = (req as AuthRequest).user;
-    const uId = req.query.unit_id ? Number(req.query.unit_id) : unitId;
+    const { departmentId } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
+    const uId = req.query.unit_id ? Number(req.query.unit_id) : ancestorUnitId;
     const keyword = (req.query.keyword as string) || '';
     const data = await docFieldRepository.getList(uId, keyword);
     res.json({ success: true, data });
@@ -356,7 +361,8 @@ router.get('/linh-vuc/:id', async (req: Request, res: Response) => {
 // POST /linh-vuc
 router.post('/linh-vuc', async (req: Request, res: Response) => {
   try {
-    const { unitId } = (req as AuthRequest).user;
+    const { departmentId } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
     const { unit_id, code, name } = req.body;
 
     if (!code?.trim()) {
@@ -376,7 +382,7 @@ router.post('/linh-vuc', async (req: Request, res: Response) => {
       return;
     }
 
-    const result = await docFieldRepository.create(unit_id ?? unitId, code.trim(), name.trim());
+    const result = await docFieldRepository.create(unit_id ?? ancestorUnitId, code.trim(), name.trim());
 
     if (!result.success) {
       res.status(400).json({ success: false, message: result.message });
@@ -505,8 +511,9 @@ router.patch('/thuoc-tinh-van-ban/:id/toggle', async (req: Request, res: Respons
 // GET /co-quan
 router.get('/co-quan', async (req: Request, res: Response) => {
   try {
-    const { unitId } = (req as AuthRequest).user;
-    const uId = req.query.unit_id ? Number(req.query.unit_id) : unitId;
+    const { departmentId } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
+    const uId = req.query.unit_id ? Number(req.query.unit_id) : ancestorUnitId;
     const data = await organizationRepository.get(uId);
     res.json({ success: true, data });
   } catch (error) {
@@ -517,13 +524,14 @@ router.get('/co-quan', async (req: Request, res: Response) => {
 // PUT /co-quan
 router.put('/co-quan', async (req: Request, res: Response) => {
   try {
-    const { staffId, unitId } = (req as AuthRequest).user;
+    const { staffId, departmentId } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
     const {
       unit_id, code, name, address, phone, fax, email,
       email_doc, secretary, chairman_number, level, is_exchange,
     } = req.body;
 
-    const uId = unit_id ?? unitId;
+    const uId = unit_id ?? ancestorUnitId;
     if (!uId) {
       res.status(400).json({ success: false, message: 'Đơn vị là bắt buộc' });
       return;
@@ -574,10 +582,11 @@ router.put('/co-quan', async (req: Request, res: Response) => {
 // GET /nguoi-ky
 router.get('/nguoi-ky', async (req: Request, res: Response) => {
   try {
-    const { unitId } = (req as AuthRequest).user;
-    const uId = req.query.unit_id ? Number(req.query.unit_id) : unitId;
-    const departmentId = req.query.department_id ? Number(req.query.department_id) : null;
-    const data = await signerRepository.getList(uId, departmentId);
+    const { departmentId } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
+    const uId = req.query.unit_id ? Number(req.query.unit_id) : ancestorUnitId;
+    const deptIdFilter = req.query.department_id ? Number(req.query.department_id) : null;
+    const data = await signerRepository.getList(uId, deptIdFilter);
     res.json({ success: true, data });
   } catch (error) {
     handleDbError(error, res);
@@ -587,10 +596,11 @@ router.get('/nguoi-ky', async (req: Request, res: Response) => {
 // POST /nguoi-ky
 router.post('/nguoi-ky', async (req: Request, res: Response) => {
   try {
-    const { unitId } = (req as AuthRequest).user;
+    const { departmentId } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
     const { unit_id, department_id, staff_id } = req.body;
 
-    if (!unit_id && !unitId) {
+    if (!unit_id && !ancestorUnitId) {
       res.status(400).json({ success: false, message: 'Đơn vị là bắt buộc' });
       return;
     }
@@ -600,7 +610,7 @@ router.post('/nguoi-ky', async (req: Request, res: Response) => {
     }
 
     const result = await signerRepository.create(
-      unit_id ?? unitId,
+      unit_id ?? ancestorUnitId,
       department_id ?? 0,
       staff_id,
     );
@@ -637,8 +647,9 @@ router.delete('/nguoi-ky/:id', async (req: Request, res: Response) => {
 // GET /nhom-lam-viec
 router.get('/nhom-lam-viec', async (req: Request, res: Response) => {
   try {
-    const { unitId } = (req as AuthRequest).user;
-    const uId = req.query.unit_id ? Number(req.query.unit_id) : unitId;
+    const { departmentId } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
+    const uId = req.query.unit_id ? Number(req.query.unit_id) : ancestorUnitId;
     const data = await workGroupRepository.getList(uId);
     res.json({ success: true, data });
   } catch (error) {
@@ -666,7 +677,8 @@ router.get('/nhom-lam-viec/:id', async (req: Request, res: Response) => {
 // POST /nhom-lam-viec
 router.post('/nhom-lam-viec', async (req: Request, res: Response) => {
   try {
-    const { staffId, unitId } = (req as AuthRequest).user;
+    const { staffId, departmentId } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
     const { unit_id, name, function: func, sort_order } = req.body;
 
     if (!name?.trim()) {
@@ -679,7 +691,7 @@ router.post('/nhom-lam-viec', async (req: Request, res: Response) => {
     }
 
     const result = await workGroupRepository.create(
-      unit_id ?? unitId,
+      unit_id ?? ancestorUnitId,
       name.trim(),
       func ?? '',
       sort_order ?? 0,
@@ -783,8 +795,9 @@ router.put('/nhom-lam-viec/:id/thanh-vien', async (req: Request, res: Response) 
 // GET /uy-quyen
 router.get('/uy-quyen', async (req: Request, res: Response) => {
   try {
-    const { unitId } = (req as AuthRequest).user;
-    const uId = req.query.unit_id ? Number(req.query.unit_id) : unitId;
+    const { departmentId } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
+    const uId = req.query.unit_id ? Number(req.query.unit_id) : ancestorUnitId;
     const staffId = req.query.staff_id ? Number(req.query.staff_id) : null;
     const data = await delegationRepository.getList(uId, staffId);
     res.json({ success: true, data });
@@ -1214,8 +1227,9 @@ router.delete('/lich-lam-viec', async (req: Request, res: Response) => {
 // GET /mau-sms
 router.get('/mau-sms', async (req: Request, res: Response) => {
   try {
-    const { unitId } = (req as AuthRequest).user;
-    const uId = req.query.unit_id ? Number(req.query.unit_id) : unitId;
+    const { departmentId } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
+    const uId = req.query.unit_id ? Number(req.query.unit_id) : ancestorUnitId;
     const data = await templateRepository.smsGetList(uId);
     res.json({ success: true, data });
   } catch (error) {
@@ -1226,7 +1240,8 @@ router.get('/mau-sms', async (req: Request, res: Response) => {
 // POST /mau-sms
 router.post('/mau-sms', async (req: Request, res: Response) => {
   try {
-    const { staffId, unitId } = (req as AuthRequest).user;
+    const { staffId, departmentId } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
     const { unit_id, name, content, description } = req.body;
 
     if (!name?.trim()) {
@@ -1239,7 +1254,7 @@ router.post('/mau-sms', async (req: Request, res: Response) => {
     }
 
     const result = await templateRepository.smsCreate(
-      unit_id ?? unitId,
+      unit_id ?? ancestorUnitId,
       name.trim(),
       content ?? '',
       description ?? '',
@@ -1309,8 +1324,9 @@ router.delete('/mau-sms/:id', async (req: Request, res: Response) => {
 // GET /mau-email
 router.get('/mau-email', async (req: Request, res: Response) => {
   try {
-    const { unitId } = (req as AuthRequest).user;
-    const uId = req.query.unit_id ? Number(req.query.unit_id) : unitId;
+    const { departmentId } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
+    const uId = req.query.unit_id ? Number(req.query.unit_id) : ancestorUnitId;
     const data = await templateRepository.emailGetList(uId);
     res.json({ success: true, data });
   } catch (error) {
@@ -1321,7 +1337,8 @@ router.get('/mau-email', async (req: Request, res: Response) => {
 // POST /mau-email
 router.post('/mau-email', async (req: Request, res: Response) => {
   try {
-    const { staffId, unitId } = (req as AuthRequest).user;
+    const { staffId, departmentId } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
     const { unit_id, name, subject, content, description } = req.body;
 
     if (!name?.trim()) {
@@ -1334,7 +1351,7 @@ router.post('/mau-email', async (req: Request, res: Response) => {
     }
 
     const result = await templateRepository.emailCreate(
-      unit_id ?? unitId,
+      unit_id ?? ancestorUnitId,
       name.trim(),
       subject ?? '',
       content ?? '',
@@ -1408,8 +1425,9 @@ router.delete('/mau-email/:id', async (req: Request, res: Response) => {
 // GET /cau-hinh
 router.get('/cau-hinh', async (req: Request, res: Response) => {
   try {
-    const { unitId } = (req as AuthRequest).user;
-    const uId = req.query.unit_id ? Number(req.query.unit_id) : unitId;
+    const { departmentId } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
+    const uId = req.query.unit_id ? Number(req.query.unit_id) : ancestorUnitId;
     const data = await configRepository.getList(uId);
     res.json({ success: true, data });
   } catch (error) {
@@ -1420,7 +1438,8 @@ router.get('/cau-hinh', async (req: Request, res: Response) => {
 // PUT /cau-hinh
 router.put('/cau-hinh', async (req: Request, res: Response) => {
   try {
-    const { unitId } = (req as AuthRequest).user;
+    const { departmentId } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
     const { unit_id, key, value, description } = req.body;
 
     if (!key?.trim()) {
@@ -1429,7 +1448,7 @@ router.put('/cau-hinh', async (req: Request, res: Response) => {
     }
 
     const result = await configRepository.upsert(
-      unit_id ?? unitId,
+      unit_id ?? ancestorUnitId,
       key.trim(),
       value ?? '',
       description ?? '',
@@ -1491,8 +1510,9 @@ router.delete('/cau-hinh-truong/:id', async (req: Request, res: Response) => {
 // GET /mau-sms
 router.get('/mau-sms', async (req: Request, res: Response) => {
   try {
-    const { unitId } = (req as AuthRequest).user;
-    const data = await templateRepository.smsGetList(unitId);
+    const { departmentId } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
+    const data = await templateRepository.smsGetList(ancestorUnitId);
     res.json({ success: true, data });
   } catch (error) { handleDbError(error, res); }
 });
@@ -1500,9 +1520,10 @@ router.get('/mau-sms', async (req: Request, res: Response) => {
 // POST /mau-sms
 router.post('/mau-sms', async (req: Request, res: Response) => {
   try {
-    const { staffId, unitId } = (req as AuthRequest).user;
+    const { staffId, departmentId } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
     const { name, content, description } = req.body;
-    const result = await templateRepository.smsCreate(unitId, name, content, description || '', staffId);
+    const result = await templateRepository.smsCreate(ancestorUnitId, name, content, description || '', staffId);
     if (!result.success) { res.status(400).json({ success: false, message: result.message }); return; }
     res.status(201).json({ success: true, data: { id: result.id, message: result.message } });
   } catch (error) { handleDbError(error, res); }
@@ -1534,8 +1555,9 @@ router.delete('/mau-sms/:id', async (req: Request, res: Response) => {
 // GET /mau-email
 router.get('/mau-email', async (req: Request, res: Response) => {
   try {
-    const { unitId } = (req as AuthRequest).user;
-    const data = await templateRepository.emailGetList(unitId);
+    const { departmentId } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
+    const data = await templateRepository.emailGetList(ancestorUnitId);
     res.json({ success: true, data });
   } catch (error) { handleDbError(error, res); }
 });
@@ -1543,9 +1565,10 @@ router.get('/mau-email', async (req: Request, res: Response) => {
 // POST /mau-email
 router.post('/mau-email', async (req: Request, res: Response) => {
   try {
-    const { staffId, unitId } = (req as AuthRequest).user;
+    const { staffId, departmentId } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
     const { name, subject, content, description } = req.body;
-    const result = await templateRepository.emailCreate(unitId, name, subject || '', content, description || '', staffId);
+    const result = await templateRepository.emailCreate(ancestorUnitId, name, subject || '', content, description || '', staffId);
     if (!result.success) { res.status(400).json({ success: false, message: result.message }); return; }
     res.status(201).json({ success: true, data: { id: result.id, message: result.message } });
   } catch (error) { handleDbError(error, res); }

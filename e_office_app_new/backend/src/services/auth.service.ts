@@ -67,10 +67,10 @@ export const authService = {
     // Generate tokens
     const accessToken = await signAccessToken({
       staffId: staff.staff_id,
-      unitId: staff.unit_id,
       departmentId: staff.department_id,
       username: staff.username,
       roles,
+      isAdmin: staff.is_admin,
     });
 
     const refreshToken = await signRefreshToken(staff.staff_id);
@@ -134,10 +134,10 @@ export const authService = {
     // Issue new tokens (token rotation)
     const accessToken = await signAccessToken({
       staffId: staff.staff_id,
-      unitId: staff.unit_id,
       departmentId: staff.department_id,
       username: staff.username,
       roles,
+      isAdmin: staff.is_admin,
     });
 
     const newRefreshToken = await signRefreshToken(staff.staff_id);

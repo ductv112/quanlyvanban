@@ -2,20 +2,20 @@ import { Router, type Request, type Response } from 'express';
 import type { AuthRequest } from '../middleware/auth.js';
 import { dashboardRepository } from '../repositories/dashboard.repository.js';
 import { handleDbError } from '../lib/error-handler.js';
+import { resolveDeptSubtree } from '../lib/department-subtree.js';
 
 const router = Router();
 
 // ============================================================
 // GET /stats — Thống kê KPI Dashboard (4 chỉ số)
-// T-04-06: filter by unitId from JWT to enforce multi-tenancy
 // ============================================================
 router.get('/stats', async (req: Request, res: Response) => {
   try {
-    // T-04-06: staffId and unitId come from JWT only
-    const { staffId, unitId } = (req as AuthRequest).user;
+    const { staffId, departmentId, isAdmin } = (req as AuthRequest).user;
+    const filterDeptId = req.query.department_id ? Number(req.query.department_id) : undefined;
+    const deptIds = await resolveDeptSubtree(departmentId, isAdmin, filterDeptId);
 
-    // fn_dashboard_get_stats signature: (p_staff_id, p_unit_id) — staffId first
-    const stats = await dashboardRepository.getStats(staffId, unitId);
+    const stats = await dashboardRepository.getStats(staffId, 0, deptIds);
     res.json({
       success: true,
       data: stats ?? {
@@ -32,17 +32,18 @@ router.get('/stats', async (req: Request, res: Response) => {
 
 // ============================================================
 // GET /recent-incoming — Văn bản đến mới nhất
-// T-04-06: filtered by unitId from JWT
 // ============================================================
 router.get('/recent-incoming', async (req: Request, res: Response) => {
   try {
-    const { staffId, unitId } = (req as AuthRequest).user;
+    const { staffId, departmentId, isAdmin } = (req as AuthRequest).user;
     const { limit } = req.query;
+    const filterDeptId = req.query.department_id ? Number(req.query.department_id) : undefined;
+    const deptIds = await resolveDeptSubtree(departmentId, isAdmin, filterDeptId);
 
-    // fn_dashboard_recent_incoming signature: (p_unit_id, p_limit)
     const rows = await dashboardRepository.getRecentIncoming(
-      unitId,
+      0,
       limit ? Number(limit) : 10,
+      deptIds,
     );
     res.json({ success: true, data: rows });
   } catch (error) {
@@ -70,17 +71,18 @@ router.get('/upcoming-tasks', async (req: Request, res: Response) => {
 
 // ============================================================
 // GET /recent-outgoing — Văn bản đi mới nhất
-// T-04-06: filtered by unitId from JWT
 // ============================================================
 router.get('/recent-outgoing', async (req: Request, res: Response) => {
   try {
-    const { staffId, unitId } = (req as AuthRequest).user;
+    const { staffId, departmentId, isAdmin } = (req as AuthRequest).user;
     const { limit } = req.query;
+    const filterDeptId = req.query.department_id ? Number(req.query.department_id) : undefined;
+    const deptIds = await resolveDeptSubtree(departmentId, isAdmin, filterDeptId);
 
-    // fn_dashboard_recent_outgoing signature: (p_unit_id, p_limit)
     const rows = await dashboardRepository.getRecentOutgoing(
-      unitId,
+      0,
       limit ? Number(limit) : 10,
+      deptIds,
     );
     res.json({ success: true, data: rows });
   } catch (error) {

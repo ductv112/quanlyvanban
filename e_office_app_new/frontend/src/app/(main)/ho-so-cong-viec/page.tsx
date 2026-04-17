@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   Table, Button, Input, Select, DatePicker, Drawer, Form,
   Tag, Modal, App, Row, Col, Dropdown, Tabs, Badge, Progress,
-  Space, Empty, Skeleton,
+  Space, Empty, Skeleton, TreeSelect,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
@@ -15,6 +15,7 @@ import { useRouter } from 'next/navigation';
 import dayjs from 'dayjs';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth.store';
+import { buildTree, flattenTreeForSelect } from '@/lib/tree-utils';
 
 const { TextArea } = Input;
 const { RangePicker } = DatePicker;
@@ -115,6 +116,7 @@ export default function HoSoCongViecPage() {
   const [workflows, setWorkflows] = useState<SelectOption[]>([]);
   const [parentHscvs, setParentHscvs] = useState<SelectOption[]>([]);
   const [units, setUnits] = useState<SelectOption[]>([]);
+  const [deptTreeData, setDeptTreeData] = useState<{ value: number; title: string; children?: any[] }[]>([]);
 
   // ── Data fetching ────────────────────────────────────────────────────────────
 
@@ -128,7 +130,7 @@ export default function HoSoCongViecPage() {
       };
       if (keyword) params.keyword = keyword;
       if (fieldId) params.field_id = fieldId;
-      if (unitId) params.unit_id = unitId;
+      if (unitId) params.department_id = unitId;
       if (dateRange) {
         params.from_date = dateRange[0].startOf('day').toISOString();
         params.to_date = dateRange[1].endOf('day').toISOString();
@@ -168,11 +170,16 @@ export default function HoSoCongViecPage() {
       setStaffList((staffRes.data.data || []).map((s: { id: number; full_name: string }) => ({ value: s.id, label: s.full_name })));
       setWorkflows((workflowRes.data.data || []).map((w: { id: number; name: string }) => ({ value: w.id, label: w.name })));
       setParentHscvs((hscvRes.data.data || []).map((h: { id: number; name: string }) => ({ value: h.id, label: h.name })));
-      setUnits((unitRes.data.data || []).map((u: { id: number; name: string }) => ({ value: u.id, label: u.name })));
+      const unitItems = unitRes.data.data || [];
+      setUnits(unitItems.map((u: { id: number; name: string }) => ({ value: u.id, label: u.name })));
+      if (user?.isAdmin) {
+        const tree = buildTree(unitItems.map((d: any) => ({ id: d.id, parent_id: d.parent_id, name: d.name })));
+        setDeptTreeData(flattenTreeForSelect(tree));
+      }
     } catch {
       // Bỏ qua lỗi tải tùy chọn
     }
-  }, []);
+  }, [user?.isAdmin]);
 
   useEffect(() => {
     fetchOptions();
@@ -470,14 +477,27 @@ export default function HoSoCongViecPage() {
               onChange={(val) => { setFieldId(val); setPage(1); }}
               style={{ width: 160 }}
             />
-            <Select
-              placeholder="Đơn vị"
-              allowClear
-              options={units}
-              value={unitId}
-              onChange={(val) => { setUnitId(val); setPage(1); }}
-              style={{ width: 160 }}
-            />
+            {user?.isAdmin ? (
+              <TreeSelect
+                placeholder="Phòng ban"
+                allowClear
+                showSearch
+                treeNodeFilterProp="title"
+                treeData={deptTreeData}
+                value={unitId}
+                onChange={(val) => { setUnitId(val); setPage(1); }}
+                style={{ width: 200 }}
+              />
+            ) : (
+              <Select
+                placeholder="Đơn vị"
+                allowClear
+                options={units}
+                value={unitId}
+                onChange={(val) => { setUnitId(val); setPage(1); }}
+                style={{ width: 160 }}
+              />
+            )}
             <RangePicker
               format="DD/MM/YYYY"
               placeholder={['Từ ngày', 'Đến ngày']}

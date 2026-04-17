@@ -42,19 +42,19 @@ export interface RecentOutgoingRow {
 }
 
 export const dashboardRepository = {
-  // SP: fn_dashboard_get_stats(p_staff_id, p_unit_id) — staffId FIRST
-  async getStats(staffId: number, unitId: number): Promise<DashboardStatsRow | null> {
+  // SP: fn_dashboard_get_stats(p_staff_id, p_unit_id, p_dept_ids)
+  async getStats(staffId: number, unitId: number, deptIds?: number[] | null): Promise<DashboardStatsRow | null> {
     return callFunctionOne<DashboardStatsRow>(
       'edoc.fn_dashboard_get_stats',
-      [staffId, unitId],
+      [staffId, unitId, deptIds ?? null],
     );
   },
 
-  // SP: fn_dashboard_recent_incoming(p_unit_id, p_limit)
-  async getRecentIncoming(unitId: number, limit = 10): Promise<RecentIncomingRow[]> {
+  // SP: fn_dashboard_recent_incoming(p_unit_id, p_limit, p_dept_ids)
+  async getRecentIncoming(unitId: number, limit = 10, deptIds?: number[] | null): Promise<RecentIncomingRow[]> {
     return callFunction<RecentIncomingRow>(
       'edoc.fn_dashboard_recent_incoming',
-      [unitId, limit],
+      [unitId, limit, deptIds ?? null],
     );
   },
 
@@ -66,11 +66,11 @@ export const dashboardRepository = {
     );
   },
 
-  // SP: fn_dashboard_recent_outgoing(p_unit_id, p_limit)
-  async getRecentOutgoing(unitId: number, limit = 10): Promise<RecentOutgoingRow[]> {
+  // SP: fn_dashboard_recent_outgoing(p_unit_id, p_limit, p_dept_ids)
+  async getRecentOutgoing(unitId: number, limit = 10, deptIds?: number[] | null): Promise<RecentOutgoingRow[]> {
     return callFunction<RecentOutgoingRow>(
       'edoc.fn_dashboard_recent_outgoing',
-      [unitId, limit],
+      [unitId, limit, deptIds ?? null],
     );
   },
 };

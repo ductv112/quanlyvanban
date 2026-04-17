@@ -6,6 +6,7 @@ import { uploadFile, deleteFile, getFileUrl } from '../lib/minio/client.js';
 import { rawQuery } from '../lib/db/query.js';
 import { v4 as uuidv4 } from 'uuid';
 import { handleDbError } from '../lib/error-handler.js';
+import { resolveDeptSubtree, resolveAncestorUnit } from '../lib/department-subtree.js';
 
 const router = Router();
 
@@ -16,15 +17,17 @@ const router = Router();
 // GET / — Danh sách HSCV (phân trang + filter)
 router.get('/', async (req: Request, res: Response) => {
   try {
-    const { staffId, unitId, departmentId } = (req as AuthRequest).user;
+    const { staffId, departmentId, isAdmin } = (req as AuthRequest).user;
     const {
       filter_type, status, keyword, from_date, to_date, page, page_size,
     } = req.query;
 
-    const deptId = req.query.department_id ? Number(req.query.department_id) : null;
+    const filterDeptId = req.query.department_id ? Number(req.query.department_id) : undefined;
+    const deptIds = await resolveDeptSubtree(departmentId, isAdmin, filterDeptId);
+
     const rows = await handlingDocRepository.getList(
-      unitId,
-      deptId,
+      0,
+      deptIds,
       staffId,
       {
         status: status !== undefined ? Number(status) : undefined,
@@ -55,8 +58,9 @@ router.get('/', async (req: Request, res: Response) => {
 // GET /count-by-status — Đếm HSCV theo trạng thái (cho tab badges)
 router.get('/count-by-status', async (req: Request, res: Response) => {
   try {
-    const { staffId, unitId } = (req as AuthRequest).user;
-    const rows = await handlingDocRepository.countByStatus(unitId, staffId);
+    const { staffId, departmentId, isAdmin } = (req as AuthRequest).user;
+    const deptIds = await resolveDeptSubtree(departmentId, isAdmin);
+    const rows = await handlingDocRepository.countByStatus(0, staffId, deptIds);
     res.json({ success: true, data: rows });
   } catch (error) {
     handleDbError(error, res);
@@ -70,7 +74,8 @@ router.get('/count-by-status', async (req: Request, res: Response) => {
 // POST / — Tạo HSCV mới
 router.post('/', async (req: Request, res: Response) => {
   try {
-    const { staffId, unitId, departmentId } = (req as AuthRequest).user;
+    const { staffId, departmentId } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
     const body = req.body;
 
     if (!body.name?.trim()) {
@@ -79,7 +84,7 @@ router.post('/', async (req: Request, res: Response) => {
     }
 
     const result = await handlingDocRepository.create({
-      unitId,
+      unitId: ancestorUnitId,
       departmentId: body.department_id ? Number(body.department_id) : departmentId,
       docTypeId: body.doc_type_id ? Number(body.doc_type_id) : undefined,
       docFieldId: body.doc_field_id ? Number(body.doc_field_id) : undefined,
@@ -108,8 +113,9 @@ router.post('/', async (req: Request, res: Response) => {
 // GET /:id — Chi tiết HSCV
 router.get('/:id', async (req: Request, res: Response) => {
   try {
-    // T-02-07: filter by unitId to prevent cross-tenant access
-    const { unitId } = (req as AuthRequest).user;
+    // T-02-07: filter by ancestor unit to prevent cross-tenant access
+    const { departmentId } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
     const id = Number(req.params.id);
     const doc = await handlingDocRepository.getById(id);
     if (!doc) {
@@ -117,7 +123,7 @@ router.get('/:id', async (req: Request, res: Response) => {
       return;
     }
     // Cross-tenant check
-    if (doc.unit_id !== unitId) {
+    if (doc.unit_id !== ancestorUnitId) {
       res.status(403).json({ success: false, message: 'Không có quyền truy cập hồ sơ này' });
       return;
     }

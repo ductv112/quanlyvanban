@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Card, Table, Button, Input, Space, Select, DatePicker, Drawer, Form,
-  InputNumber, Tag, Modal, App, Row, Col, Tooltip, Dropdown,
+  InputNumber, Tag, Modal, App, Row, Col, Tooltip, Dropdown, TreeSelect,
 } from 'antd';
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
 import {
@@ -13,6 +13,7 @@ import {
 } from '@ant-design/icons';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth.store';
+import { buildTree, flattenTreeForSelect } from '@/lib/tree-utils';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import dayjs from 'dayjs';
 
@@ -62,6 +63,8 @@ export default function IncomingDocPage() {
   const [docBooks, setDocBooks] = useState<SelectOption[]>([]);
   const [docTypes, setDocTypes] = useState<SelectOption[]>([]);
   const [docFields, setDocFields] = useState<SelectOption[]>([]);
+  const [filterDeptId, setFilterDeptId] = useState<number | undefined>();
+  const [deptTreeData, setDeptTreeData] = useState<{ value: number; title: string; children?: any[] }[]>([]);
   const [extraColumns, setExtraColumns] = useState<{ column_name: string; label: string; data_type: string; max_length: number | null; is_mandatory: boolean }[]>([]);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<IncomingDoc | null>(null);
@@ -82,12 +85,13 @@ export default function IncomingDocPage() {
         params.to_date = filterDateRange[1].endOf('day').toISOString();
       }
       if (filterSigner) params.signer = filterSigner;
+      if (filterDeptId) params.department_id = filterDeptId;
       const { data: res } = await api.get('/van-ban-den', { params });
       setData(res.data || []);
       setTotal(res.pagination?.total || 0);
     } catch { message.error('Lỗi tải danh sách văn bản đến'); }
     finally { setLoading(false); }
-  }, [page, pageSize, keyword, filterDocBookId, filterDocTypeId, filterUrgentId, filterDateRange, filterSigner, message]);
+  }, [page, pageSize, keyword, filterDocBookId, filterDocTypeId, filterUrgentId, filterDateRange, filterSigner, filterDeptId, message]);
 
   const fetchDropdowns = useCallback(async () => {
     try {
@@ -99,8 +103,15 @@ export default function IncomingDocPage() {
       setDocBooks((bookRes.data.data || []).map((b: { id: number; name: string }) => ({ value: b.id, label: b.name })));
       setDocTypes((typeRes.data.data || []).map((t: { id: number; name: string }) => ({ value: t.id, label: t.name })));
       setDocFields((fieldRes.data.data || []).map((f: { id: number; name: string }) => ({ value: f.id, label: f.name })));
+      // Fetch department tree for admin filter
+      if (user?.isAdmin) {
+        const deptRes = await api.get('/quan-tri/don-vi/tree');
+        const items = deptRes.data.data || [];
+        const tree = buildTree(items.map((d: any) => ({ id: d.id, parent_id: d.parent_id, name: d.name })));
+        setDeptTreeData(flattenTreeForSelect(tree));
+      }
     } catch { /* ignore */ }
-  }, []);
+  }, [user?.isAdmin]);
 
   // type_id=1 = VB đến (theo doc_columns convention)
   const fetchExtraColumns = useCallback(async () => {
@@ -328,12 +339,12 @@ export default function IncomingDocPage() {
     >
       <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
         <Col span={6}><Input.Search placeholder="Tìm kiếm trích yếu, ký hiệu..." allowClear onSearch={(val) => { setKeyword(val); setPage(1); }} /></Col>
+        {user?.isAdmin && <Col span={4}><TreeSelect style={{ width: '100%' }} placeholder="Phòng ban" allowClear showSearch treeNodeFilterProp="title" treeData={deptTreeData} value={filterDeptId} onChange={(val) => { setFilterDeptId(val); setPage(1); }} /></Col>}
         <Col span={4}><Select style={{ width: '100%' }} placeholder="Sổ văn bản" allowClear options={docBooks} value={filterDocBookId} onChange={(val) => { setFilterDocBookId(val); setPage(1); }} /></Col>
         <Col span={4}><Select style={{ width: '100%' }} placeholder="Loại văn bản" allowClear options={docTypes} value={filterDocTypeId} onChange={(val) => { setFilterDocTypeId(val); setPage(1); }} /></Col>
         <Col span={3}><Select style={{ width: '100%' }} placeholder="Độ khẩn" allowClear options={[{ value: 1, label: 'Thường' }, { value: 2, label: 'Khẩn' }, { value: 3, label: 'Hỏa tốc' }]} value={filterUrgentId} onChange={(val) => { setFilterUrgentId(val); setPage(1); }} /></Col>
         <Col span={5}><RangePicker style={{ width: '100%' }} format="DD/MM/YYYY" placeholder={['Từ ngày', 'Đến ngày']} value={filterDateRange} onChange={(val) => { setFilterDateRange(val as [dayjs.Dayjs, dayjs.Dayjs] | null); setPage(1); }} /></Col>
-        <Col span={2}><Tooltip title="Xóa bộ lọc"><Button icon={<ReloadOutlined />} onClick={() => { setKeyword(''); setFilterDocBookId(undefined); setFilterDocTypeId(undefined); setFilterUrgentId(undefined); setFilterDateRange(null); setFilterSigner(''); setPage(1); }} /></Tooltip></Col>
-        <Col span={4}><Input.Search placeholder="Người ký..." allowClear onSearch={(val) => { setFilterSigner(val); setPage(1); }} /></Col>
+        <Col span={2}><Tooltip title="Xóa bộ lọc"><Button icon={<ReloadOutlined />} onClick={() => { setKeyword(''); setFilterDocBookId(undefined); setFilterDocTypeId(undefined); setFilterUrgentId(undefined); setFilterDateRange(null); setFilterSigner(''); setFilterDeptId(undefined); setPage(1); }} /></Tooltip></Col>
       </Row>
 
       <Table<IncomingDoc>

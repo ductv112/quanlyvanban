@@ -36,19 +36,19 @@ export interface ReportByStaffRow {
 // ============ Repository ============
 
 export const handlingDocReportRepository = {
-  getKpi(unitId: number, fromDate: string | null, toDate: string | null): Promise<KpiRow | null> {
-    return callFunctionOne<KpiRow>('edoc.fn_handling_doc_kpi', [unitId, fromDate, toDate]);
+  getKpi(unitId: number, fromDate: string | null, toDate: string | null, deptIds?: number[] | null): Promise<KpiRow | null> {
+    return callFunctionOne<KpiRow>('edoc.fn_handling_doc_kpi', [unitId, fromDate, toDate, deptIds ?? null]);
   },
 
-  reportByUnit(unitId: number, fromDate: string | null, toDate: string | null): Promise<ReportByUnitRow[]> {
-    return callFunction<ReportByUnitRow>('edoc.fn_report_handling_by_unit', [unitId, fromDate, toDate]);
+  reportByUnit(unitId: number, fromDate: string | null, toDate: string | null, deptIds?: number[] | null): Promise<ReportByUnitRow[]> {
+    return callFunction<ReportByUnitRow>('edoc.fn_report_handling_by_unit', [unitId, fromDate, toDate, deptIds ?? null]);
   },
 
-  reportByResolver(unitId: number, fromDate: string | null, toDate: string | null): Promise<ReportByStaffRow[]> {
-    return callFunction<ReportByStaffRow>('edoc.fn_report_handling_by_resolver', [unitId, fromDate, toDate]);
+  reportByResolver(unitId: number, fromDate: string | null, toDate: string | null, deptIds?: number[] | null): Promise<ReportByStaffRow[]> {
+    return callFunction<ReportByStaffRow>('edoc.fn_report_handling_by_resolver', [unitId, fromDate, toDate, deptIds ?? null]);
   },
 
-  reportByAssigner(unitId: number, fromDate: string | null, toDate: string | null): Promise<ReportByStaffRow[]> {
-    return callFunction<ReportByStaffRow>('edoc.fn_report_handling_by_assigner', [unitId, fromDate, toDate]);
+  reportByAssigner(unitId: number, fromDate: string | null, toDate: string | null, deptIds?: number[] | null): Promise<ReportByStaffRow[]> {
+    return callFunction<ReportByStaffRow>('edoc.fn_report_handling_by_assigner', [unitId, fromDate, toDate, deptIds ?? null]);
   },
 };

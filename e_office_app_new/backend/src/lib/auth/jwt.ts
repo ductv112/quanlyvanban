@@ -4,10 +4,10 @@ const secret = new TextEncoder().encode(process.env.JWT_SECRET || 'fallback-secr
 
 export interface TokenPayload extends JWTPayload {
   staffId: number;
-  unitId: number;
   departmentId: number;
   username: string;
   roles: string[];
+  isAdmin: boolean;
 }
 
 export async function signAccessToken(payload: Omit<TokenPayload, 'iat' | 'exp'>): Promise<string> {

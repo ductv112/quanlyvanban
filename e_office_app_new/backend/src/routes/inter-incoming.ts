@@ -5,6 +5,7 @@ import { interIncomingRepository } from '../repositories/inter-incoming.reposito
 import { uploadFile, deleteFile, getFileUrl } from '../lib/minio/client.js';
 import { v4 as uuidv4 } from 'uuid';
 import { handleDbError } from '../lib/error-handler.js';
+import { resolveAncestorUnit } from '../lib/department-subtree.js';
 
 const router = Router();
 
@@ -15,10 +16,11 @@ const router = Router();
 // GET / — Danh sach VB lien thong (phan trang + filter)
 router.get('/', async (req: Request, res: Response) => {
   try {
-    const { unitId } = (req as AuthRequest).user;
+    const { departmentId } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
     const { keyword, status, from_date, to_date, doc_type_id, page, page_size } = req.query;
 
-    const rows = await interIncomingRepository.getList(unitId, {
+    const rows = await interIncomingRepository.getList(ancestorUnitId, {
       keyword: keyword as string || undefined,
       status: status as string || undefined,
       fromDate: from_date as string || undefined,

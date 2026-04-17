@@ -5,6 +5,7 @@ import { upload } from '../middleware/upload.js';
 import { documentRepository } from '../repositories/document.repository.js';
 import { uploadFile, deleteFile } from '../lib/minio/client.js';
 import { handleDbError } from '../lib/error-handler.js';
+import { resolveAncestorUnit } from '../lib/department-subtree.js';
 
 const router = Router();
 
@@ -15,8 +16,9 @@ const router = Router();
 // GET /danh-muc — Cây danh mục tài liệu
 router.get('/danh-muc', async (req: Request, res: Response) => {
   try {
-    const { unitId } = (req as AuthRequest).user;
-    const data = await documentRepository.getCategoryTree(unitId);
+    const { departmentId } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
+    const data = await documentRepository.getCategoryTree(ancestorUnitId);
     res.json({ success: true, data });
   } catch (error) {
     handleDbError(error, res);
@@ -26,7 +28,8 @@ router.get('/danh-muc', async (req: Request, res: Response) => {
 // POST /danh-muc — Tạo danh mục
 router.post('/danh-muc', async (req: Request, res: Response) => {
   try {
-    const { staffId, unitId } = (req as AuthRequest).user;
+    const { staffId, departmentId } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
     const b = req.body;
 
     if (!b.name?.trim()) {
@@ -41,7 +44,7 @@ router.post('/danh-muc', async (req: Request, res: Response) => {
       b.date_process ?? null,
       b.description ?? null,
       b.version ?? null,
-      unitId,
+      ancestorUnitId,
       staffId,
     );
 
@@ -109,16 +112,17 @@ router.delete('/danh-muc/:id', async (req: Request, res: Response) => {
 // ============================================================
 
 // GET / — Danh sách tài liệu (phân trang)
-// T-05-07: filter by unitId from JWT
+// T-05-07: filter by ancestor unit
 router.get('/', async (req: Request, res: Response) => {
   try {
-    const { unitId } = (req as AuthRequest).user;
+    const { departmentId } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
     const categoryId = req.query.category_id ? Number(req.query.category_id) : null;
     const keyword = (req.query.keyword as string) || null;
     const page = Number(req.query.page) || 1;
     const pageSize = Number(req.query.page_size) || 20;
 
-    const rows = await documentRepository.getDocumentList(unitId, categoryId, keyword, page, pageSize);
+    const rows = await documentRepository.getDocumentList(ancestorUnitId, categoryId, keyword, page, pageSize);
     const total = rows.length > 0 ? Number(rows[0].total_count) : 0;
     res.json({ success: true, data: rows, total, page, page_size: pageSize });
   } catch (error) {
@@ -145,7 +149,8 @@ router.get('/:id', async (req: Request, res: Response) => {
 // T-05-06: Multer 50MB limit + mime type validation
 router.post('/', upload.single('file'), async (req: Request, res: Response) => {
   try {
-    const { staffId, unitId } = (req as AuthRequest).user;
+    const { staffId, departmentId } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
     const b = req.body;
 
     if (!b.title?.trim()) {
@@ -173,7 +178,7 @@ router.post('/', upload.single('file'), async (req: Request, res: Response) => {
     }
 
     const result = await documentRepository.createDocument(
-      unitId,
+      ancestorUnitId,
       b.category_id ? Number(b.category_id) : null,
       b.title.trim(),
       b.description ?? null,

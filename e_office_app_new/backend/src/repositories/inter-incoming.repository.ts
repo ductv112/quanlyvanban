@@ -70,9 +70,9 @@ export const interIncomingRepository = {
       status?: string;
       fromDate?: string;
       toDate?: string;
-      docTypeId?: number;
       page?: number;
       pageSize?: number;
+      deptIds?: number[] | null;
     } = {},
   ): Promise<InterIncomingListRow[]> {
     return callFunction<InterIncomingListRow>('edoc.fn_inter_incoming_get_list', [
@@ -81,9 +81,9 @@ export const interIncomingRepository = {
       filters.status ?? null,
       filters.fromDate ?? null,
       filters.toDate ?? null,
-      filters.docTypeId ?? null,
       filters.page ?? 1,
       filters.pageSize ?? 20,
+      filters.deptIds ?? null,
     ]);
   },
 

@@ -2,6 +2,7 @@ import { Router, type Request, type Response } from 'express';
 import type { AuthRequest } from '../middleware/auth.js';
 import { noticeRepository } from '../repositories/notice.repository.js';
 import { handleDbError } from '../lib/error-handler.js';
+import { resolveAncestorUnit } from '../lib/department-subtree.js';
 
 const router = Router();
 
@@ -10,7 +11,8 @@ const router = Router();
 // ============================================================
 router.get('/', async (req: Request, res: Response) => {
   try {
-    const { staffId, unitId } = (req as AuthRequest).user;
+    const { staffId, departmentId } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
     const { is_read, page, page_size } = req.query;
 
     let isReadFilter: boolean | null = null;
@@ -18,7 +20,7 @@ router.get('/', async (req: Request, res: Response) => {
     else if (is_read === 'false') isReadFilter = false;
 
     const rows = await noticeRepository.getList(
-      unitId,
+      ancestorUnitId,
       staffId,
       isReadFilter,
       page ? Number(page) : 1,
@@ -58,7 +60,8 @@ router.get('/unread-count', async (req: Request, res: Response) => {
 // ============================================================
 router.post('/', async (req: Request, res: Response) => {
   try {
-    const { staffId, unitId } = (req as AuthRequest).user;
+    const { staffId, departmentId } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
     const { title, content, notice_type } = req.body;
 
     if (!title?.trim()) {
@@ -76,7 +79,7 @@ router.post('/', async (req: Request, res: Response) => {
 
     // created_by MUST come from JWT, never from request body (T-03-11 mitigation)
     const result = await noticeRepository.create(
-      unitId,
+      ancestorUnitId,
       title.trim(),
       content.trim(),
       notice_type || null,
@@ -99,8 +102,9 @@ router.post('/', async (req: Request, res: Response) => {
 // ============================================================
 router.patch('/mark-all-read', async (req: Request, res: Response) => {
   try {
-    const { staffId, unitId } = (req as AuthRequest).user;
-    const result = await noticeRepository.markAllRead(staffId, unitId);
+    const { staffId, departmentId } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
+    const result = await noticeRepository.markAllRead(staffId, ancestorUnitId);
     res.json({ success: true, data: { count: result.count, message: result.message } });
   } catch (error) {
     handleDbError(error, res);

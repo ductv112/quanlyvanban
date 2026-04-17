@@ -5,6 +5,7 @@ import { upload } from '../middleware/upload.js';
 import { contractRepository } from '../repositories/contract.repository.js';
 import { uploadFile, deleteFile } from '../lib/minio/client.js';
 import { handleDbError } from '../lib/error-handler.js';
+import { resolveAncestorUnit } from '../lib/department-subtree.js';
 
 const router = Router();
 
@@ -15,8 +16,9 @@ const router = Router();
 // GET /loai — Danh sách loại hợp đồng
 router.get('/loai', async (req: Request, res: Response) => {
   try {
-    const { unitId } = (req as AuthRequest).user;
-    const data = await contractRepository.getContractTypeList(unitId);
+    const { departmentId } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
+    const data = await contractRepository.getContractTypeList(ancestorUnitId);
     res.json({ success: true, data });
   } catch (error) {
     handleDbError(error, res);
@@ -26,7 +28,8 @@ router.get('/loai', async (req: Request, res: Response) => {
 // POST /loai — Tạo loại hợp đồng
 router.post('/loai', async (req: Request, res: Response) => {
   try {
-    const { staffId, unitId } = (req as AuthRequest).user;
+    const { staffId, departmentId } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
     const b = req.body;
 
     if (!b.name?.trim()) {
@@ -35,7 +38,7 @@ router.post('/loai', async (req: Request, res: Response) => {
     }
 
     const result = await contractRepository.createContractType(
-      unitId,
+      ancestorUnitId,
       b.parent_id ?? 0,
       b.code ?? null,
       b.name.trim(),
@@ -106,17 +109,18 @@ router.delete('/loai/:id', async (req: Request, res: Response) => {
 // ============================================================
 
 // GET / — Danh sách hợp đồng (phân trang)
-// T-05-07: filter by unitId from JWT
+// T-05-07: filter by ancestor unit
 router.get('/', async (req: Request, res: Response) => {
   try {
-    const { unitId } = (req as AuthRequest).user;
+    const { departmentId } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
     const contractTypeId = req.query.contract_type_id ? Number(req.query.contract_type_id) : null;
     const status = req.query.status !== undefined ? Number(req.query.status) : null;
     const keyword = (req.query.keyword as string) || null;
     const page = Number(req.query.page) || 1;
     const pageSize = Number(req.query.page_size) || 20;
 
-    const rows = await contractRepository.getContractList(unitId, contractTypeId, status, keyword, page, pageSize);
+    const rows = await contractRepository.getContractList(ancestorUnitId, contractTypeId, status, keyword, page, pageSize);
     const total = rows.length > 0 ? Number(rows[0].total_count) : 0;
     res.json({ success: true, data: rows, total, page, pageSize });
   } catch (error) {
@@ -143,7 +147,8 @@ router.get('/:id', async (req: Request, res: Response) => {
 router.post('/', async (req: Request, res: Response) => {
   try {
     // T-05-08: created_user_id sourced from JWT staffId, never from request body
-    const { staffId, unitId } = (req as AuthRequest).user;
+    const { staffId, departmentId } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
     const b = req.body;
 
     if (!b.name?.trim()) {
@@ -158,7 +163,7 @@ router.post('/', async (req: Request, res: Response) => {
       b.type_of_contract ?? 0,
       b.contact_id ? Number(b.contact_id) : null,
       b.contact_name ?? null,
-      unitId,
+      ancestorUnitId,
       b.code ?? null,
       b.sign_date ?? null,
       b.input_date ?? null,

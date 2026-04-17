@@ -107,7 +107,7 @@ export const handlingDocRepository = {
   // --- 5.1 List ---
   async getList(
     unitId: number,
-    departmentId: number | null,
+    deptIds: number[] | null,
     staffId: number,
     filters: {
       status?: number;
@@ -121,7 +121,7 @@ export const handlingDocRepository = {
   ): Promise<HandlingDocListRow[]> {
     return callFunction<HandlingDocListRow>('edoc.fn_handling_doc_get_list', [
       unitId,
-      departmentId ?? null,
+      deptIds ?? null,
       staffId,
       filters.status ?? null,
       filters.filterType ?? null,
@@ -133,8 +133,8 @@ export const handlingDocRepository = {
     ]);
   },
 
-  async countByStatus(unitId: number, staffId: number): Promise<StatusCountRow[]> {
-    return callFunction<StatusCountRow>('edoc.fn_handling_doc_count_by_status', [unitId, staffId]);
+  async countByStatus(unitId: number, staffId: number, deptIds?: number[] | null): Promise<StatusCountRow[]> {
+    return callFunction<StatusCountRow>('edoc.fn_handling_doc_count_by_status', [unitId, staffId, deptIds ?? null]);
   },
 
   // --- 5.3 Detail ---

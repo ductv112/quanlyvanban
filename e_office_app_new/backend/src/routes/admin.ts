@@ -9,6 +9,7 @@ import { staffRepository } from '../repositories/staff.repository.js';
 import { roleRepository } from '../repositories/role.repository.js';
 import { rightRepository } from '../repositories/right.repository.js';
 import { handleDbError } from '../lib/error-handler.js';
+import { resolveAncestorUnit } from '../lib/department-subtree.js';
 
 const router = Router();
 
@@ -652,7 +653,8 @@ router.get('/nhom-quyen', async (req: Request, res: Response) => {
 // POST /nhom-quyen
 router.post('/nhom-quyen', async (req: Request, res: Response) => {
   try {
-    const { staffId, unitId } = (req as AuthRequest).user;
+    const { staffId, departmentId } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
     const { name, description, unit_id } = req.body;
 
     if (!name?.trim()) {
@@ -669,7 +671,7 @@ router.post('/nhom-quyen', async (req: Request, res: Response) => {
       return;
     }
 
-    const id = await roleRepository.create(unit_id ?? unitId, name, description ?? '', staffId);
+    const id = await roleRepository.create(unit_id ?? ancestorUnitId, name, description ?? '', staffId);
     if (!id) {
       res.status(500).json({ success: false, message: 'Không thể tạo nhóm quyền' });
       return;

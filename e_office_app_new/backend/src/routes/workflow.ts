@@ -3,6 +3,7 @@ import type { Response } from 'express';
 import type { AuthRequest } from '../middleware/auth.js';
 import { workflowRepository } from '../repositories/workflow.repository.js';
 import { handleDbError } from '../lib/error-handler.js';
+import { resolveAncestorUnit } from '../lib/department-subtree.js';
 
 const router = Router();
 
@@ -13,13 +14,13 @@ const router = Router();
 // GET / — Danh sách quy trình
 router.get('/', async (req: AuthRequest, res: Response) => {
   try {
-    const unitId = req.user!.unitId;
+    const ancestorUnitId = await resolveAncestorUnit(req.user!.departmentId);
     const docFieldId = req.query.doc_field_id ? Number(req.query.doc_field_id) : null;
     const isActive = req.query.is_active !== undefined
       ? req.query.is_active === 'true'
       : null;
 
-    const rows = await workflowRepository.getList(unitId, docFieldId, isActive);
+    const rows = await workflowRepository.getList(ancestorUnitId, docFieldId, isActive);
     res.json({ success: true, data: rows });
   } catch (err) {
     handleDbError(err, res);
@@ -29,7 +30,7 @@ router.get('/', async (req: AuthRequest, res: Response) => {
 // POST / — Tạo quy trình mới
 router.post('/', async (req: AuthRequest, res: Response) => {
   try {
-    const unitId = req.user!.unitId;
+    const ancestorUnitId = await resolveAncestorUnit(req.user!.departmentId);
     const staffId = req.user!.staffId;
     const { name, version, doc_field_id } = req.body;
 
@@ -39,7 +40,7 @@ router.post('/', async (req: AuthRequest, res: Response) => {
     }
 
     const result = await workflowRepository.create(
-      unitId,
+      ancestorUnitId,
       String(name),
       version ? String(version) : null,
       doc_field_id ? Number(doc_field_id) : null,

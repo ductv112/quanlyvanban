@@ -70,6 +70,7 @@ export const draftingDocRepository = {
       urgentId?: number; isReleased?: boolean; approved?: boolean;
       fromDate?: string; toDate?: string; keyword?: string;
       page?: number; pageSize?: number;
+      deptIds?: number[] | null;
     } = {},
   ): Promise<DraftingDocListRow[]> {
     return callFunction<DraftingDocListRow>('edoc.fn_drafting_doc_get_list', [
@@ -78,12 +79,13 @@ export const draftingDocRepository = {
       filters.urgentId ?? null, filters.isReleased ?? null, filters.approved ?? null,
       filters.fromDate ?? null, filters.toDate ?? null, filters.keyword ?? null,
       filters.page ?? 1, filters.pageSize ?? 20,
+      filters.deptIds ?? null,
     ]);
   },
 
-  async countUnread(unitId: number, staffId: number): Promise<number> {
+  async countUnread(unitId: number, staffId: number, deptIds?: number[] | null): Promise<number> {
     const row = await callFunctionOne<{ fn_drafting_doc_count_unread: number }>(
-      'edoc.fn_drafting_doc_count_unread', [unitId, staffId],
+      'edoc.fn_drafting_doc_count_unread', [unitId, staffId, deptIds ?? null],
     );
     return row?.fn_drafting_doc_count_unread ?? 0;
   },
@@ -111,7 +113,7 @@ export const draftingDocRepository = {
     docBookId: number; docTypeId?: number; docFieldId?: number;
     secretId?: number; urgentId?: number; numberPaper?: number;
     numberCopies?: number; expiredDate?: string; recipients?: string;
-    createdBy: number;
+    createdBy: number; departmentId?: number;
   }): Promise<DbResultWithId> {
     const row = await callFunctionOne<DbResultWithId>('edoc.fn_drafting_doc_create', [
       params.unitId, params.receivedDate ?? null, params.number ?? null,
@@ -125,6 +127,7 @@ export const draftingDocRepository = {
       params.numberPaper ?? 1, params.numberCopies ?? 1,
       params.expiredDate ?? null, params.recipients ?? null,
       params.createdBy,
+      params.departmentId ?? null,
     ]);
     return row ?? { success: false, message: 'Không thể tạo văn bản dự thảo', id: 0 };
   },

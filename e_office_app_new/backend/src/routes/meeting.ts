@@ -6,6 +6,7 @@ import { uploadFile } from '../lib/minio/client.js';
 import { emitToUsers } from '../lib/socket.js';
 import { v4 as uuidv4 } from 'uuid';
 import { handleDbError } from '../lib/error-handler.js';
+import { resolveAncestorUnit } from '../lib/department-subtree.js';
 
 const router = Router();
 
@@ -16,8 +17,9 @@ const router = Router();
 // GET /phong-hop — Danh sách phòng họp
 router.get('/phong-hop', async (req: Request, res: Response) => {
   try {
-    const { unitId } = (req as AuthRequest).user;
-    const rows = await meetingRepository.getRoomList(unitId);
+    const { departmentId } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
+    const rows = await meetingRepository.getRoomList(ancestorUnitId);
     res.json({ success: true, data: rows });
   } catch (error) {
     handleDbError(error, res);
@@ -27,7 +29,8 @@ router.get('/phong-hop', async (req: Request, res: Response) => {
 // POST /phong-hop — Tạo phòng họp
 router.post('/phong-hop', async (req: Request, res: Response) => {
   try {
-    const { staffId, unitId } = (req as AuthRequest).user;
+    const { staffId, departmentId } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
     const { name, code, location, note, sort_order, show_in_calendar } = req.body;
 
     if (!name?.trim()) {
@@ -36,7 +39,7 @@ router.post('/phong-hop', async (req: Request, res: Response) => {
     }
 
     const result = await meetingRepository.createRoom(
-      unitId,
+      ancestorUnitId,
       name.trim(),
       code || null,
       location || null,
@@ -115,8 +118,9 @@ router.delete('/phong-hop/:id', async (req: Request, res: Response) => {
 // GET /loai-cuoc-hop — Danh sách loại cuộc họp
 router.get('/loai-cuoc-hop', async (req: Request, res: Response) => {
   try {
-    const { unitId } = (req as AuthRequest).user;
-    const rows = await meetingRepository.getMeetingTypeList(unitId);
+    const { departmentId } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
+    const rows = await meetingRepository.getMeetingTypeList(ancestorUnitId);
     res.json({ success: true, data: rows });
   } catch (error) {
     handleDbError(error, res);
@@ -126,7 +130,8 @@ router.get('/loai-cuoc-hop', async (req: Request, res: Response) => {
 // POST /loai-cuoc-hop — Tạo loại cuộc họp
 router.post('/loai-cuoc-hop', async (req: Request, res: Response) => {
   try {
-    const { staffId, unitId } = (req as AuthRequest).user;
+    const { staffId, departmentId } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
     const { name, description, sort_order } = req.body;
 
     if (!name?.trim()) {
@@ -135,7 +140,7 @@ router.post('/loai-cuoc-hop', async (req: Request, res: Response) => {
     }
 
     const result = await meetingRepository.createMeetingType(
-      unitId,
+      ancestorUnitId,
       name.trim(),
       description || null,
       sort_order ? Number(sort_order) : 0,
@@ -208,9 +213,10 @@ router.delete('/loai-cuoc-hop/:id', async (req: Request, res: Response) => {
 // GET /thong-ke — Thống kê cuộc họp
 router.get('/thong-ke', async (req: Request, res: Response) => {
   try {
-    const { unitId } = (req as AuthRequest).user;
+    const { departmentId } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
     const year = req.query.year ? Number(req.query.year) : new Date().getFullYear();
-    const rows = await meetingRepository.getMeetingStats(unitId, year);
+    const rows = await meetingRepository.getMeetingStats(ancestorUnitId, year);
 
     // Transform flat rows (with stat_type discriminator) into grouped response
     const byMonth = rows.filter((r: any) => r.stat_type === 'by_month');
@@ -243,11 +249,12 @@ router.get('/thong-ke', async (req: Request, res: Response) => {
 // GET / — Danh sách cuộc họp (phân trang + filter)
 router.get('/', async (req: Request, res: Response) => {
   try {
-    const { unitId } = (req as AuthRequest).user;
+    const { departmentId } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
     const { room_id, status, from_date, to_date, keyword, page, page_size } = req.query;
 
     const rows = await meetingRepository.getRoomScheduleList(
-      unitId,
+      ancestorUnitId,
       room_id ? Number(room_id) : null,
       status !== undefined ? Number(status) : null,
       from_date as string || null,
@@ -292,7 +299,8 @@ router.get('/:id', async (req: Request, res: Response) => {
 // POST / — Tạo cuộc họp
 router.post('/', async (req: Request, res: Response) => {
   try {
-    const { staffId, unitId } = (req as AuthRequest).user;
+    const { staffId, departmentId } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
     const body = req.body;
 
     if (!body.name?.trim()) {
@@ -309,7 +317,7 @@ router.post('/', async (req: Request, res: Response) => {
     }
 
     const result = await meetingRepository.createRoomSchedule(
-      unitId,
+      ancestorUnitId,
       Number(body.room_id),
       body.meeting_type_id ? Number(body.meeting_type_id) : null,
       body.name.trim(),

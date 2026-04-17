@@ -2,6 +2,7 @@ import { Router, type Request, type Response } from 'express';
 import type { AuthRequest } from '../middleware/auth.js';
 import { archiveRepository } from '../repositories/archive.repository.js';
 import { handleDbError } from '../lib/error-handler.js';
+import { resolveAncestorUnit } from '../lib/department-subtree.js';
 
 const router = Router();
 
@@ -12,8 +13,9 @@ const router = Router();
 // GET /kho — Cây kho lưu trữ
 router.get('/kho', async (req: Request, res: Response) => {
   try {
-    const { unitId } = (req as AuthRequest).user;
-    const data = await archiveRepository.getWarehouseTree(unitId);
+    const { departmentId } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
+    const data = await archiveRepository.getWarehouseTree(ancestorUnitId);
     res.json({ success: true, data });
   } catch (error) {
     handleDbError(error, res);
@@ -38,7 +40,8 @@ router.get('/kho/:id', async (req: Request, res: Response) => {
 // POST /kho — Tạo kho
 router.post('/kho', async (req: Request, res: Response) => {
   try {
-    const { staffId, unitId } = (req as AuthRequest).user;
+    const { staffId, departmentId } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
     const b = req.body;
 
     if (!b.name?.trim()) {
@@ -47,7 +50,7 @@ router.post('/kho', async (req: Request, res: Response) => {
     }
 
     const result = await archiveRepository.createWarehouse(
-      unitId,
+      ancestorUnitId,
       b.type_id ?? null,
       b.code ?? null,
       b.name.trim(),
@@ -134,8 +137,9 @@ router.delete('/kho/:id', async (req: Request, res: Response) => {
 // GET /phong — Cây phông lưu trữ
 router.get('/phong', async (req: Request, res: Response) => {
   try {
-    const { unitId } = (req as AuthRequest).user;
-    const data = await archiveRepository.getFondTree(unitId);
+    const { departmentId } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
+    const data = await archiveRepository.getFondTree(ancestorUnitId);
     res.json({ success: true, data });
   } catch (error) {
     handleDbError(error, res);
@@ -160,7 +164,8 @@ router.get('/phong/:id', async (req: Request, res: Response) => {
 // POST /phong — Tạo phông
 router.post('/phong', async (req: Request, res: Response) => {
   try {
-    const { staffId, unitId } = (req as AuthRequest).user;
+    const { staffId, departmentId } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
     const b = req.body;
 
     if (!b.fond_name?.trim()) {
@@ -169,7 +174,7 @@ router.post('/phong', async (req: Request, res: Response) => {
     }
 
     const result = await archiveRepository.createFond(
-      unitId,
+      ancestorUnitId,
       b.parent_id ?? 0,
       b.fond_code ?? null,
       b.fond_name.trim(),
@@ -260,17 +265,18 @@ router.delete('/phong/:id', async (req: Request, res: Response) => {
 // ============================================================
 
 // GET /ho-so — Danh sách hồ sơ (phân trang)
-// T-05-07: filter by unitId from JWT — no cross-unit access
+// T-05-07: filter by ancestor unit — no cross-unit access
 router.get('/ho-so', async (req: Request, res: Response) => {
   try {
-    const { unitId } = (req as AuthRequest).user;
+    const { departmentId } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
     const fondId = req.query.fond_id ? Number(req.query.fond_id) : null;
     const warehouseId = req.query.warehouse_id ? Number(req.query.warehouse_id) : null;
     const keyword = (req.query.keyword as string) || null;
     const page = Number(req.query.page) || 1;
     const pageSize = Number(req.query.page_size) || 20;
 
-    const rows = await archiveRepository.getRecordList(unitId, fondId, warehouseId, keyword, page, pageSize);
+    const rows = await archiveRepository.getRecordList(ancestorUnitId, fondId, warehouseId, keyword, page, pageSize);
     const total = rows.length > 0 ? Number(rows[0].total_count) : 0;
     res.json({ success: true, data: rows, total, page, page_size: pageSize });
   } catch (error) {
@@ -296,7 +302,8 @@ router.get('/ho-so/:id', async (req: Request, res: Response) => {
 // POST /ho-so — Tạo hồ sơ
 router.post('/ho-so', async (req: Request, res: Response) => {
   try {
-    const { staffId, unitId } = (req as AuthRequest).user;
+    const { staffId, departmentId } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
     const b = req.body;
 
     if (!b.title?.trim()) {
@@ -313,7 +320,7 @@ router.post('/ho-so', async (req: Request, res: Response) => {
     }
 
     const result = await archiveRepository.createRecord(
-      unitId,
+      ancestorUnitId,
       Number(b.fond_id),
       Number(b.warehouse_id),
       b.file_code ?? null,
@@ -426,16 +433,17 @@ router.delete('/ho-so/:id', async (req: Request, res: Response) => {
 // ============================================================
 
 // GET /muon-tra — Danh sách yêu cầu mượn
-// T-05-07: filter by unitId from JWT — no cross-unit access
+// T-05-07: filter by ancestor unit — no cross-unit access
 router.get('/muon-tra', async (req: Request, res: Response) => {
   try {
-    const { unitId } = (req as AuthRequest).user;
+    const { departmentId } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
     const status = req.query.status !== undefined ? Number(req.query.status) : null;
     const keyword = (req.query.keyword as string) || null;
     const page = Number(req.query.page) || 1;
     const pageSize = Number(req.query.page_size) || 20;
 
-    const rows = await archiveRepository.getBorrowRequestList(unitId, status, keyword, page, pageSize);
+    const rows = await archiveRepository.getBorrowRequestList(ancestorUnitId, status, keyword, page, pageSize);
     const total = rows.length > 0 ? Number(rows[0].total_count) : 0;
     res.json({ success: true, data: rows, total, page, page_size: pageSize });
   } catch (error) {
@@ -462,7 +470,8 @@ router.get('/muon-tra/:id', async (req: Request, res: Response) => {
 router.post('/muon-tra', async (req: Request, res: Response) => {
   try {
     // T-05-08: created_user_id sourced from JWT staffId, never from request body
-    const { staffId, unitId } = (req as AuthRequest).user;
+    const { staffId, departmentId } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
     const b = req.body;
 
     if (!b.name?.trim()) {
@@ -474,7 +483,7 @@ router.post('/muon-tra', async (req: Request, res: Response) => {
 
     const result = await archiveRepository.createBorrowRequest(
       b.name.trim(),
-      unitId,
+      ancestorUnitId,
       b.emergency ?? null,
       b.notice ?? null,
       b.borrow_date ?? null,

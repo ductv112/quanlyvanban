@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Card, Table, Button, Input, Space, Select, DatePicker, Drawer, Form,
-  InputNumber, Tag, Modal, App, Row, Col, Tooltip, Dropdown,
+  InputNumber, Tag, Modal, App, Row, Col, Tooltip, Dropdown, TreeSelect,
 } from 'antd';
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
 import {
@@ -13,6 +13,7 @@ import {
 } from '@ant-design/icons';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth.store';
+import { buildTree, flattenTreeForSelect } from '@/lib/tree-utils';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import dayjs from 'dayjs';
 
@@ -106,6 +107,8 @@ export default function DraftingDocPage() {
   const [filterUrgentId, setFilterUrgentId] = useState<number | undefined>();
   const [filterIsReleased, setFilterIsReleased] = useState<boolean | undefined>();
   const [filterDateRange, setFilterDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs] | null>(null);
+  const [filterDeptId, setFilterDeptId] = useState<number | undefined>();
+  const [deptTreeData, setDeptTreeData] = useState<{ value: number; title: string; children?: any[] }[]>([]);
   const [docBooks, setDocBooks] = useState<SelectOption[]>([]);
   const [docTypes, setDocTypes] = useState<SelectOption[]>([]);
   const [docFields, setDocFields] = useState<SelectOption[]>([]);
@@ -131,12 +134,13 @@ export default function DraftingDocPage() {
         params.from_date = filterDateRange[0].startOf('day').toISOString();
         params.to_date = filterDateRange[1].endOf('day').toISOString();
       }
+      if (filterDeptId) params.department_id = filterDeptId;
       const { data: res } = await api.get('/van-ban-du-thao', { params });
       setData(res.data || []);
       setTotal(res.pagination?.total || 0);
     } catch { message.error('Lỗi tải danh sách văn bản dự thảo'); }
     finally { setLoading(false); }
-  }, [page, pageSize, keyword, filterDocBookId, filterDocTypeId, filterUrgentId, filterIsReleased, filterDateRange, message]);
+  }, [page, pageSize, keyword, filterDocBookId, filterDocTypeId, filterUrgentId, filterIsReleased, filterDateRange, filterDeptId, message]);
 
   const fetchDropdowns = useCallback(async () => {
     try {
@@ -151,8 +155,12 @@ export default function DraftingDocPage() {
       setDocFields((fieldRes.data.data || []).map((f: { id: number; name: string }) => ({ value: f.id, label: f.name })));
       const deptTree: DepartmentNode[] = deptRes.data.data || [];
       setDepartments(flattenDepartments(deptTree));
+      if (user?.isAdmin) {
+        const tree = buildTree(deptTree.map((d: any) => ({ id: d.id, parent_id: d.parent_id, name: d.name })));
+        setDeptTreeData(flattenTreeForSelect(tree));
+      }
     } catch { /* ignore */ }
-  }, []);
+  }, [user?.isAdmin]);
 
   const fetchExtraColumns = useCallback(async () => {
     try {
@@ -506,6 +514,7 @@ export default function DraftingDocPage() {
             onSearch={(val) => { setKeyword(val); setPage(1); }}
           />
         </Col>
+        {user?.isAdmin && <Col span={4}><TreeSelect style={{ width: '100%' }} placeholder="Phòng ban" allowClear showSearch treeNodeFilterProp="title" treeData={deptTreeData} value={filterDeptId} onChange={(val) => { setFilterDeptId(val); setPage(1); }} /></Col>}
         <Col span={4}>
           <Select
             style={{ width: '100%' }}
@@ -573,6 +582,7 @@ export default function DraftingDocPage() {
                 setFilterUrgentId(undefined);
                 setFilterIsReleased(undefined);
                 setFilterDateRange(null);
+                setFilterDeptId(undefined);
                 setPage(1);
               }}
             />

@@ -132,6 +132,7 @@ export const incomingDocRepository = {
       fromDate?: string; toDate?: string; keyword?: string;
       signer?: string; fromNumber?: number; toNumber?: number;
       page?: number; pageSize?: number;
+      deptIds?: number[] | null;
     } = {},
   ): Promise<IncomingDocListRow[]> {
     return callFunction<IncomingDocListRow>('edoc.fn_incoming_doc_get_list', [
@@ -141,12 +142,13 @@ export const incomingDocRepository = {
       filters.fromDate ?? null, filters.toDate ?? null, filters.keyword ?? null,
       filters.signer ?? null, filters.fromNumber ?? null, filters.toNumber ?? null,
       filters.page ?? 1, filters.pageSize ?? 20,
+      filters.deptIds ?? null,
     ]);
   },
 
-  async countUnread(unitId: number, staffId: number): Promise<number> {
+  async countUnread(unitId: number, staffId: number, deptIds?: number[] | null): Promise<number> {
     const row = await callFunctionOne<{ fn_incoming_doc_count_unread: number }>(
-      'edoc.fn_incoming_doc_count_unread', [unitId, staffId],
+      'edoc.fn_incoming_doc_count_unread', [unitId, staffId, deptIds ?? null],
     );
     return row?.fn_incoming_doc_count_unread ?? 0;
   },
@@ -177,6 +179,7 @@ export const incomingDocRepository = {
     docFieldId?: number; secretId?: number; urgentId?: number; numberPaper?: number;
     numberCopies?: number; expiredDate?: string; recipients?: string;
     sents?: string; isReceivedPaper?: boolean; createdBy: number;
+    departmentId?: number;
   }): Promise<DbResultWithId> {
     const row = await callFunctionOne<DbResultWithId>('edoc.fn_incoming_doc_create', [
       params.unitId, params.receivedDate ?? null, params.number ?? null,
@@ -187,8 +190,8 @@ export const incomingDocRepository = {
       params.secretId ?? 1, params.urgentId ?? 1,
       params.numberPaper ?? 1, params.numberCopies ?? 1,
       params.expiredDate ?? null, params.recipients ?? null,
-      params.sents ?? null,
       params.isReceivedPaper ?? false, params.createdBy,
+      params.departmentId ?? null,
     ]);
     return row ?? { success: false, message: 'Không thể tạo văn bản đến', id: 0 };
   },

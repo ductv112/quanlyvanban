@@ -3,6 +3,7 @@ import type { AuthRequest } from '../middleware/auth.js';
 import { requireRoles } from '../middleware/auth.js';
 import { calendarRepository } from '../repositories/calendar.repository.js';
 import { handleDbError } from '../lib/error-handler.js';
+import { resolveAncestorUnit } from '../lib/department-subtree.js';
 
 const router = Router();
 
@@ -11,14 +12,15 @@ const router = Router();
 // ============================================================
 router.get('/events', async (req: Request, res: Response) => {
   try {
-    const { staffId, unitId } = (req as AuthRequest).user;
+    const { staffId, departmentId } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
     const { scope, start, end } = req.query;
 
     const scopeVal = (scope as string) || 'personal';
     const startVal = (start as string) || new Date(Date.now() - 30 * 24 * 3600000).toISOString();
     const endVal = (end as string) || new Date(Date.now() + 60 * 24 * 3600000).toISOString();
 
-    const rows = await calendarRepository.getList(scopeVal, unitId, staffId, startVal, endVal);
+    const rows = await calendarRepository.getList(scopeVal, ancestorUnitId, staffId, startVal, endVal);
     res.json({ success: true, data: rows });
   } catch (error) {
     handleDbError(error, res);
@@ -50,7 +52,8 @@ router.get('/events/:id', async (req: Request, res: Response) => {
 router.post('/events', async (req: Request, res: Response) => {
   try {
     // T-04-04: use staffId from JWT
-    const { staffId, unitId, roles } = (req as AuthRequest).user;
+    const { staffId, departmentId, roles } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
     const body = req.body;
 
     if (!body.title?.trim()) {
@@ -87,7 +90,7 @@ router.post('/events', async (req: Request, res: Response) => {
       body.color || null,
       body.repeat_type || 'none',
       scope,
-      scope !== 'personal' ? unitId : null,
+      scope !== 'personal' ? ancestorUnitId : null,
       staffId, // T-04-04: always from JWT
     );
 
@@ -108,7 +111,8 @@ router.post('/events', async (req: Request, res: Response) => {
 router.put('/events/:id', async (req: Request, res: Response) => {
   try {
     // T-04-05: staffId from JWT for ownership verification
-    const { staffId, unitId, roles } = (req as AuthRequest).user;
+    const { staffId, departmentId, roles } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
     const id = Number(req.params.id);
     const body = req.body;
 
@@ -147,7 +151,7 @@ router.put('/events/:id', async (req: Request, res: Response) => {
       body.color || null,
       body.repeat_type || 'none',
       scope,
-      scope !== 'personal' ? unitId : null,
+      scope !== 'personal' ? ancestorUnitId : null,
       staffId, // T-04-05: passed to SP for ownership check
     );
 

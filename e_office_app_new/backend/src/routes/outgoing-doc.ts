@@ -8,6 +8,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { handleDbError } from '../lib/error-handler.js';
 import { exportExcel } from '../lib/excel.js';
 import { callFunction } from '../lib/db/query.js';
+import { resolveDeptSubtree, resolveAncestorUnit } from '../lib/department-subtree.js';
 import dayjs from 'dayjs';
 
 const router = Router();
@@ -18,14 +19,17 @@ const router = Router();
 
 router.get('/', async (req: Request, res: Response) => {
   try {
-    const { staffId, unitId } = (req as AuthRequest).user;
+    const { staffId, departmentId, isAdmin } = (req as AuthRequest).user;
     const {
       doc_book_id, doc_type_id, doc_field_id, urgent_id,
       approved, from_date, to_date, keyword,
-      page, page_size,
+      page, page_size, department_id,
     } = req.query;
 
-    const rows = await outgoingDocRepository.getList(unitId, staffId, {
+    const filterDeptId = department_id ? Number(department_id) : undefined;
+    const deptIds = await resolveDeptSubtree(departmentId, isAdmin, filterDeptId);
+
+    const rows = await outgoingDocRepository.getList(0, staffId, {
       docBookId: doc_book_id ? Number(doc_book_id) : undefined,
       docTypeId: doc_type_id ? Number(doc_type_id) : undefined,
       docFieldId: doc_field_id ? Number(doc_field_id) : undefined,
@@ -36,6 +40,7 @@ router.get('/', async (req: Request, res: Response) => {
       keyword: keyword as string || undefined,
       page: page ? Number(page) : 1,
       pageSize: page_size ? Number(page_size) : 20,
+      deptIds,
     });
 
     const total = rows[0]?.total_count ?? 0;
@@ -55,8 +60,9 @@ router.get('/', async (req: Request, res: Response) => {
 
 router.get('/chua-doc/count', async (req: Request, res: Response) => {
   try {
-    const { staffId, unitId } = (req as AuthRequest).user;
-    const count = await outgoingDocRepository.countUnread(unitId, staffId);
+    const { staffId, departmentId, isAdmin } = (req as AuthRequest).user;
+    const deptIds = await resolveDeptSubtree(departmentId, isAdmin);
+    const count = await outgoingDocRepository.countUnread(0, staffId, deptIds);
     res.json({ success: true, data: { count } });
   } catch (error) {
     handleDbError(error, res);
@@ -91,16 +97,18 @@ router.get('/danh-dau-ca-nhan', async (req: Request, res: Response) => {
 // GET /xuat-excel — Xuất danh sách VB đi ra Excel
 router.get('/xuat-excel', async (req: Request, res: Response) => {
   try {
-    const { staffId, unitId } = (req as AuthRequest).user;
+    const { staffId, departmentId, isAdmin } = (req as AuthRequest).user;
     const { doc_book_id, doc_type_id, from_date, to_date, keyword } = req.query;
+    const deptIds = await resolveDeptSubtree(departmentId, isAdmin);
 
-    const rows = await outgoingDocRepository.getList(unitId, staffId, {
+    const rows = await outgoingDocRepository.getList(0, staffId, {
       docBookId: doc_book_id ? Number(doc_book_id) : undefined,
       docTypeId: doc_type_id ? Number(doc_type_id) : undefined,
       fromDate: from_date as string || undefined,
       toDate: to_date as string || undefined,
       keyword: keyword as string || undefined,
       page: 1, pageSize: 10000,
+      deptIds,
     });
 
     const fmtDate = (d: string) => d ? dayjs(d).format('DD/MM/YYYY') : '';
@@ -153,13 +161,14 @@ router.get('/truong-bo-sung', async (req: Request, res: Response) => {
 
 router.get('/so-tiep-theo', async (req: Request, res: Response) => {
   try {
-    const { unitId } = (req as AuthRequest).user;
+    const { departmentId } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
     const { doc_book_id } = req.query;
     if (!doc_book_id) {
       res.status(400).json({ success: false, message: 'Sổ văn bản là bắt buộc' });
       return;
     }
-    const nextNumber = await outgoingDocRepository.getNextNumber(Number(doc_book_id), unitId);
+    const nextNumber = await outgoingDocRepository.getNextNumber(Number(doc_book_id), ancestorUnitId);
     res.json({ success: true, data: { number: nextNumber } });
   } catch (error) {
     handleDbError(error, res);
@@ -172,13 +181,14 @@ router.get('/so-tiep-theo', async (req: Request, res: Response) => {
 
 router.get('/so-chua-phat-hanh', async (req: Request, res: Response) => {
   try {
-    const { unitId } = (req as AuthRequest).user;
+    const { departmentId } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
     const { doc_book_id } = req.query;
     if (!doc_book_id) {
       res.status(400).json({ success: false, message: 'Sổ văn bản là bắt buộc' });
       return;
     }
-    const rows = await outgoingDocRepository.getUnusedNumbers(unitId, Number(doc_book_id));
+    const rows = await outgoingDocRepository.getUnusedNumbers(ancestorUnitId, Number(doc_book_id));
     res.json({ success: true, data: rows.map(r => r.unused_number) });
   } catch (error) {
     handleDbError(error, res);
@@ -191,7 +201,8 @@ router.get('/so-chua-phat-hanh', async (req: Request, res: Response) => {
 
 router.post('/', async (req: Request, res: Response) => {
   try {
-    const { staffId, unitId } = (req as AuthRequest).user;
+    const { staffId, departmentId } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
     const body = req.body;
 
     if (!body.abstract?.trim()) {
@@ -204,7 +215,7 @@ router.post('/', async (req: Request, res: Response) => {
     }
 
     const result = await outgoingDocRepository.create({
-      unitId,
+      unitId: ancestorUnitId,
       receivedDate: body.received_date || null,
       number: body.number ? Number(body.number) : undefined,
       subNumber: body.sub_number || null,
@@ -419,8 +430,9 @@ router.get('/:id/dinh-kem/:attachmentId/download', async (req: Request, res: Res
 
 router.get('/:id/danh-sach-gui', async (req: Request, res: Response) => {
   try {
-    const { unitId } = (req as AuthRequest).user;
-    const rows = await outgoingDocRepository.getSendableStaff(unitId);
+    const { departmentId } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
+    const rows = await outgoingDocRepository.getSendableStaff(ancestorUnitId);
     res.json({ success: true, data: rows });
   } catch (error) {
     handleDbError(error, res);
@@ -542,14 +554,15 @@ router.patch('/:id/tu-choi', async (req: Request, res: Response) => {
 
 router.get('/:id/kiem-tra-so', async (req: Request, res: Response) => {
   try {
-    const { unitId } = (req as AuthRequest).user;
+    const { departmentId } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
     const { doc_book_id, number } = req.query;
     if (!doc_book_id || !number) {
       res.status(400).json({ success: false, message: 'Thiếu tham số' });
       return;
     }
     const exists = await outgoingDocRepository.checkNumber(
-      unitId, Number(doc_book_id), Number(number), Number(req.params.id) || undefined,
+      ancestorUnitId, Number(doc_book_id), Number(number), Number(req.params.id) || undefined,
     );
     res.json({ success: true, data: { exists } });
   } catch (error) {
@@ -643,9 +656,10 @@ router.post('/:id/giao-viec', async (req: Request, res: Response) => {
 
 router.get('/:id/danh-sach-hscv', async (req: Request, res: Response) => {
   try {
-    const { unitId } = (req as AuthRequest).user;
+    const { departmentId } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
     const { keyword } = req.query;
-    const hscvRows = await incomingDocRepository.getHandlingDocsForLink(unitId, keyword as string || undefined);
+    const hscvRows = await incomingDocRepository.getHandlingDocsForLink(ancestorUnitId, keyword as string || undefined);
     res.json({ success: true, data: hscvRows });
   } catch (error) {
     handleDbError(error, res);
