@@ -151,8 +151,8 @@ export default function IncomingDocDetailPage() {
 
   useEffect(() => {
     setLoading(true);
-    Promise.all([fetchDoc(), fetchAttachments(), fetchRecipients(), fetchHistory(), fetchLeaderNotes(), fetchBookmarkStatus()]).finally(() => setLoading(false));
-  }, [fetchDoc, fetchAttachments, fetchRecipients, fetchHistory, fetchLeaderNotes, fetchBookmarkStatus]);
+    Promise.all([fetchDoc(), fetchAttachments(), fetchRecipients(), fetchHistory(), fetchLeaderNotes(), fetchBookmarkStatus(), fetchStaffOptions()]).finally(() => setLoading(false));
+  }, [fetchDoc, fetchAttachments, fetchRecipients, fetchHistory, fetchLeaderNotes, fetchBookmarkStatus, fetchStaffOptions]);
 
   // Actions
   const handleApprove = async () => { try { await api.patch(`/van-ban-den/${docId}/duyet`); message.success('Duyệt thành công'); fetchDoc(); fetchHistory(); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } };

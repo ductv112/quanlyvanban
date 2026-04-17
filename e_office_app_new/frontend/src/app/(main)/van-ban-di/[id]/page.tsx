@@ -116,6 +116,7 @@ export default function OutgoingDocDetailPage() {
   useEffect(() => {
     setLoading(true);
     Promise.all([fetchDoc(), fetchAttachments(), fetchRecipients(), fetchHistory(), fetchLeaderNotes(), fetchBookmarkStatus()]).finally(() => setLoading(false));
+    fetchStaffOptions();
   }, [fetchDoc, fetchAttachments, fetchRecipients, fetchHistory, fetchLeaderNotes, fetchBookmarkStatus]);
 
   // Actions
