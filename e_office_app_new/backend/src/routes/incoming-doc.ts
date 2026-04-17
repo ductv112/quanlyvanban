@@ -265,11 +265,11 @@ router.get('/:id', async (req: Request, res: Response) => {
       res.status(404).json({ success: false, message: 'Không tìm thấy văn bản đến' });
       return;
     }
-    // Lấy extra_fields riêng (SP RETURNS TABLE không có cột này)
-    const efRows = await rawQuery<{ extra_fields: Record<string, unknown> }>(
-      'SELECT extra_fields FROM edoc.incoming_docs WHERE id = $1', [id],
+    // Lấy extra_fields + rejection info
+    const extraRows = await rawQuery<{ extra_fields: Record<string, unknown>; rejected_by: number | null; rejection_reason: string | null }>(
+      'SELECT extra_fields, rejected_by, rejection_reason FROM edoc.incoming_docs WHERE id = $1', [id],
     ).catch(() => []);
-    res.json({ success: true, data: { ...doc, extra_fields: efRows[0]?.extra_fields || {} } });
+    res.json({ success: true, data: { ...doc, extra_fields: extraRows[0]?.extra_fields || {}, rejected_by: extraRows[0]?.rejected_by ?? null, rejection_reason: extraRows[0]?.rejection_reason ?? null } });
   } catch (error) {
     handleDbError(error, res);
   }

@@ -395,11 +395,18 @@ export default function IncomingDocDetailPage() {
           </div>
           {doc.approved
             ? <Tag color="success" icon={<SafetyCertificateOutlined />}>Đã duyệt</Tag>
-            : <Tag color="warning">Chờ duyệt</Tag>
+            : (doc as any).rejected_by
+              ? <Tag color="error">Từ chối</Tag>
+              : <Tag color="warning">Chờ duyệt</Tag>
           }
           {doc.urgent_id > 1 && <Tag color={urgentTag.color}>{urgentTag.text}</Tag>}
           {doc.secret_id > 1 && <Tag color={secretTag.color}>{secretTag.text}</Tag>}
         </Flex>
+        {(doc as any).rejected_by && (doc as any).rejection_reason && (
+          <div style={{ marginTop: 8, padding: '8px 12px', background: '#fff1f0', border: '1px solid #ffa39e', borderRadius: 6, color: '#cf1322' }}>
+            <strong>Lý do từ chối:</strong> {(doc as any).rejection_reason}
+          </div>
+        )}
 
         <Space wrap>
           <Button

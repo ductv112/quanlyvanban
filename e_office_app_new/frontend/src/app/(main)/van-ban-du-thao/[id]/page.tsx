@@ -179,7 +179,7 @@ export default function DraftingDocDetailPage() {
     ? <Tag color="success" icon={<RocketOutlined />}>Đã phát hành</Tag>
     : doc.approved
       ? <Tag color="blue" icon={<SafetyCertificateOutlined />}>Đã duyệt</Tag>
-      : doc.reject_reason
+      : (doc as any).rejected_by || doc.reject_reason
         ? <Tag color="red">Từ chối</Tag>
         : <Tag color="gold">Dự thảo</Tag>;
 
@@ -205,6 +205,11 @@ export default function DraftingDocDetailPage() {
           {doc.urgent_id > 1 && <Tag color={urgentTag.color}>{urgentTag.text}</Tag>}
           {doc.secret_id > 1 && <Tag color={secretTag.color}>{secretTag.text}</Tag>}
         </Flex>
+        {(doc as any).rejected_by && ((doc as any).rejection_reason || doc.reject_reason) && (
+          <div style={{ marginTop: 8, padding: '8px 12px', background: '#fff1f0', border: '1px solid #ffa39e', borderRadius: 6, color: '#cf1322' }}>
+            <strong>Lý do từ chối:</strong> {(doc as any).rejection_reason || doc.reject_reason}
+          </div>
+        )}
 
         <Space wrap>
           <Button
@@ -218,7 +223,7 @@ export default function DraftingDocDetailPage() {
               <Button icon={<EditOutlined />} onClick={() => router.push(`/van-ban-du-thao?edit=${doc.id}`)}>Sửa</Button>
               <Button type="primary" icon={<CheckCircleOutlined />} onClick={handleApprove}>Duyệt</Button>
               <Dropdown menu={{ items: [
-                { key: 'reject', icon: <StopOutlined />, label: 'Từ chối', danger: true, onClick: () => { setRejectReason(''); setRejectModalOpen(true); } },
+                ...( !(doc as any).rejected_by ? [{ key: 'reject', icon: <StopOutlined />, label: 'Từ chối', danger: true, onClick: () => { setRejectReason(''); setRejectModalOpen(true); } }] : []),
                 { type: 'divider' as const },
                 { key: 'delete', icon: <DeleteOutlined />, label: 'Xóa văn bản', danger: true, onClick: handleDelete },
               ] }}>

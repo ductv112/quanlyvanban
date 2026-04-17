@@ -250,6 +250,10 @@ router.get('/:id', async (req: Request, res: Response) => {
       res.status(404).json({ success: false, message: 'Không tìm thấy văn bản dự thảo' });
       return;
     }
+    const rej = await rawQuery<{ rejected_by: number | null; rejection_reason: string | null }>(
+      `SELECT rejected_by, rejection_reason FROM edoc.drafting_docs WHERE id = $1`, [id]
+    );
+    if (rej[0]) { (doc as any).rejected_by = rej[0].rejected_by; (doc as any).rejection_reason = rej[0].rejection_reason; }
     res.json({ success: true, data: doc });
   } catch (error) {
     handleDbError(error, res);
