@@ -43,111 +43,33 @@ docker ps
 
 ---
 
-## 4. CHẠY DATABASE MIGRATIONS
+## 4. CHẠY DATABASE
 
-Chạy **theo đúng thứ tự** từ 01 → 06:
+Chỉ cần 2 lệnh: **1 file migration gộp + 1 file seed**.
 
 ```bash
-# Schemas + Extensions
-cat database/init/01_create_schemas.sql | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
+# Migration (tạo schemas + tables + 443 stored procedures)
+cat database/migrations/000_full_schema.sql | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
 
-# System tables (staff, departments, positions, roles, rights...)
-cat database/migrations/001_system_tables.sql | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
-
-# Document tables (edoc schema)
-cat database/migrations/002_edoc_tables.sql | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
-
-# Auth stored procedures
-cat database/migrations/003_auth_stored_procedures.sql | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
-
-# Rename SP convention (sp_ → fn_)
-cat database/migrations/004_rename_auth_sp_convention.sql | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
-
-# Sprint 1: Admin core SPs + menu seed
-cat database/migrations/005_sprint1_admin_core_sp.sql | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
-
-# Sprint 1: Gap fixes (thêm cột, sửa SP)
-cat database/migrations/006_sprint1_fix_gaps.sql | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
-```
-
-### Thêm unique constraints (tránh data trùng):
-```bash
-echo "
-ALTER TABLE positions ADD CONSTRAINT IF NOT EXISTS uq_positions_code UNIQUE (code);
-ALTER TABLE roles ADD CONSTRAINT IF NOT EXISTS uq_roles_name UNIQUE (name);
-ALTER TABLE departments ADD CONSTRAINT IF NOT EXISTS uq_departments_code UNIQUE (code);
-" | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
-```
-
-### Cập nhật password admin (hash đúng cho Admin@123):
-```bash
-echo "
-UPDATE staff SET password_hash = '\$2b\$12\$p4p6gNuqB5AAcAj2rrU4VO8wmkvgtSRykSYbETqj.nqDTFMKjbU0K'
-WHERE username = 'admin';
-" | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
-```
-
-### Sprint 2-4: Danh mục, Văn bản đến, Dự thảo/Đi
-```bash
-cat database/migrations/007_sprint2_catalog_config.sql | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
-cat database/migrations/008_sprint3_incoming_docs.sql | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
-cat database/migrations/009_sprint4_drafting_outgoing.sql | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
-```
-
-### Sprint 5-10: HSCV, Workflow, Liên thông, Tin nhắn, Lịch, Dashboard
-```bash
-cat database/migrations/010_sprint5_handling_doc_sps.sql | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
-cat database/migrations/011_sprint6_workflow_tables_sps.sql | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
-cat database/migrations/012_sprint7_inter_incoming.sql | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
-cat database/migrations/013_sprint8_messages_notices.sql | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
-cat database/migrations/014_sprint9_calendar_directory.sql | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
-cat database/migrations/015_sprint10_dashboard_stats.sql | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
-```
-
-### Sprint 11-13: Kho lưu trữ, tài liệu, hợp đồng, cuộc họp
-```bash
-cat database/migrations/016_sprint11_archive_storage.sql | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
-cat database/migrations/017_sprint12_documents_contracts.sql | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
-cat database/migrations/018_sprint13_meetings.sql | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
-```
-
-### Sprint 14-16: LGSP, Ký số, Thông báo đa kênh
-```bash
-cat database/migrations/019_sprint14_lgsp.sql | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
-cat database/migrations/020_sprint15_digital_signing.sql | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
-cat database/migrations/021_sprint16_notifications.sql | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
-```
-
-### Seed data demo (TRUNCATE toàn bộ + seed lại từ đầu)
-```bash
+# Seed data demo
 cat database/seed_full_demo.sql | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
 ```
 
-> **Lưu ý:** `seed_full_demo.sql` sẽ TRUNCATE tất cả bảng rồi seed data mới.
-> Bao gồm: 10 phòng ban, 10 nhân viên, VB đến/đi/dự thảo, HSCV, cuộc họp, kho lưu trữ, tài liệu ISO, hợp đồng, LGSP, ký số, thông báo.
+> **Seed data bao gồm:** 10 phòng ban, 10 nhân viên, VB đến/đi/dự thảo, HSCV, cuộc họp, kho lưu trữ, tài liệu ISO, hợp đồng, LGSP, ký số, thông báo, 10 tỉnh/TP, 13 cấu hình hệ thống.
 > Password tất cả tài khoản: **Admin@123**
 
 ### RESET SẠCH (xóa toàn bộ data + chạy lại từ đầu)
 
-Dùng khi pull code mới về hoặc cần reset DB hoàn toàn:
-
 ```bash
 cd e_office_app_new
 
-# Bước 1: Reset Docker volumes (XÓA toàn bộ data)
+# Bước 1: Reset Docker volumes
 docker-compose down -v
 docker-compose up -d
-# Đợi ~10s cho PostgreSQL ready
 sleep 10
 
-# Bước 2: Chạy schemas + tất cả migrations + seed
-cat database/init/01_create_schemas.sql | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
-
-for f in database/migrations/*.sql; do
-  echo "Running $f ..."
-  cat "$f" | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev 2>&1 | tail -1
-done
-
+# Bước 2: Migration + Seed
+cat database/migrations/000_full_schema.sql | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
 cat database/seed_full_demo.sql | docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev
 
 # Bước 3: Start backend + frontend
