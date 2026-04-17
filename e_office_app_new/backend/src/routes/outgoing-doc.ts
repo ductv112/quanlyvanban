@@ -518,7 +518,7 @@ router.patch('/:id/huy-duyet', async (req: Request, res: Response) => {
 router.post('/:id/thu-hoi', async (req: Request, res: Response) => {
   try {
     const { staffId } = (req as AuthRequest).user;
-    const { staff_ids } = req.body;
+    const { staff_ids } = req.body ?? {};
     const result = await outgoingDocRepository.retract(
       Number(req.params.id), staffId,
       Array.isArray(staff_ids) && staff_ids.length > 0 ? staff_ids.map(Number) : undefined,
