@@ -264,6 +264,7 @@ export default function SignerPage() {
             }
           >
             <Table
+              className="enhanced-table"
               columns={columns}
               dataSource={signers}
               rowKey="id"

@@ -708,6 +708,7 @@ export default function CuocHopPage() {
 
       {/* Main table */}
       <Table<MeetingRecord>
+        className="enhanced-table"
         rowKey="id"
         columns={columns}
         dataSource={data}

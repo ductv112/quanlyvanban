@@ -547,27 +547,30 @@ export default function StaffPage() {
             }
           >
             {/* Filter bar */}
-            <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
-              <Input.Search
-                placeholder="Tìm kiếm họ tên, username..."
-                allowClear
-                onSearch={(v) => { setKeyword(v); setPage(1); }}
-                style={{ width: 280, borderRadius: 8 }}
-                prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
-              />
-              <Select
-                value={statusFilter}
-                onChange={(v) => { setStatusFilter(v); setPage(1); }}
-                style={{ width: 160 }}
-                options={[
-                  { label: 'Tất cả', value: 'all' },
-                  { label: 'Hoạt động', value: 'active' },
-                  { label: 'Đã khóa', value: 'locked' },
-                ]}
-              />
+            <div className="list-filter-bar">
+              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                <Input.Search
+                  placeholder="Tìm kiếm họ tên, username..."
+                  allowClear
+                  onSearch={(v) => { setKeyword(v); setPage(1); }}
+                  style={{ width: 280, borderRadius: 8 }}
+                  prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
+                />
+                <Select
+                  value={statusFilter}
+                  onChange={(v) => { setStatusFilter(v); setPage(1); }}
+                  style={{ width: 160 }}
+                  options={[
+                    { label: 'Tất cả', value: 'all' },
+                    { label: 'Hoạt động', value: 'active' },
+                    { label: 'Đã khóa', value: 'locked' },
+                  ]}
+                />
+              </div>
             </div>
 
             <Table
+              className="enhanced-table"
               columns={columns}
               dataSource={data}
               rowKey="id"

@@ -159,6 +159,7 @@ export default function DocColumnConfigPage() {
         Các trường bổ sung cho <strong>{selectedModuleName}</strong>. Khi tạo/sửa văn bản, các trường dưới đây sẽ hiển thị thêm trong form.
       </div>
           <Table<DocColumn>
+            className="enhanced-table"
             rowKey="id"
             loading={loading}
             columns={columns}

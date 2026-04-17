@@ -239,6 +239,7 @@ export default function DocFieldPage() {
         }
       >
         <Table
+          className="enhanced-table"
           columns={columns}
           dataSource={data}
           rowKey="id"

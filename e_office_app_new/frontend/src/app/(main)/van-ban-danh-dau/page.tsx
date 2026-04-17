@@ -154,6 +154,7 @@ export default function BookmarksPage() {
         ]}
       />
       <Table<Bookmark>
+        className="enhanced-table"
         rowKey={(r) => `${r.doc_type}-${r.note_id}`}
         loading={loading}
         columns={columns}

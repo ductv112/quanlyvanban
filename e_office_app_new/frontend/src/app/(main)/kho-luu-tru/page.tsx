@@ -776,6 +776,7 @@ export default function KhoLuuTruPage() {
             }
           >
             <Table<HoSoRecord>
+              className="enhanced-table"
               rowKey="id"
               loading={loading}
               columns={columns}

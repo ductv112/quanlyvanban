@@ -263,6 +263,7 @@ export default function PositionPage() {
         }
       >
         <Table
+          className="enhanced-table"
           columns={columns}
           dataSource={data}
           rowKey="id"

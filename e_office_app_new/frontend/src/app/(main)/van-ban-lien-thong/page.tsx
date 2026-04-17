@@ -167,51 +167,54 @@ export default function LienThongDocPage() {
       title={<><SwapOutlined style={{ marginRight: 8 }} />Văn bản liên thông</>}
       extra={<Button icon={<PrinterOutlined />} onClick={() => window.print()}>In</Button>}
     >
-      <Row gutter={[12, 12]} className="filter-row">
-        <Col span={6}>
-          <Input.Search
-            placeholder="Tìm kiếm trích yếu, ký hiệu..."
-            allowClear
-            onSearch={(val) => { setKeyword(val); setPage(1); }}
-          />
-        </Col>
-        <Col span={4}>
-          <Select
-            style={{ width: '100%' }}
-            placeholder="Loại văn bản"
-            allowClear
-            options={docTypes}
-            value={filterDocTypeId}
-            onChange={(val) => { setFilterDocTypeId(val); setPage(1); }}
-          />
-        </Col>
-        <Col span={4}>
-          <Select
-            style={{ width: '100%' }}
-            placeholder="Trạng thái"
-            allowClear
-            options={Object.entries(STATUS_MAP).map(([val, info]) => ({ value: val, label: info.text }))}
-            value={filterStatus}
-            onChange={(val) => { setFilterStatus(val); setPage(1); }}
-          />
-        </Col>
-        <Col span={7}>
-          <RangePicker
-            style={{ width: '100%' }}
-            format="DD/MM/YYYY"
-            placeholder={['Từ ngày', 'Đến ngày']}
-            value={filterDateRange}
-            onChange={(val) => { setFilterDateRange(val as [dayjs.Dayjs, dayjs.Dayjs] | null); setPage(1); }}
-          />
-        </Col>
-        <Col span={2}>
-          <Tooltip title="Xóa bộ lọc">
-            <Button icon={<ReloadOutlined />} onClick={handleReset} />
-          </Tooltip>
-        </Col>
-      </Row>
+      <div className="list-filter-bar">
+        <Row gutter={[12, 12]} className="filter-row">
+          <Col span={6}>
+            <Input.Search
+              placeholder="Tìm kiếm trích yếu, ký hiệu..."
+              allowClear
+              onSearch={(val) => { setKeyword(val); setPage(1); }}
+            />
+          </Col>
+          <Col span={4}>
+            <Select
+              style={{ width: '100%' }}
+              placeholder="Loại văn bản"
+              allowClear
+              options={docTypes}
+              value={filterDocTypeId}
+              onChange={(val) => { setFilterDocTypeId(val); setPage(1); }}
+            />
+          </Col>
+          <Col span={4}>
+            <Select
+              style={{ width: '100%' }}
+              placeholder="Trạng thái"
+              allowClear
+              options={Object.entries(STATUS_MAP).map(([val, info]) => ({ value: val, label: info.text }))}
+              value={filterStatus}
+              onChange={(val) => { setFilterStatus(val); setPage(1); }}
+            />
+          </Col>
+          <Col span={7}>
+            <RangePicker
+              style={{ width: '100%' }}
+              format="DD/MM/YYYY"
+              placeholder={['Từ ngày', 'Đến ngày']}
+              value={filterDateRange}
+              onChange={(val) => { setFilterDateRange(val as [dayjs.Dayjs, dayjs.Dayjs] | null); setPage(1); }}
+            />
+          </Col>
+          <Col span={2}>
+            <Tooltip title="Xóa bộ lọc">
+              <Button icon={<ReloadOutlined />} onClick={handleReset} />
+            </Tooltip>
+          </Col>
+        </Row>
+      </div>
 
       <Table<LienThongDoc>
+        className="enhanced-table"
         rowKey="id"
         loading={loading}
         columns={columns}

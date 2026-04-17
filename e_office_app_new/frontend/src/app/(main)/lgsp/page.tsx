@@ -158,30 +158,33 @@ export default function LgspTrackingPage() {
       </div>
 
       <Card className="page-card">
-        <div className="filter-row" style={{ marginBottom: 16 }}>
-          <Space wrap>
-            <Select
-              style={{ width: 180 }}
-              value={direction}
-              onChange={setDirection}
-              options={DIRECTION_OPTIONS}
-              placeholder="Hướng liên thông"
-            />
-            <Select
-              style={{ width: 180 }}
-              value={status}
-              onChange={setStatus}
-              options={STATUS_OPTIONS}
-              placeholder="Trạng thái"
-            />
-            <ReloadOutlined
-              style={{ cursor: 'pointer', fontSize: 16 }}
-              onClick={() => fetchData(pagination.current, pagination.pageSize)}
-            />
-          </Space>
+        <div className="list-filter-bar">
+          <div className="filter-row">
+            <Space wrap>
+              <Select
+                style={{ width: 180 }}
+                value={direction}
+                onChange={setDirection}
+                options={DIRECTION_OPTIONS}
+                placeholder="Hướng liên thông"
+              />
+              <Select
+                style={{ width: 180 }}
+                value={status}
+                onChange={setStatus}
+                options={STATUS_OPTIONS}
+                placeholder="Trạng thái"
+              />
+              <ReloadOutlined
+                style={{ cursor: 'pointer', fontSize: 16 }}
+                onClick={() => fetchData(pagination.current, pagination.pageSize)}
+              />
+            </Space>
+          </div>
         </div>
 
         <Table<LgspTrackingRow>
+          className="enhanced-table"
           rowKey="id"
           columns={columns}
           dataSource={data}

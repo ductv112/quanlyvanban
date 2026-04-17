@@ -260,6 +260,7 @@ export default function DocBookPage() {
           style={{ marginBottom: 16 }}
         />
         <Table
+          className="enhanced-table"
           columns={columns}
           dataSource={data}
           rowKey="id"

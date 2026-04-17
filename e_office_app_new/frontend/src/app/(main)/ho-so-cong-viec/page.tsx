@@ -458,65 +458,68 @@ export default function HoSoCongViecPage() {
         />
 
         {/* Filter Row */}
-        <div className="filter-row" style={{ marginTop: 12, marginBottom: 12 }}>
-          <Space wrap>
-            <Input
-              placeholder="Tìm kiếm tên hồ sơ..."
-              value={keyword}
-              onChange={(e) => setKeyword(e.target.value)}
-              onPressEnter={handleSearch}
-              style={{ width: 240 }}
-              prefix={<SearchOutlined style={{ color: '#94A3B8' }} />}
-              allowClear
-            />
-            <Select
-              placeholder="Lĩnh vực"
-              allowClear
-              options={docFields}
-              value={fieldId}
-              onChange={(val) => { setFieldId(val); setPage(1); }}
-              style={{ width: 160 }}
-            />
-            {user?.isAdmin ? (
-              <TreeSelect
-                placeholder="Phòng ban"
+        <div className="list-filter-bar">
+          <div className="filter-row" style={{ marginTop: 12 }}>
+            <Space wrap>
+              <Input
+                placeholder="Tìm kiếm tên hồ sơ..."
+                value={keyword}
+                onChange={(e) => setKeyword(e.target.value)}
+                onPressEnter={handleSearch}
+                style={{ width: 240 }}
+                prefix={<SearchOutlined style={{ color: '#94A3B8' }} />}
                 allowClear
-                showSearch
-                treeNodeFilterProp="title"
-                treeData={deptTreeData}
-                value={unitId}
-                onChange={(val) => { setUnitId(val); setPage(1); }}
-                style={{ width: 200 }}
               />
-            ) : (
               <Select
-                placeholder="Đơn vị"
+                placeholder="Lĩnh vực"
                 allowClear
-                options={units}
-                value={unitId}
-                onChange={(val) => { setUnitId(val); setPage(1); }}
+                options={docFields}
+                value={fieldId}
+                onChange={(val) => { setFieldId(val); setPage(1); }}
                 style={{ width: 160 }}
               />
-            )}
-            <RangePicker
-              format="DD/MM/YYYY"
-              placeholder={['Từ ngày', 'Đến ngày']}
-              value={dateRange}
-              onChange={(val) => {
-                setDateRange(val as [dayjs.Dayjs, dayjs.Dayjs] | null);
-                setPage(1);
-              }}
-              style={{ width: 220 }}
-            />
-            <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>
-              Tìm kiếm
-            </Button>
-            <Button onClick={handleReset}>Đặt lại</Button>
-          </Space>
+              {user?.isAdmin ? (
+                <TreeSelect
+                  placeholder="Phòng ban"
+                  allowClear
+                  showSearch
+                  treeNodeFilterProp="title"
+                  treeData={deptTreeData}
+                  value={unitId}
+                  onChange={(val) => { setUnitId(val); setPage(1); }}
+                  style={{ width: 200 }}
+                />
+              ) : (
+                <Select
+                  placeholder="Đơn vị"
+                  allowClear
+                  options={units}
+                  value={unitId}
+                  onChange={(val) => { setUnitId(val); setPage(1); }}
+                  style={{ width: 160 }}
+                />
+              )}
+              <RangePicker
+                format="DD/MM/YYYY"
+                placeholder={['Từ ngày', 'Đến ngày']}
+                value={dateRange}
+                onChange={(val) => {
+                  setDateRange(val as [dayjs.Dayjs, dayjs.Dayjs] | null);
+                  setPage(1);
+                }}
+                style={{ width: 220 }}
+              />
+              <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>
+                Tìm kiếm
+              </Button>
+              <Button onClick={handleReset}>Đặt lại</Button>
+            </Space>
+          </div>
         </div>
 
         {/* Table */}
         <Table<HscvRecord>
+          className="enhanced-table"
           rowKey="id"
           loading={loading}
           columns={columns}

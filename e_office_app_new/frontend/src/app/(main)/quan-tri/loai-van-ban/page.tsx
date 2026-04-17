@@ -264,6 +264,7 @@ export default function DocTypePage() {
           style={{ marginBottom: 16 }}
         />
         <Table
+          className="enhanced-table"
           columns={columns}
           dataSource={data}
           rowKey="id"

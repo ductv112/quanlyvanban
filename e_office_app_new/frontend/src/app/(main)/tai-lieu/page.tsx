@@ -540,7 +540,7 @@ export default function TaiLieuPage() {
         {/* Right: Document table */}
         <Col flex="1">
           <Card className="page-card">
-            <div className="filter-row" style={{ marginBottom: 12 }}>
+            <div className="filter-row">
               <Space wrap>
                 <Input
                   placeholder="Tìm kiếm tài liệu..."
@@ -571,6 +571,7 @@ export default function TaiLieuPage() {
             </div>
 
             <Table
+              className="enhanced-table"
               rowKey="id"
               dataSource={documents}
               columns={docColumns}

@@ -487,6 +487,7 @@ export default function MuonTraPage() {
 
         {/* Table */}
         <Table<BorrowRequest>
+          className="enhanced-table"
           rowKey="id"
           loading={loading}
           columns={columns}

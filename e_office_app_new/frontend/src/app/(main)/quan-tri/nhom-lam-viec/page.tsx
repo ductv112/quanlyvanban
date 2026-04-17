@@ -386,6 +386,7 @@ export default function WorkGroupPage() {
         }
       >
         <Table
+          className="enhanced-table"
           columns={columns}
           dataSource={data}
           rowKey="id"
@@ -462,6 +463,7 @@ export default function WorkGroupPage() {
         }
       >
         <Table
+          className="enhanced-table"
           columns={memberColumns}
           dataSource={members}
           rowKey="id"

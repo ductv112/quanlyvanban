@@ -585,7 +585,7 @@ export default function HopDongPage() {
 
       <div style={{ margin: '0 16px 16px' }}>
         <Card className="page-card">
-          <div className="filter-row" style={{ marginBottom: 12 }}>
+          <div className="filter-row">
             <Space wrap>
               <Select
                 placeholder="Loại hợp đồng"
@@ -622,6 +622,7 @@ export default function HopDongPage() {
           </div>
 
           <Table
+            className="enhanced-table"
             rowKey="id"
             dataSource={contracts}
             columns={contractColumns}

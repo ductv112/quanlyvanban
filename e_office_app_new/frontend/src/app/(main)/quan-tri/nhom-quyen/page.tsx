@@ -290,6 +290,7 @@ export default function RolePage() {
         }
       >
         <Table
+          className="enhanced-table"
           columns={columns}
           dataSource={data}
           rowKey="id"

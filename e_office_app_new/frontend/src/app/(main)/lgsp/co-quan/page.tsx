@@ -140,25 +140,28 @@ export default function LgspOrganizationsPage() {
       </div>
 
       <Card className="page-card">
-        <div className="filter-row" style={{ marginBottom: 16 }}>
-          <Space wrap>
-            <Input
-              placeholder="Tìm kiếm cơ quan..."
-              prefix={<SearchOutlined />}
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              onPressEnter={() => fetchData()}
-              style={{ width: 280 }}
-              allowClear
-            />
-            <ReloadOutlined
-              style={{ cursor: 'pointer', fontSize: 16 }}
-              onClick={() => fetchData(pagination.current, pagination.pageSize)}
-            />
-          </Space>
+        <div className="list-filter-bar">
+          <div className="filter-row">
+            <Space wrap>
+              <Input
+                placeholder="Tìm kiếm cơ quan..."
+                prefix={<SearchOutlined />}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                onPressEnter={() => fetchData()}
+                style={{ width: 280 }}
+                allowClear
+              />
+              <ReloadOutlined
+                style={{ cursor: 'pointer', fontSize: 16 }}
+                onClick={() => fetchData(pagination.current, pagination.pageSize)}
+              />
+            </Space>
+          </div>
         </div>
 
         <Table<LgspOrgRow>
+          className="enhanced-table"
           rowKey="id"
           columns={columns}
           dataSource={data}

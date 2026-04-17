@@ -278,6 +278,7 @@ export default function WorkflowPage() {
         }
       >
         <Table
+          className="enhanced-table"
           columns={columns}
           dataSource={data}
           rowKey="id"

@@ -360,6 +360,7 @@ export default function NotificationTemplatePage() {
                     </Button>
                   </div>
                   <Table
+                    className="enhanced-table"
                     columns={smsColumns}
                     dataSource={smsData}
                     rowKey="id"
@@ -407,6 +408,7 @@ export default function NotificationTemplatePage() {
                     </Button>
                   </div>
                   <Table
+                    className="enhanced-table"
                     columns={emailColumns}
                     dataSource={emailData}
                     rowKey="id"

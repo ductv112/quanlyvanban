@@ -341,6 +341,7 @@ export default function DepartmentPage() {
             }
           >
             <Table
+              className="enhanced-table"
               columns={columns}
               dataSource={departments}
               rowKey="id"
