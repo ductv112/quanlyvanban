@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  Card, Tabs, Table, Button, Form, Input, Select, Tag, Badge,
+  Card, Tabs, Table, Button, Form, Input, InputNumber, Select, Tag, Badge,
   Progress, Upload, Divider, Modal, Space, Skeleton, Radio, App, Checkbox,
   Descriptions, Typography, Drawer,
 } from 'antd';
@@ -805,13 +805,13 @@ export default function CuocHopDetailPage() {
       >
         <Form form={questionForm} layout="vertical">
           <Form.Item name="name" label="Nội dung câu hỏi" rules={[{ required: true, message: 'Vui lòng nhập câu hỏi' }]}>
-            <Input placeholder="Nhập nội dung câu hỏi biểu quyết" />
+            <Input placeholder="Nhập nội dung câu hỏi biểu quyết" maxLength={500} />
           </Form.Item>
           <Form.Item name="question_type" label="Loại câu hỏi" initialValue={0}>
             <Select options={[{ value: 0, label: 'Đơn lẻ (chọn một)' }, { value: 1, label: 'Nhiều lựa chọn' }]} />
           </Form.Item>
           <Form.Item name="duration" label="Thời gian biểu quyết (giây)">
-            <Input type="number" placeholder="VD: 60" />
+            <InputNumber style={{ width: '100%' }} min={0} placeholder="VD: 60" />
           </Form.Item>
         </Form>
       </Drawer>
@@ -826,10 +826,10 @@ export default function CuocHopDetailPage() {
       >
         <Form form={answerForm} layout="vertical">
           <Form.Item name="name" label="Tên đáp án" rules={[{ required: true, message: 'Vui lòng nhập đáp án' }]}>
-            <Input placeholder="VD: Đồng ý / Không đồng ý / Ý kiến khác" />
+            <Input placeholder="VD: Đồng ý / Không đồng ý / Ý kiến khác" maxLength={500} />
           </Form.Item>
           <Form.Item name="order_no" label="Thứ tự" initialValue={1}>
-            <Input type="number" />
+            <InputNumber style={{ width: '100%' }} min={1} />
           </Form.Item>
           <Form.Item name="is_other" label="Là lựa chọn khác" valuePropName="checked" initialValue={false}>
             <Checkbox>Cho phép nhập văn bản</Checkbox>

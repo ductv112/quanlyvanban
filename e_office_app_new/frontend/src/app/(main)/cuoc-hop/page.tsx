@@ -815,7 +815,7 @@ export default function CuocHopPage() {
             </Col>
             <Col span={24}>
               <Form.Item name="content" label="Nội dung">
-                <TextArea rows={4} placeholder="Nhập nội dung cuộc họp" />
+                <TextArea rows={4} placeholder="Nhập nội dung cuộc họp" maxLength={5000} showCount />
               </Form.Item>
             </Col>
           </Row>
@@ -863,7 +863,7 @@ export default function CuocHopPage() {
               <InputNumber style={{ width: '100%' }} min={0} />
             </Form.Item>
             <Form.Item name="note" label="Ghi chú">
-              <TextArea rows={2} />
+              <TextArea rows={2} maxLength={1000} showCount />
             </Form.Item>
           </Form>
         </Modal>
@@ -887,7 +887,7 @@ export default function CuocHopPage() {
               <Input placeholder="Nhập tên loại cuộc họp" maxLength={200} />
             </Form.Item>
             <Form.Item name="description" label="Mô tả">
-              <TextArea rows={2} />
+              <TextArea rows={2} maxLength={500} showCount />
             </Form.Item>
             <Form.Item name="sort_order" label="Thứ tự sắp xếp">
               <InputNumber style={{ width: '100%' }} min={0} />

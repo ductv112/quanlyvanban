@@ -1287,7 +1287,7 @@ export default function HscvDetailPage() {
                   rules={[{ required: true, message: 'Vui lòng nhập ý kiến' }]}
                   style={{ marginBottom: 8 }}
                 >
-                  <TextArea rows={4} placeholder="Nhập ý kiến xử lý..." />
+                  <TextArea rows={4} placeholder="Nhập ý kiến xử lý..." maxLength={2000} showCount />
                 </Form.Item>
                 <div style={{ textAlign: 'right' }}>
                   <Button

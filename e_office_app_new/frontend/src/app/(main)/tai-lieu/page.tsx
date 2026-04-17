@@ -630,7 +630,7 @@ export default function TaiLieuPage() {
             />
           </Form.Item>
           <Form.Item name="description" label="Mô tả">
-            <TextArea rows={3} placeholder="Mô tả danh mục" />
+            <TextArea rows={3} placeholder="Mô tả danh mục" maxLength={2000} showCount />
           </Form.Item>
           <Form.Item name="date_process" label="Thời hạn xử lý (ngày)">
             <InputNumber min={0} style={{ width: '100%' }} placeholder="Số ngày xử lý" />
@@ -678,7 +678,7 @@ export default function TaiLieuPage() {
           </Form.Item>
 
           <Form.Item name="description" label="Mô tả">
-            <TextArea rows={3} placeholder="Mô tả tài liệu" />
+            <TextArea rows={3} placeholder="Mô tả tài liệu" maxLength={2000} showCount />
           </Form.Item>
 
           <Form.Item name="keyword" label="Từ khóa">

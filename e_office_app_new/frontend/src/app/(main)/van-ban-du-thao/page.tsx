@@ -668,7 +668,7 @@ export default function DraftingDocPage() {
           </Row>
 
           <Form.Item name="abstract" label="Trích yếu nội dung" rules={[{ required: true, message: 'Bắt buộc nhập trích yếu' }]}>
-            <TextArea rows={3} placeholder="Trích yếu nội dung văn bản dự thảo" />
+            <TextArea rows={3} placeholder="Trích yếu nội dung văn bản dự thảo" maxLength={2000} showCount />
           </Form.Item>
 
           <Row gutter={16}>
@@ -783,7 +783,7 @@ export default function DraftingDocPage() {
           </Row>
 
           <Form.Item name="recipients" label="Nơi nhận">
-            <TextArea rows={2} placeholder="Nơi nhận văn bản" />
+            <TextArea rows={2} placeholder="Nơi nhận văn bản" maxLength={2000} showCount />
           </Form.Item>
 
           {extraColumns.length > 0 && (

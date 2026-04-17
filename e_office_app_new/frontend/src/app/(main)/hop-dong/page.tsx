@@ -677,7 +677,7 @@ export default function HopDongPage() {
               <Input placeholder="Nhập tên loại hợp đồng" maxLength={200} />
             </Form.Item>
             <Form.Item name="note" label="Ghi chú">
-              <TextArea rows={2} placeholder="Ghi chú" />
+              <TextArea rows={2} placeholder="Ghi chú" maxLength={1000} showCount />
             </Form.Item>
             <Space>
               <Button
@@ -822,7 +822,7 @@ export default function HopDongPage() {
           </Row>
 
           <Form.Item name="note" label="Ghi chú">
-            <TextArea rows={3} placeholder="Ghi chú thêm về hợp đồng" />
+            <TextArea rows={3} placeholder="Ghi chú thêm về hợp đồng" maxLength={2000} showCount />
           </Form.Item>
         </Form>
       </Drawer>

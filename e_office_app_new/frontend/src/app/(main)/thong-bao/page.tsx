@@ -276,7 +276,7 @@ export default function ThongBaoPage() {
             label="Nội dung"
             rules={[{ required: true, message: 'Vui lòng nhập nội dung' }]}
           >
-            <TextArea rows={6} placeholder="Nhập nội dung thông báo..." />
+            <TextArea rows={6} placeholder="Nhập nội dung thông báo..." maxLength={5000} showCount />
           </Form.Item>
         </Form>
       </Drawer>

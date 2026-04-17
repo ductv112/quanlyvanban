@@ -422,7 +422,7 @@ export default function OutgoingDocPage() {
             </Col>
             <Col span={6}>
               <Form.Item name="sub_number" label="Số phụ">
-                <Input placeholder="VD: a, b, c" />
+                <Input placeholder="VD: a, b, c" maxLength={20} />
               </Form.Item>
             </Col>
           </Row>
@@ -434,12 +434,12 @@ export default function OutgoingDocPage() {
             </Col>
             <Col span={16}>
               <Form.Item name="notation" label="Ký hiệu">
-                <Input placeholder="VD: 123/UBND-VP" />
+                <Input placeholder="VD: 123/UBND-VP" maxLength={100} />
               </Form.Item>
             </Col>
           </Row>
           <Form.Item name="abstract" label="Trích yếu nội dung" rules={[{ required: true, message: 'Bắt buộc' }]}>
-            <TextArea rows={3} placeholder="Trích yếu nội dung văn bản" />
+            <TextArea rows={3} placeholder="Trích yếu nội dung văn bản" maxLength={2000} showCount />
           </Form.Item>
           <Row gutter={16}>
             <Col span={12}>
@@ -484,7 +484,7 @@ export default function OutgoingDocPage() {
             </Col>
             <Col span={12}>
               <Form.Item name="signer" label="Người ký">
-                <Input placeholder="Họ tên người ký" />
+                <Input placeholder="Họ tên người ký" maxLength={200} />
               </Form.Item>
             </Col>
           </Row>
@@ -540,7 +540,7 @@ export default function OutgoingDocPage() {
             </Col>
           </Row>
           <Form.Item name="recipients" label="Nơi nhận">
-            <TextArea rows={2} placeholder="Nơi nhận văn bản" />
+            <TextArea rows={2} placeholder="Nơi nhận văn bản" maxLength={2000} showCount />
           </Form.Item>
 
           {extraColumns.length > 0 && (

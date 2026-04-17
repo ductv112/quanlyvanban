@@ -370,7 +370,7 @@ export default function IncomingDocPage() {
             <Col span={12}><Form.Item name="notation" label="Số ký hiệu"><Input placeholder="VD: 123/UBND-VP" maxLength={100} /></Form.Item></Col>
             <Col span={12}><Form.Item name="publish_unit" label="Cơ quan ban hành"><Input placeholder="VD: UBND tỉnh Lạng Sơn" maxLength={500} /></Form.Item></Col>
           </Row>
-          <Form.Item name="abstract" label="Trích yếu nội dung" rules={[{ required: true, message: 'Bắt buộc' }]}><TextArea rows={3} placeholder="Trích yếu nội dung văn bản" /></Form.Item>
+          <Form.Item name="abstract" label="Trích yếu nội dung" rules={[{ required: true, message: 'Bắt buộc' }]}><TextArea rows={3} placeholder="Trích yếu nội dung văn bản" maxLength={2000} showCount /></Form.Item>
           <Row gutter={16}>
             <Col span={8}><Form.Item name="doc_type_id" label="Loại văn bản"><Select placeholder="Chọn loại" allowClear options={docTypes} /></Form.Item></Col>
             <Col span={8}><Form.Item name="doc_field_id" label="Lĩnh vực"><Select placeholder="Chọn lĩnh vực" allowClear options={docFields} /></Form.Item></Col>
@@ -390,9 +390,9 @@ export default function IncomingDocPage() {
           </Row>
           <Row gutter={16}>
             <Col span={12}><Form.Item name="document_code" label="Mã văn bản"><Input placeholder="Mã định danh văn bản" maxLength={100} /></Form.Item></Col>
-            <Col span={12}><Form.Item name="sents" label="Nơi gửi"><Input placeholder="Nơi gửi văn bản" /></Form.Item></Col>
+            <Col span={12}><Form.Item name="sents" label="Nơi gửi"><Input placeholder="Nơi gửi văn bản" maxLength={500} /></Form.Item></Col>
           </Row>
-          <Form.Item name="recipients" label="Nơi nhận"><TextArea rows={2} placeholder="Nơi nhận văn bản" /></Form.Item>
+          <Form.Item name="recipients" label="Nơi nhận"><TextArea rows={2} placeholder="Nơi nhận văn bản" maxLength={2000} showCount /></Form.Item>
 
           {/* Dynamic extra fields */}
           {extraColumns.length > 0 && (
