@@ -167,6 +167,25 @@ router.get('/so-tiep-theo', async (req: Request, res: Response) => {
 });
 
 // ============================================================
+// UNUSED NUMBERS (Số chưa phát hành) — MUST be before /:id
+// ============================================================
+
+router.get('/so-chua-phat-hanh', async (req: Request, res: Response) => {
+  try {
+    const { unitId } = (req as AuthRequest).user;
+    const { doc_book_id } = req.query;
+    if (!doc_book_id) {
+      res.status(400).json({ success: false, message: 'Sổ văn bản là bắt buộc' });
+      return;
+    }
+    const rows = await outgoingDocRepository.getUnusedNumbers(unitId, Number(doc_book_id));
+    res.json({ success: true, data: rows.map(r => r.unused_number) });
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
+
+// ============================================================
 // CRUD
 // ============================================================
 
@@ -583,25 +602,6 @@ router.delete('/:id/y-kien/:noteId', async (req: Request, res: Response) => {
       return;
     }
     res.json({ success: true, data: { message: result.message } });
-  } catch (error) {
-    handleDbError(error, res);
-  }
-});
-
-// ============================================================
-// UNUSED NUMBERS (Số chưa phát hành)
-// ============================================================
-
-router.get('/so-chua-phat-hanh', async (req: Request, res: Response) => {
-  try {
-    const { unitId } = (req as AuthRequest).user;
-    const { doc_book_id } = req.query;
-    if (!doc_book_id) {
-      res.status(400).json({ success: false, message: 'Sổ văn bản là bắt buộc' });
-      return;
-    }
-    const rows = await outgoingDocRepository.getUnusedNumbers(unitId, Number(doc_book_id));
-    res.json({ success: true, data: rows.map(r => r.unused_number) });
   } catch (error) {
     handleDbError(error, res);
   }

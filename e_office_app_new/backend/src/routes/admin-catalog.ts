@@ -62,7 +62,7 @@ function buildTree<T extends { id: number; parent_id: number | null }>(flatList:
 router.get('/so-van-ban', async (req: Request, res: Response) => {
   try {
     const { unitId } = (req as AuthRequest).user;
-    const typeId = req.query.type_id ? Number(req.query.type_id) : 0;
+    const typeId = req.query.type_id ? Number(req.query.type_id) : null;
     const uId = req.query.unit_id ? Number(req.query.unit_id) : unitId;
     const data = await docBookRepository.getList(typeId, uId);
     res.json({ success: true, data });
@@ -451,7 +451,7 @@ router.delete('/linh-vuc/:id', async (req: Request, res: Response) => {
 // GET /thuoc-tinh-van-ban
 router.get('/thuoc-tinh-van-ban', async (req: Request, res: Response) => {
   try {
-    const typeId = req.query.type_id ? Number(req.query.type_id) : 0;
+    const typeId = req.query.type_id ? Number(req.query.type_id) : null;
     const data = await docColumnRepository.getList(typeId);
     res.json({ success: true, data });
   } catch (error) {
@@ -1480,6 +1480,92 @@ router.delete('/cau-hinh-truong/:id', async (req: Request, res: Response) => {
     const row = await callFunctionOne('edoc.fn_doc_column_delete', [Number(req.params.id)]);
     const result = row as { success: boolean; message: string } | null;
     if (!result?.success) { res.status(400).json({ success: false, message: result?.message || 'Lỗi' }); return; }
+    res.json({ success: true, data: { message: result.message } });
+  } catch (error) { handleDbError(error, res); }
+});
+
+// ============================================================
+// 2.12 MẪU THÔNG BÁO — SMS Templates
+// ============================================================
+
+// GET /mau-sms
+router.get('/mau-sms', async (req: Request, res: Response) => {
+  try {
+    const { unitId } = (req as AuthRequest).user;
+    const data = await templateRepository.smsGetList(unitId);
+    res.json({ success: true, data });
+  } catch (error) { handleDbError(error, res); }
+});
+
+// POST /mau-sms
+router.post('/mau-sms', async (req: Request, res: Response) => {
+  try {
+    const { staffId, unitId } = (req as AuthRequest).user;
+    const { name, content, description } = req.body;
+    const result = await templateRepository.smsCreate(unitId, name, content, description || '', staffId);
+    if (!result.success) { res.status(400).json({ success: false, message: result.message }); return; }
+    res.status(201).json({ success: true, data: { id: result.id, message: result.message } });
+  } catch (error) { handleDbError(error, res); }
+});
+
+// PUT /mau-sms/:id
+router.put('/mau-sms/:id', async (req: Request, res: Response) => {
+  try {
+    const { name, content, description, is_active } = req.body;
+    const result = await templateRepository.smsUpdate(Number(req.params.id), name, content, description || '', is_active ?? true);
+    if (!result.success) { res.status(400).json({ success: false, message: result.message }); return; }
+    res.json({ success: true, data: { message: result.message } });
+  } catch (error) { handleDbError(error, res); }
+});
+
+// DELETE /mau-sms/:id
+router.delete('/mau-sms/:id', async (req: Request, res: Response) => {
+  try {
+    const result = await templateRepository.smsDelete(Number(req.params.id));
+    if (!result.success) { res.status(400).json({ success: false, message: result.message }); return; }
+    res.json({ success: true, data: { message: result.message } });
+  } catch (error) { handleDbError(error, res); }
+});
+
+// ============================================================
+// 2.13 MẪU THÔNG BÁO — Email Templates
+// ============================================================
+
+// GET /mau-email
+router.get('/mau-email', async (req: Request, res: Response) => {
+  try {
+    const { unitId } = (req as AuthRequest).user;
+    const data = await templateRepository.emailGetList(unitId);
+    res.json({ success: true, data });
+  } catch (error) { handleDbError(error, res); }
+});
+
+// POST /mau-email
+router.post('/mau-email', async (req: Request, res: Response) => {
+  try {
+    const { staffId, unitId } = (req as AuthRequest).user;
+    const { name, subject, content, description } = req.body;
+    const result = await templateRepository.emailCreate(unitId, name, subject || '', content, description || '', staffId);
+    if (!result.success) { res.status(400).json({ success: false, message: result.message }); return; }
+    res.status(201).json({ success: true, data: { id: result.id, message: result.message } });
+  } catch (error) { handleDbError(error, res); }
+});
+
+// PUT /mau-email/:id
+router.put('/mau-email/:id', async (req: Request, res: Response) => {
+  try {
+    const { name, subject, content, description, is_active } = req.body;
+    const result = await templateRepository.emailUpdate(Number(req.params.id), name, subject || '', content, description || '', is_active ?? true);
+    if (!result.success) { res.status(400).json({ success: false, message: result.message }); return; }
+    res.json({ success: true, data: { message: result.message } });
+  } catch (error) { handleDbError(error, res); }
+});
+
+// DELETE /mau-email/:id
+router.delete('/mau-email/:id', async (req: Request, res: Response) => {
+  try {
+    const result = await templateRepository.emailDelete(Number(req.params.id));
+    if (!result.success) { res.status(400).json({ success: false, message: result.message }); return; }
     res.json({ success: true, data: { message: result.message } });
   } catch (error) { handleDbError(error, res); }
 });

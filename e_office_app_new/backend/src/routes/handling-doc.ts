@@ -21,9 +21,10 @@ router.get('/', async (req: Request, res: Response) => {
       filter_type, status, keyword, from_date, to_date, page, page_size,
     } = req.query;
 
+    const deptId = req.query.department_id ? Number(req.query.department_id) : null;
     const rows = await handlingDocRepository.getList(
       unitId,
-      departmentId ?? null,
+      deptId,
       staffId,
       {
         status: status !== undefined ? Number(status) : undefined,

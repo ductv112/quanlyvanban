@@ -704,6 +704,113 @@ ON CONFLICT DO NOTHING;
 SELECT 'DOC_COLUMNS:     ' || count(*) FROM edoc.doc_columns;
 SELECT 'LGSP_CONFIG:     ' || count(*) FROM edoc.lgsp_config;
 
+-- ============ A2: CALENDAR EVENTS bổ sung cho admin (staff_id=1) ============
+INSERT INTO public.calendar_events (title, description, start_time, end_time, all_day, color, scope, unit_id, created_by) VALUES
+  ('Kiểm tra email và phê duyệt VB',   'Xử lý văn bản đến, ký duyệt VB đi buổi sáng', '2026-04-21 07:30:00', '2026-04-21 08:30:00', false, '#1B3A5C', 'personal', 1, 1),
+  ('Họp ban giám đốc',                  'Họp tổng kết tuần và giao nhiệm vụ tuần mới',  '2026-04-21 09:00:00', '2026-04-21 10:30:00', false, '#D97706', 'personal', 1, 1),
+  ('Duyệt hồ sơ tuyển dụng',           'Xem hồ sơ ứng viên vị trí chuyên viên CNTT',   '2026-04-22 14:00:00', '2026-04-22 16:00:00', false, '#059669', 'personal', 1, 1)
+ON CONFLICT DO NOTHING;
+
+-- ============ A3: SMS & EMAIL TEMPLATES ============
+INSERT INTO edoc.sms_templates (unit_id, name, content, description, is_active, created_by) VALUES
+  (1, 'Thông báo VB đến mới',     'Ban nhan VB den moi so {doc_code} ngay {doc_date}. Vui long dang nhap e-Office de xu ly.',            'Gửi khi có VB đến mới',       true, 1),
+  (1, 'Nhắc nhở xử lý VB',       'VB so {doc_code} sap het han xu ly ({deadline}). Vui long hoan thanh truoc thoi han.',                 'Nhắc trước hạn 1 ngày',       true, 1),
+  (1, 'Thông báo cuộc họp',       'Ban duoc moi hop: {meeting_title} luc {meeting_time} tai {meeting_room}. Vui long xac nhan.',          'Gửi khi mời họp',             true, 1)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO edoc.email_templates (unit_id, name, subject, content, description, is_active, created_by) VALUES
+  (1, 'Thông báo VB đến mới',    'Văn bản đến mới: {doc_code}',
+   '<p>Kính gửi <strong>{staff_name}</strong>,</p><p>Bạn nhận được văn bản đến mới số <strong>{doc_code}</strong> ngày {doc_date}.</p><p>Trích yếu: {abstract}</p><p>Vui lòng đăng nhập hệ thống e-Office để xử lý.</p><p>Trân trọng,<br/>Hệ thống e-Office</p>',
+   'Email thông báo VB đến mới', true, 1),
+  (1, 'Nhắc nhở hạn xử lý',     'Nhắc nhở: VB {doc_code} sắp hết hạn',
+   '<p>Kính gửi <strong>{staff_name}</strong>,</p><p>Văn bản số <strong>{doc_code}</strong> có hạn xử lý đến <strong>{deadline}</strong>.</p><p>Vui lòng hoàn thành xử lý trước thời hạn.</p><p>Trân trọng,<br/>Hệ thống e-Office</p>',
+   'Email nhắc hạn xử lý', true, 1),
+  (1, 'Thông báo cuộc họp',      'Mời họp: {meeting_title}',
+   '<p>Kính gửi <strong>{staff_name}</strong>,</p><p>Bạn được mời tham dự cuộc họp:</p><ul><li>Tiêu đề: <strong>{meeting_title}</strong></li><li>Thời gian: {meeting_time}</li><li>Phòng họp: {meeting_room}</li></ul><p>Vui lòng xác nhận tham dự trên hệ thống.</p><p>Trân trọng,<br/>Hệ thống e-Office</p>',
+   'Email mời họp', true, 1)
+ON CONFLICT DO NOTHING;
+
+-- ============ A4: PROVINCES / DISTRICTS / COMMUNES (sample data) ============
+INSERT INTO public.provinces (id, name, code, is_active) VALUES
+  (1,  'Lào Cai',      '10', true),
+  (2,  'Hà Nội',       '01', true),
+  (3,  'TP Hồ Chí Minh','79', true),
+  (4,  'Yên Bái',      '15', true),
+  (5,  'Hà Giang',     '02', true),
+  (6,  'Lai Châu',     '12', true),
+  (7,  'Sơn La',       '14', true),
+  (8,  'Điện Biên',    '11', true),
+  (9,  'Đà Nẵng',      '48', true),
+  (10, 'Hải Phòng',    '31', true)
+ON CONFLICT DO NOTHING;
+
+SELECT setval('provinces_id_seq', (SELECT COALESCE(MAX(id), 1) FROM public.provinces));
+
+INSERT INTO public.districts (id, province_id, name, code, is_active) VALUES
+  -- Lào Cai
+  (1,  1, 'TP Lào Cai',     '080', true),
+  (2,  1, 'Sa Pa',           '082', true),
+  (3,  1, 'Bát Xát',        '083', true),
+  (4,  1, 'Bảo Thắng',      '085', true),
+  (5,  1, 'Bảo Yên',        '086', true),
+  (6,  1, 'Văn Bàn',        '091', true),
+  -- Hà Nội
+  (7,  2, 'Ba Đình',        '001', true),
+  (8,  2, 'Hoàn Kiếm',      '002', true),
+  (9,  2, 'Đống Đa',        '006', true),
+  (10, 2, 'Cầu Giấy',       '005', true)
+ON CONFLICT DO NOTHING;
+
+SELECT setval('districts_id_seq', (SELECT COALESCE(MAX(id), 1) FROM public.districts));
+
+INSERT INTO public.communes (id, district_id, name, code, is_active) VALUES
+  -- TP Lào Cai
+  (1, 1, 'Phường Cốc Lếu',    '02545', true),
+  (2, 1, 'Phường Duyên Hải',   '02548', true),
+  (3, 1, 'Phường Lào Cai',     '02551', true),
+  (4, 1, 'Phường Kim Tân',     '02554', true),
+  -- Sa Pa
+  (5, 2, 'TT Sa Pa',           '02590', true),
+  (6, 2, 'Xã San Sả Hồ',      '02596', true),
+  -- Bát Xát
+  (7, 3, 'TT Bát Xát',        '02560', true),
+  (8, 3, 'Xã A Mú Sung',      '02563', true)
+ON CONFLICT DO NOTHING;
+
+SELECT setval('communes_id_seq', (SELECT COALESCE(MAX(id), 1) FROM public.communes));
+
+-- ============ A5: CONFIGURATIONS (system settings) ============
+INSERT INTO public.configurations (unit_id, key, value, description) VALUES
+  (1, 'org_name',          'Ủy ban Nhân dân tỉnh Lào Cai',  'Tên cơ quan'),
+  (1, 'org_code',          'UBND_LAOCAI',                     'Mã cơ quan'),
+  (1, 'org_address',       'Đường Hoàng Liên, TP Lào Cai',   'Địa chỉ cơ quan'),
+  (1, 'org_phone',         '02143840900',                     'Số điện thoại'),
+  (1, 'org_fax',           '02143840901',                     'Số fax'),
+  (1, 'org_email',         'ubnd@laocai.gov.vn',              'Email cơ quan'),
+  (1, 'org_website',       'https://laocai.gov.vn',           'Website'),
+  (1, 'max_upload_size',   '52428800',                        'Dung lượng upload tối đa (bytes) — 50MB'),
+  (1, 'session_timeout',   '900',                             'Thời gian timeout session (giây) — 15 phút'),
+  (1, 'password_min_len',  '6',                               'Độ dài tối thiểu mật khẩu'),
+  (1, 'password_expiry',   '90',                              'Số ngày hết hạn mật khẩu'),
+  (1, 'doc_number_format', '{year}/{book_code}/{number}',     'Định dạng số văn bản'),
+  (1, 'default_language',  'vi',                              'Ngôn ngữ mặc định')
+ON CONFLICT (unit_id, key) DO NOTHING;
+
+-- ============ FIX sequence cho các bảng mới seed ============
+SELECT setval('edoc.sms_templates_id_seq',   (SELECT COALESCE(MAX(id), 1) FROM edoc.sms_templates));
+SELECT setval('edoc.email_templates_id_seq', (SELECT COALESCE(MAX(id), 1) FROM edoc.email_templates));
+SELECT setval('configurations_id_seq',       (SELECT COALESCE(MAX(id), 1) FROM public.configurations));
+SELECT setval('calendar_events_id_seq',      (SELECT COALESCE(MAX(id), 1) FROM public.calendar_events));
+
+-- ============ VERIFY COUNTS (bổ sung) ============
+SELECT 'SMS_TEMPLATES:   ' || count(*) FROM edoc.sms_templates;
+SELECT 'EMAIL_TEMPLATES: ' || count(*) FROM edoc.email_templates;
+SELECT 'PROVINCES:       ' || count(*) FROM public.provinces;
+SELECT 'DISTRICTS:       ' || count(*) FROM public.districts;
+SELECT 'COMMUNES:        ' || count(*) FROM public.communes;
+SELECT 'CONFIGURATIONS:  ' || count(*) FROM public.configurations;
+SELECT 'CALENDAR_EVENTS: ' || count(*) FROM public.calendar_events;
+
 SELECT '=== SEED FULL DEMO COMPLETE ===' as result;
 
 COMMIT;
