@@ -248,4 +248,46 @@ router.delete('/:id', async (req: Request, res: Response) => {
   }
 });
 
+// ============================================================
+// PATCH /:id/restore — Khôi phục tin nhắn từ thùng rác
+// ============================================================
+router.patch('/:id/restore', async (req: Request, res: Response) => {
+  try {
+    const { staffId } = (req as AuthRequest).user;
+    const id = Number(req.params.id);
+    const result = await rawQuery<{ success: boolean; message: string }>(
+      'SELECT * FROM edoc.fn_message_restore($1, $2)', [id, staffId]
+    );
+    const row = result[0];
+    if (!row?.success) {
+      res.status(400).json({ success: false, message: row?.message || 'Lỗi khôi phục' });
+      return;
+    }
+    res.json({ success: true, data: { message: row.message } });
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
+
+// ============================================================
+// DELETE /:id/permanent — Xóa vĩnh viễn tin nhắn
+// ============================================================
+router.delete('/:id/permanent', async (req: Request, res: Response) => {
+  try {
+    const { staffId } = (req as AuthRequest).user;
+    const id = Number(req.params.id);
+    const result = await rawQuery<{ success: boolean; message: string }>(
+      'SELECT * FROM edoc.fn_message_permanent_delete($1, $2)', [id, staffId]
+    );
+    const row = result[0];
+    if (!row?.success) {
+      res.status(400).json({ success: false, message: row?.message || 'Lỗi xóa vĩnh viễn' });
+      return;
+    }
+    res.json({ success: true, data: { message: row.message } });
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
+
 export default router;

@@ -7,7 +7,7 @@ import {
 } from 'antd';
 import {
   EditOutlined, SendOutlined, DeleteOutlined,
-  InboxOutlined, MailOutlined,
+  InboxOutlined, MailOutlined, RollbackOutlined,
 } from '@ant-design/icons';
 import { api } from '@/lib/api';
 import dayjs from 'dayjs';
@@ -157,6 +157,28 @@ export default function TinNhanPage() {
       }
     } catch {
       message.error('Xóa tin nhắn thất bại. Vui lòng thử lại.');
+    }
+  };
+
+  const handleRestore = async (id: number) => {
+    try {
+      await api.patch(`/tin-nhan/${id}/restore`);
+      message.success('Đã khôi phục tin nhắn');
+      setMessages((prev) => prev.filter((m) => m.id !== id));
+      if (selectedId === id) { setSelectedId(null); setMessageDetail(null); }
+    } catch {
+      message.error('Khôi phục thất bại');
+    }
+  };
+
+  const handlePermanentDelete = async (id: number) => {
+    try {
+      await api.delete(`/tin-nhan/${id}/permanent`);
+      message.success('Đã xóa vĩnh viễn');
+      setMessages((prev) => prev.filter((m) => m.id !== id));
+      if (selectedId === id) { setSelectedId(null); setMessageDetail(null); }
+    } catch {
+      message.error('Xóa vĩnh viễn thất bại');
     }
   };
 
@@ -337,18 +359,18 @@ export default function TinNhanPage() {
                 <h2 style={{ fontSize: 22, fontWeight: 700, color: '#1B3A5C', margin: 0 }}>
                   {messageDetail.subject}
                 </h2>
-                <Popconfirm
-                  title="Xóa tin nhắn?"
-                  description="Tin nhắn sẽ chuyển vào thùng rác."
-                  okText="Xóa"
-                  okButtonProps={{ danger: true }}
-                  cancelText="Hủy"
-                  onConfirm={() => handleDelete(messageDetail.id)}
-                >
-                  <Button icon={<DeleteOutlined />} danger size="small">
-                    Xóa
-                  </Button>
-                </Popconfirm>
+                {folder === 'trash' ? (
+                  <span style={{ display: 'flex', gap: 8 }}>
+                    <Button icon={<RollbackOutlined />} size="small" onClick={() => handleRestore(messageDetail.id)}>Khôi phục</Button>
+                    <Popconfirm title="Xóa vĩnh viễn?" description="Tin nhắn sẽ bị xóa hoàn toàn, không thể khôi phục." okText="Xóa vĩnh viễn" okButtonProps={{ danger: true }} cancelText="Hủy" onConfirm={() => handlePermanentDelete(messageDetail.id)}>
+                      <Button icon={<DeleteOutlined />} danger size="small">Xóa vĩnh viễn</Button>
+                    </Popconfirm>
+                  </span>
+                ) : (
+                  <Popconfirm title="Xóa tin nhắn?" description="Tin nhắn sẽ chuyển vào thùng rác." okText="Xóa" okButtonProps={{ danger: true }} cancelText="Hủy" onConfirm={() => handleDelete(messageDetail.id)}>
+                    <Button icon={<DeleteOutlined />} danger size="small">Xóa</Button>
+                  </Popconfirm>
+                )}
               </div>
 
               {/* Meta */}
