@@ -19,4 +19,7 @@ export const pool = new Pool({
   max: Number(process.env.PG_MAX_CONNECTIONS) || 20,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 5000,
+  // Force UTF8 — Windows server mặc định dùng locale WIN1252,
+  // không decode được tiếng Việt UTF-8 từ DB → 500 error
+  client_encoding: 'UTF8',
 });
