@@ -5,6 +5,7 @@ import {
   Card, Tag, Button, Space, Row, Col, Timeline, Avatar,
   Upload, Modal, Input, Popconfirm, Checkbox, Empty, Spin, App,
   Badge, Typography, Flex, Dropdown, Drawer, Form, DatePicker, Select,
+  InputNumber,
 } from 'antd';
 import {
   ArrowLeftOutlined, CheckCircleOutlined, CloseCircleOutlined, SendOutlined,
@@ -131,6 +132,12 @@ export default function OutgoingDocDetailPage() {
   const [cpModalOpen, setCpModalOpen] = useState(false);
   const [cpSelected, setCpSelected] = useState<string[]>([]);
   const [cpSending, setCpSending] = useState(false);
+  // Chuyển lưu trữ VB đi (HDSD II.3.9)
+  const [archiveOpen, setArchiveOpen] = useState(false);
+  const [archiveForm] = Form.useForm();
+  const [archiving, setArchiving] = useState(false);
+  const [warehouseOptions, setWarehouseOptions] = useState<{ value: number; label: string }[]>([]);
+  const [fondOptions, setFondOptions] = useState<{ value: number; label: string }[]>([]);
 
   const fetchDoc = useCallback(async () => { try { const { data: res } = await api.get(`/van-ban-di/${docId}`); setDoc(res.data); } catch { message.error('Không tìm thấy văn bản'); router.push('/van-ban-di'); } }, [docId, message, router]);
   const fetchBookmarkStatus = useCallback(async () => { try { const { data: res } = await api.get('/van-ban-di/danh-dau-ca-nhan'); const bookmarks: { doc_id: number | string }[] = res.data || []; setIsBookmarked(bookmarks.some((b) => Number(b.doc_id) === Number(docId))); } catch {} }, [docId]);
@@ -203,6 +210,31 @@ export default function OutgoingDocDetailPage() {
   const handleUpload = async (file: File) => { setUploading(true); try { const fd = new FormData(); fd.append('file', file); await api.post(`/van-ban-di/${docId}/dinh-kem`, fd, { headers: { 'Content-Type': 'multipart/form-data' } }); message.success('Tải lên thành công'); fetchAttachments(); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } finally { setUploading(false); } return false; };
   const handleDownload = async (att: Attachment) => { try { const { data: res } = await api.get(`/van-ban-di/${docId}/dinh-kem/${att.id}/download`); window.open(res.data?.url, '_blank'); } catch { message.error('Lỗi tải file'); } };
   const handleDeleteAttachment = async (att: Attachment) => { try { await api.delete(`/van-ban-di/${docId}/dinh-kem/${att.id}`); message.success('Đã xóa'); fetchAttachments(); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } };
+
+  // Chuyển lưu trữ VB đi (HDSD II.3.9)
+  const openArchive = async () => {
+    try {
+      const [fondRes, whRes] = await Promise.all([
+        api.get(`/van-ban-di/${docId}/luu-tru/phong`),
+        api.get(`/van-ban-di/${docId}/luu-tru/kho`),
+      ]);
+      setFondOptions((fondRes.data?.data || []).map((f: { id: number; name: string }) => ({ value: f.id, label: f.name })));
+      setWarehouseOptions((whRes.data?.data || []).map((w: { id: number; name: string }) => ({ value: w.id, label: w.name })));
+      archiveForm.resetFields();
+      archiveForm.setFieldsValue({ language: 'Tiếng Việt', format: 'Điện tử', is_original: true });
+      setArchiveOpen(true);
+    } catch { message.error('Lỗi tải dữ liệu lưu trữ'); }
+  };
+  const handleArchive = async () => {
+    try {
+      const values = await archiveForm.validateFields();
+      setArchiving(true);
+      const { data: res } = await api.post(`/van-ban-di/${docId}/chuyen-luu-tru`, values);
+      if (res.success) { message.success('Chuyển lưu trữ thành công'); setArchiveOpen(false); fetchDoc(); fetchHistory(); }
+      else message.error(res.message);
+    } catch (e: any) { if (e?.response?.data?.message) message.error(e.response.data.message); }
+    finally { setArchiving(false); }
+  };
 
   // Gửi trục CP (mock — HDSD II.3.8)
   const handleSendCp = async () => {
@@ -318,6 +350,7 @@ export default function OutgoingDocDetailPage() {
           <Button icon={<InboxOutlined />} onClick={openHscvModal}>Thêm vào HSCV</Button>
           {doc.approved && <Button icon={<SendOutlined />} style={{ backgroundColor: '#059669', borderColor: '#059669', color: '#fff' }} onClick={openLgspModal}>Gửi liên thông</Button>}
           {doc.approved && <Button icon={<CloudUploadOutlined />} style={{ backgroundColor: '#16A34A', borderColor: '#16A34A', color: '#fff' }} onClick={() => { setCpSelected([]); setCpModalOpen(true); }}>Gửi trục CP</Button>}
+          {doc.approved && !doc.archive_status && <Button icon={<InboxOutlined />} onClick={openArchive}>Chuyển lưu trữ</Button>}
           {!doc.approved && (
             <>
               <Button icon={<EditOutlined />} onClick={() => router.push(`/van-ban-di?edit=${doc.id}`)}>Sửa</Button>
@@ -595,6 +628,35 @@ export default function OutgoingDocDetailPage() {
       <Modal title="Gửi liên thông LGSP" open={lgspModalOpen} onCancel={() => setLgspModalOpen(false)} onOk={handleSendLgsp} confirmLoading={lgspSending} okText="Gửi liên thông" cancelText="Hủy">
         <Select mode="multiple" style={{ width: '100%', marginTop: 8 }} placeholder="Chọn đơn vị nhận..." showSearch filterOption={(input, opt) => (opt?.label ?? '').toLowerCase().includes(input.toLowerCase())} value={selectedLgspOrgs} onChange={setSelectedLgspOrgs} options={lgspOrgs.map(o => ({ value: o.id, label: `${o.org_name} (${o.org_code})` }))} />
       </Modal>
+
+      {/* Drawer: Chuyển lưu trữ VB đi (HDSD II.3.9) */}
+      <Drawer
+        title="Chuyển lưu trữ" open={archiveOpen} onClose={() => setArchiveOpen(false)}
+        size={640} rootClassName="drawer-gradient" forceRender
+        extra={<Space><Button onClick={() => setArchiveOpen(false)}>Hủy</Button><Button type="primary" onClick={handleArchive} loading={archiving}>Chuyển lưu trữ</Button></Space>}
+      >
+        <Form form={archiveForm} layout="vertical">
+          <Row gutter={16}>
+            <Col span={12}><Form.Item name="warehouse_id" label="Kho lưu trữ" rules={[{ required: true, message: 'Vui lòng chọn kho lưu trữ' }]}><Select placeholder="Chọn kho..." allowClear options={warehouseOptions} /></Form.Item></Col>
+            <Col span={12}><Form.Item name="fond_id" label="Phông lưu trữ" rules={[{ required: true, message: 'Vui lòng chọn phông lưu trữ' }]}><Select placeholder="Chọn phông..." allowClear options={fondOptions} /></Form.Item></Col>
+          </Row>
+          <Row gutter={16}>
+            <Col span={12}><Form.Item name="file_catalog" label="Mục lục hồ sơ"><Input maxLength={200} /></Form.Item></Col>
+            <Col span={12}><Form.Item name="file_notation" label="Ký hiệu hồ sơ"><Input maxLength={100} /></Form.Item></Col>
+          </Row>
+          <Row gutter={16}>
+            <Col span={8}><Form.Item name="doc_ordinal" label="Thứ tự VB"><InputNumber style={{ width: '100%' }} min={1} /></Form.Item></Col>
+            <Col span={8}><Form.Item name="language" label="Ngôn ngữ"><Input maxLength={50} /></Form.Item></Col>
+            <Col span={8}><Form.Item name="format" label="Định dạng"><Select options={[{ value: 'Điện tử', label: 'Điện tử' }, { value: 'Giấy', label: 'Giấy' }, { value: 'Cả hai', label: 'Cả hai' }]} /></Form.Item></Col>
+          </Row>
+          <Form.Item name="autograph" label="Bút tích"><Input.TextArea rows={2} maxLength={500} showCount /></Form.Item>
+          <Form.Item name="keyword" label="Từ khóa"><Input maxLength={500} /></Form.Item>
+          <Row gutter={16}>
+            <Col span={12}><Form.Item name="confidence_level" label="Mức độ tin cậy"><Input maxLength={50} /></Form.Item></Col>
+            <Col span={12}><Form.Item name="is_original" label="Bản gốc" valuePropName="checked"><Checkbox>Là bản gốc</Checkbox></Form.Item></Col>
+          </Row>
+        </Form>
+      </Drawer>
 
       {/* Modal: Gửi trục CP (HDSD II.3.8) */}
       <Modal

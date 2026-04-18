@@ -761,6 +761,25 @@ router.post('/:id/gui-truc-cp', async (req: Request, res: Response) => {
 // CHUYỂN LƯU TRỮ
 // ============================================================
 
+// Mirror pattern từ incoming-doc.ts — dropdown phòng/kho lưu trữ cho VB đi (Gap C HDSD II.3.9)
+router.get('/:id/luu-tru/phong', async (req: Request, res: Response) => {
+  try {
+    const { departmentId } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
+    const fonds = await incomingDocRepository.getFonds(ancestorUnitId);
+    res.json({ success: true, data: fonds });
+  } catch (error) { handleDbError(error, res); }
+});
+
+router.get('/:id/luu-tru/kho', async (req: Request, res: Response) => {
+  try {
+    const { departmentId } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
+    const warehouses = await incomingDocRepository.getWarehouses(ancestorUnitId);
+    res.json({ success: true, data: warehouses });
+  } catch (error) { handleDbError(error, res); }
+});
+
 router.get('/:id/luu-tru', async (req: Request, res: Response) => {
   try {
     const doc = await incomingDocRepository.getArchive('outgoing', Number(req.params.id));
