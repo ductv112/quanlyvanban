@@ -57,6 +57,13 @@ export interface InterIncomingDetailRow {
   doc_type_name: string;
   doc_field_name: string;
   created_by_name: string;
+  // HDSD 2.3 — recall flow (6 field bổ sung từ fn_inter_incoming_get_by_id)
+  recall_reason: string | null;
+  recall_requested_at: string | null;
+  recall_response: string | null;
+  recall_responded_by: number | null;
+  recall_responded_at: string | null;
+  status_before_recall: string | null;
 }
 
 // ============ Repository ============
@@ -101,6 +108,22 @@ export const interIncomingRepository = {
 
   async complete(id: number, staffId: number): Promise<{ success: boolean; message: string } | null> {
     return callFunctionOne<{ success: boolean; message: string }>('edoc.fn_inter_incoming_complete', [id, staffId]);
+  },
+
+  // --- HDSD 2.3 — recall flow ---
+
+  async recallApprove(id: number, userId: number): Promise<{ success: boolean; message: string } | null> {
+    return callFunctionOne<{ success: boolean; message: string }>(
+      'edoc.fn_inter_incoming_recall_approve',
+      [id, userId],
+    );
+  },
+
+  async recallReject(id: number, userId: number, reason: string): Promise<{ success: boolean; message: string } | null> {
+    return callFunctionOne<{ success: boolean; message: string }>(
+      'edoc.fn_inter_incoming_recall_reject',
+      [id, userId, reason],
+    );
   },
 
   // --- Attachments ---

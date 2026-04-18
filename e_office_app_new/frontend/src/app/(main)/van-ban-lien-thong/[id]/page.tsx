@@ -48,6 +48,13 @@ interface LienThongDocDetail {
   doc_type_name: string;
   doc_field_name: string;
   created_by_name: string;
+  // HDSD 2.3 — recall flow
+  recall_reason?: string | null;
+  recall_requested_at?: string | null;
+  recall_response?: string | null;
+  recall_responded_by?: number | null;
+  recall_responded_at?: string | null;
+  status_before_recall?: string | null;
 }
 
 const STATUS_MAP: Record<string, { text: string; color: string }> = {
@@ -55,6 +62,8 @@ const STATUS_MAP: Record<string, { text: string; color: string }> = {
   received: { text: 'Đã nhận', color: 'cyan' },
   completed: { text: 'Hoàn thành', color: 'green' },
   returned: { text: 'Đã chuyển lại', color: 'orange' },
+  recall_requested: { text: 'Đang yêu cầu thu hồi', color: 'volcano' },
+  recalled: { text: 'Đã thu hồi', color: 'red' },
 };
 
 const SECRET_MAP: Record<number, { text: string; color: string }> = {
@@ -87,6 +96,11 @@ export default function LienThongDocDetailPage() {
   const [chuyenLaiOpen, setChuyenLaiOpen] = useState(false);
   const [chuyenLaiSaving, setChuyenLaiSaving] = useState(false);
   const [chuyenLaiForm] = Form.useForm();
+
+  // HDSD 2.3 — Từ chối thu hồi modal
+  const [tuChoiThuHoiOpen, setTuChoiThuHoiOpen] = useState(false);
+  const [tuChoiThuHoiSaving, setTuChoiThuHoiSaving] = useState(false);
+  const [tuChoiThuHoiForm] = Form.useForm();
 
   // Attachments
   interface Attachment { id: number; file_name: string; file_path: string; file_size: number; content_type: string; created_by_name: string; created_at: string; }
@@ -164,6 +178,48 @@ export default function LienThongDocDetailPage() {
       message.error(err?.response?.data?.message || 'Thao tác thất bại');
     } finally {
       setActionLoading(false);
+    }
+  };
+
+  // HDSD 2.3 — Đồng ý thu hồi (status='recall_requested' → 'recalled' + soft-delete VB đến liên kết)
+  const handleDongYThuHoi = () => {
+    Modal.confirm({
+      title: 'Đồng ý thu hồi văn bản?',
+      content: 'Văn bản đến đã phát sinh từ văn bản liên thông này sẽ bị xóa (chuyển vào thùng rác). Bạn xác nhận?',
+      okText: 'Đồng ý thu hồi',
+      okButtonProps: { danger: true },
+      cancelText: 'Hủy',
+      onOk: async () => {
+        try {
+          const { data: res } = await api.post(`/van-ban-lien-thong/${docId}/dong-y-thu-hoi`);
+          message.success(res?.message || 'Đã đồng ý thu hồi');
+          fetchDoc();
+        } catch (e: unknown) {
+          const err = e as { response?: { data?: { message?: string } } };
+          message.error(err?.response?.data?.message || 'Thao tác thất bại');
+        }
+      },
+    });
+  };
+
+  // HDSD 2.3 — Từ chối thu hồi (restore status_before_recall, fallback 'received')
+  const handleTuChoiThuHoi = async () => {
+    try {
+      const values = await tuChoiThuHoiForm.validateFields();
+      setTuChoiThuHoiSaving(true);
+      const { data: res } = await api.post(
+        `/van-ban-lien-thong/${docId}/tu-choi-thu-hoi`,
+        { reason: values.reason },
+      );
+      message.success(res?.message || 'Đã từ chối thu hồi');
+      setTuChoiThuHoiOpen(false);
+      tuChoiThuHoiForm.resetFields();
+      fetchDoc();
+    } catch (e: unknown) {
+      const err = e as { response?: { data?: { message?: string } } };
+      if (err?.response?.data?.message) message.error(err.response.data.message);
+    } finally {
+      setTuChoiThuHoiSaving(false);
     }
   };
 
@@ -245,8 +301,63 @@ export default function LienThongDocDetailPage() {
               </Button>
             </Popconfirm>
           )}
+
+          {/* HDSD 2.3 — 2 nút Đồng ý / Từ chối thu hồi (chỉ hiện khi recall_requested) */}
+          {doc.status === 'recall_requested' && (
+            <>
+              <Button danger icon={<CheckCircleOutlined />} onClick={handleDongYThuHoi}>
+                Đồng ý thu hồi
+              </Button>
+              <Button
+                type="primary"
+                icon={<CloseCircleOutlined />}
+                onClick={() => { tuChoiThuHoiForm.resetFields(); setTuChoiThuHoiOpen(true); }}
+              >
+                Từ chối thu hồi
+              </Button>
+            </>
+          )}
         </div>
       </div>
+
+      {/* HDSD 2.3 — Card Lý do yêu cầu thu hồi (hiện khi đang yêu cầu hoặc đã có recall_response) */}
+      {(doc.recall_reason || doc.recall_response) && (
+        <Card
+          size="small"
+          style={{
+            marginBottom: 16,
+            borderLeft: '4px solid #DC2626',
+            background: '#FEF2F2',
+          }}
+        >
+          {doc.recall_reason && (
+            <div style={{ marginBottom: doc.recall_response ? 12 : 0 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: '#991B1B', marginBottom: 4 }}>
+                LÝ DO YÊU CẦU THU HỒI
+                {doc.recall_requested_at && (
+                  <span style={{ fontWeight: 400, color: '#7F1D1D', marginLeft: 8 }}>
+                    ({fmtDateTime(doc.recall_requested_at)})
+                  </span>
+                )}
+              </div>
+              <div style={{ fontSize: 14, color: '#1B3A5C' }}>{doc.recall_reason}</div>
+            </div>
+          )}
+          {doc.recall_response && (
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: '#991B1B', marginBottom: 4 }}>
+                PHẢN HỒI TỪ CHỐI THU HỒI
+                {doc.recall_responded_at && (
+                  <span style={{ fontWeight: 400, color: '#7F1D1D', marginLeft: 8 }}>
+                    ({fmtDateTime(doc.recall_responded_at)})
+                  </span>
+                )}
+              </div>
+              <div style={{ fontSize: 14, color: '#1B3A5C' }}>{doc.recall_response}</div>
+            </div>
+          )}
+        </Card>
+      )}
 
       {/* BODY */}
       <Row gutter={16}>
@@ -392,6 +503,33 @@ export default function LienThongDocDetailPage() {
               rows={4}
               placeholder="Nhập lý do chuyển lại văn bản..."
               maxLength={500}
+              showCount
+            />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* HDSD 2.3 — MODAL TỪ CHỐI THU HỒI */}
+      <Modal
+        title="Từ chối yêu cầu thu hồi"
+        open={tuChoiThuHoiOpen}
+        onCancel={() => { setTuChoiThuHoiOpen(false); tuChoiThuHoiForm.resetFields(); }}
+        onOk={handleTuChoiThuHoi}
+        okText="Gửi từ chối"
+        cancelText="Hủy"
+        confirmLoading={tuChoiThuHoiSaving}
+        width={480}
+      >
+        <Form form={tuChoiThuHoiForm} layout="vertical" validateTrigger="onSubmit" style={{ marginTop: 16 }}>
+          <Form.Item
+            name="reason"
+            label="Lý do từ chối thu hồi"
+            rules={[{ required: true, message: 'Vui lòng nhập lý do từ chối thu hồi' }]}
+          >
+            <TextArea
+              rows={4}
+              placeholder="Nhập lý do từ chối thu hồi..."
+              maxLength={1000}
               showCount
             />
           </Form.Item>

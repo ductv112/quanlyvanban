@@ -34,6 +34,8 @@ const STATUS_MAP: Record<string, { text: string; color: string }> = {
   received: { text: 'Đã nhận', color: 'cyan' },
   completed: { text: 'Hoàn thành', color: 'green' },
   returned: { text: 'Đã chuyển lại', color: 'orange' },
+  recall_requested: { text: 'Đang yêu cầu thu hồi', color: 'volcano' },
+  recalled: { text: 'Đã thu hồi', color: 'red' },
 };
 
 export default function LienThongDocPage() {

@@ -110,6 +110,55 @@ router.post('/:id/hoan-thanh', async (req: Request, res: Response) => {
 });
 
 // ============================================================
+// HDSD 2.3 — Recall flow (Đồng ý / Từ chối thu hồi)
+// ============================================================
+
+// POST /:id/dong-y-thu-hoi — Đồng ý thu hồi (recall_requested → recalled + soft-delete incoming_docs liên kết)
+router.post('/:id/dong-y-thu-hoi', async (req: Request, res: Response) => {
+  try {
+    const { staffId } = (req as AuthRequest).user;
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+      res.status(400).json({ success: false, message: 'ID không hợp lệ' });
+      return;
+    }
+    const result = await interIncomingRepository.recallApprove(id, staffId);
+    if (!result || !result.success) {
+      res.status(400).json({ success: false, message: result?.message || 'Thao tác thất bại' });
+      return;
+    }
+    res.json({ success: true, message: result.message });
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
+
+// POST /:id/tu-choi-thu-hoi — Từ chối thu hồi (restore status_before_recall, fallback 'received')
+router.post('/:id/tu-choi-thu-hoi', async (req: Request, res: Response) => {
+  try {
+    const { staffId } = (req as AuthRequest).user;
+    const id = Number(req.params.id);
+    const reason = String(req.body?.reason || '').trim();
+    if (!Number.isInteger(id) || id <= 0) {
+      res.status(400).json({ success: false, message: 'ID không hợp lệ' });
+      return;
+    }
+    if (!reason) {
+      res.status(400).json({ success: false, message: 'Vui lòng nhập lý do từ chối thu hồi' });
+      return;
+    }
+    const result = await interIncomingRepository.recallReject(id, staffId, reason);
+    if (!result || !result.success) {
+      res.status(400).json({ success: false, message: result?.message || 'Thao tác thất bại' });
+      return;
+    }
+    res.json({ success: true, message: result.message });
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
+
+// ============================================================
 // ATTACHMENTS — File đính kèm VB liên thông
 // ============================================================
 
