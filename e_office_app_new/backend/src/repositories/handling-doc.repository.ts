@@ -1,4 +1,4 @@
-import { callFunction, callFunctionOne } from '../lib/db/query.js';
+import { callFunction, callFunctionOne, rawQuery } from '../lib/db/query.js';
 import type { DbResult, DbResultWithId } from './doc-book.repository.js';
 
 // ============ Row types ============
@@ -85,6 +85,19 @@ export interface OpinionRow {
   content: string;
   attachment_path: string;
   created_at: string;
+  // Gap E (HDSD III.2.6) — Chuyển tiếp ý kiến
+  forwarded_to_staff_id?: number | null;
+  forwarded_to_name?: string | null;
+  forwarded_at?: string | null;
+  forward_note?: string | null;
+  parent_opinion_id?: number | null;
+}
+
+export interface StaffSameUnitRow {
+  id: number;
+  full_name: string;
+  username: string;
+  department_id: number;
 }
 
 export interface LinkedDocRow {
@@ -358,5 +371,31 @@ export const handlingDocRepository = {
   async cancel(id: number, userId: number, reason: string): Promise<DbResult> {
     const row = await callFunctionOne<DbResult>('edoc.fn_handling_doc_cancel', [id, userId, reason]);
     return row ?? { success: false, message: 'Không tìm thấy hồ sơ công việc' };
+  },
+
+  // --- Gap E (HDSD III.2.6) — Chuyển tiếp ý kiến HSCV ---
+  async forwardOpinion(
+    opinionId: number,
+    fromStaffId: number,
+    toStaffId: number,
+    note: string,
+  ): Promise<DbResultWithId> {
+    const row = await callFunctionOne<DbResultWithId>('edoc.fn_opinion_forward', [
+      opinionId, fromStaffId, toStaffId, note,
+    ]);
+    return row ?? { success: false, message: 'Không thể chuyển tiếp ý kiến', id: 0 };
+  },
+
+  // --- Gap E + F (HDSD III.2.6/2.7) — Staff picker cùng đơn vị (bypass RBAC admin) ---
+  async listStaffSameUnit(unitId: number): Promise<StaffSameUnitRow[]> {
+    return rawQuery<StaffSameUnitRow>(
+      `SELECT id, full_name, username, department_id
+       FROM public.staff
+       WHERE unit_id = $1
+         AND COALESCE(is_locked, FALSE) = FALSE
+         AND COALESCE(is_deleted, FALSE) = FALSE
+       ORDER BY full_name ASC`,
+      [unitId],
+    );
   },
 };

@@ -27,6 +27,7 @@ import {
   UploadOutlined, DeleteOutlined, DownloadOutlined, PlusOutlined,
   ExclamationCircleOutlined, FilePdfOutlined, FileWordOutlined,
   FileExcelOutlined, FileImageOutlined, FileOutlined, LinkOutlined,
+  SendOutlined, SwapOutlined, HistoryOutlined,
 } from '@ant-design/icons';
 import { useRouter, useParams } from 'next/navigation';
 import dayjs from 'dayjs';
@@ -122,6 +123,12 @@ interface Opinion {
   staff_name: string;
   content: string;
   created_at: string;
+  // Gap E (HDSD III.2.6) — Chuyển tiếp ý kiến
+  forwarded_to_staff_id?: number | null;
+  forwarded_to_name?: string | null;
+  forwarded_at?: string | null;
+  forward_note?: string | null;
+  parent_opinion_id?: number | null;
 }
 
 interface Attachment {
@@ -327,6 +334,14 @@ export default function HscvDetailPage() {
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   const [cancelling, setCancelling] = useState(false);
+
+  // Gap E (HDSD III.2.6) — Chuyển tiếp ý kiến HSCV + staff picker (reuse cho Gap F)
+  const [fwdOpen, setFwdOpen] = useState(false);
+  const [fwdOpinionId, setFwdOpinionId] = useState<number | null>(null);
+  const [fwdToStaffId, setFwdToStaffId] = useState<number | null>(null);
+  const [fwdNote, setFwdNote] = useState('');
+  const [fwdSubmitting, setFwdSubmitting] = useState(false);
+  const [forwardStaffOptions, setForwardStaffOptions] = useState<{ value: number; label: string }[]>([]);
 
   // Edit drawer for HSCV details
   const [editDrawerOpen, setEditDrawerOpen] = useState(false);
@@ -636,6 +651,51 @@ export default function HscvDetailPage() {
         }
       },
     });
+  };
+
+  // Gap E (HDSD III.2.6) — Fetch staff cùng đơn vị (reuse cho Gap F)
+  const fetchStaffForForward = async () => {
+    try {
+      const { data: res } = await api.get('/ho-so-cong-viec/nhan-vien-cung-don-vi');
+      const list = res?.data || [];
+      setForwardStaffOptions(list.map((s: { id: number; full_name: string }) => ({ value: s.id, label: s.full_name })));
+    } catch {
+      setForwardStaffOptions([]);
+    }
+  };
+
+  const openForwardOpinion = (opinionId: number) => {
+    setFwdOpinionId(opinionId);
+    setFwdToStaffId(null);
+    setFwdNote('');
+    fetchStaffForForward();
+    setFwdOpen(true);
+  };
+
+  const handleForwardOpinion = async () => {
+    if (!fwdOpinionId) return;
+    if (!fwdToStaffId) {
+      message.warning('Vui lòng chọn người nhận');
+      return;
+    }
+    if (!fwdNote.trim()) {
+      message.warning('Vui lòng nhập nội dung chuyển tiếp');
+      return;
+    }
+    setFwdSubmitting(true);
+    try {
+      const { data: res } = await api.post(
+        `/ho-so-cong-viec/${id}/y-kien/${fwdOpinionId}/chuyen-tiep`,
+        { to_staff_id: fwdToStaffId, note: fwdNote.trim() },
+      );
+      message.success(res?.message || 'Đã chuyển tiếp ý kiến');
+      setFwdOpen(false);
+      await fetchOpinions();
+    } catch (err: any) {
+      message.error(err?.response?.data?.message || 'Chuyển tiếp thất bại');
+    } finally {
+      setFwdSubmitting(false);
+    }
   };
 
   // Gap D (HDSD III.2.5) — Hủy HSCV với lý do
@@ -1415,7 +1475,15 @@ export default function HscvDetailPage() {
               ) : (
                 <>
                   {opinions.map((item) => (
-                    <div key={item.id} className="opinion-item">
+                    <div
+                      key={item.id}
+                      className="opinion-item"
+                      style={item.parent_opinion_id ? {
+                        marginLeft: 32,
+                        borderLeft: '2px solid #E5E7EB',
+                        paddingLeft: 12,
+                      } : undefined}
+                    >
                       <Avatar
                         size={32}
                         style={{ backgroundColor: getAvatarColor(item.staff_id), flexShrink: 0 }}
@@ -1429,7 +1497,23 @@ export default function HscvDetailPage() {
                             {dayjs(item.created_at).format('DD/MM/YYYY HH:mm')}
                           </span>
                         </div>
+                        {item.parent_opinion_id && (
+                          <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 4 }}>
+                            <SendOutlined /> Chuyển tiếp cho {item.forwarded_to_name || '—'}
+                          </div>
+                        )}
                         <div className="opinion-item-text">{item.content}</div>
+                        <div style={{ marginTop: 6 }}>
+                          <Button
+                            size="small"
+                            type="link"
+                            icon={<SendOutlined />}
+                            onClick={() => openForwardOpinion(item.id)}
+                            style={{ padding: 0 }}
+                          >
+                            Chuyển tiếp
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -1651,6 +1735,41 @@ export default function HscvDetailPage() {
             />
           </div>
         </div>
+      </Modal>
+
+      {/* Gap E (HDSD III.2.6) — MODAL CHUYỂN TIẾP Ý KIẾN */}
+      <Modal
+        title="Chuyển tiếp ý kiến"
+        open={fwdOpen}
+        onOk={handleForwardOpinion}
+        onCancel={() => setFwdOpen(false)}
+        okText="Gửi"
+        cancelText="Hủy"
+        confirmLoading={fwdSubmitting}
+        width={500}
+      >
+        <Form layout="vertical" style={{ marginTop: 16 }}>
+          <Form.Item label="Người nhận" required>
+            <Select
+              showSearch
+              optionFilterProp="label"
+              placeholder="Chọn người nhận..."
+              options={forwardStaffOptions}
+              value={fwdToStaffId ?? undefined}
+              onChange={setFwdToStaffId}
+            />
+          </Form.Item>
+          <Form.Item label="Nội dung chuyển tiếp" required>
+            <Input.TextArea
+              rows={4}
+              maxLength={1000}
+              showCount
+              value={fwdNote}
+              onChange={(e) => setFwdNote(e.target.value)}
+              placeholder="Nhập nội dung, ý kiến gửi kèm..."
+            />
+          </Form.Item>
+        </Form>
       </Modal>
 
       {/* Gap D (HDSD III.2.5) — MODAL HỦY HSCV */}
