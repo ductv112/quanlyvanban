@@ -265,18 +265,14 @@ function buildMenuItems({ badgeCounts, isAdmin, roles }: MenuBuildParams): MenuI
     );
   }
 
-  // Đối tác links — everyone can see
-  items.push({
-    key: 'doi-tac',
-    icon: <LinkOutlined />,
-    label: 'Đối tác',
-    children: [
-      { key: 'ext-vnpt', icon: <LinkOutlined />, label: <a href="https://vinvoice.vn" target="_blank" rel="noopener noreferrer">Hóa đơn VNPT</a> },
-      { key: 'ext-viettel', icon: <LinkOutlined />, label: <a href="https://sinvoice.viettel.vn" target="_blank" rel="noopener noreferrer">Hóa đơn Viettel</a> },
-      { key: 'ext-bhxh', icon: <LinkOutlined />, label: <a href="https://dichvucong.baohiemxahoi.gov.vn" target="_blank" rel="noopener noreferrer">Bảo hiểm XH</a> },
-      { key: 'ext-thue', icon: <LinkOutlined />, label: <a href="https://thuedientu.gdt.gov.vn" target="_blank" rel="noopener noreferrer">Thuế điện tử</a> },
-    ],
-  });
+  // ── ĐỐI TÁC ── (flat list, everyone can see)
+  items.push(
+    { key: 'grp-doitac', type: 'group', label: 'ĐỐI TÁC' },
+    { key: 'ext-vnpt', icon: <LinkOutlined />, label: <a href="https://vinvoice.vn" target="_blank" rel="noopener noreferrer">Hóa đơn VNPT</a> },
+    { key: 'ext-viettel', icon: <LinkOutlined />, label: <a href="https://sinvoice.viettel.vn" target="_blank" rel="noopener noreferrer">Hóa đơn Viettel</a> },
+    { key: 'ext-bhxh', icon: <LinkOutlined />, label: <a href="https://dichvucong.baohiemxahoi.gov.vn" target="_blank" rel="noopener noreferrer">Bảo hiểm XH</a> },
+    { key: 'ext-thue', icon: <LinkOutlined />, label: <a href="https://thuedientu.gdt.gov.vn" target="_blank" rel="noopener noreferrer">Thuế điện tử</a> },
+  );
 
   // ── HỆ THỐNG ── (Admin only)
   if (isAdmin) {
@@ -681,7 +677,14 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   // Sidebar menu content — shared between Sider and mobile Drawer
   const sidebarMenuContent = (
     <>
-      <div className="main-sider-logo">
+      <div
+        className="main-sider-logo"
+        onClick={() => {
+          router.push('/dashboard');
+          if (isMobile) setMobileDrawerOpen(false);
+        }}
+        style={{ cursor: 'pointer' }}
+      >
         <div className="main-sider-logo-icon">
           <FileTextOutlined style={{ fontSize: 22, color: '#0891B2' }} />
         </div>
@@ -717,7 +720,11 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
           className="main-sider"
         >
           {/* Logo */}
-          <div className="main-sider-logo">
+          <div
+            className="main-sider-logo"
+            onClick={() => router.push('/dashboard')}
+            style={{ cursor: 'pointer' }}
+          >
             <div className="main-sider-logo-icon">
               <FileTextOutlined style={{ fontSize: collapsed ? 20 : 22, color: '#0891B2' }} />
             </div>
