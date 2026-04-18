@@ -31,6 +31,29 @@ Script tự động:
 sudo bash /opt/eoffice/quanlyvanban/deploy/update.sh
 ```
 
+`update.sh` tự động:
+- Pull code mới từ GitHub
+- Rebuild backend + frontend
+- Apply migration mới (file `quick_*.sql` chưa apply, tracking qua bảng `public._migration_history`)
+- Restart pm2
+- **KHÔNG** re-run seed (giữ nguyên data đang có)
+
+## Reset toàn bộ DB (CHỈ CHO TEST SERVER)
+
+⚠️ Xóa sạch data — dùng khi muốn test lại từ DB trống tinh:
+
+```bash
+sudo bash /opt/eoffice/quanlyvanban/deploy/reset-db.sh
+```
+
+Script tự động:
+1. Hỏi xác nhận gõ `yes`
+2. Pull code mới
+3. DROP tất cả schemas (`edoc`, `esto`, `cont`, `iso`, `public`)
+4. Re-apply `000_full_schema.sql` + tất cả `quick_*.sql` theo thứ tự
+5. Seed `seed-demo.sql` (demo accounts)
+6. Hỏi có rebuild + restart không
+
 ## Backup database
 
 ```bash
