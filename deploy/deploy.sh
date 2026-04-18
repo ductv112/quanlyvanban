@@ -204,12 +204,57 @@ docker compose -f docker-compose.prod.yml ps
 log "Bước 4 hoàn thành"
 
 # ============================================================
-# BƯỚC 5: Chạy database migrations
+# BƯỚC 5: Chạy database migrations + seed demo (nếu fresh install)
 # ============================================================
 log "Bước 5/10: Chạy database migrations..."
 
-docker exec -i qlvb_postgres psql -U $PG_USER -d $PG_DB \
-  -f - < "$WORK_DIR/database/migrations/000_full_schema.sql" > /dev/null 2>&1
+# Tracking table để skip migration đã apply
+docker exec -i qlvb_postgres psql -U $PG_USER -d $PG_DB -c "
+CREATE TABLE IF NOT EXISTS public._migration_history (
+  filename VARCHAR(255) PRIMARY KEY,
+  applied_at TIMESTAMPTZ DEFAULT NOW()
+);" > /dev/null 2>&1
+
+apply_migration() {
+  local file=$1
+  local fname=$(basename "$file")
+  local exists=$(docker exec qlvb_postgres psql -U $PG_USER -d $PG_DB -tAc \
+    "SELECT 1 FROM public._migration_history WHERE filename='$fname'" 2>/dev/null | tr -d '[:space:]')
+  if [ "$exists" = "1" ]; then
+    return 0
+  fi
+  log "  → $fname"
+  if ! docker exec -i qlvb_postgres psql -U $PG_USER -d $PG_DB -v ON_ERROR_STOP=1 \
+       -f - < "$file" > /dev/null 2>&1; then
+    err "Migration $fname thất bại"
+  fi
+  docker exec -i qlvb_postgres psql -U $PG_USER -d $PG_DB -c \
+    "INSERT INTO public._migration_history (filename) VALUES ('$fname') ON CONFLICT DO NOTHING" > /dev/null 2>&1
+}
+
+# Apply base schema
+apply_migration "$WORK_DIR/database/migrations/000_full_schema.sql"
+
+# Apply các quick migration (hlj, jsd, ...) — sorted tự nhiên
+for f in $(ls "$WORK_DIR"/database/migrations/quick_*.sql 2>/dev/null | sort); do
+  apply_migration "$f"
+done
+
+# Seed demo data chỉ khi DB trống (fresh install)
+STAFF_COUNT=$(docker exec qlvb_postgres psql -U $PG_USER -d $PG_DB -tAc \
+  "SELECT COUNT(*) FROM public.staff" 2>/dev/null | tr -d '[:space:]')
+if [ "$STAFF_COUNT" = "0" ] || [ -z "$STAFF_COUNT" ]; then
+  log "  → Seed demo data (lần đầu)..."
+  if [ -f "$WORK_DIR/database/seed-demo.sql" ]; then
+    docker exec -i qlvb_postgres psql -U $PG_USER -d $PG_DB -v ON_ERROR_STOP=1 \
+      -f - < "$WORK_DIR/database/seed-demo.sql" > /dev/null 2>&1 \
+      || warn "Seed demo thất bại (không critical)"
+  else
+    warn "Không tìm thấy seed-demo.sql — bỏ qua"
+  fi
+else
+  log "  → Đã có $STAFF_COUNT staff — bỏ qua seed"
+fi
 
 log "Database migrations hoàn thành"
 

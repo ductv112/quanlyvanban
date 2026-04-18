@@ -40,14 +40,38 @@ cd "$WORK_DIR/frontend"
 npm install > /dev/null 2>&1
 npm run build > /dev/null 2>&1
 
+# Apply migration mới (idempotent — tracking qua public._migration_history)
+log "Kiểm tra migration mới..."
+
+PG_DB_UP="qlvb_prod"
+PG_USER_UP="qlvb_admin"
+
+docker exec -i qlvb_postgres psql -U $PG_USER_UP -d $PG_DB_UP -c "
+CREATE TABLE IF NOT EXISTS public._migration_history (
+  filename VARCHAR(255) PRIMARY KEY,
+  applied_at TIMESTAMPTZ DEFAULT NOW()
+);" > /dev/null 2>&1
+
+for f in $(ls "$WORK_DIR"/database/migrations/quick_*.sql 2>/dev/null | sort); do
+  fname=$(basename "$f")
+  exists=$(docker exec qlvb_postgres psql -U $PG_USER_UP -d $PG_DB_UP -tAc \
+    "SELECT 1 FROM public._migration_history WHERE filename='$fname'" 2>/dev/null | tr -d '[:space:]')
+  if [ "$exists" != "1" ]; then
+    log "  → Apply $fname"
+    if ! docker exec -i qlvb_postgres psql -U $PG_USER_UP -d $PG_DB_UP -v ON_ERROR_STOP=1 \
+         -f - < "$f" > /dev/null 2>&1; then
+      echo "Migration $fname thất bại — kiểm tra thủ công"
+      exit 1
+    fi
+    docker exec -i qlvb_postgres psql -U $PG_USER_UP -d $PG_DB_UP -c \
+      "INSERT INTO public._migration_history (filename) VALUES ('$fname') ON CONFLICT DO NOTHING" > /dev/null 2>&1
+  fi
+done
+
 # Restart apps
 log "Restart ứng dụng..."
 cd "$WORK_DIR"
 pm2 restart all
-
-# Chạy migration mới (nếu có)
-# docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_prod \
-#   -f - < "$WORK_DIR/database/migrations/0XX_new_migration.sql"
 
 pm2 status
 
