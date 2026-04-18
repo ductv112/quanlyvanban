@@ -262,7 +262,8 @@ if ($staffCount -eq '0' -or [string]::IsNullOrEmpty($staffCount)) {
     $seedFile = Join-Path $WORK_DIR 'database\seed-demo.sql'
     if (Test-Path $seedFile) {
         Log "  -> Seed demo data (lan dau)..."
-        & $psqlExe -U $PG_USER -d $PG_DB -p 5432 -h 127.0.0.1 -v ON_ERROR_STOP=1 -f $seedFile 2>$null
+        # seed có DISABLE TRIGGER ALL (pg_dump) - cần superuser postgres
+        & $psqlExe -U postgres -d $PG_DB -p 5432 -h 127.0.0.1 -v ON_ERROR_STOP=1 -f $seedFile 2>$null
         if ($LASTEXITCODE -ne 0) { Warn 'Seed demo that bai (khong critical)' }
     } else {
         Warn 'Khong tim thay seed-demo.sql'

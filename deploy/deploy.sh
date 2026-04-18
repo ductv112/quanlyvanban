@@ -246,7 +246,8 @@ STAFF_COUNT=$(docker exec qlvb_postgres psql -U $PG_USER -d $PG_DB -tAc \
 if [ "$STAFF_COUNT" = "0" ] || [ -z "$STAFF_COUNT" ]; then
   log "  → Seed demo data (lần đầu)..."
   if [ -f "$WORK_DIR/database/seed-demo.sql" ]; then
-    docker exec -i qlvb_postgres psql -U $PG_USER -d $PG_DB -v ON_ERROR_STOP=1 \
+    # seed có DISABLE TRIGGER ALL (pg_dump) — cần superuser postgres
+    docker exec -i qlvb_postgres psql -U postgres -d $PG_DB -v ON_ERROR_STOP=1 \
       -f - < "$WORK_DIR/database/seed-demo.sql" > /dev/null 2>&1 \
       || warn "Seed demo thất bại (không critical)"
   else

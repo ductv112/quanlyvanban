@@ -120,7 +120,9 @@ Log 'Seed demo data...'
 $seedFile = Join-Path $WORK_DIR 'database\seed-demo.sql'
 if (Test-Path $seedFile) {
     $seedLog = Join-Path $env:TEMP 'seed-demo.log'
-    & $psqlExe -U $PG_USER -d $PG_DB -p 5432 -h 127.0.0.1 -v ON_ERROR_STOP=1 -f $seedFile > $seedLog 2>&1
+    # Seed file có `ALTER TABLE ... DISABLE TRIGGER ALL` (pg_dump --disable-triggers)
+    # cần superuser postgres; qlvb_admin không đủ quyền
+    & $psqlExe -U postgres -d $PG_DB -p 5432 -h 127.0.0.1 -v ON_ERROR_STOP=1 -f $seedFile > $seedLog 2>&1
     if ($LASTEXITCODE -ne 0) {
         Warn 'Seed demo that bai'
         Write-Host ""

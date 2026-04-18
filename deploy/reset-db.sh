@@ -104,7 +104,8 @@ done
 # ============================================================
 log "Seed demo data..."
 if [ -f "$WORK_DIR/database/seed-demo.sql" ]; then
-  docker exec -i qlvb_postgres psql -U $PG_USER -d $PG_DB -v ON_ERROR_STOP=1 \
+  # seed có DISABLE TRIGGER ALL (pg_dump) — cần superuser postgres
+  docker exec -i qlvb_postgres psql -U postgres -d $PG_DB -v ON_ERROR_STOP=1 \
     -f - < "$WORK_DIR/database/seed-demo.sql" > /dev/null 2>&1 \
     || warn "Seed demo thất bại"
 else
