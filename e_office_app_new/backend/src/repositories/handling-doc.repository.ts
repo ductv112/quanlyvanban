@@ -100,6 +100,21 @@ export interface StaffSameUnitRow {
   department_id: number;
 }
 
+// Gap F (HDSD III.2.7) — lịch sử HSCV
+export interface HscvHistoryRow {
+  id: number;
+  handling_doc_id: number;
+  action_type: string;
+  from_staff_id: number | null;
+  from_staff_name: string | null;
+  to_staff_id: number | null;
+  to_staff_name: string | null;
+  note: string | null;
+  created_by: number | null;
+  created_by_name: string | null;
+  created_at: string;
+}
+
 export interface LinkedDocRow {
   link_id: number;
   doc_id: number;
@@ -397,5 +412,23 @@ export const handlingDocRepository = {
        ORDER BY full_name ASC`,
       [unitId],
     );
+  },
+
+  // --- Gap F (HDSD III.2.7) — Chuyển tiếp HSCV (transfer ownership) ---
+  async transfer(
+    id: number,
+    fromStaffId: number,
+    toStaffId: number,
+    note: string,
+    byStaffId: number,
+  ): Promise<DbResult> {
+    const row = await callFunctionOne<DbResult>('edoc.fn_handling_doc_transfer', [
+      id, fromStaffId, toStaffId, note, byStaffId,
+    ]);
+    return row ?? { success: false, message: 'Không tìm thấy hồ sơ công việc' };
+  },
+
+  async getHistory(id: number): Promise<HscvHistoryRow[]> {
+    return callFunction<HscvHistoryRow>('edoc.fn_handling_doc_history_list', [id]);
   },
 };

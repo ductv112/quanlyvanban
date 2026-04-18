@@ -648,6 +648,47 @@ router.post('/:id/y-kien/:opinionId/chuyen-tiep', async (req: Request, res: Resp
   }
 });
 
+// POST /:id/chuyen-tiep — Chuyển tiếp HSCV (Gap F HDSD III.2.7)
+router.post('/:id/chuyen-tiep', async (req: Request, res: Response) => {
+  try {
+    const { staffId } = (req as AuthRequest).user;
+    const id = Number(req.params.id);
+    const toStaffId = Number(req.body?.to_staff_id);
+    const note = String(req.body?.note || '').trim();
+    if (!Number.isInteger(id) || id <= 0) {
+      res.status(400).json({ success: false, message: 'ID không hợp lệ' });
+      return;
+    }
+    if (!Number.isInteger(toStaffId) || toStaffId <= 0) {
+      res.status(400).json({ success: false, message: 'Vui lòng chọn người nhận' });
+      return;
+    }
+    const result = await handlingDocRepository.transfer(id, staffId, toStaffId, note, staffId);
+    if (!result.success) {
+      res.status(400).json({ success: false, message: result.message });
+      return;
+    }
+    res.json({ success: true, message: result.message });
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
+
+// GET /:id/lich-su — Lấy lịch sử HSCV (Gap F HDSD III.2.7)
+router.get('/:id/lich-su', async (req: Request, res: Response) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+      res.status(400).json({ success: false, message: 'ID không hợp lệ' });
+      return;
+    }
+    const list = await handlingDocRepository.getHistory(id);
+    res.json({ success: true, data: list });
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
+
 // POST /:id/huy — Hủy HSCV với lý do (Gap D HDSD III.2.5)
 router.post('/:id/huy', async (req: Request, res: Response) => {
   try {

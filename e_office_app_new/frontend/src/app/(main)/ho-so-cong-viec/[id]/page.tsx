@@ -131,6 +131,21 @@ interface Opinion {
   parent_opinion_id?: number | null;
 }
 
+// Gap F (HDSD III.2.7) — Lịch sử HSCV
+interface HscvHistoryRow {
+  id: number;
+  handling_doc_id: number;
+  action_type: string;
+  from_staff_id: number | null;
+  from_staff_name: string | null;
+  to_staff_id: number | null;
+  to_staff_name: string | null;
+  note: string | null;
+  created_by: number | null;
+  created_by_name: string | null;
+  created_at: string;
+}
+
 interface Attachment {
   id: number;
   file_name: string;
@@ -220,11 +235,16 @@ interface ToolbarButton {
 }
 
 function getToolbarButtons(status: number, hasNumber: boolean = true): ToolbarButton[] {
+  // Gap F (HDSD III.2.7): "Chuyển tiếp HSCV" + "Lịch sử" dùng cho status 0-3 (đang xử lý)
+  const transferBtn: ToolbarButton = { label: 'Chuyển tiếp HSCV', type: 'default', action: 'transfer' };
+  const historyBtn: ToolbarButton = { label: 'Lịch sử', type: 'default', action: 'history' };
   switch (status) {
     case 0:
       return [
         { label: 'Chuyển xử lý', type: 'primary', action: 'change', newStatus: 1 },
         { label: 'Sửa', type: 'default', action: 'edit' },
+        transferBtn,
+        historyBtn,
         { label: 'Xóa', type: 'default', danger: true, ghost: true, action: 'delete' },
       ];
     case 1: {
@@ -236,6 +256,8 @@ function getToolbarButtons(status: number, hasNumber: boolean = true): ToolbarBu
       if (!hasNumber) {
         buttons.push({ label: 'Lấy số', type: 'default', action: 'get_number' });
       }
+      buttons.push(transferBtn);
+      buttons.push(historyBtn);
       buttons.push({ label: 'Tạm dừng', type: 'default', action: 'change', newStatus: 5 });
       return buttons;
     }
@@ -243,6 +265,8 @@ function getToolbarButtons(status: number, hasNumber: boolean = true): ToolbarBu
       return [
         { label: 'Gửi trình ký', type: 'primary', action: 'change', newStatus: 3 },
         { label: 'Trả về', type: 'default', action: 'return' },
+        transferBtn,
+        historyBtn,
       ];
     case 3: {
       // HDSD 3.2 — Lấy số cũng cho phép ở status=3 (Đã duyệt) nếu chưa có số
@@ -254,6 +278,8 @@ function getToolbarButtons(status: number, hasNumber: boolean = true): ToolbarBu
       if (!hasNumber) {
         buttons.push({ label: 'Lấy số', type: 'default', action: 'get_number' });
       }
+      buttons.push(transferBtn);
+      buttons.push(historyBtn);
       return buttons;
     }
     case 4:
@@ -342,6 +368,17 @@ export default function HscvDetailPage() {
   const [fwdNote, setFwdNote] = useState('');
   const [fwdSubmitting, setFwdSubmitting] = useState(false);
   const [forwardStaffOptions, setForwardStaffOptions] = useState<{ value: number; label: string }[]>([]);
+
+  // Gap F (HDSD III.2.7) — Chuyển tiếp HSCV (reuse forwardStaffOptions)
+  const [transferOpen, setTransferOpen] = useState(false);
+  const [transferToStaffId, setTransferToStaffId] = useState<number | null>(null);
+  const [transferNote, setTransferNote] = useState('');
+  const [transferring, setTransferring] = useState(false);
+
+  // Gap F — Lịch sử HSCV
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyList, setHistoryList] = useState<HscvHistoryRow[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   // Edit drawer for HSCV details
   const [editDrawerOpen, setEditDrawerOpen] = useState(false);
@@ -601,7 +638,9 @@ export default function HscvDetailPage() {
     if (btn.action === 'return') { handleReturn(); return; }
     if (btn.action === 'edit') { openEditDrawer(); return; }
     if (btn.action === 'progress') { setProgressModalOpen(true); return; }
-    if (btn.action === 'history') { message.info('Tính năng xem lịch sử đang phát triển'); return; }
+    if (btn.action === 'history') { openHistory(); return; }
+    // Gap F (HDSD III.2.7) — Chuyển tiếp HSCV
+    if (btn.action === 'transfer') { openTransfer(); return; }
     if (btn.action === 'submit') { handleStatusChange('submit'); return; }
     if (btn.action === 'approve') { handleStatusChange('approve'); return; }
     if (btn.action === 'reopen') { handleReopen(); return; }
@@ -696,6 +735,51 @@ export default function HscvDetailPage() {
     } finally {
       setFwdSubmitting(false);
     }
+  };
+
+  // Gap F (HDSD III.2.7) — Chuyển tiếp HSCV
+  const openTransfer = () => {
+    setTransferToStaffId(null);
+    setTransferNote('');
+    fetchStaffForForward();
+    setTransferOpen(true);
+  };
+  const handleTransfer = async () => {
+    if (!transferToStaffId) {
+      message.warning('Vui lòng chọn người nhận');
+      return;
+    }
+    setTransferring(true);
+    try {
+      const { data: res } = await api.post(`/ho-so-cong-viec/${id}/chuyen-tiep`, {
+        to_staff_id: transferToStaffId,
+        note: transferNote.trim(),
+      });
+      message.success(res?.message || 'Đã chuyển tiếp HSCV');
+      setTransferOpen(false);
+      await fetchDetail();
+    } catch (err: any) {
+      message.error(err?.response?.data?.message || 'Chuyển tiếp thất bại');
+    } finally {
+      setTransferring(false);
+    }
+  };
+
+  // Gap F — Fetch lịch sử HSCV
+  const fetchHistory = async () => {
+    setHistoryLoading(true);
+    try {
+      const { data: res } = await api.get(`/ho-so-cong-viec/${id}/lich-su`);
+      setHistoryList(res?.data || []);
+    } catch {
+      setHistoryList([]);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+  const openHistory = () => {
+    fetchHistory();
+    setHistoryOpen(true);
   };
 
   // Gap D (HDSD III.2.5) — Hủy HSCV với lý do
@@ -1735,6 +1819,75 @@ export default function HscvDetailPage() {
             />
           </div>
         </div>
+      </Modal>
+
+      {/* Gap F (HDSD III.2.7) — MODAL CHUYỂN TIẾP HSCV */}
+      <Modal
+        title="Chuyển tiếp hồ sơ công việc"
+        open={transferOpen}
+        onOk={handleTransfer}
+        onCancel={() => setTransferOpen(false)}
+        okText="Chuyển tiếp"
+        cancelText="Hủy"
+        confirmLoading={transferring}
+        width={500}
+      >
+        <div style={{ marginBottom: 12, padding: 10, background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: 6, fontSize: 12, color: '#1E40AF' }}>
+          <ExclamationCircleOutlined /> Chỉ có thể chuyển HSCV cho người cùng đơn vị
+        </div>
+        <Form layout="vertical">
+          <Form.Item label="Người nhận" required>
+            <Select
+              showSearch
+              optionFilterProp="label"
+              placeholder="Chọn người nhận (cùng đơn vị)"
+              options={forwardStaffOptions.filter(s => s.value !== user?.staffId)}
+              value={transferToStaffId ?? undefined}
+              onChange={setTransferToStaffId}
+            />
+          </Form.Item>
+          <Form.Item label="Ghi chú">
+            <Input.TextArea
+              rows={3}
+              maxLength={500}
+              showCount
+              value={transferNote}
+              onChange={(e) => setTransferNote(e.target.value)}
+              placeholder="Ghi chú thêm (tuỳ chọn)"
+            />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* Gap F (HDSD III.2.7) — MODAL LỊCH SỬ HSCV */}
+      <Modal
+        title="Lịch sử hồ sơ công việc"
+        open={historyOpen}
+        onCancel={() => setHistoryOpen(false)}
+        footer={<Button onClick={() => setHistoryOpen(false)}>Đóng</Button>}
+        width={720}
+      >
+        {historyLoading ? (
+          <Skeleton active paragraph={{ rows: 4 }} />
+        ) : historyList.length === 0 ? (
+          <div className="empty-center">Chưa có lịch sử</div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {historyList.map((h) => (
+              <div key={h.id} style={{ padding: 12, border: '1px solid #E5E7EB', borderRadius: 8 }}>
+                <div style={{ fontWeight: 600, color: '#1B3A5C' }}>
+                  {h.action_type === 'transfer' && (<><SwapOutlined /> Chuyển tiếp: {h.from_staff_name || '—'} → {h.to_staff_name || '—'}</>)}
+                  {h.action_type === 'cancel' && (<><ExclamationCircleOutlined /> Hủy HSCV</>)}
+                  {h.action_type === 'reopen' && (<><HistoryOutlined /> Mở lại</>)}
+                </div>
+                {h.note && <div style={{ marginTop: 6, color: '#4B5563' }}>Ghi chú: {h.note}</div>}
+                <div style={{ marginTop: 6, fontSize: 12, color: '#6B7280' }}>
+                  {dayjs(h.created_at).format('DD/MM/YYYY HH:mm')} · {h.created_by_name || '—'}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </Modal>
 
       {/* Gap E (HDSD III.2.6) — MODAL CHUYỂN TIẾP Ý KIẾN */}
