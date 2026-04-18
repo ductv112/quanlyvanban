@@ -3,7 +3,8 @@
 # Chay: PowerShell (Administrator): .\update-windows.ps1
 # ============================================================
 
-$ErrorActionPreference = "Stop"
+# Continue thay vì Stop — PS 5.1 bug: 'Stop' trip khi native command (psql) output NOTICE ra stderr
+$ErrorActionPreference = "Continue"
 function Log($msg) { Write-Host "[OK] $msg" -ForegroundColor Green }
 
 $repoDir = "C:\qlvb\quanlyvanban"
@@ -45,7 +46,7 @@ Get-ChildItem -Path $migrationsDir -Filter 'quick_*.sql' | Sort-Object Name | Fo
     $exists = & $psqlExe -U $PG_USER -d $PG_DB -p 5432 -h 127.0.0.1 -tAc "SELECT 1 FROM public._migration_history WHERE filename='$fname'" 2>$null
     if ($exists -notmatch '1') {
         Log "  -> Apply $fname"
-        & $psqlExe -U $PG_USER -d $PG_DB -p 5432 -h 127.0.0.1 -v ON_ERROR_STOP=1 -f $_.FullName 2>&1 | Out-Null
+        & $psqlExe -U $PG_USER -d $PG_DB -p 5432 -h 127.0.0.1 -v ON_ERROR_STOP=1 -f $_.FullName 2>$null
         if ($LASTEXITCODE -ne 0) {
             Write-Host "[XX] Migration $fname that bai - kiem tra thu cong" -ForegroundColor Red
             exit 1

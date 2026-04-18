@@ -5,7 +5,8 @@
 #   .\deploy-windows.ps1
 # ============================================================
 
-$ErrorActionPreference = 'Stop'
+# Continue thay vì Stop — PS 5.1 bug: 'Stop' trip khi native command (psql) output NOTICE ra stderr
+$ErrorActionPreference = 'Continue'
 
 # ---- CAU HINH ----
 $SERVER_IP     = '103.97.134.87'
@@ -237,7 +238,7 @@ function Apply-Migration {
     $exists = & $psqlExe -U $PG_USER -d $PG_DB -p 5432 -h 127.0.0.1 -tAc "SELECT 1 FROM public._migration_history WHERE filename='$fname'" 2>$null
     if ($exists -match '1') { return }
     Log "  -> $fname"
-    & $psqlExe -U $PG_USER -d $PG_DB -p 5432 -h 127.0.0.1 -v ON_ERROR_STOP=1 -f $File 2>&1 | Out-Null
+    & $psqlExe -U $PG_USER -d $PG_DB -p 5432 -h 127.0.0.1 -v ON_ERROR_STOP=1 -f $File 2>$null
     if ($LASTEXITCODE -ne 0) {
         Write-Host "[XX] Migration $fname that bai" -ForegroundColor Red
         exit 1
@@ -261,7 +262,7 @@ if ($staffCount -eq '0' -or [string]::IsNullOrEmpty($staffCount)) {
     $seedFile = Join-Path $WORK_DIR 'database\seed-demo.sql'
     if (Test-Path $seedFile) {
         Log "  -> Seed demo data (lan dau)..."
-        & $psqlExe -U $PG_USER -d $PG_DB -p 5432 -h 127.0.0.1 -v ON_ERROR_STOP=1 -f $seedFile 2>&1 | Out-Null
+        & $psqlExe -U $PG_USER -d $PG_DB -p 5432 -h 127.0.0.1 -v ON_ERROR_STOP=1 -f $seedFile 2>$null
         if ($LASTEXITCODE -ne 0) { Warn 'Seed demo that bai (khong critical)' }
     } else {
         Warn 'Khong tim thay seed-demo.sql'

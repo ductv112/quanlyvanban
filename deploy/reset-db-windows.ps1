@@ -6,7 +6,8 @@
 # Chay: PowerShell (Administrator): .\reset-db-windows.ps1
 # ============================================================
 
-$ErrorActionPreference = "Stop"
+# Continue thay vì Stop — PS 5.1 bug: 'Stop' trip khi native command (psql) output NOTICE ra stderr
+$ErrorActionPreference = "Continue"
 
 $APP_DIR  = 'C:\qlvb\quanlyvanban'
 $WORK_DIR = Join-Path $APP_DIR 'e_office_app_new'
@@ -73,7 +74,7 @@ GRANT ALL ON SCHEMA public TO $PG_USER;
 GRANT ALL ON SCHEMA public TO PUBLIC;
 "@
 
-& $psqlExe -U $PG_USER -d $PG_DB -p 5432 -h 127.0.0.1 -v ON_ERROR_STOP=1 -c $sqlDrop 2>&1 | Out-Null
+& $psqlExe -U $PG_USER -d $PG_DB -p 5432 -h 127.0.0.1 -v ON_ERROR_STOP=1 -c $sqlDrop 2>$null
 if ($LASTEXITCODE -ne 0) { Err 'Drop schemas that bai' }
 
 Log 'Schemas da duoc reset'
@@ -91,7 +92,7 @@ function Apply-Migration {
     param([string]$File)
     $fname = Split-Path $File -Leaf
     Log "  -> $fname"
-    & $psqlExe -U $PG_USER -d $PG_DB -p 5432 -h 127.0.0.1 -v ON_ERROR_STOP=1 -f $File 2>&1 | Out-Null
+    & $psqlExe -U $PG_USER -d $PG_DB -p 5432 -h 127.0.0.1 -v ON_ERROR_STOP=1 -f $File 2>$null
     if ($LASTEXITCODE -ne 0) { Err "Migration $fname that bai" }
     & $psqlExe -U $PG_USER -d $PG_DB -p 5432 -h 127.0.0.1 -c "INSERT INTO public._migration_history (filename) VALUES ('$fname') ON CONFLICT DO NOTHING" 2>$null | Out-Null
 }
@@ -109,7 +110,7 @@ Get-ChildItem -Path $migrationsDir -Filter 'quick_*.sql' | Sort-Object Name | Fo
 Log 'Seed demo data...'
 $seedFile = Join-Path $WORK_DIR 'database\seed-demo.sql'
 if (Test-Path $seedFile) {
-    & $psqlExe -U $PG_USER -d $PG_DB -p 5432 -h 127.0.0.1 -v ON_ERROR_STOP=1 -f $seedFile 2>&1 | Out-Null
+    & $psqlExe -U $PG_USER -d $PG_DB -p 5432 -h 127.0.0.1 -v ON_ERROR_STOP=1 -f $seedFile 2>$null
     if ($LASTEXITCODE -ne 0) { Warn 'Seed demo that bai' }
 } else {
     Warn 'Khong tim thay seed-demo.sql'
