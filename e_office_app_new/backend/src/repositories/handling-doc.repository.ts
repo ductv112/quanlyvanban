@@ -55,6 +55,10 @@ export interface HandlingDocDetailRow {
   sub_number: string | null;
   doc_book_id: number | null;
   doc_book_name: string | null;
+  // Gap D (HDSD III.2.5): Hủy HSCV
+  cancel_reason: string | null;
+  cancelled_at: string | null;
+  cancelled_by: number | null;
 }
 
 export interface StatusCountRow {
@@ -348,5 +352,11 @@ export const handlingDocRepository = {
       [id, userId, docBookId],
     );
     return row ?? { success: false, message: 'Không tìm thấy hồ sơ công việc', number: null };
+  },
+
+  // --- Gap D (HDSD III.2.5) — Hủy HSCV với lý do ---
+  async cancel(id: number, userId: number, reason: string): Promise<DbResult> {
+    const row = await callFunctionOne<DbResult>('edoc.fn_handling_doc_cancel', [id, userId, reason]);
+    return row ?? { success: false, message: 'Không tìm thấy hồ sơ công việc' };
   },
 };

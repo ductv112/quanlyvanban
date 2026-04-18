@@ -74,6 +74,10 @@ interface HscvDetail {
   sub_number?: string | null;
   doc_book_id?: number | null;
   doc_book_name?: string | null;
+  // Gap D (HDSD III.2.5) — Hủy HSCV
+  cancel_reason?: string | null;
+  cancelled_at?: string | null;
+  cancelled_by?: number | null;
 }
 
 interface LinkedDoc {
@@ -259,7 +263,8 @@ function getToolbarButtons(status: number, hasNumber: boolean = true): ToolbarBu
     case -2:
       return [
         { label: 'Xử lý lại', type: 'primary', action: 'change', newStatus: 1 },
-        { label: 'Hủy HSCV', type: 'default', danger: true, ghost: true, action: 'change', newStatus: -3 },
+        // Gap D (HDSD III.2.5) — Hủy HSCV: action riêng với lý do required
+        { label: 'Hủy HSCV', type: 'default', danger: true, ghost: true, action: 'cancel' },
       ];
     default:
       return [];
@@ -317,6 +322,11 @@ export default function HscvDetailPage() {
   const [docBooks, setDocBooks] = useState<{ id: number; name: string; code?: string }[]>([]);
   const [selectedBookId, setSelectedBookId] = useState<number | null>(null);
   const [layingNumber, setLayingNumber] = useState(false);
+
+  // Gap D (HDSD III.2.5) — Hủy HSCV
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
+  const [cancelling, setCancelling] = useState(false);
 
   // Edit drawer for HSCV details
   const [editDrawerOpen, setEditDrawerOpen] = useState(false);
@@ -581,6 +591,8 @@ export default function HscvDetailPage() {
     if (btn.action === 'approve') { handleStatusChange('approve'); return; }
     if (btn.action === 'reopen') { handleReopen(); return; }
     if (btn.action === 'get_number') { handleLaySo(); return; }
+    // Gap D (HDSD III.2.5) — Hủy HSCV với lý do required
+    if (btn.action === 'cancel') { setCancelReason(''); setCancelOpen(true); return; }
     if (btn.action === 'change' && btn.newStatus !== undefined) {
       handleStatusChange('change', btn.newStatus);
     }
@@ -624,6 +636,26 @@ export default function HscvDetailPage() {
         }
       },
     });
+  };
+
+  // Gap D (HDSD III.2.5) — Hủy HSCV với lý do
+  const handleCancel = async () => {
+    if (!cancelReason.trim()) {
+      message.warning('Vui lòng nhập lý do hủy');
+      return;
+    }
+    setCancelling(true);
+    try {
+      const { data: res } = await api.post(`/ho-so-cong-viec/${id}/huy`, { reason: cancelReason.trim() });
+      message.success(res?.message || 'Đã hủy HSCV');
+      setCancelOpen(false);
+      setCancelReason('');
+      await fetchDetail();
+    } catch (err: any) {
+      message.error(err?.response?.data?.message || 'Hủy thất bại');
+    } finally {
+      setCancelling(false);
+    }
   };
 
   // ===========================
@@ -1152,6 +1184,17 @@ export default function HscvDetailPage() {
               <div className="doc-abstract-box">{detail.comments}</div>
             </div>
           )}
+          {/* Gap D (HDSD III.2.5) — Thông tin hủy khi status=-3 */}
+          {detail.status === -3 && detail.cancel_reason && (
+            <div style={{ marginTop: 12, padding: 12, background: '#FEF2F2', border: '1px solid #FCA5A5', borderRadius: 8 }}>
+              <p className="section-title" style={{ marginBottom: 8, color: '#B91C1C' }}>Thông tin hủy</p>
+              <div style={{ fontSize: 13, lineHeight: 1.8 }}>
+                <div><strong>Lý do:</strong> {detail.cancel_reason}</div>
+                {detail.cancelled_at && <div><strong>Thời điểm:</strong> {dayjs(detail.cancelled_at).format('DD/MM/YYYY HH:mm')}</div>}
+                {detail.cancelled_by && <div><strong>Người hủy:</strong> ID {detail.cancelled_by}</div>}
+              </div>
+            </div>
+          )}
           {detail.parent_name && (
             <div style={{ marginTop: 8 }}>
               <div className="info-label">HSCV cha</div>
@@ -1608,6 +1651,32 @@ export default function HscvDetailPage() {
             />
           </div>
         </div>
+      </Modal>
+
+      {/* Gap D (HDSD III.2.5) — MODAL HỦY HSCV */}
+      <Modal
+        title="Hủy hồ sơ công việc"
+        open={cancelOpen}
+        onOk={handleCancel}
+        onCancel={() => { setCancelOpen(false); setCancelReason(''); }}
+        okText="Xác nhận hủy"
+        cancelText="Hủy thao tác"
+        okButtonProps={{ danger: true }}
+        confirmLoading={cancelling}
+        width={480}
+      >
+        <Form layout="vertical" style={{ marginTop: 16 }}>
+          <Form.Item label="Lý do hủy HSCV" required>
+            <Input.TextArea
+              rows={4}
+              maxLength={1000}
+              showCount
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              placeholder="Nhập lý do hủy HSCV..."
+            />
+          </Form.Item>
+        </Form>
       </Modal>
 
       {/* HDSD 3.2 — MODAL LẤY SỐ */}

@@ -598,4 +598,29 @@ router.post('/:id/lay-so', async (req: Request, res: Response) => {
   }
 });
 
+// POST /:id/huy — Hủy HSCV với lý do (Gap D HDSD III.2.5)
+router.post('/:id/huy', async (req: Request, res: Response) => {
+  try {
+    const { staffId } = (req as AuthRequest).user;
+    const id = Number(req.params.id);
+    const reason = String(req.body?.reason || '').trim();
+    if (!Number.isInteger(id) || id <= 0) {
+      res.status(400).json({ success: false, message: 'ID không hợp lệ' });
+      return;
+    }
+    if (!reason) {
+      res.status(400).json({ success: false, message: 'Vui lòng nhập lý do hủy' });
+      return;
+    }
+    const result = await handlingDocRepository.cancel(id, staffId, reason);
+    if (!result.success) {
+      res.status(400).json({ success: false, message: result.message });
+      return;
+    }
+    res.json({ success: true, message: result.message });
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
+
 export default router;
