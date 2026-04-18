@@ -119,8 +119,17 @@ Get-ChildItem -Path $migrationsDir -Filter 'quick_*.sql' | Sort-Object Name | Fo
 Log 'Seed demo data...'
 $seedFile = Join-Path $WORK_DIR 'database\seed-demo.sql'
 if (Test-Path $seedFile) {
-    & $psqlExe -U $PG_USER -d $PG_DB -p 5432 -h 127.0.0.1 -v ON_ERROR_STOP=1 -f $seedFile 2>$null
-    if ($LASTEXITCODE -ne 0) { Warn 'Seed demo that bai' }
+    $seedLog = Join-Path $env:TEMP 'seed-demo.log'
+    & $psqlExe -U $PG_USER -d $PG_DB -p 5432 -h 127.0.0.1 -v ON_ERROR_STOP=1 -f $seedFile > $seedLog 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        Warn 'Seed demo that bai'
+        Write-Host ""
+        Write-Host "---- seed-demo psql output (cuối file) ----" -ForegroundColor Yellow
+        Get-Content $seedLog -Tail 30
+        Write-Host "---- full log: $seedLog ----" -ForegroundColor Yellow
+    } else {
+        Remove-Item $seedLog -ErrorAction SilentlyContinue
+    }
 } else {
     Warn 'Khong tim thay seed-demo.sql'
 }
