@@ -36,10 +36,18 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";         -- bcrypt, encryption
 CREATE EXTENSION IF NOT EXISTS "unaccent";         -- Bỏ dấu tiếng Việt cho search
 CREATE EXTENSION IF NOT EXISTS "pg_trgm";          -- Trigram similarity search
 
--- Mark unaccent IMMUTABLE để dùng được trong functional index (FTS tiếng Việt)
--- Mặc định unaccent là STABLE, không cho tạo index expression
-ALTER FUNCTION public.unaccent(text) IMMUTABLE;
-ALTER FUNCTION public.unaccent(regdictionary, text) IMMUTABLE;
+-- Wrapper IMMUTABLE để dùng unaccent trong functional index (FTS tiếng Việt)
+-- public.unaccent mặc định STABLE + là extension function nên user thường không ALTER được.
+-- Tạo wrapper IMMUTABLE do user hiện tại sở hữu.
+CREATE OR REPLACE FUNCTION public.immutable_unaccent(text)
+RETURNS text
+LANGUAGE sql
+IMMUTABLE
+STRICT
+PARALLEL SAFE
+AS $$
+  SELECT public.unaccent('public.unaccent'::regdictionary, $1)
+$$;
 
 -- ============================================
 -- Thông báo
@@ -528,7 +536,7 @@ CREATE INDEX idx_incoming_docs_notation ON edoc.incoming_docs(notation);
 CREATE INDEX idx_incoming_docs_search ON edoc.incoming_docs USING gin(abstract gin_trgm_ops);
 -- Full-text search tiếng Việt (bỏ dấu)
 CREATE INDEX idx_incoming_docs_fts ON edoc.incoming_docs USING gin(
-  to_tsvector('simple', coalesce(unaccent(abstract), '') || ' ' || coalesce(unaccent(notation), '') || ' ' || coalesce(unaccent(publish_unit), ''))
+  to_tsvector('simple', coalesce(public.immutable_unaccent(abstract), '') || ' ' || coalesce(public.immutable_unaccent(notation), '') || ' ' || coalesce(public.immutable_unaccent(publish_unit), ''))
 );
 
 COMMENT ON TABLE edoc.incoming_docs IS 'Văn bản đến — bảng chính';
