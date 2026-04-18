@@ -23,6 +23,11 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [savingSignature, setSavingSignature] = useState(false);
   const [signatureFile, setSignatureFile] = useState<File | null>(null);
+  // Track sign_phone value để tính hasChanges (disable Save khi không có thay đổi)
+  const watchedSignPhone = Form.useWatch('sign_phone', signForm) ?? '';
+  const hasChanges =
+    signatureFile !== null ||
+    String(watchedSignPhone).trim() !== String(user?.signPhone || '').trim();
 
   useEffect(() => {
     if (!user) fetchMe();
@@ -81,6 +86,13 @@ export default function ProfilePage() {
   const handleSaveSignature = async () => {
     try {
       const values = await signForm.validateFields();
+
+      // Validate: ít nhất 1 trong (ảnh chữ ký mới, số SmartCA khác giá trị cũ) phải có
+      if (!hasChanges) {
+        message.warning('Vui lòng nhập tài khoản ký số hoặc chọn ảnh chữ ký mới');
+        return;
+      }
+
       setSavingSignature(true);
 
       // 1. Upload ảnh nếu có file mới
@@ -251,6 +263,7 @@ export default function ProfilePage() {
             type="primary"
             icon={<EditOutlined />}
             loading={savingSignature}
+            disabled={!hasChanges}
             onClick={handleSaveSignature}
             style={{ borderRadius: 8, height: 40, fontWeight: 600 }}
           >
@@ -361,6 +374,7 @@ export default function ProfilePage() {
                     </span>
                   ),
                   children: passwordPanel,
+                  forceRender: true,
                 },
                 {
                   key: 'signature',
@@ -371,6 +385,7 @@ export default function ProfilePage() {
                     </span>
                   ),
                   children: signaturePanel,
+                  forceRender: true,
                 },
               ]}
             />
