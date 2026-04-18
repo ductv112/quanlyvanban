@@ -42,10 +42,29 @@ interface IncomingDoc {
 
 interface SelectOption { value: number; label: string }
 
+interface DepartmentNode {
+  id: number;
+  name: string;
+  children?: DepartmentNode[];
+}
+
 const URGENT_MAP: Record<number, { text: string; color: string }> = {
   1: { text: 'Thường', color: 'default' },
   2: { text: 'Khẩn', color: 'orange' },
   3: { text: 'Hỏa tốc', color: 'red' },
+};
+
+// Đệ quy duyệt cây đơn vị → mảng phẳng SelectOption (label kèm prefix cha)
+const flattenDepartments = (nodes: DepartmentNode[], prefix = ''): SelectOption[] => {
+  const result: SelectOption[] = [];
+  for (const node of nodes) {
+    const label = prefix ? `${prefix} / ${node.name}` : node.name;
+    result.push({ value: node.id, label });
+    if (node.children && node.children.length > 0) {
+      result.push(...flattenDepartments(node.children, label));
+    }
+  }
+  return result;
 };
 
 export default function IncomingDocPage() {
@@ -68,6 +87,7 @@ export default function IncomingDocPage() {
   const [docBooks, setDocBooks] = useState<SelectOption[]>([]);
   const [docTypes, setDocTypes] = useState<SelectOption[]>([]);
   const [docFields, setDocFields] = useState<SelectOption[]>([]);
+  const [departments, setDepartments] = useState<SelectOption[]>([]);
   const [filterDeptId, setFilterDeptId] = useState<number | undefined>();
   const [deptTreeData, setDeptTreeData] = useState<{ value: number; title: string; children?: any[] }[]>([]);
   const [extraColumns, setExtraColumns] = useState<{ column_name: string; label: string; data_type: string; max_length: number | null; is_mandatory: boolean }[]>([]);
@@ -100,19 +120,21 @@ export default function IncomingDocPage() {
 
   const fetchDropdowns = useCallback(async () => {
     try {
-      const [bookRes, typeRes, fieldRes] = await Promise.all([
+      const [bookRes, typeRes, fieldRes, deptRes] = await Promise.all([
         api.get('/quan-tri/so-van-ban', { params: { type_id: 1 } }),
         api.get('/quan-tri/loai-van-ban/tree'),
         api.get('/quan-tri/linh-vuc'),
+        api.get('/quan-tri/don-vi/tree'),
       ]);
       setDocBooks((bookRes.data.data || []).map((b: { id: number; name: string }) => ({ value: b.id, label: b.name })));
       setDocTypes((typeRes.data.data || []).map((t: { id: number; name: string }) => ({ value: t.id, label: t.name })));
       setDocFields((fieldRes.data.data || []).map((f: { id: number; name: string }) => ({ value: f.id, label: f.name })));
-      // Fetch department tree for admin filter
+      // Cây đơn vị — phẳng hóa cho Select "Cơ quan ban hành" (mọi user dùng được)
+      const deptTree: DepartmentNode[] = deptRes.data.data || [];
+      setDepartments(flattenDepartments(deptTree));
+      // TreeSelect cho admin filter (dùng chung response, không gọi API lần 2)
       if (user?.isAdmin) {
-        const deptRes = await api.get('/quan-tri/don-vi/tree');
-        const items = deptRes.data.data || [];
-        const tree = buildTree(items.map((d: any) => ({ id: d.id, parent_id: d.parent_id, name: d.name })));
+        const tree = buildTree(deptTree.map((d: any) => ({ id: d.id, parent_id: d.parent_id, name: d.name })));
         setDeptTreeData(flattenTreeForSelect(tree));
       }
     } catch { /* ignore */ }
@@ -161,6 +183,8 @@ export default function IncomingDocPage() {
         publish_date: record.publish_date ? dayjs(record.publish_date) : null,
         sign_date: record.sign_date ? dayjs(record.sign_date) : null,
         expired_date: record.expired_date ? dayjs(record.expired_date) : null,
+        // publish_unit lưu DB là string, Select mode="tags" cần array → wrap
+        publish_unit: record.publish_unit ? [record.publish_unit] : [],
       });
     } else {
       setEditingRecord(null);
@@ -183,8 +207,14 @@ export default function IncomingDocPage() {
           extraFieldsData[key] = val && typeof val === 'object' && 'toISOString' in (val as object) ? (val as dayjs.Dayjs).toISOString() : val;
         }
       }
+      // Select mode="tags" trả về array — backend SP nhận TEXT, lấy phần tử đầu
+      const publishUnitRaw = mainValues.publish_unit;
+      const publishUnit = Array.isArray(publishUnitRaw)
+        ? (publishUnitRaw[0] || '')
+        : (publishUnitRaw || '');
       const payload = {
         ...mainValues,
+        publish_unit: publishUnit,
         received_date: mainValues.received_date?.toISOString(),
         publish_date: mainValues.publish_date?.toISOString() || null,
         sign_date: mainValues.sign_date?.toISOString() || null,
@@ -378,7 +408,15 @@ export default function IncomingDocPage() {
           </Row>
           <Row gutter={16}>
             <Col span={12}><Form.Item name="notation" label="Số ký hiệu"><Input placeholder="VD: 123/UBND-VP" maxLength={100} /></Form.Item></Col>
-            <Col span={12}><Form.Item name="publish_unit" label="Cơ quan ban hành"><Input placeholder="VD: UBND tỉnh Lạng Sơn" maxLength={500} /></Form.Item></Col>
+            <Col span={12}><Form.Item name="publish_unit" label="Cơ quan ban hành"><Select
+              mode="tags"
+              maxCount={1}
+              placeholder="Chọn hoặc nhập cơ quan ban hành"
+              allowClear
+              showSearch
+              optionFilterProp="label"
+              options={departments.map((d) => ({ value: d.label, label: d.label }))}
+            /></Form.Item></Col>
           </Row>
           <Form.Item name="abstract" label="Trích yếu nội dung" rules={[{ required: true, message: 'Bắt buộc' }]}><TextArea rows={3} placeholder="Trích yếu nội dung văn bản" maxLength={2000} showCount /></Form.Item>
           <Row gutter={16}>
