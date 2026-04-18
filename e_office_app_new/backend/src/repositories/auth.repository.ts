@@ -26,6 +26,8 @@ export interface StaffProfileRow extends Omit<StaffLoginRow, 'password_hash'> {
   position_id: number;
   last_login_at: string;
   created_at: string;
+  sign_phone: string | null;
+  sign_image: string | null;
 }
 
 export const authRepository = {

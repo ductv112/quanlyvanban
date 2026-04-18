@@ -32,6 +32,7 @@ import lgspRoutes from './routes/lgsp.js';
 import digitalSignatureRoutes from './routes/digital-signature.js';
 import notificationRoutes from './routes/notification.js';
 import sendConfigRoutes from './routes/send-config.js';
+import profileRoutes from './routes/profile.js';
 import { authenticate, requireRoles } from './middleware/auth.js';
 import { initSocket } from './lib/socket.js';
 import { ensureBucket } from './lib/minio/client.js';
@@ -75,6 +76,9 @@ app.use('/api/lich', authenticate, calendarRoutes);
 app.use('/api/danh-ba', authenticate, directoryRoutes);
 app.use('/api/dashboard', authenticate, dashboardRoutes);
 app.use('/api/cau-hinh-gui-nhanh', authenticate, sendConfigRoutes);
+
+// HDSD I.4 — Profile cá nhân (chữ ký số). Chỉ authenticate, KHÔNG requireRoles để mọi user dùng được.
+app.use('/api/ho-so-ca-nhan', authenticate, profileRoutes);
 
 // --- Phase 5: Kho luu tru, Tai lieu, Hop dong, Cuoc hop ---
 app.use('/api/kho-luu-tru', authenticate, archiveRoutes);

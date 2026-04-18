@@ -17,6 +17,10 @@ export interface UserInfo {
   departmentName: string;
   unitName: string;
   roles: string[];
+  // HDSD I.4 — chữ ký số (SmartCA)
+  signPhone?: string | null;
+  signImage?: string | null;
+  signImageUrl?: string | null;
 }
 
 interface AuthState {

@@ -3,6 +3,7 @@ import { authRepository } from '../repositories/auth.repository.js';
 import { verifyPassword } from '../lib/auth/password.js';
 import { signAccessToken, signRefreshToken, verifyToken } from '../lib/auth/jwt.js';
 import type { TokenPayload } from '../lib/auth/jwt.js';
+import { getFileUrl } from '../lib/minio/client.js';
 
 function hashToken(token: string): string {
   return createHash('sha256').update(token).digest('hex');
@@ -159,6 +160,17 @@ export const authService = {
       throw new AuthError('Không tìm thấy thông tin người dùng', 404);
     }
 
+    // HDSD I.4: kèm sign_phone (SmartCA) + sign_image_url (presigned URL preview ảnh chữ ký)
+    let signImageUrl: string | null = null;
+    if (profile.sign_image) {
+      try {
+        signImageUrl = await getFileUrl(profile.sign_image, 3600);
+      } catch {
+        // Bỏ qua lỗi MinIO — không chặn /auth/me chỉ vì preview lỗi
+        signImageUrl = null;
+      }
+    }
+
     return {
       staffId: profile.staff_id,
       unitId: profile.unit_id,
@@ -179,6 +191,9 @@ export const authService = {
       roles: parseRoles(profile.roles),
       lastLoginAt: profile.last_login_at,
       createdAt: profile.created_at,
+      signPhone: profile.sign_phone || '',
+      signImage: profile.sign_image || '',
+      signImageUrl,
     };
   },
 };
