@@ -36,6 +36,11 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";         -- bcrypt, encryption
 CREATE EXTENSION IF NOT EXISTS "unaccent";         -- Bỏ dấu tiếng Việt cho search
 CREATE EXTENSION IF NOT EXISTS "pg_trgm";          -- Trigram similarity search
 
+-- Mark unaccent IMMUTABLE để dùng được trong functional index (FTS tiếng Việt)
+-- Mặc định unaccent là STABLE, không cho tạo index expression
+ALTER FUNCTION public.unaccent(text) IMMUTABLE;
+ALTER FUNCTION public.unaccent(regdictionary, text) IMMUTABLE;
+
 -- ============================================
 -- Thông báo
 -- ============================================
