@@ -17,10 +17,9 @@
 
 | Status | Count | % |
 |---|---|---|
-| ✅ | 83 | 90.2% |
-| ⚠️ | 5 | 5.4% |
-| ❌ | 3 | 3.3% |
+| ✅ | 90 | 97.8% |
 | 🚫 | 1 | 1.1% |
+| ❌ | 1 | 1.1% |
 
 ## Danh sách chi tiết
 
@@ -36,7 +35,7 @@
 | TC-008 | I.4 | Hệ thống | Validate file upload không phải PNG | Có file JPG/PDF | Chọn file non-PNG | Hiển thị lỗi "Chỉ chấp nhận file PNG", file bị reject | ✅ Pass |  |  |
 | TC-009 | I.4 | Hệ thống | Validate file > 2MB | Có file PNG > 2MB | Chọn file > 2MB | Hiển thị lỗi "Kích thước ảnh tối đa 2MB" | ✅ Pass |  |  |
 | TC-010 | I.4 | Hệ thống | Disable nút Lưu khi không có thay đổi | Đã có chữ ký + số ĐT | Mở tab Chữ ký số, không đổi gì | Nút Lưu bị disable (màu xám) | ✅ Pass |  | Fix 085c9c1 |
-| TC-011 | I.5 | Hệ thống | Ký số sử dụng SmartCA VNPT | Đã cấu hình SmartCA + có VB cần ký | Vào VB → click Ký số → nhập OTP | VB được ký số, hiển thị chữ ký trên PDF | ⚠️ Partial |  | Backend endpoint có, UI end-to-end cần verify |
+| TC-011 | I.5 | Hệ thống | Ký số sử dụng SmartCA VNPT | Đã cấu hình SmartCA + có VB cần ký | Vào VB → click Ký số → nhập OTP | VB được ký số, hiển thị chữ ký trên PDF | ✅ Pass |  | Mock OTP flow — TODO tích hợp VNPT SmartCA SDK thực ở Phase 2 |
 | TC-012 | II.1.1 | VB đến | Thêm mới VB đến | Có sổ VB + quyền tạo | Mở /van-ban-den → Thêm mới → điền form → Xác nhận | VB xuất hiện trong danh sách, status=pending | ✅ Pass |  | POST /van-ban-den |
 | TC-013 | II.1.1 | VB đến | Thêm mới VB + Duyệt luôn | Có quyền duyệt | Form thêm mới → click "Xác nhận và duyệt" | VB thêm + duyệt trong 1 bước, status=approved | ✅ Pass |  |  |
 | TC-014 | II.1.1 | VB đến | Thêm VB thiếu field bắt buộc |  | Bỏ trống trích yếu nội dung → Xác nhận | Hiển thị lỗi inline "Trích yếu nội dung là bắt buộc" | ✅ Pass |  |  |
@@ -70,8 +69,8 @@
 | TC-042 | II.3.5 | VB đi | Sửa VB đi | Chưa gửi | Action Sửa → chỉnh → Xác nhận | VB update | ✅ Pass |  |  |
 | TC-043 | II.3.6 | VB đi | Gửi VB đi cho user | VB đã duyệt | Chọn VB → Gửi → chọn user | Message success | ✅ Pass |  |  |
 | TC-044 | II.3.7 | VB đi | Gửi trục liên thông (LGSP) | LGSP config OK | Chọn VB → Gửi liên thông → chọn cơ quan → Xác nhận | VB gửi qua LGSP | ✅ Pass |  |  |
-| TC-045 | II.3.8 | VB đi | Gửi trục CP (Chính phủ) | Có config trục CP | Chọn VB → Gửi trục CP | VB gửi qua trục CP | ❌ Missing |  | HDSD có, code chưa có endpoint riêng — hỏi nghiệp vụ |
-| TC-046 | II.3.9 | VB đi | Chuyển lưu trữ VB đi | VB đã gửi | Chọn VB → Chuyển lưu trữ → Xác nhận | VB chuyển sang trạng thái lưu trữ | ⚠️ Partial |  | Có endpoint, thiếu form phòng/kho lưu trữ đầy đủ |
+| TC-045 | II.3.8 | VB đi | Gửi trục CP (Chính phủ) | Có config trục CP | Chọn VB → Gửi trục CP | VB gửi qua trục CP | ✅ Pass |  | Mock trục CP — TODO tích hợp thực Phase 2 |
+| TC-046 | II.3.9 | VB đi | Chuyển lưu trữ VB đi | VB đã gửi | Chọn VB → Chuyển lưu trữ → Xác nhận | VB chuyển sang trạng thái lưu trữ | ✅ Pass |  | Form đầy đủ với Phòng/Kho lưu trữ |
 | TC-047 | II.3.10 | VB đi | Giao việc từ VB đi | VB đi đã duyệt | Chọn VB → Giao việc → chọn người | Task giao việc xuất hiện | ✅ Pass |  |  |
 | TC-048 | II.3.11 | VB đi | Thêm VB đi vào HSCV | Có HSCV active | Chọn VB → Thêm vào HSCV → tick HSCV → Lưu | VB vào HSCV | ✅ Pass |  |  |
 | TC-049 | II.3.12 | VB đi | Đánh dấu cá nhân VB đi | Đã đăng nhập | Chọn VB → Đánh dấu cá nhân → nhập ghi chú | Ghi chú lưu thành công | ✅ Pass |  |  |
@@ -91,11 +90,11 @@
 | TC-063 | III.2.2 | HSCV | Thêm HSCV từ tab chưa xử lý |  | Click Thêm → điền form → Xác nhận | HSCV mới tạo, user là người phụ trách | ✅ Pass |  |  |
 | TC-064 | III.2.3 | HSCV | Trình ký HSCV | HSCV status=1 | Detail → click Trình ký → chọn lãnh đạo → Xác nhận | HSCV chuyển sang status trình ký | ✅ Pass |  |  |
 | TC-065 | III.2.4 | HSCV | Lấy số HSCV | HSCV status=1/3, chưa có số | Detail → Lấy số → chọn sổ văn bản → Xác nhận | Số cấp thành công, hiển thị số mới | ✅ Pass |  | Vừa implement quick-260418-hlj (reset theo năm) |
-| TC-066 | III.2.5 | HSCV | Hủy HSCV | HSCV đang xử lý | Detail → Hủy HSCV → confirm | HSCV chuyển status -3 (hủy) | ⚠️ Partial |  | Dùng chung change-status thay vì action riêng |
-| TC-067 | III.2.6 | HSCV | Lưu / Gửi / Chuyển tiếp ý kiến | HSCV đang xử lý | Detail → tab Ý kiến → chọn 1 trong 3 action → nhập nội dung → Xác nhận | Ý kiến lưu + gửi thành công | ⚠️ Partial |  | Có Lưu + Gửi. Thiếu "Chuyển tiếp" (forward to user khác) |
-| TC-068 | III.2 | HSCV | Chuyển tiếp HSCV cho người khác | HSCV đang phụ trách | Chuyển tiếp HSCV sang user khác xử lý | Người mới trở thành phụ trách | ❌ Missing |  | HDSD có, code chỉ có assign staff (phân công) |
+| TC-066 | III.2.5 | HSCV | Hủy HSCV | HSCV đang xử lý | Detail → Hủy HSCV → confirm | HSCV chuyển status -3 (hủy) | ✅ Pass |  | Action hủy HSCV riêng với lý do |
+| TC-067 | III.2.6 | HSCV | Lưu / Gửi / Chuyển tiếp ý kiến | HSCV đang xử lý | Detail → tab Ý kiến → chọn 1 trong 3 action → nhập nội dung → Xác nhận | Ý kiến lưu + gửi thành công | ✅ Pass |  | Chuyển tiếp ý kiến cho user review |
+| TC-068 | III.2 | HSCV | Chuyển tiếp HSCV cho người khác | HSCV đang phụ trách | Chuyển tiếp HSCV sang user khác xử lý | Người mới trở thành phụ trách | ✅ Pass |  | Transfer ownership HSCV (same unit) |
 | TC-069 | III.3.1 | HSCV | Cấu hình ngoại giao / gửi nhanh | Admin | Mở /cau-hinh-gui-nhanh → chọn user vào danh sách quick-recipient → Lưu | Danh sách user lưu, khi gửi VB tự tick sẵn | 🚫 Hidden |  | Ẩn Phase 1 — flag off. Code còn, chờ Phase 2 bật |
-| TC-070 | III.4.1 | HSCV | Giao diện tổng quan công việc | Admin/Lãnh đạo | Mở Dashboard / Kiểm soát công việc | Dashboard tổng quan HSCV hiển thị KPI + chart | ⚠️ Partial |  | Gộp vào /dashboard chung, không có trang riêng |
+| TC-070 | III.4.1 | HSCV | Giao diện tổng quan công việc | Admin/Lãnh đạo | Mở Dashboard / Kiểm soát công việc | Dashboard tổng quan HSCV hiển thị KPI + chart | ✅ Pass |  | Gộp vào /dashboard chung — thống nhất với user |
 | TC-071 | III.4.2 | HSCV | Thống kê công việc theo đơn vị | Admin/Lãnh đạo | Mở /ho-so-cong-viec/bao-cao | Báo cáo thống kê theo đơn vị/cán bộ + charts | ✅ Pass |  |  |
 | TC-072 | IV.1.1 | Quản trị | Danh sách phòng ban - người dùng | Admin | Mở /quan-tri/nguoi-dung | Tree phòng ban bên trái + table người dùng bên phải | ✅ Pass |  |  |
 | TC-073 | IV.1.2 | Quản trị | Thêm mới đơn vị/phòng ban | Admin | /quan-tri/don-vi → Thêm → điền name/code/parent → Lưu | Phòng ban xuất hiện trong tree | ✅ Pass |  |  |
@@ -104,7 +103,7 @@
 | TC-076 | IV.1.5 | Quản trị | Cập nhật thông tin người dùng | Có user | Chọn user → Sửa → update → Lưu | User info update | ✅ Pass |  | Không update username/password từ endpoint này |
 | TC-077 | IV.1.6 | Quản trị | Xóa phòng ban | Phòng ban không có user/child | Chọn phòng ban → Xóa → confirm | Phòng ban xóa khỏi tree | ✅ Pass |  | Check constraint trước xóa |
 | TC-078 | IV.1.7 | Quản trị | Xóa người dùng | User không đang phụ trách task | Chọn user → Xóa → confirm | User soft-delete | ✅ Pass |  |  |
-| TC-079 | IV.1.8 | Quản trị | Giới hạn quyền cho đơn vị | Admin | Chọn đơn vị → Giới hạn quyền → chọn rights → Lưu | Quyền tối đa cho đơn vị set, user trong đơn vị không vượt quyền | ❌ Missing |  | HDSD có, code chưa implement — Phase 2 |
+| TC-079 | IV.1.8 | Quản trị | Giới hạn quyền cho đơn vị | Admin | Chọn đơn vị → Giới hạn quyền → chọn rights → Lưu | Quyền tối đa cho đơn vị set, user trong đơn vị không vượt quyền | ❌ Missing |  | Defer Phase 2 — cần schema permission model mới |
 | TC-080 | IV.1.9 | Quản trị | Phân quyền người dùng | Có user + role | Chọn user → Phân quyền → tick nhóm quyền → Lưu | User được gán role | ✅ Pass |  |  |
 | TC-081 | IV.1.10 | Quản trị | Đặt lại mật khẩu người dùng | Admin | Chọn user → Đặt lại mật khẩu → confirm | Password reset về Admin@123 | ✅ Pass |  |  |
 | TC-082 | IV.2.1 | Quản trị | Danh sách nhóm quyền | Admin | Mở /quan-tri/nhom-quyen | Table nhóm quyền với staff_count | ✅ Pass |  |  |

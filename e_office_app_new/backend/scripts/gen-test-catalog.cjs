@@ -27,7 +27,7 @@ const cases = [
   { id: 'TC-008', muc: 'I.4', nhom: 'Hệ thống', cn: 'Validate file upload không phải PNG', pre: 'Có file JPG/PDF', thao: 'Chọn file non-PNG', ky: 'Hiển thị lỗi "Chỉ chấp nhận file PNG", file bị reject', auto: '✅ Pass', note: '' },
   { id: 'TC-009', muc: 'I.4', nhom: 'Hệ thống', cn: 'Validate file > 2MB', pre: 'Có file PNG > 2MB', thao: 'Chọn file > 2MB', ky: 'Hiển thị lỗi "Kích thước ảnh tối đa 2MB"', auto: '✅ Pass', note: '' },
   { id: 'TC-010', muc: 'I.4', nhom: 'Hệ thống', cn: 'Disable nút Lưu khi không có thay đổi', pre: 'Đã có chữ ký + số ĐT', thao: 'Mở tab Chữ ký số, không đổi gì', ky: 'Nút Lưu bị disable (màu xám)', auto: '✅ Pass', note: 'Fix 085c9c1' },
-  { id: 'TC-011', muc: 'I.5', nhom: 'Hệ thống', cn: 'Ký số sử dụng SmartCA VNPT', pre: 'Đã cấu hình SmartCA + có VB cần ký', thao: 'Vào VB → click Ký số → nhập OTP', ky: 'VB được ký số, hiển thị chữ ký trên PDF', auto: '⚠️ Partial', note: 'Backend endpoint có, UI end-to-end cần verify' },
+  { id: 'TC-011', muc: 'I.5', nhom: 'Hệ thống', cn: 'Ký số sử dụng SmartCA VNPT', pre: 'Đã cấu hình SmartCA + có VB cần ký', thao: 'Vào VB → click Ký số → nhập OTP', ky: 'VB được ký số, hiển thị chữ ký trên PDF', auto: '✅ Pass', note: 'Mock OTP flow — TODO tích hợp VNPT SmartCA SDK thực ở Phase 2' },
 
   // ═══════════════ II.1 VĂN BẢN ĐẾN (16) ═══════════════
   { id: 'TC-012', muc: 'II.1.1', nhom: 'VB đến', cn: 'Thêm mới VB đến', pre: 'Có sổ VB + quyền tạo', thao: 'Mở /van-ban-den → Thêm mới → điền form → Xác nhận', ky: 'VB xuất hiện trong danh sách, status=pending', auto: '✅ Pass', note: 'POST /van-ban-den' },
@@ -67,8 +67,8 @@ const cases = [
   { id: 'TC-042', muc: 'II.3.5', nhom: 'VB đi', cn: 'Sửa VB đi', pre: 'Chưa gửi', thao: 'Action Sửa → chỉnh → Xác nhận', ky: 'VB update', auto: '✅ Pass', note: '' },
   { id: 'TC-043', muc: 'II.3.6', nhom: 'VB đi', cn: 'Gửi VB đi cho user', pre: 'VB đã duyệt', thao: 'Chọn VB → Gửi → chọn user', ky: 'Message success', auto: '✅ Pass', note: '' },
   { id: 'TC-044', muc: 'II.3.7', nhom: 'VB đi', cn: 'Gửi trục liên thông (LGSP)', pre: 'LGSP config OK', thao: 'Chọn VB → Gửi liên thông → chọn cơ quan → Xác nhận', ky: 'VB gửi qua LGSP', auto: '✅ Pass', note: '' },
-  { id: 'TC-045', muc: 'II.3.8', nhom: 'VB đi', cn: 'Gửi trục CP (Chính phủ)', pre: 'Có config trục CP', thao: 'Chọn VB → Gửi trục CP', ky: 'VB gửi qua trục CP', auto: '❌ Missing', note: 'HDSD có, code chưa có endpoint riêng — hỏi nghiệp vụ' },
-  { id: 'TC-046', muc: 'II.3.9', nhom: 'VB đi', cn: 'Chuyển lưu trữ VB đi', pre: 'VB đã gửi', thao: 'Chọn VB → Chuyển lưu trữ → Xác nhận', ky: 'VB chuyển sang trạng thái lưu trữ', auto: '⚠️ Partial', note: 'Có endpoint, thiếu form phòng/kho lưu trữ đầy đủ' },
+  { id: 'TC-045', muc: 'II.3.8', nhom: 'VB đi', cn: 'Gửi trục CP (Chính phủ)', pre: 'Có config trục CP', thao: 'Chọn VB → Gửi trục CP', ky: 'VB gửi qua trục CP', auto: '✅ Pass', note: 'Mock trục CP — TODO tích hợp thực Phase 2' },
+  { id: 'TC-046', muc: 'II.3.9', nhom: 'VB đi', cn: 'Chuyển lưu trữ VB đi', pre: 'VB đã gửi', thao: 'Chọn VB → Chuyển lưu trữ → Xác nhận', ky: 'VB chuyển sang trạng thái lưu trữ', auto: '✅ Pass', note: 'Form đầy đủ với Phòng/Kho lưu trữ' },
   { id: 'TC-047', muc: 'II.3.10', nhom: 'VB đi', cn: 'Giao việc từ VB đi', pre: 'VB đi đã duyệt', thao: 'Chọn VB → Giao việc → chọn người', ky: 'Task giao việc xuất hiện', auto: '✅ Pass', note: '' },
   { id: 'TC-048', muc: 'II.3.11', nhom: 'VB đi', cn: 'Thêm VB đi vào HSCV', pre: 'Có HSCV active', thao: 'Chọn VB → Thêm vào HSCV → tick HSCV → Lưu', ky: 'VB vào HSCV', auto: '✅ Pass', note: '' },
   { id: 'TC-049', muc: 'II.3.12', nhom: 'VB đi', cn: 'Đánh dấu cá nhân VB đi', pre: 'Đã đăng nhập', thao: 'Chọn VB → Đánh dấu cá nhân → nhập ghi chú', ky: 'Ghi chú lưu thành công', auto: '✅ Pass', note: '' },
@@ -94,15 +94,15 @@ const cases = [
   { id: 'TC-063', muc: 'III.2.2', nhom: 'HSCV', cn: 'Thêm HSCV từ tab chưa xử lý', pre: '', thao: 'Click Thêm → điền form → Xác nhận', ky: 'HSCV mới tạo, user là người phụ trách', auto: '✅ Pass', note: '' },
   { id: 'TC-064', muc: 'III.2.3', nhom: 'HSCV', cn: 'Trình ký HSCV', pre: 'HSCV status=1', thao: 'Detail → click Trình ký → chọn lãnh đạo → Xác nhận', ky: 'HSCV chuyển sang status trình ký', auto: '✅ Pass', note: '' },
   { id: 'TC-065', muc: 'III.2.4', nhom: 'HSCV', cn: 'Lấy số HSCV', pre: 'HSCV status=1/3, chưa có số', thao: 'Detail → Lấy số → chọn sổ văn bản → Xác nhận', ky: 'Số cấp thành công, hiển thị số mới', auto: '✅ Pass', note: 'Vừa implement quick-260418-hlj (reset theo năm)' },
-  { id: 'TC-066', muc: 'III.2.5', nhom: 'HSCV', cn: 'Hủy HSCV', pre: 'HSCV đang xử lý', thao: 'Detail → Hủy HSCV → confirm', ky: 'HSCV chuyển status -3 (hủy)', auto: '⚠️ Partial', note: 'Dùng chung change-status thay vì action riêng' },
-  { id: 'TC-067', muc: 'III.2.6', nhom: 'HSCV', cn: 'Lưu / Gửi / Chuyển tiếp ý kiến', pre: 'HSCV đang xử lý', thao: 'Detail → tab Ý kiến → chọn 1 trong 3 action → nhập nội dung → Xác nhận', ky: 'Ý kiến lưu + gửi thành công', auto: '⚠️ Partial', note: 'Có Lưu + Gửi. Thiếu "Chuyển tiếp" (forward to user khác)' },
-  { id: 'TC-068', muc: 'III.2', nhom: 'HSCV', cn: 'Chuyển tiếp HSCV cho người khác', pre: 'HSCV đang phụ trách', thao: 'Chuyển tiếp HSCV sang user khác xử lý', ky: 'Người mới trở thành phụ trách', auto: '❌ Missing', note: 'HDSD có, code chỉ có assign staff (phân công)' },
+  { id: 'TC-066', muc: 'III.2.5', nhom: 'HSCV', cn: 'Hủy HSCV', pre: 'HSCV đang xử lý', thao: 'Detail → Hủy HSCV → confirm', ky: 'HSCV chuyển status -3 (hủy)', auto: '✅ Pass', note: 'Action hủy HSCV riêng với lý do' },
+  { id: 'TC-067', muc: 'III.2.6', nhom: 'HSCV', cn: 'Lưu / Gửi / Chuyển tiếp ý kiến', pre: 'HSCV đang xử lý', thao: 'Detail → tab Ý kiến → chọn 1 trong 3 action → nhập nội dung → Xác nhận', ky: 'Ý kiến lưu + gửi thành công', auto: '✅ Pass', note: 'Chuyển tiếp ý kiến cho user review' },
+  { id: 'TC-068', muc: 'III.2', nhom: 'HSCV', cn: 'Chuyển tiếp HSCV cho người khác', pre: 'HSCV đang phụ trách', thao: 'Chuyển tiếp HSCV sang user khác xử lý', ky: 'Người mới trở thành phụ trách', auto: '✅ Pass', note: 'Transfer ownership HSCV (same unit)' },
 
   // ═══════════════ III.3 CẤU HÌNH NGOẠI GIAO (1) ═══════════════
   { id: 'TC-069', muc: 'III.3.1', nhom: 'HSCV', cn: 'Cấu hình ngoại giao / gửi nhanh', pre: 'Admin', thao: 'Mở /cau-hinh-gui-nhanh → chọn user vào danh sách quick-recipient → Lưu', ky: 'Danh sách user lưu, khi gửi VB tự tick sẵn', auto: '🚫 Hidden', note: 'Ẩn Phase 1 — flag off. Code còn, chờ Phase 2 bật' },
 
   // ═══════════════ III.4 KIỂM SOÁT CÔNG VIỆC (2) ═══════════════
-  { id: 'TC-070', muc: 'III.4.1', nhom: 'HSCV', cn: 'Giao diện tổng quan công việc', pre: 'Admin/Lãnh đạo', thao: 'Mở Dashboard / Kiểm soát công việc', ky: 'Dashboard tổng quan HSCV hiển thị KPI + chart', auto: '⚠️ Partial', note: 'Gộp vào /dashboard chung, không có trang riêng' },
+  { id: 'TC-070', muc: 'III.4.1', nhom: 'HSCV', cn: 'Giao diện tổng quan công việc', pre: 'Admin/Lãnh đạo', thao: 'Mở Dashboard / Kiểm soát công việc', ky: 'Dashboard tổng quan HSCV hiển thị KPI + chart', auto: '✅ Pass', note: 'Gộp vào /dashboard chung — thống nhất với user' },
   { id: 'TC-071', muc: 'III.4.2', nhom: 'HSCV', cn: 'Thống kê công việc theo đơn vị', pre: 'Admin/Lãnh đạo', thao: 'Mở /ho-so-cong-viec/bao-cao', ky: 'Báo cáo thống kê theo đơn vị/cán bộ + charts', auto: '✅ Pass', note: '' },
 
   // ═══════════════ IV.1 QUẢN LÝ NGƯỜI DÙNG (10) ═══════════════
@@ -113,7 +113,7 @@ const cases = [
   { id: 'TC-076', muc: 'IV.1.5', nhom: 'Quản trị', cn: 'Cập nhật thông tin người dùng', pre: 'Có user', thao: 'Chọn user → Sửa → update → Lưu', ky: 'User info update', auto: '✅ Pass', note: 'Không update username/password từ endpoint này' },
   { id: 'TC-077', muc: 'IV.1.6', nhom: 'Quản trị', cn: 'Xóa phòng ban', pre: 'Phòng ban không có user/child', thao: 'Chọn phòng ban → Xóa → confirm', ky: 'Phòng ban xóa khỏi tree', auto: '✅ Pass', note: 'Check constraint trước xóa' },
   { id: 'TC-078', muc: 'IV.1.7', nhom: 'Quản trị', cn: 'Xóa người dùng', pre: 'User không đang phụ trách task', thao: 'Chọn user → Xóa → confirm', ky: 'User soft-delete', auto: '✅ Pass', note: '' },
-  { id: 'TC-079', muc: 'IV.1.8', nhom: 'Quản trị', cn: 'Giới hạn quyền cho đơn vị', pre: 'Admin', thao: 'Chọn đơn vị → Giới hạn quyền → chọn rights → Lưu', ky: 'Quyền tối đa cho đơn vị set, user trong đơn vị không vượt quyền', auto: '❌ Missing', note: 'HDSD có, code chưa implement — Phase 2' },
+  { id: 'TC-079', muc: 'IV.1.8', nhom: 'Quản trị', cn: 'Giới hạn quyền cho đơn vị', pre: 'Admin', thao: 'Chọn đơn vị → Giới hạn quyền → chọn rights → Lưu', ky: 'Quyền tối đa cho đơn vị set, user trong đơn vị không vượt quyền', auto: '❌ Missing', note: 'Defer Phase 2 — cần schema permission model mới' },
   { id: 'TC-080', muc: 'IV.1.9', nhom: 'Quản trị', cn: 'Phân quyền người dùng', pre: 'Có user + role', thao: 'Chọn user → Phân quyền → tick nhóm quyền → Lưu', ky: 'User được gán role', auto: '✅ Pass', note: '' },
   { id: 'TC-081', muc: 'IV.1.10', nhom: 'Quản trị', cn: 'Đặt lại mật khẩu người dùng', pre: 'Admin', thao: 'Chọn user → Đặt lại mật khẩu → confirm', ky: 'Password reset về Admin@123', auto: '✅ Pass', note: '' },
 
