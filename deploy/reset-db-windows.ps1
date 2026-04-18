@@ -92,8 +92,17 @@ function Apply-Migration {
     param([string]$File)
     $fname = Split-Path $File -Leaf
     Log "  -> $fname"
-    & $psqlExe -U $PG_USER -d $PG_DB -p 5432 -h 127.0.0.1 -v ON_ERROR_STOP=1 -f $File 2>$null
-    if ($LASTEXITCODE -ne 0) { Err "Migration $fname that bai" }
+    # Log errors + output to tmp file để debug nếu fail
+    $logFile = Join-Path $env:TEMP "migrate_$fname.log"
+    & $psqlExe -U $PG_USER -d $PG_DB -p 5432 -h 127.0.0.1 -v ON_ERROR_STOP=1 -f $File > $logFile 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host ""
+        Write-Host "---- psql output (cuối file) ----" -ForegroundColor Yellow
+        Get-Content $logFile -Tail 30
+        Write-Host "---- full log: $logFile ----" -ForegroundColor Yellow
+        Err "Migration $fname that bai"
+    }
+    Remove-Item $logFile -ErrorAction SilentlyContinue
     & $psqlExe -U $PG_USER -d $PG_DB -p 5432 -h 127.0.0.1 -c "INSERT INTO public._migration_history (filename) VALUES ('$fname') ON CONFLICT DO NOTHING" 2>$null | Out-Null
 }
 
