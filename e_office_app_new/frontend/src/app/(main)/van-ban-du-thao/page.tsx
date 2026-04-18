@@ -20,6 +20,11 @@ import dayjs from 'dayjs';
 const { TextArea } = Input;
 const { RangePicker } = DatePicker;
 
+// ─── Phase 1 feature flag: ẩn dynamic "Trường bổ sung" ─────────────────────
+// Phase 2: đổi thành false để bật lại UI render extraColumns trong form.
+// Lưu ý: API fetch /van-ban-du-thao/truong-bo-sung vẫn chạy — chỉ JSX bị wrap.
+const PHASE1_HIDE_CUSTOM_FIELDS = true;
+
 interface DraftingDoc {
   id: number;
   number: number;
@@ -791,7 +796,7 @@ export default function DraftingDocPage() {
             <TextArea rows={2} placeholder="Nơi nhận văn bản" maxLength={2000} showCount />
           </Form.Item>
 
-          {extraColumns.length > 0 && (
+          {!PHASE1_HIDE_CUSTOM_FIELDS && extraColumns.length > 0 && (
             <>
               <div style={{ borderTop: '1px dashed #d9d9d9', margin: '16px 0 12px', paddingTop: 12 }}>
                 <span style={{ fontWeight: 600, color: '#1B3A5C', fontSize: 13 }}>Trường bổ sung</span>
