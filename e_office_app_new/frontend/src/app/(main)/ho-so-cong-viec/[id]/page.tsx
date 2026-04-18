@@ -69,6 +69,11 @@ interface HscvDetail {
   unit_name: string;
   department_id: number;
   department_name: string;
+  // HDSD 3.2 — Lấy số (4 field từ fn_handling_doc_get_by_id)
+  number?: number | null;
+  sub_number?: string | null;
+  doc_book_id?: number | null;
+  doc_book_name?: string | null;
 }
 
 interface LinkedDoc {
@@ -203,7 +208,7 @@ interface ToolbarButton {
   newStatus?: number;
 }
 
-function getToolbarButtons(status: number): ToolbarButton[] {
+function getToolbarButtons(status: number, hasNumber: boolean = true): ToolbarButton[] {
   switch (status) {
     case 0:
       return [
@@ -211,25 +216,41 @@ function getToolbarButtons(status: number): ToolbarButton[] {
         { label: 'Sửa', type: 'default', action: 'edit' },
         { label: 'Xóa', type: 'default', danger: true, ghost: true, action: 'delete' },
       ];
-    case 1:
-      return [
+    case 1: {
+      // HDSD 3.2 — Lấy số chỉ hiện khi HSCV chưa có số (number=null)
+      const buttons: ToolbarButton[] = [
         { label: 'Trình ký', type: 'primary', action: 'submit' },
         { label: 'Cập nhật tiến độ', type: 'default', action: 'progress' },
-        { label: 'Tạm dừng', type: 'default', action: 'change', newStatus: 5 },
       ];
+      if (!hasNumber) {
+        buttons.push({ label: 'Lấy số', type: 'default', action: 'get_number' });
+      }
+      buttons.push({ label: 'Tạm dừng', type: 'default', action: 'change', newStatus: 5 });
+      return buttons;
+    }
     case 2:
       return [
         { label: 'Gửi trình ký', type: 'primary', action: 'change', newStatus: 3 },
         { label: 'Trả về', type: 'default', action: 'return' },
       ];
-    case 3:
-      return [
+    case 3: {
+      // HDSD 3.2 — Lấy số cũng cho phép ở status=3 (Đã duyệt) nếu chưa có số
+      const buttons: ToolbarButton[] = [
         { label: 'Duyệt hồ sơ', type: 'primary', action: 'approve', style: { backgroundColor: '#059669', borderColor: '#059669' } },
         { label: 'Từ chối', type: 'primary', danger: true, action: 'reject' },
         { label: 'Trả về', type: 'default', action: 'return' },
       ];
+      if (!hasNumber) {
+        buttons.push({ label: 'Lấy số', type: 'default', action: 'get_number' });
+      }
+      return buttons;
+    }
     case 4:
-      return [{ label: 'Xem lịch sử', type: 'default', action: 'history' }];
+      // HDSD 3.1 — Mở lại HSCV đã hoàn thành
+      return [
+        { label: 'Mở lại', type: 'primary', action: 'reopen' },
+        { label: 'Xem lịch sử', type: 'default', action: 'history' },
+      ];
     case 5:
       return [
         { label: 'Tiếp tục xử lý', type: 'primary', action: 'change', newStatus: 1 },
@@ -290,6 +311,12 @@ export default function HscvDetailPage() {
   const [progressModalOpen, setProgressModalOpen] = useState(false);
   const [progressValue, setProgressValue] = useState(0);
   const [updatingProgress, setUpdatingProgress] = useState(false);
+
+  // HDSD 3.2 — Lấy số modal
+  const [laySoOpen, setLaySoOpen] = useState(false);
+  const [docBooks, setDocBooks] = useState<{ id: number; name: string; code?: string }[]>([]);
+  const [selectedBookId, setSelectedBookId] = useState<number | null>(null);
+  const [layingNumber, setLayingNumber] = useState(false);
 
   // Edit drawer for HSCV details
   const [editDrawerOpen, setEditDrawerOpen] = useState(false);
@@ -552,6 +579,8 @@ export default function HscvDetailPage() {
     if (btn.action === 'history') { message.info('Tính năng xem lịch sử đang phát triển'); return; }
     if (btn.action === 'submit') { handleStatusChange('submit'); return; }
     if (btn.action === 'approve') { handleStatusChange('approve'); return; }
+    if (btn.action === 'reopen') { handleReopen(); return; }
+    if (btn.action === 'get_number') { handleLaySo(); return; }
     if (btn.action === 'change' && btn.newStatus !== undefined) {
       handleStatusChange('change', btn.newStatus);
     }
@@ -572,6 +601,88 @@ export default function HscvDetailPage() {
       message.error(err?.response?.data?.message || 'Cập nhật tiến độ thất bại');
     } finally {
       setUpdatingProgress(false);
+    }
+  };
+
+  // ===========================
+  // HDSD 3.1 — Mở lại HSCV (status=4 → 1, GIỮ progress=100)
+  // ===========================
+
+  const handleReopen = () => {
+    modal.confirm({
+      title: 'Mở lại hồ sơ công việc?',
+      content: 'Trạng thái sẽ chuyển từ "Hoàn thành" về "Đang xử lý" (giữ nguyên tiến độ 100%). Bạn xác nhận?',
+      okText: 'Mở lại',
+      cancelText: 'Hủy',
+      onOk: async () => {
+        try {
+          const { data: res } = await api.post(`/ho-so-cong-viec/${id}/mo-lai`);
+          message.success(res?.message || 'Đã mở lại hồ sơ công việc');
+          await fetchDetail();
+        } catch (err: any) {
+          message.error(err?.response?.data?.message || 'Thao tác thất bại');
+        }
+      },
+    });
+  };
+
+  // ===========================
+  // HDSD 3.2 — Lấy số HSCV
+  // ===========================
+
+  const handleLaySo = async () => {
+    // Nếu HSCV đã có doc_book_id → confirm dùng luôn sổ đã chọn
+    if (detail?.doc_book_id) {
+      modal.confirm({
+        title: 'Lấy số văn bản?',
+        content: `Sẽ cấp số kế tiếp theo sổ "${detail.doc_book_name || '#' + detail.doc_book_id}". Bạn xác nhận?`,
+        okText: 'Lấy số',
+        cancelText: 'Hủy',
+        onOk: async () => {
+          try {
+            const { data: res } = await api.post(
+              `/ho-so-cong-viec/${id}/lay-so`,
+              { doc_book_id: detail.doc_book_id },
+            );
+            message.success(res?.message || `Đã lấy số ${res?.number}`);
+            await fetchDetail();
+          } catch (err: any) {
+            message.error(err?.response?.data?.message || 'Thao tác thất bại');
+          }
+        },
+      });
+      return;
+    }
+
+    // Chưa có sổ → mở Modal Select
+    try {
+      const { data: res } = await api.get('/quan-tri/so-van-ban', { params: { pageSize: 1000 } });
+      setDocBooks(res?.data || res?.items || []);
+      setSelectedBookId(null);
+      setLaySoOpen(true);
+    } catch {
+      message.error('Không tải được danh sách sổ văn bản');
+    }
+  };
+
+  const handleConfirmLaySo = async () => {
+    if (!selectedBookId) {
+      message.warning('Vui lòng chọn sổ văn bản');
+      return;
+    }
+    setLayingNumber(true);
+    try {
+      const { data: res } = await api.post(
+        `/ho-so-cong-viec/${id}/lay-so`,
+        { doc_book_id: selectedBookId },
+      );
+      message.success(res?.message || `Đã lấy số ${res?.number}`);
+      setLaySoOpen(false);
+      await fetchDetail();
+    } catch (err: any) {
+      message.error(err?.response?.data?.message || 'Thao tác thất bại');
+    } finally {
+      setLayingNumber(false);
     }
   };
 
@@ -975,7 +1086,8 @@ export default function HscvDetailPage() {
   }
 
   const statusInfo = STATUS_MAP[detail.status] || STATUS_MAP[String(detail.status) as unknown as number] || { text: 'Không xác định', color: 'default' };
-  const toolbarButtons = getToolbarButtons(detail.status);
+  // HDSD 3.2 — pass hasNumber để getToolbarButtons quyết định hiện nút "Lấy số"
+  const toolbarButtons = getToolbarButtons(detail.status, detail.number != null);
 
   const tabItems = [
     {
@@ -1420,6 +1532,13 @@ export default function HscvDetailPage() {
           />
           <Tag color={statusInfo.color} style={{ margin: 0 }}>{statusInfo.text}</Tag>
           <h1 className="detail-header-title">{detail.name}</h1>
+          {/* HDSD 3.2 — Hiển thị số văn bản (nếu đã lấy số) */}
+          {detail.number != null && (
+            <Tag color="blue" style={{ margin: 0, fontSize: 13 }}>
+              Số: {detail.number}
+              {detail.doc_book_name ? ` / ${detail.doc_book_name}` : ''}
+            </Tag>
+          )}
         </div>
         <div className="detail-header-right">
           {toolbarButtons.map((btn, idx) => (
@@ -1489,6 +1608,37 @@ export default function HscvDetailPage() {
             />
           </div>
         </div>
+      </Modal>
+
+      {/* HDSD 3.2 — MODAL LẤY SỐ */}
+      <Modal
+        title="Chọn sổ văn bản để lấy số"
+        open={laySoOpen}
+        onOk={handleConfirmLaySo}
+        onCancel={() => setLaySoOpen(false)}
+        okText="Lấy số"
+        cancelText="Hủy"
+        confirmLoading={layingNumber}
+      >
+        <Form layout="vertical" style={{ marginTop: 16 }}>
+          <Form.Item label="Sổ văn bản" required>
+            <Select
+              placeholder="Chọn sổ văn bản"
+              value={selectedBookId ?? undefined}
+              onChange={(v) => setSelectedBookId(v)}
+              options={docBooks.map((b) => ({
+                value: b.id,
+                label: b.code ? `${b.code} - ${b.name}` : b.name,
+              }))}
+              showSearch
+              optionFilterProp="label"
+              style={{ width: '100%' }}
+            />
+          </Form.Item>
+          <div style={{ fontSize: 12, color: '#64748b' }}>
+            Số văn bản được tính theo công thức MAX(số) + 1 trong cùng sổ và năm tạo HSCV.
+          </div>
+        </Form>
       </Modal>
 
       {/* Edit drawer */}

@@ -50,6 +50,11 @@ export interface HandlingDocDetailRow {
   created_by: number;
   created_at: string;
   updated_at: string;
+  // HDSD 3.2 — Lấy số (4 field bổ sung từ fn_handling_doc_get_by_id)
+  number: number | null;
+  sub_number: string | null;
+  doc_book_id: number | null;
+  doc_book_name: string | null;
 }
 
 export interface StatusCountRow {
@@ -324,5 +329,24 @@ export const handlingDocRepository = {
       id, newStatus, changedBy, reason ?? null,
     ]);
     return row ?? { success: false, message: 'Không tìm thấy hồ sơ công việc' };
+  },
+
+  // --- HDSD 3.1 — Mở lại HSCV ---
+  async reopen(id: number, userId: number): Promise<DbResult> {
+    const row = await callFunctionOne<DbResult>('edoc.fn_handling_doc_reopen', [id, userId]);
+    return row ?? { success: false, message: 'Không tìm thấy hồ sơ công việc' };
+  },
+
+  // --- HDSD 3.2 — Lấy số HSCV ---
+  async assignNumber(
+    id: number,
+    userId: number,
+    docBookId: number,
+  ): Promise<{ success: boolean; message: string; number: number | null }> {
+    const row = await callFunctionOne<{ success: boolean; message: string; number: number | null }>(
+      'edoc.fn_handling_doc_assign_number',
+      [id, userId, docBookId],
+    );
+    return row ?? { success: false, message: 'Không tìm thấy hồ sơ công việc', number: null };
   },
 };

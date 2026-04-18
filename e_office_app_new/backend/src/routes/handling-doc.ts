@@ -547,4 +547,55 @@ router.patch('/:id/tien-do', async (req: Request, res: Response) => {
   }
 });
 
+// ============================================================
+// HDSD 3.1 / 3.2 — Mở lại HSCV + Lấy số
+// ============================================================
+
+// POST /:id/mo-lai — Mở lại HSCV (status=4 → 1, GIỮ progress=100 per A2)
+router.post('/:id/mo-lai', async (req: Request, res: Response) => {
+  try {
+    const { staffId } = (req as AuthRequest).user;
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+      res.status(400).json({ success: false, message: 'ID không hợp lệ' });
+      return;
+    }
+    const result = await handlingDocRepository.reopen(id, staffId);
+    if (!result.success) {
+      res.status(400).json({ success: false, message: result.message });
+      return;
+    }
+    res.json({ success: true, message: result.message });
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
+
+// POST /:id/lay-so — Lấy số HSCV (MAX(number)+1 theo năm created_at + doc_book_id)
+router.post('/:id/lay-so', async (req: Request, res: Response) => {
+  try {
+    const { staffId } = (req as AuthRequest).user;
+    const id = Number(req.params.id);
+    const docBookId = Number(req.body?.doc_book_id);
+
+    if (!Number.isInteger(id) || id <= 0) {
+      res.status(400).json({ success: false, message: 'ID không hợp lệ' });
+      return;
+    }
+    if (!Number.isInteger(docBookId) || docBookId <= 0) {
+      res.status(400).json({ success: false, message: 'Vui lòng chọn sổ văn bản' });
+      return;
+    }
+
+    const result = await handlingDocRepository.assignNumber(id, staffId, docBookId);
+    if (!result.success) {
+      res.status(400).json({ success: false, message: result.message });
+      return;
+    }
+    res.json({ success: true, message: result.message, number: result.number });
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
+
 export default router;
