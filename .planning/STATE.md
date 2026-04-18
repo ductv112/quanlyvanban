@@ -4,8 +4,8 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Phase 5 context gathered
-last_updated: "2026-04-18T05:30:00.000Z"
-last_activity: 2026-04-18 - Completed quick task 260418-gs7: Phase 1 ẩn các module/menu chưa có trong HDSD cũ
+last_updated: "2026-04-18T06:35:00.000Z"
+last_activity: 2026-04-18 - Completed quick task 260418-hlj: HDSD Compliance P0+P1 (SmartCA UI + thu hồi VB liên thông + HSCV mở lại/lấy số)
 progress:
   total_phases: 7
   completed_phases: 5
@@ -81,9 +81,10 @@ None yet.
 
 ### Quick Tasks Completed
 
-| # | Description | Date | Commit | Directory |
-|---|-------------|------|--------|-----------|
-| 260418-gs7 | Phase 1 — ẩn các module/menu chưa có trong HDSD cũ | 2026-04-18 | 8afd6d7 | [260418-gs7-phase-1-n-c-c-module-menu-ch-a-c-trong-h](./quick/260418-gs7-phase-1-n-c-c-module-menu-ch-a-c-trong-h/) |
+| # | Description | Date | Commit | Status | Directory |
+|---|-------------|------|--------|--------|-----------|
+| 260418-gs7 | Phase 1 — ẩn các module/menu chưa có trong HDSD cũ | 2026-04-18 | 8afd6d7 |  | [260418-gs7-phase-1-n-c-c-module-menu-ch-a-c-trong-h](./quick/260418-gs7-phase-1-n-c-c-module-menu-ch-a-c-trong-h/) |
+| 260418-hlj | HDSD Compliance P0+P1 — SmartCA UI + thu hồi VB liên thông + HSCV mở lại/lấy số | 2026-04-18 | f189464 | Needs Review | [260418-hlj-hdsd-compliance-p0-p1-k-s-smartca-ui-thu](./quick/260418-hlj-hdsd-compliance-p0-p1-k-s-smartca-ui-thu/) |
 
 ## Session Continuity
 
