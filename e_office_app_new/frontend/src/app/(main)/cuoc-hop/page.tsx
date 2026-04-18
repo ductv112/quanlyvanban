@@ -775,7 +775,7 @@ export default function CuocHopPage() {
                     validator(_, value) {
                       const startDate = getFieldValue('start_date');
                       if (!value || !startDate) return Promise.resolve();
-                      if (value.isSameOrAfter(startDate, 'day')) return Promise.resolve();
+                      if (!value.isBefore(startDate, 'day')) return Promise.resolve();
                       return Promise.reject(new Error('Ngày kết thúc phải sau hoặc bằng ngày họp'));
                     },
                   }),

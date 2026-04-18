@@ -648,7 +648,7 @@ export default function HoSoCongViecPage() {
                     validator(_, value) {
                       const startDate = getFieldValue('start_date');
                       if (!value || !startDate) return Promise.resolve();
-                      if (value.isSameOrAfter(startDate, 'day')) return Promise.resolve();
+                      if (!value.isBefore(startDate, 'day')) return Promise.resolve();
                       return Promise.reject(new Error('Hạn giải quyết phải sau hoặc bằng ngày mở hồ sơ'));
                     },
                   }),
