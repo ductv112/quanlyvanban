@@ -79,6 +79,10 @@ export interface AttachmentRow {
   created_by: number;
   created_at: string;
   created_by_name: string;
+  // Gap A (HDSD I.5): ký số — optional để backward-compat các repo khác
+  is_ca?: boolean;
+  ca_date?: string | null;
+  signed_file_path?: string | null;
 }
 
 export interface AttachmentDeleteResult extends DbResult {

@@ -12,7 +12,7 @@ import {
   StarOutlined, StarFilled, PaperClipOutlined,
   ClockCircleOutlined, UserOutlined, FilePdfOutlined,
   FileImageOutlined, FileWordOutlined, FileExcelOutlined, FileOutlined,
-  EditOutlined, SafetyCertificateOutlined, RocketOutlined, StopOutlined, RollbackOutlined, CommentOutlined,
+  EditOutlined, SafetyCertificateOutlined, RocketOutlined, StopOutlined, RollbackOutlined, CommentOutlined, SafetyOutlined,
 } from '@ant-design/icons';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth.store';
@@ -38,7 +38,7 @@ interface DocDetail {
   doc_book_name: string; doc_type_name: string; doc_type_code: string;
   doc_field_name: string; created_by_name: string; is_read: boolean;
 }
-interface Attachment { id: number; file_name: string; file_path: string; file_size: number; content_type: string; created_by_name: string; created_at: string; }
+interface Attachment { id: number; file_name: string; file_path: string; file_size: number; content_type: string; created_by_name: string; created_at: string; is_ca?: boolean; ca_date?: string | null; signed_file_path?: string | null; }
 interface Recipient { id: number; staff_id: number; staff_name: string; position_name: string; department_name: string; is_read: boolean; read_at: string; created_at: string; }
 interface HistoryEvent { event_type: string; event_time: string; staff_name: string; content: string; }
 interface SendableStaff { staff_id: number; full_name: string; position_name: string; department_id: number; department_name: string; }
@@ -67,6 +67,10 @@ function formatSize(bytes: number) {
 }
 function fmtDate(d: string | null) { return d ? dayjs(d).format('DD/MM/YYYY') : '—'; }
 function fmtDateTime(d: string | null) { return d ? dayjs(d).format('DD/MM/YYYY HH:mm') : '—'; }
+function maskPhone(phone: string): string {
+  if (!phone || phone.length < 8) return phone || '';
+  return phone.substring(0, 4) + '***' + phone.substring(phone.length - 3);
+}
 
 
 export default function DraftingDocDetailPage() {
@@ -93,6 +97,11 @@ export default function DraftingDocDetailPage() {
   const [leaderNotes, setLeaderNotes] = useState<{ id: number; staff_id: number; staff_name: string; position_name: string; content: string; created_at: string }[]>([]);
   const [noteContent, setNoteContent] = useState('');
   const [addingNote, setAddingNote] = useState(false);
+  // Ký số OTP (HDSD I.5)
+  const [otpOpen, setOtpOpen] = useState(false);
+  const [otpValue, setOtpValue] = useState('');
+  const [signing, setSigning] = useState(false);
+  const [targetAttachment, setTargetAttachment] = useState<Attachment | null>(null);
 
   const fetchDoc = useCallback(async () => { try { const { data: res } = await api.get(`/van-ban-du-thao/${docId}`); setDoc(res.data); } catch { message.error('Không tìm thấy văn bản'); router.push('/van-ban-du-thao'); } }, [docId, message, router]);
   const fetchBookmarkStatus = useCallback(async () => { try { const { data: res } = await api.get('/van-ban-du-thao/danh-dau-ca-nhan'); const bookmarks: { doc_id: number | string }[] = res.data || []; setIsBookmarked(bookmarks.some((b) => Number(b.doc_id) === Number(docId))); } catch {} }, [docId]);
@@ -156,6 +165,36 @@ export default function DraftingDocDetailPage() {
   const handleUpload = async (file: File) => { setUploading(true); try { const fd = new FormData(); fd.append('file', file); await api.post(`/van-ban-du-thao/${docId}/dinh-kem`, fd, { headers: { 'Content-Type': 'multipart/form-data' } }); message.success('Tải lên thành công'); fetchAttachments(); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } finally { setUploading(false); } return false; };
   const handleDownload = async (att: Attachment) => { try { const { data: res } = await api.get(`/van-ban-du-thao/${docId}/dinh-kem/${att.id}/download`); window.open(res.data?.url, '_blank'); } catch { message.error('Lỗi tải file'); } };
   const handleDeleteAttachment = async (att: Attachment) => { try { await api.delete(`/van-ban-du-thao/${docId}/dinh-kem/${att.id}`); message.success('Đã xóa'); fetchAttachments(); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } };
+
+  // Ký số (mock OTP — HDSD I.5)
+  const handleSignOtp = async () => {
+    if (otpValue.length !== 6) {
+      message.warning('Vui lòng nhập đủ 6 chữ số OTP');
+      return;
+    }
+    if (!targetAttachment) return;
+    setSigning(true);
+    try {
+      // TODO Phase 2: tích hợp VNPT SmartCA SDK thực — hiện chỉ FE giả lập OTP
+      const { data: res } = await api.post('/ky-so/mock/sign', {
+        attachment_id: targetAttachment.id,
+        attachment_type: 'drafting',
+      });
+      if (res?.success === false) {
+        message.error(res.message || 'Ký số thất bại');
+      } else {
+        message.success('Ký số thành công');
+        setOtpOpen(false);
+        setOtpValue('');
+        setTargetAttachment(null);
+        fetchAttachments();
+      }
+    } catch (err: any) {
+      message.error(err?.response?.data?.message || 'Ký số thất bại');
+    } finally {
+      setSigning(false);
+    }
+  };
 
   // Send
   const openSendModal = async () => { try { const { data: res } = await api.get(`/van-ban-du-thao/${docId}/danh-sach-gui`); setSendableStaff(res.data || []); setSelectedStaffIds([]); setSendModalOpen(true); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } };
@@ -358,6 +397,13 @@ export default function DraftingDocDetailPage() {
                       </div>
                     </Flex>
                     <Space size={4}>
+                      {att.is_ca ? (
+                        <Tag color="success" icon={<CheckCircleOutlined />}>Đã ký số</Tag>
+                      ) : (
+                        <Button size="small" type="primary" ghost icon={<SafetyOutlined />} onClick={() => { setTargetAttachment(att); setOtpValue(''); setOtpOpen(true); }}>
+                          Ký số
+                        </Button>
+                      )}
                       <Button size="small" type="link" icon={<DownloadOutlined />} onClick={() => handleDownload(att)} />
                       {!doc.is_released && <Popconfirm title="Xóa file?" onConfirm={() => handleDeleteAttachment(att)}><Button size="small" type="link" danger icon={<DeleteOutlined />} /></Popconfirm>}
                     </Space>
@@ -494,6 +540,25 @@ export default function DraftingDocDetailPage() {
           onChange={(e) => setRejectReason(e.target.value)}
           style={{ borderRadius: 8 }}
         />
+      </Modal>
+
+      {/* Modal: Ký số OTP (HDSD I.5) */}
+      <Modal
+        open={otpOpen}
+        title="Xác thực OTP để ký số"
+        okText="Xác nhận ký"
+        cancelText="Hủy"
+        confirmLoading={signing}
+        onCancel={() => { setOtpOpen(false); setOtpValue(''); setTargetAttachment(null); }}
+        onOk={handleSignOtp}
+        width={420}
+      >
+        <p style={{ marginBottom: 16 }}>
+          Nhập mã OTP (6 chữ số) đã gửi đến số ĐT SmartCA
+          {(user as any)?.sign_phone ? ` (${maskPhone((user as any).sign_phone)})` : ''}:
+        </p>
+        {/* TODO Phase 2: tích hợp VNPT SmartCA SDK thực — gọi BE verify OTP */}
+        <Input.OTP length={6} value={otpValue} onChange={setOtpValue} />
       </Modal>
     </div>
   );
