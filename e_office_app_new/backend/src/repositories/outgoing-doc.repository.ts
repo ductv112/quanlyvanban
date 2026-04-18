@@ -281,7 +281,14 @@ export const outgoingDocRepository = {
 
   // --- LGSP send ---
   async sendLgsp(docId: number, destOrgCode: string, destOrgName: string, createdBy: number): Promise<DbResultWithId> {
-    const row = await callFunctionOne<DbResultWithId>('edoc.fn_lgsp_tracking_create', [docId, null, 'send', destOrgCode, destOrgName, null, createdBy]);
+    const row = await callFunctionOne<DbResultWithId>('edoc.fn_lgsp_tracking_create', [docId, null, 'send', destOrgCode, destOrgName, null, createdBy, 'lgsp']);
     return row ?? { success: false, message: 'Không thể gửi liên thông', id: 0 };
+  },
+
+  // --- Trục CP send (Gap B — HDSD II.3.8) ---
+  // TODO Phase 2: tích hợp API trục CP thực — hiện chỉ log channel='cp' vào lgsp_tracking
+  async sendCp(docId: number, destOrgCode: string, destOrgName: string, createdBy: number): Promise<DbResultWithId> {
+    const row = await callFunctionOne<DbResultWithId>('edoc.fn_lgsp_tracking_create', [docId, null, 'send', destOrgCode, destOrgName, null, createdBy, 'cp']);
+    return row ?? { success: false, message: 'Không thể gửi trục CP', id: 0 };
   },
 };

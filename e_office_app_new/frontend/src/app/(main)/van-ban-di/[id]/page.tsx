@@ -14,6 +14,7 @@ import {
   FileImageOutlined, FileWordOutlined, FileExcelOutlined, FileOutlined,
   EditOutlined, SafetyCertificateOutlined, StopOutlined, RollbackOutlined,
   ThunderboltOutlined, InboxOutlined, CommentOutlined, SafetyOutlined,
+  CloudUploadOutlined,
 } from '@ant-design/icons';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth.store';
@@ -49,6 +50,18 @@ const SECRET_TAGS: Record<number, { text: string; color: string }> = {
 const URGENT_TAGS: Record<number, { text: string; color: string }> = {
   1: { text: 'Thường', color: 'default' }, 2: { text: 'Khẩn', color: 'orange' }, 3: { text: 'Hỏa tốc', color: 'red' },
 };
+
+// Gap B (HDSD II.3.8): danh sách bộ/ngành Chính phủ — mock data
+const CP_ORGANIZATIONS = [
+  { code: 'CP.VPCP', name: 'Văn phòng Chính phủ' },
+  { code: 'CP.BNV', name: 'Bộ Nội vụ' },
+  { code: 'CP.BTC', name: 'Bộ Tài chính' },
+  { code: 'CP.BTP', name: 'Bộ Tư pháp' },
+  { code: 'CP.BGDDT', name: 'Bộ Giáo dục và Đào tạo' },
+  { code: 'CP.BYT', name: 'Bộ Y tế' },
+  { code: 'CP.BCT', name: 'Bộ Công Thương' },
+  { code: 'CP.BTNMT', name: 'Bộ Tài nguyên và Môi trường' },
+];
 
 function fileIcon(name: string) {
   const ext = name.split('.').pop()?.toLowerCase();
@@ -114,6 +127,10 @@ export default function OutgoingDocDetailPage() {
   const [otpValue, setOtpValue] = useState('');
   const [signing, setSigning] = useState(false);
   const [targetAttachment, setTargetAttachment] = useState<Attachment | null>(null);
+  // Gửi trục CP (HDSD II.3.8)
+  const [cpModalOpen, setCpModalOpen] = useState(false);
+  const [cpSelected, setCpSelected] = useState<string[]>([]);
+  const [cpSending, setCpSending] = useState(false);
 
   const fetchDoc = useCallback(async () => { try { const { data: res } = await api.get(`/van-ban-di/${docId}`); setDoc(res.data); } catch { message.error('Không tìm thấy văn bản'); router.push('/van-ban-di'); } }, [docId, message, router]);
   const fetchBookmarkStatus = useCallback(async () => { try { const { data: res } = await api.get('/van-ban-di/danh-dau-ca-nhan'); const bookmarks: { doc_id: number | string }[] = res.data || []; setIsBookmarked(bookmarks.some((b) => Number(b.doc_id) === Number(docId))); } catch {} }, [docId]);
@@ -186,6 +203,31 @@ export default function OutgoingDocDetailPage() {
   const handleUpload = async (file: File) => { setUploading(true); try { const fd = new FormData(); fd.append('file', file); await api.post(`/van-ban-di/${docId}/dinh-kem`, fd, { headers: { 'Content-Type': 'multipart/form-data' } }); message.success('Tải lên thành công'); fetchAttachments(); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } finally { setUploading(false); } return false; };
   const handleDownload = async (att: Attachment) => { try { const { data: res } = await api.get(`/van-ban-di/${docId}/dinh-kem/${att.id}/download`); window.open(res.data?.url, '_blank'); } catch { message.error('Lỗi tải file'); } };
   const handleDeleteAttachment = async (att: Attachment) => { try { await api.delete(`/van-ban-di/${docId}/dinh-kem/${att.id}`); message.success('Đã xóa'); fetchAttachments(); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } };
+
+  // Gửi trục CP (mock — HDSD II.3.8)
+  const handleSendCp = async () => {
+    if (cpSelected.length === 0) {
+      message.warning('Vui lòng chọn ít nhất 1 bộ/ngành');
+      return;
+    }
+    setCpSending(true);
+    try {
+      const orgCodes = cpSelected
+        .map(code => CP_ORGANIZATIONS.find(o => o.code === code))
+        .filter((o): o is { code: string; name: string } => Boolean(o))
+        .map(o => ({ code: o.code, name: o.name }));
+      // TODO Phase 2: tích hợp API trục CP thực — hiện chỉ gọi mock endpoint
+      const { data: res } = await api.post(`/van-ban-di/${docId}/gui-truc-cp`, { org_codes: orgCodes });
+      message.success(res?.data?.message || 'Đã gửi trục CP');
+      setCpModalOpen(false);
+      setCpSelected([]);
+      fetchHistory();
+    } catch (err: any) {
+      message.error(err?.response?.data?.message || 'Gửi thất bại');
+    } finally {
+      setCpSending(false);
+    }
+  };
 
   // Ký số (mock OTP — HDSD I.5)
   const handleSignOtp = async () => {
@@ -275,6 +317,7 @@ export default function OutgoingDocDetailPage() {
           <Button icon={<ThunderboltOutlined />} type="primary" style={{ backgroundColor: '#0891B2', borderColor: '#0891B2' }} onClick={openGiaoViec}>Giao việc</Button>
           <Button icon={<InboxOutlined />} onClick={openHscvModal}>Thêm vào HSCV</Button>
           {doc.approved && <Button icon={<SendOutlined />} style={{ backgroundColor: '#059669', borderColor: '#059669', color: '#fff' }} onClick={openLgspModal}>Gửi liên thông</Button>}
+          {doc.approved && <Button icon={<CloudUploadOutlined />} style={{ backgroundColor: '#16A34A', borderColor: '#16A34A', color: '#fff' }} onClick={() => { setCpSelected([]); setCpModalOpen(true); }}>Gửi trục CP</Button>}
           {!doc.approved && (
             <>
               <Button icon={<EditOutlined />} onClick={() => router.push(`/van-ban-di?edit=${doc.id}`)}>Sửa</Button>
@@ -551,6 +594,29 @@ export default function OutgoingDocDetailPage() {
       {/* Modal: Gửi liên thông */}
       <Modal title="Gửi liên thông LGSP" open={lgspModalOpen} onCancel={() => setLgspModalOpen(false)} onOk={handleSendLgsp} confirmLoading={lgspSending} okText="Gửi liên thông" cancelText="Hủy">
         <Select mode="multiple" style={{ width: '100%', marginTop: 8 }} placeholder="Chọn đơn vị nhận..." showSearch filterOption={(input, opt) => (opt?.label ?? '').toLowerCase().includes(input.toLowerCase())} value={selectedLgspOrgs} onChange={setSelectedLgspOrgs} options={lgspOrgs.map(o => ({ value: o.id, label: `${o.org_name} (${o.org_code})` }))} />
+      </Modal>
+
+      {/* Modal: Gửi trục CP (HDSD II.3.8) */}
+      <Modal
+        open={cpModalOpen}
+        title="Gửi trục Chính phủ"
+        okText="Gửi"
+        cancelText="Hủy"
+        confirmLoading={cpSending}
+        onCancel={() => setCpModalOpen(false)}
+        onOk={handleSendCp}
+        width={500}
+      >
+        <p style={{ marginBottom: 12 }}>Chọn các bộ/ngành Chính phủ để gửi văn bản:</p>
+        <Checkbox.Group
+          value={cpSelected}
+          onChange={(vals) => setCpSelected(vals as string[])}
+          style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
+        >
+          {CP_ORGANIZATIONS.map(org => (
+            <Checkbox key={org.code} value={org.code}>{org.name}</Checkbox>
+          ))}
+        </Checkbox.Group>
       </Modal>
 
       {/* Modal: Ký số OTP (HDSD I.5) */}

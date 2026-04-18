@@ -727,6 +727,37 @@ router.post('/:id/gui-lien-thong', async (req: Request, res: Response) => {
 });
 
 // ============================================================
+// GỬI TRỤC CP (mock — Gap B HDSD II.3.8)
+// ============================================================
+
+// TODO Phase 2: tích hợp trục CP thực — hiện chỉ mock log tracking record với channel='cp'
+router.post('/:id/gui-truc-cp', async (req: Request, res: Response) => {
+  try {
+    const { staffId } = (req as AuthRequest).user;
+    const docId = Number(req.params.id);
+    if (!Number.isInteger(docId) || docId <= 0) {
+      res.status(400).json({ success: false, message: 'ID không hợp lệ' });
+      return;
+    }
+    const orgCodes = (req.body as { org_codes?: unknown })?.org_codes;
+    if (!Array.isArray(orgCodes) || orgCodes.length === 0) {
+      res.status(400).json({ success: false, message: 'Vui lòng chọn ít nhất 1 bộ/ngành' });
+      return;
+    }
+    const results = [];
+    for (const org of orgCodes as { code?: string; name?: string }[]) {
+      if (!org?.code || !org?.name) continue;
+      const r = await outgoingDocRepository.sendCp(docId, String(org.code), String(org.name), staffId);
+      results.push(r);
+    }
+    const successCount = results.filter(r => r.success).length;
+    res.json({ success: true, data: { message: `Đã gửi trục CP cho ${successCount} bộ/ngành (mock)`, count: successCount } });
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
+
+// ============================================================
 // CHUYỂN LƯU TRỮ
 // ============================================================
 
