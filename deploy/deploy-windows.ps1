@@ -223,11 +223,53 @@ if (Test-Path $gitDir) {
 
 $WORK_DIR = Join-Path $repoDir 'e_office_app_new'
 
-# Chay migrations
+# Chay migrations + seed demo (neu fresh install)
 Log 'Chay database migrations...'
 $env:PGPASSWORD = $PG_PASS
-$migrationFile = Join-Path $WORK_DIR 'database\migrations\000_full_schema.sql'
-& $psqlExe -U $PG_USER -d $PG_DB -p 5432 -h 127.0.0.1 -f $migrationFile 2>$null | Out-Null
+
+# Tracking table de skip migration da apply
+$sqlTracking = "CREATE TABLE IF NOT EXISTS public._migration_history (filename VARCHAR(255) PRIMARY KEY, applied_at TIMESTAMPTZ DEFAULT NOW());"
+& $psqlExe -U $PG_USER -d $PG_DB -p 5432 -h 127.0.0.1 -c $sqlTracking 2>$null | Out-Null
+
+function Apply-Migration {
+    param([string]$File)
+    $fname = Split-Path $File -Leaf
+    $exists = & $psqlExe -U $PG_USER -d $PG_DB -p 5432 -h 127.0.0.1 -tAc "SELECT 1 FROM public._migration_history WHERE filename='$fname'" 2>$null
+    if ($exists -match '1') { return }
+    Log "  -> $fname"
+    & $psqlExe -U $PG_USER -d $PG_DB -p 5432 -h 127.0.0.1 -v ON_ERROR_STOP=1 -f $File 2>&1 | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "[XX] Migration $fname that bai" -ForegroundColor Red
+        exit 1
+    }
+    & $psqlExe -U $PG_USER -d $PG_DB -p 5432 -h 127.0.0.1 -c "INSERT INTO public._migration_history (filename) VALUES ('$fname') ON CONFLICT DO NOTHING" 2>$null | Out-Null
+}
+
+# Apply base schema
+$migrationsDir = Join-Path $WORK_DIR 'database\migrations'
+Apply-Migration (Join-Path $migrationsDir '000_full_schema.sql')
+
+# Apply quick migrations (hlj, jsd, ...)
+Get-ChildItem -Path $migrationsDir -Filter 'quick_*.sql' | Sort-Object Name | ForEach-Object {
+    Apply-Migration $_.FullName
+}
+
+# Seed demo chi khi DB trong (fresh install)
+$staffCount = & $psqlExe -U $PG_USER -d $PG_DB -p 5432 -h 127.0.0.1 -tAc "SELECT COUNT(*) FROM public.staff" 2>$null
+$staffCount = ($staffCount -replace '\s','')
+if ($staffCount -eq '0' -or [string]::IsNullOrEmpty($staffCount)) {
+    $seedFile = Join-Path $WORK_DIR 'database\seed-demo.sql'
+    if (Test-Path $seedFile) {
+        Log "  -> Seed demo data (lan dau)..."
+        & $psqlExe -U $PG_USER -d $PG_DB -p 5432 -h 127.0.0.1 -v ON_ERROR_STOP=1 -f $seedFile 2>&1 | Out-Null
+        if ($LASTEXITCODE -ne 0) { Warn 'Seed demo that bai (khong critical)' }
+    } else {
+        Warn 'Khong tim thay seed-demo.sql'
+    }
+} else {
+    Log "  -> Da co $staffCount staff - bo qua seed"
+}
+
 Log 'Database migrations hoan thanh'
 
 # ============================================================

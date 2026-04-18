@@ -1,19 +1,33 @@
 # Deploy e-Office Production
 
 ## Yêu cầu server
-- Ubuntu 22.04+ hoặc Debian 12+
+- **Linux**: Ubuntu 22.04+ hoặc Debian 12+ (dùng script `.sh`)
+- **Windows**: Windows Server 2022 + IIS (dùng script `.ps1`)
 - RAM tối thiểu: 4GB (khuyến nghị 8GB)
 - Disk: 40GB+
 - Port 80 mở cho HTTP
 
+## Chọn scripts theo OS
+
+| Task | Linux | Windows |
+|---|---|---|
+| Deploy lần đầu | `deploy.sh` | `deploy-windows.ps1` |
+| Update code | `update.sh` | `update-windows.ps1` |
+| Reset DB (test) | `reset-db.sh` | `reset-db-windows.ps1` |
+
 ## Deploy lần đầu
 
+**Linux:**
 ```bash
-# SSH vào server
 ssh <user>@103.97.134.87
+sudo bash /opt/eoffice/quanlyvanban/deploy/deploy.sh
+```
 
-# Upload script (hoặc clone repo rồi chạy)
-sudo bash deploy.sh
+**Windows (PowerShell Administrator):**
+```powershell
+Set-ExecutionPolicy Bypass -Scope Process -Force
+cd C:\qlvb\quanlyvanban\deploy
+.\deploy-windows.ps1
 ```
 
 Script tự động:
@@ -27,11 +41,18 @@ Script tự động:
 
 ## Cập nhật code
 
+**Linux:**
 ```bash
 sudo bash /opt/eoffice/quanlyvanban/deploy/update.sh
 ```
 
-`update.sh` tự động:
+**Windows (PowerShell Administrator):**
+```powershell
+cd C:\qlvb\quanlyvanban\deploy
+.\update-windows.ps1
+```
+
+Script tự động:
 - Pull code mới từ GitHub
 - Rebuild backend + frontend
 - Apply migration mới (file `quick_*.sql` chưa apply, tracking qua bảng `public._migration_history`)
@@ -42,8 +63,15 @@ sudo bash /opt/eoffice/quanlyvanban/deploy/update.sh
 
 ⚠️ Xóa sạch data — dùng khi muốn test lại từ DB trống tinh:
 
+**Linux:**
 ```bash
 sudo bash /opt/eoffice/quanlyvanban/deploy/reset-db.sh
+```
+
+**Windows (PowerShell Administrator):**
+```powershell
+cd C:\qlvb\quanlyvanban\deploy
+.\reset-db-windows.ps1
 ```
 
 Script tự động:
