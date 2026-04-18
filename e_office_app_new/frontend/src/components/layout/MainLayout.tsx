@@ -59,6 +59,102 @@ const VAN_THU_ROLE = 'Văn thư';
 const LANH_DAO_ROLE = 'Ban Lãnh đạo';
 const CHI_DAO_ROLE = 'Chỉ đạo điều hành';
 
+// ─── Phase 1 feature flag: ẩn menu chưa có trong HDSD cũ ──────────────────
+// Các route/module dưới đây tạm ẩn khỏi sidebar để bản demo chỉ hiển thị
+// đúng scope nghiệp vụ trong HDSD cũ. KHÔNG xóa code — Phase 2 muốn bật lại
+// chỉ cần xóa entry tương ứng khỏi Set này.
+const HIDDEN_ROUTES: ReadonlySet<string> = new Set([
+  // Tin nhắn
+  '/tin-nhan',
+  // Lịch (ẩn cả parent group 'lich' qua recursive check)
+  'lich',
+  '/lich/ca-nhan',
+  '/lich/co-quan',
+  '/lich/lanh-dao',
+  // Danh bạ
+  '/danh-ba',
+  // Kho lưu trữ
+  'kho-luu-tru',
+  '/kho-luu-tru',
+  '/kho-luu-tru/muon-tra',
+  // Tài liệu
+  '/tai-lieu',
+  // Hợp đồng
+  '/hop-dong',
+  // Cuộc họp
+  'cuoc-hop',
+  '/cuoc-hop',
+  '/cuoc-hop/thong-ke',
+  // LGSP + kênh thông báo
+  '/lgsp',
+  '/lgsp/co-quan',
+  '/thong-bao-kenh',
+  // Quản trị items bị ẩn (chuyển sang Phase 2)
+  '/quan-tri/chuc-nang',
+  '/quan-tri/cau-hinh-truong',
+  '/quan-tri/co-quan',
+  '/quan-tri/nhom-lam-viec',
+  '/quan-tri/uy-quyen',
+  '/quan-tri/dia-ban',
+  '/quan-tri/lich-lam-viec',
+  '/quan-tri/mau-thong-bao',
+  '/quan-tri/cau-hinh',
+]);
+
+// Recursive filter:
+// 1. Item có key trong HIDDEN_ROUTES → drop.
+// 2. Item có children → filter children; children rỗng sau filter → drop luôn cha.
+// 3. Group header (type='group') không tự drop qua HIDDEN_ROUTES — sau khi filter
+//    nếu group header không còn item thực ngay sau (trước group khác) → drop header.
+function filterMenuItems(items: MenuItem[]): MenuItem[] {
+  const afterHide: MenuItem[] = [];
+  for (const item of items) {
+    if (!item) continue;
+    // Divider luôn giữ
+    if ('type' in item && item.type === 'divider') {
+      afterHide.push(item);
+      continue;
+    }
+    const key = 'key' in item ? (item.key as string | undefined) : undefined;
+    // Group header: xử lý ở bước 2 dưới
+    if ('type' in item && item.type === 'group') {
+      afterHide.push(item);
+      continue;
+    }
+    // Item thường / submenu
+    if (key && HIDDEN_ROUTES.has(key)) continue;
+    // Recurse children
+    if ('children' in item && Array.isArray(item.children) && item.children.length > 0) {
+      const filteredChildren = filterMenuItems(item.children as MenuItem[]);
+      if (filteredChildren.length === 0) continue; // parent trống → drop
+      afterHide.push({ ...item, children: filteredChildren });
+      continue;
+    }
+    afterHide.push(item);
+  }
+  // Bước 2: ẩn group header trống
+  const result: MenuItem[] = [];
+  for (let i = 0; i < afterHide.length; i++) {
+    const cur = afterHide[i];
+    if (cur && 'type' in cur && cur.type === 'group') {
+      // Đếm item thực sau cur cho tới group tiếp theo hoặc hết array
+      let hasContent = false;
+      for (let j = i + 1; j < afterHide.length; j++) {
+        const next = afterHide[j];
+        if (!next) continue;
+        if ('type' in next && next.type === 'group') break;
+        // Divider không tính là content
+        if ('type' in next && next.type === 'divider') continue;
+        hasContent = true;
+        break;
+      }
+      if (!hasContent) continue; // group trống → skip
+    }
+    result.push(cur);
+  }
+  return result;
+}
+
 interface MenuBuildParams {
   badgeCounts: { vbDen: number; tinNhan: number; thongBao: number };
   isAdmin: boolean;
@@ -220,7 +316,7 @@ function buildMenuItems({ badgeCounts, isAdmin, roles }: MenuBuildParams): MenuI
     );
   }
 
-  return items;
+  return filterMenuItems(items);
 }
 
 // Map pathname to breadcrumb labels
