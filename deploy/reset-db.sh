@@ -103,13 +103,13 @@ done
 # 4. Seed demo data
 # ============================================================
 log "Seed demo data..."
-if [ -f "$WORK_DIR/database/seed-demo.sql" ]; then
+if [ -f "$WORK_DIR/database/seed_full_demo.sql" ]; then
   # seed có DISABLE TRIGGER ALL (pg_dump) — cần superuser postgres
   docker exec -i qlvb_postgres psql -U postgres -d $PG_DB -v ON_ERROR_STOP=1 \
-    -f - < "$WORK_DIR/database/seed-demo.sql" > /dev/null 2>&1 \
+    -f - < "$WORK_DIR/database/seed_full_demo.sql" > /dev/null 2>&1 \
     || warn "Seed demo thất bại"
 else
-  warn "Không tìm thấy seed-demo.sql"
+  warn "Không tìm thấy seed_full_demo.sql"
 fi
 
 # ============================================================
@@ -135,7 +135,7 @@ echo ""
 echo "================================================================"
 log "DB đã reset + apply đầy đủ migrations + seed demo"
 echo ""
-echo "  Demo accounts trong seed-demo.sql — check file để biết"
+echo "  Demo accounts trong seed_full_demo.sql — check file để biết"
 echo "  Login: http://<server-ip>"
 echo "================================================================"
 echo ""

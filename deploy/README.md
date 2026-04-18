@@ -79,7 +79,7 @@ Script tự động:
 2. Pull code mới
 3. DROP tất cả schemas (`edoc`, `esto`, `cont`, `iso`, `public`)
 4. Re-apply `000_full_schema.sql` + tất cả `quick_*.sql` theo thứ tự
-5. Seed `seed-demo.sql` (demo accounts)
+5. Seed `seed_full_demo.sql` (demo accounts)
 6. Hỏi có rebuild + restart không
 
 ## Backup database

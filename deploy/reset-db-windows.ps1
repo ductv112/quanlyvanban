@@ -117,18 +117,18 @@ Get-ChildItem -Path $migrationsDir -Filter 'quick_*.sql' | Sort-Object Name | Fo
 # 4. Seed demo data
 # ============================================================
 Log 'Seed demo data...'
-$seedFile = Join-Path $WORK_DIR 'database\seed-demo.sql'
+$seedFile = Join-Path $WORK_DIR 'database\seed_full_demo.sql'
 if (Test-Path $seedFile) {
-    $seedLog = Join-Path $env:TEMP 'seed-demo.log'
-    # Seed file có `ALTER TABLE ... DISABLE TRIGGER ALL` (pg_dump --disable-triggers) - cần superuser postgres
-    # KHÔNG dùng ON_ERROR_STOP=1: seed-demo.sql dump từ schema cũ có thể mismatch với current schema
-    # (1 vài table có cột khác nhau). Bỏ qua INSERT fail, vẫn tạo được admin + user chính để login test.
-    & $psqlExe -U postgres -d $PG_DB -p 5432 -h 127.0.0.1 -f $seedFile > $seedLog 2>&1
-    # Đếm số lỗi để cảnh báo user
-    $errorCount = (Select-String -Path $seedLog -Pattern 'ERROR:' -AllMatches).Matches.Count
-    if ($errorCount -gt 0) {
-        Warn "Seed demo: $errorCount ERROR lines (non-critical, admin/user vẫn seed được)"
-        Write-Host "  Xem full log: $seedLog" -ForegroundColor Yellow
+    $seedLog = Join-Path $env:TEMP 'seed_full_demo.log'
+    # seed_full_demo.sql là hand-written với INSERT INTO (col,...) VALUES — schema-resilient
+    # Vẫn cần superuser cho TRUNCATE CASCADE
+    & $psqlExe -U postgres -d $PG_DB -p 5432 -h 127.0.0.1 -v ON_ERROR_STOP=1 -f $seedFile > $seedLog 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        Warn 'Seed demo that bai'
+        Write-Host ""
+        Write-Host "---- seed_full_demo psql output (cuối file) ----" -ForegroundColor Yellow
+        Get-Content $seedLog -Tail 30
+        Write-Host "---- full log: $seedLog ----" -ForegroundColor Yellow
     } else {
         Remove-Item $seedLog -ErrorAction SilentlyContinue
     }
@@ -142,7 +142,7 @@ if (Test-Path $seedFile) {
         Warn "  Chưa có admin account - cần seed thủ công"
     }
 } else {
-    Warn 'Khong tim thay seed-demo.sql'
+    Warn 'Khong tim thay seed_full_demo.sql'
 }
 
 # ============================================================
@@ -173,7 +173,7 @@ Write-Host ''
 Write-Host '================================================================' -ForegroundColor Green
 Log 'DB da reset + apply day du migrations + seed demo'
 Write-Host ''
-Write-Host '  Demo accounts: xem chi tiet trong seed-demo.sql'
+Write-Host '  Demo accounts: xem chi tiet trong seed_full_demo.sql'
 Write-Host '  Login: http://<server-ip>'
 Write-Host '================================================================' -ForegroundColor Green
 Write-Host ''

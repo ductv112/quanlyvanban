@@ -259,14 +259,14 @@ Get-ChildItem -Path $migrationsDir -Filter 'quick_*.sql' | Sort-Object Name | Fo
 $staffCount = & $psqlExe -U $PG_USER -d $PG_DB -p 5432 -h 127.0.0.1 -tAc "SELECT COUNT(*) FROM public.staff" 2>$null
 $staffCount = ($staffCount -replace '\s','')
 if ($staffCount -eq '0' -or [string]::IsNullOrEmpty($staffCount)) {
-    $seedFile = Join-Path $WORK_DIR 'database\seed-demo.sql'
+    $seedFile = Join-Path $WORK_DIR 'database\seed_full_demo.sql'
     if (Test-Path $seedFile) {
         Log "  -> Seed demo data (lan dau)..."
         # seed có DISABLE TRIGGER ALL (pg_dump) - cần superuser postgres
         & $psqlExe -U postgres -d $PG_DB -p 5432 -h 127.0.0.1 -v ON_ERROR_STOP=1 -f $seedFile 2>$null
         if ($LASTEXITCODE -ne 0) { Warn 'Seed demo that bai (khong critical)' }
     } else {
-        Warn 'Khong tim thay seed-demo.sql'
+        Warn 'Khong tim thay seed_full_demo.sql'
     }
 } else {
     Log "  -> Da co $staffCount staff - bo qua seed"
