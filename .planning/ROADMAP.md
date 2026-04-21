@@ -29,7 +29,7 @@ Rebuild hệ thống quản lý văn bản điện tử (.NET cũ) thành stack 
 
 - [x] **Phase 8: Schema foundation + PDF signing generic layer** - 3 bảng mới, migration `staff.sign_phone`, PDF signing pure JS (`node-signpdf` + `node-forge`) (completed 2026-04-21)
 - [x] **Phase 9: Admin config + provider adapters** - SmartCA VNPT + MySign Viettel adapters, trang Admin cấu hình hệ thống với test connection, dashboard stats (completed 2026-04-21)
-- [ ] **Phase 10: User config page + migrate tab chữ ký số** - Trang `/ky-so/tai-khoan` với form dynamic theo provider + button verify, remove tab cũ trong `/thong-tin-ca-nhan`
+- [x] **Phase 10: User config page + migrate tab chữ ký số** - Trang `/ky-so/tai-khoan` với form dynamic theo provider + button verify, remove tab cũ trong `/thong-tin-ca-nhan` (completed 2026-04-21)
 - [ ] **Phase 11: Sign flow + async worker (core)** - API `/ky-so/sign` real, BullMQ worker poll 5s × 3 phút, Socket.IO `SIGN_COMPLETED`, ký lại/hủy transaction
 - [ ] **Phase 12: Menu Ký số + Danh sách 4 tab UI** - Sidebar menu mới, trang `/ky-so/danh-sach` 4 tab dynamic (Cần ký / Đang xử lý / Đã ký / Thất bại), re-wire detail VB pages
 - [ ] **Phase 13: Modal ký số robust + Root CA UX** - Modal countdown 3:00, disable spam, maskClosable=false, banner Root CA Viettel dismissible + link `.cer` + HDSD PDF
@@ -200,8 +200,8 @@ Plans:
 **Plans**: 3 plans
 Plans:
 - [x] 10-01-PLAN.md — Backend API /api/ky-so/tai-khoan (4 endpoints: GET/POST/certificates/verify, authenticate only)
-- [ ] 10-02-PLAN.md — Frontend trang /ky-so/tai-khoan + sidebar submenu 'Tài khoản ký số cá nhân' cho mọi user (checkpoint)
-- [ ] 10-03-PLAN.md — Remove tab 'Chữ ký số' cũ trong /thong-tin-ca-nhan, thêm Alert pointer sang /ky-so/tai-khoan
+- [x] 10-02-PLAN.md — Frontend trang /ky-so/tai-khoan + sidebar submenu 'Tài khoản ký số cá nhân' cho mọi user (checkpoint)
+- [x] 10-03-PLAN.md — Remove tab 'Chữ ký số' cũ trong /thong-tin-ca-nhan, thêm Alert pointer sang /ky-so/tai-khoan
 **UI hint**: yes
 
 ### Phase 11: Sign flow + async worker (core)
@@ -271,7 +271,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 7. Polish & Redirect | -/- | Complete | 2026-04-18 |
 | 8. Schema foundation + PDF signing layer | 4/4 | Complete    | 2026-04-21 |
 | 9. Admin config + provider adapters | 3/3 | Complete    | 2026-04-21 |
-| 10. User config page | 1/3 | In Progress|  |
+| 10. User config page | 3/3 | Complete   | 2026-04-21 |
 | 11. Sign flow + async worker | 0/TBD | Not started | - |
 | 12. Menu Ký số + Danh sách UI | 0/TBD | Not started | - |
 | 13. Modal ký số + Root CA UX | 0/TBD | Not started | - |

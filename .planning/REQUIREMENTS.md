@@ -53,7 +53,7 @@
 - [ ] **UX-10:** Bell notification hiện toast + badge khi nhận Socket event `SIGN_COMPLETED` / `SIGN_FAILED` — user offline khi nhận cũng thấy notification trong bell dropdown
 - [ ] **UX-11:** Khi user download file ký bằng MySign Viettel, hệ thống hiện banner dismissible với link tải Root CA `.cer` + HDSD PDF. LocalStorage lưu `dismiss_root_ca_banner = true` để không hiện lại
 - [ ] **UX-12:** Trang chi tiết VB (`/van-ban-di/[id]`, `/van-ban-du-thao/[id]`, `/ho-so-cong-viec/[id]`) vẫn giữ button "Ký số" trên file đính kèm — đường dẫn thứ 2 vào flow ký, mở cùng modal
-- [ ] **UX-13:** Tab "Chữ ký số" cũ trong `/thong-tin-ca-nhan` bị remove — migrate user sang `/ky-so/tai-khoan` (menu độc lập)
+- [x] **UX-13:** Tab "Chữ ký số" cũ trong `/thong-tin-ca-nhan` bị remove — migrate user sang `/ky-so/tai-khoan` (menu độc lập)
 
 ### ASYNC — Async Worker (6 requirements)
 
@@ -146,7 +146,7 @@ Mỗi REQ-ID v2.0 map tới đúng 1 phase (8-14). Tổng 42/42 — 100% coverag
 | UX-10 | Phase 13 — Modal ký số + Root CA UX | Pending |
 | UX-11 | Phase 13 — Modal ký số + Root CA UX | Pending |
 | UX-12 | Phase 12 — Menu Ký số + Danh sách UI | Pending |
-| UX-13 | Phase 10 — User config page | Pending |
+| UX-13 | Phase 10 — User config page | Complete |
 | ASYNC-01 | Phase 11 — Sign flow + async worker | Pending |
 | ASYNC-02 | Phase 11 — Sign flow + async worker | Pending |
 | ASYNC-03 | Phase 11 — Sign flow + async worker | Pending |

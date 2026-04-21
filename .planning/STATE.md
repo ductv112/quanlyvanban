@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 10-01-PLAN.md (Phase 10 Plan 1 — 4 user-level /api/ky-so/tai-khoan endpoints authenticate-only ready for Plan 02 frontend)
-last_updated: "2026-04-21T09:08:58.593Z"
+stopped_at: Completed 10-03-PLAN.md (Phase 10 COMPLETE — 3/3 plans CFG-05+CFG-06+UX-13 delivered; tab chữ ký số cũ migrated sang /ky-so/tai-khoan)
+last_updated: "2026-04-21T09:40:44.405Z"
 last_activity: 2026-04-21
 progress:
   total_phases: 10
-  completed_phases: 9
+  completed_phases: 10
   total_plans: 43
-  completed_plans: 41
-  percent: 95
+  completed_plans: 43
+  percent: 100
 ---
 
 # Project State
@@ -25,12 +25,13 @@ See: .planning/PROJECT.md (updated 2026-04-21 — Milestone v2.0 started)
 
 ## Current Position
 
-Phase: 10
-Plan: 01 complete — Plan 02 (User config frontend page) next
-Status: In progress — Phase 10 started
+Phase: 10 — COMPLETE (3/3 plans)
+Plan: 03 complete — Phase 10 delivered CFG-05 + CFG-06 + UX-13
+Next: Phase 11 — Sign flow + async worker (core)
+Status: Phase 10 complete — 43/43 plans shipped v2.0 milestone (pending Phases 11-14)
 Last activity: 2026-04-21
 
-Progress: [██████████] 95% (41/43 plans complete)
+Progress: [██████████] 100% (43/43 plans complete at current scope — Phase 11-14 TBD)
 
 ## Performance Metrics
 
@@ -62,6 +63,8 @@ Progress: [██████████] 95% (41/43 plans complete)
 | Phase 09 P01 | 10min | 3 tasks | 6 files |
 | Phase 09 P02 | 4min | 3 tasks | 3 files |
 | Phase 10 P01 | 4min | 2 tasks | 2 files |
+| Phase 10 P02 | 45min | 3 tasks | 2 files |
+| Phase 10 P03 | 10min | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -108,6 +111,10 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase 10]: [Phase 10-01]: staffId luôn từ JWT (req.user.staffId), KHÔNG từ body — mitigate T-10-01 Tampering cho user-level signing config
 - [Phase 10]: [Phase 10-01]: Verify fail = HTTP 200 với verified:false (không 500) — cert-not-found là business outcome, không phải server error; FE parse data.verified flag thống nhất
 - [Phase 10]: [Phase 10-01]: Mount /api/ky-so/tai-khoan riêng với authenticate-only (không requireRoles) BEFORE /api/ky-so generic — longer-prefix-wins tách biệt admin guard khỏi user endpoint
+- [Phase 10]: [Phase 10-02]: Form-mount guard setTimeout(0) setFieldsValue — tránh AntD warning 'useForm not connected' khi active=null Form chưa render
+- [Phase 10]: [Phase 10-02]: Label 'Xác thực tài khoản ký số' thay 'Kiểm tra kết nối' — action thực tế là verify mã định danh qua API provider, không test connection đơn thuần; mapping 1:1 với badge 'Đã xác thực'
+- [Phase 10]: [Phase 10-02]: Group sidebar KÝ SỐ visible cho MỌI user (restructure từ admin-only) — push group header unconditionally, chỉ wrap submenu 'Cấu hình hệ thống' trong if (isAdmin); scale tốt cho Phase 12 UX-01 thêm submenu 'Danh sách ký số'
+- [Phase 10]: [Phase 10-03]: Migration UI pattern — giữ Tabs 2 tab rename 'Chữ ký số' → 'Ảnh chữ ký' + Alert pointer với Next.js Link sang /ky-so/tai-khoan; KHÔNG hard redirect vì sign_image upload vẫn là functionality hợp lệ ở trang này
 
 ### Pending Todos
 
@@ -139,6 +146,6 @@ v1.0 hoàn thành với 3 quick tasks (HDSD Compliance sprint cuối):
 
 ## Session Continuity
 
-Last session: 2026-04-21T09:08:58.581Z
-Stopped at: Completed 10-01-PLAN.md (Phase 10 Plan 1 — 4 user-level /api/ky-so/tai-khoan endpoints authenticate-only ready for Plan 02 frontend)
+Last session: 2026-04-21T09:40:44.394Z
+Stopped at: Completed 10-03-PLAN.md (Phase 10 COMPLETE — 3/3 plans CFG-05+CFG-06+UX-13 delivered; tab chữ ký số cũ migrated sang /ky-so/tai-khoan)
 Resume: `/gsd-plan-phase 8`
