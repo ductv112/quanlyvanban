@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: verifying
-stopped_at: Completed 08-04-PLAN.md (Phase 8 FULLY COMPLETE — crypto + 3 repositories ready for Phase 9)
-last_updated: "2026-04-21T07:03:36.052Z"
+status: executing
+stopped_at: Completed 09-01-PLAN.md (Phase 9 Plan 1 — provider adapters + factory ready for Plan 02 API routes)
+last_updated: "2026-04-21T07:31:23.234Z"
 last_activity: 2026-04-21
 progress:
-  total_phases: 8
+  total_phases: 9
   completed_phases: 8
-  total_plans: 37
-  completed_plans: 37
-  percent: 100
+  total_plans: 40
+  completed_plans: 38
+  percent: 95
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-21 — Milestone v2.0 started)
 
 **Core value:** Luồng văn bản đến → xử lý → văn bản đi phải hoạt động đúng nghiệp vụ cơ quan nhà nước
-**Current focus:** Phase 8 — Schema foundation + PDF signing generic layer
+**Current focus:** Phase 9 — Admin config API + provider adapters (SmartCA VNPT + MySign Viettel)
 
 ## Current Position
 
-Phase: 8
-Plan: Not started
-Status: Phase complete — ready for verification
+Phase: 9
+Plan: 1/3 (09-01 complete — provider adapters)
+Status: In progress — Plan 02 (Admin config API) next
 Last activity: 2026-04-21
 
-Progress: [░░░░░░░░░░] 0% (0/7 phases complete)
+Progress: [██████████] 95% (38/40 plans complete)
 
 ## Performance Metrics
 
@@ -59,6 +59,7 @@ Progress: [░░░░░░░░░░] 0% (0/7 phases complete)
 | Phase 08 P02 | 10min | 1 tasks | 1 files |
 | Phase 08 P03 | 12min | 2 tasks | 3 files |
 | Phase 08 P04 | 5min | 2 tasks | 5 files |
+| Phase 09 P01 | 10min | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -95,6 +96,10 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase 08]: Use Node builtin test runner (node:test via tsx) for signing unit tests — no jest/vitest dependency added
 - [Phase 08]: [Phase 08-04]: SIGNING_SECRET_KEY fail-fast validation (throw on unset/<16 chars) — no weak default to avoid accidental production ship
 - [Phase 08]: [Phase 08-04]: Wave 2 rule caught SP drift — pg_get_function_result() revealed fn_sign_transaction_increment_retry returns new_retry_count (plan had stale retry_count). Repository interface fixed before runtime bug.
+- [Phase 09]: [Phase 09-01]: Node fetch thay vì axios — backend package.json không có axios (frontend-only), Node 18+ fetch + AbortController đủ cho JSON POST timeout
+- [Phase 09]: [Phase 09-01]: HttpClient interface + DI factory — tests inject mock qua create*Provider(httpClient?), production dùng singleton với default fetch wrapper
+- [Phase 09]: [Phase 09-01]: Stateless MySign adapter (no token cache) — fresh login every call prevents race in Phase 11 multi-concurrency BullMQ worker
+- [Phase 09]: [Phase 09-01]: SmartCA getSignStatus là POST (không GET) — Model.cs Query() helper hardcode POST, plan draft sai method
 
 ### Pending Todos
 
@@ -126,6 +131,6 @@ v1.0 hoàn thành với 3 quick tasks (HDSD Compliance sprint cuối):
 
 ## Session Continuity
 
-Last session: 2026-04-21T06:58:19.417Z
-Stopped at: Completed 08-04-PLAN.md (Phase 8 FULLY COMPLETE — crypto + 3 repositories ready for Phase 9)
+Last session: 2026-04-21T07:31:23.220Z
+Stopped at: Completed 09-01-PLAN.md (Phase 9 Plan 1 — provider adapters + factory ready for Plan 02 API routes)
 Resume: `/gsd-plan-phase 8`

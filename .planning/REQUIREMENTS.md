@@ -119,8 +119,8 @@ Mỗi REQ-ID v2.0 map tới đúng 1 phase (8-14). Tổng 42/42 — 100% coverag
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SIGN-01 | Phase 9 — Admin config + provider adapters | Pending |
-| SIGN-02 | Phase 9 — Admin config + provider adapters | Pending |
+| SIGN-01 | Phase 9 — Admin config + provider adapters | Complete |
+| SIGN-02 | Phase 9 — Admin config + provider adapters | Complete |
 | SIGN-03 | Phase 11 — Sign flow + async worker | Pending |
 | SIGN-04 | Phase 8 — Schema foundation + PDF signing layer | Complete |
 | SIGN-05 | Phase 11 — Sign flow + async worker | Pending |
@@ -129,7 +129,7 @@ Mỗi REQ-ID v2.0 map tới đúng 1 phase (8-14). Tổng 42/42 — 100% coverag
 | SIGN-08 | Phase 11 — Sign flow + async worker | Pending |
 | CFG-01 | Phase 9 — Admin config + provider adapters | Pending |
 | CFG-02 | Phase 9 — Admin config + provider adapters | Pending |
-| CFG-03 | Phase 9 — Admin config + provider adapters | Pending |
+| CFG-03 | Phase 9 — Admin config + provider adapters | Complete |
 | CFG-04 | Phase 9 — Admin config + provider adapters | Pending |
 | CFG-05 | Phase 10 — User config page | Pending |
 | CFG-06 | Phase 10 — User config page | Pending |
