@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Completed 11-07-PLAN.md
-last_updated: "2026-04-21T11:21:03.913Z"
+stopped_at: Completed 11-08-PLAN.md — Phase 11 DONE 8/8
+last_updated: "2026-04-21T11:29:02.575Z"
 last_activity: 2026-04-21
 progress:
   total_phases: 11
-  completed_phases: 10
+  completed_phases: 11
   total_plans: 51
-  completed_plans: 50
-  percent: 98
+  completed_plans: 51
+  percent: 100
 ---
 
 # Project State
@@ -25,13 +25,13 @@ See: .planning/PROJECT.md (updated 2026-04-21 — Milestone v2.0 started)
 
 ## Current Position
 
-Phase: 11 — IN PROGRESS (6/8 plans)
-Plan: 06 complete — Shared SignModal component + useSigning hook + lib/signing/types.ts + SOCKET_EVENTS (SIGN_COMPLETED/SIGN_FAILED) — FE wire-up ready, Plans 07/08/09 có thể migrate VB đi/VB dự thảo/HSCV detail pages
-Next: Plan 11-07 — VB đi detail page migration (wire useSigning hook vào attachment action menu, thay legacy SigningModal mock)
-Status: Phase 11 wave 5 complete (shared modal + hook), ready for wave 6 (detail page migrations 07/08/09)
+Phase: 11 — COMPLETE (8/8 plans)
+Plan: 08 complete — HSCV detail page integrated với useSigning hook + SignModal — nút Ký số hiện có điều kiện cho signer HSCV. MIG-05 + SIGN-03 DONE. 3/3 detail pages (VB đi/VB dự thảo/HSCV) giờ dùng async sign flow thật.
+Next: Phase 12 — Menu Ký số + Danh sách 4 tab UI (7 plans) — sau khi user verify human-verify checkpoints của Phase 11
+Status: Phase 11 DONE (all 8 plans committed + SUMMARY.md). Ready for Phase 12 execution.
 Last activity: 2026-04-21
 
-Progress: [██████████] 96% (49/51 plans complete)
+Progress: [██████████] 100% (51/51 plans complete)
 
 ## Performance Metrics
 
@@ -72,6 +72,7 @@ Progress: [██████████] 96% (49/51 plans complete)
 | Phase 11 P05 | 7min | 3 tasks | 4 files |
 | Phase 11 P06 | 5min | 3 tasks | 4 files |
 | Phase 11 P07 | 4min | 3 tasks | 2 files |
+| Phase 11 P08 | 3min | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -145,6 +146,7 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase 11]: [Phase 11-06]: onSuccessRef pattern (ngoài state) cho useSigning — caller inline arrow không trigger re-render loop
 - [Phase 11]: [Phase 11-06]: Đóng (chạy nền) KHÔNG auto-cancel txn — worker tiếp tục poll + bell notification fallback cho Socket miss
 - [Phase 11]: Plan 07: Migrate VB đi + VB dự thảo detail pages sang useSigning hook. Pure migration — remove mock OTP state + /ky-so/mock/sign, thay bằng openSign() + renderSignModal(). Net -108/+26 lines. Breaking change MIG-05: 2/3 pages done (HSCV pending Plan 11-09).
+- [Phase 11]: Plan 11-08: HSCV Ký số button — first-time integration (không phải migration). canSignHandling gate = signer_id === user.staffId + status ∈ {2,3}. attachmentType='handling' lần đầu có FE consumer.
 
 ### Pending Todos
 
@@ -176,6 +178,6 @@ v1.0 hoàn thành với 3 quick tasks (HDSD Compliance sprint cuối):
 
 ## Session Continuity
 
-Last session: 2026-04-21T11:20:57.013Z
-Stopped at: Completed 11-07-PLAN.md
+Last session: 2026-04-21T11:29:02.564Z
+Stopped at: Completed 11-08-PLAN.md — Phase 11 DONE 8/8
 Resume: `/gsd-execute-phase 11` để tiếp tục Plan 11-04 (worker completion)
