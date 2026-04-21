@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: completed
-stopped_at: Completed 11-01-PLAN.md (migration 045 + attachment-sign repo + sign-helpers — DB contract for Plans 02-05 published)
-last_updated: "2026-04-21T10:17:47.122Z"
+status: in_progress
+stopped_at: Completed 11-02-PLAN.md (BullMQ signing queue infrastructure — Producer API + types ready for Plans 03-04)
+last_updated: "2026-04-21T10:25:06.291Z"
 last_activity: 2026-04-21
 progress:
   total_phases: 11
   completed_phases: 10
   total_plans: 51
-  completed_plans: 44
-  percent: 86
+  completed_plans: 45
+  percent: 88
 ---
 
 # Project State
@@ -21,17 +21,17 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-21 — Milestone v2.0 started)
 
 **Core value:** Luồng văn bản đến → xử lý → văn bản đi phải hoạt động đúng nghiệp vụ cơ quan nhà nước
-**Current focus:** Phase 10 — User config page (CFG-05 + CFG-06) for user-level signing config
+**Current focus:** Phase 11 — Sign flow + async worker (BullMQ + real provider integration)
 
 ## Current Position
 
-Phase: 10 — COMPLETE (3/3 plans)
-Plan: 03 complete — Phase 10 delivered CFG-05 + CFG-06 + UX-13
-Next: Phase 11 — Sign flow + async worker (core)
-Status: Phase 10 complete — 43/43 plans shipped v2.0 milestone (pending Phases 11-14)
+Phase: 11 — IN PROGRESS (2/8 plans)
+Plan: 02 complete — BullMQ signing queue infrastructure published (Producer API + PollSignStatusJob types)
+Next: Plan 11-03 — Sign API endpoint consuming enqueuePollSignStatus
+Status: Phase 11 wave 1 complete (DB contract + queue infra), ready for wave 2 (sign API)
 Last activity: 2026-04-21
 
-Progress: [██████████] 100% (43/43 plans complete at current scope — Phase 11-14 TBD)
+Progress: [█████████░] 88% (45/51 plans complete)
 
 ## Performance Metrics
 
@@ -66,6 +66,7 @@ Progress: [██████████] 100% (43/43 plans complete at current
 | Phase 10 P02 | 45min | 3 tasks | 2 files |
 | Phase 10 P03 | 10min | 1 tasks | 1 files |
 | Phase 11 P01 | 5min | 2 tasks | 3 files |
+| Phase 11 P02 | 4min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -120,6 +121,10 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase 11]: [Phase 11-01]: Permission check fn_attachment_can_sign bao gồm cả approver (không chỉ signer) — outgoing/drafting có 2 field VARCHAR signer+approver; approver trình-ký cũng cần ký được theo legacy .NET flow
 - [Phase 11]: [Phase 11-01]: Admin bypass kép — EXISTS(role 'Quản trị hệ thống') OR staff.is_admin TRUE; cover cả role-based và legacy flag-based admin
 - [Phase 11]: [Phase 11-01]: doc_label compose trong SP (CASE theo doc_type) — FE Phase 12 render 1 query = 1 row hiển thị, giảm latency và loại bỏ client-side join 4 attachment × 4 doc tables
+- [Phase 11]: [Phase 11-02]: Lazy-singleton getSigningQueue() — import không bị Redis ping, tests/CI không cần Redis
+- [Phase 11]: [Phase 11-02]: Separate Worker connection createRedisConnection() — BullMQ v5 yêu cầu Worker exclusive BLPOP, Producer shared singleton OK
+- [Phase 11]: [Phase 11-02]: Manual retry via re-enqueue (attempts:1) — exact 5s × 36 attempts aligned expires_at, không exponential backoff
+- [Phase 11]: [Phase 11-02]: jobId=poll-{txnId}-{attempt} — BullMQ dedupe mitigates T-11-06 double-enqueue DoS không cần app-level lock
 
 ### Pending Todos
 
@@ -151,6 +156,6 @@ v1.0 hoàn thành với 3 quick tasks (HDSD Compliance sprint cuối):
 
 ## Session Continuity
 
-Last session: 2026-04-21T10:17:32.467Z
-Stopped at: Completed 11-01-PLAN.md (migration 045 + attachment-sign repo + sign-helpers — DB contract for Plans 02-05 published)
+Last session: 2026-04-21T10:25:06.280Z
+Stopped at: Completed 11-02-PLAN.md (BullMQ signing queue infrastructure — Producer API + types ready for Plans 03-04)
 Resume: `/gsd-plan-phase 8`

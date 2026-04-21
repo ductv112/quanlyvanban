@@ -217,7 +217,7 @@ Plans:
 **Plans**: 8 plans
 Plans:
 - [x] 11-01-PLAN.md — DB + Repo: migration 045 (4 SPs — finalize_sign, can_sign, list_txn, count_txn) + ALTER attachment_handling_docs + typed repository + sign-helpers
-- [ ] 11-02-PLAN.md — Infra: BullMQ queue 'signing' + Redis connection singleton + typed job payload + env docs (no worker yet)
+- [x] 11-02-PLAN.md — Infra: BullMQ queue 'signing' + Redis connection singleton + typed job payload + env docs (no worker yet)
 - [ ] 11-03-PLAN.md — Backend: POST /api/ky-so/sign + POST /:id/cancel + GET /:id — async entry point returning transaction_id < 1s
 - [ ] 11-04-PLAN.md — Worker: BullMQ Worker poll-sign-status — embed signature, upload MinIO signed key, emit Socket SIGN_COMPLETED/FAILED, bell notification
 - [ ] 11-05-PLAN.md — Backend: GET /api/ky-so/danh-sach (4 tab list) + /counts (badge) + migration 046 SP for 'Cần ký' tab
@@ -281,7 +281,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 8. Schema foundation + PDF signing layer | 4/4 | Complete    | 2026-04-21 |
 | 9. Admin config + provider adapters | 3/3 | Complete    | 2026-04-21 |
 | 10. User config page | 3/3 | Complete   | 2026-04-21 |
-| 11. Sign flow + async worker | 1/8 | In Progress|  |
+| 11. Sign flow + async worker | 2/8 | In Progress|  |
 | 12. Menu Ký số + Danh sách UI | 0/TBD | Not started | - |
 | 13. Modal ký số + Root CA UX | 0/TBD | Not started | - |
 | 14. Deployment + HDSD + verification | 0/TBD | Not started | - |
