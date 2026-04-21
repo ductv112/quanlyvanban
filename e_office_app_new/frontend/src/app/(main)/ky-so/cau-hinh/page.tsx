@@ -806,7 +806,7 @@ export default function KySoCauHinhPage() {
     },
     {
       key: 'monthly_transactions',
-      title: 'Giao dịch tháng này',
+      title: 'Giao dịch tháng',
       value: displayStats?.monthly_transactions ?? 0,
       icon: <RiseOutlined />,
       gradient: 'linear-gradient(135deg, #0891B2, #06b6d4)',
@@ -952,6 +952,7 @@ export default function KySoCauHinhPage() {
                           color: 'rgba(255,255,255,0.75)',
                           margin: '0 0 6px 0',
                           lineHeight: 1.3,
+                          whiteSpace: 'nowrap',
                         }}
                       >
                         {card.title}
