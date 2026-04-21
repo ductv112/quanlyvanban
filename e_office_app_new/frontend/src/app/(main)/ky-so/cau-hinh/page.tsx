@@ -770,7 +770,7 @@ export default function KySoCauHinhPage() {
               showIcon
               icon={<CheckCircleOutlined />}
               style={{ borderRadius: 12 }}
-              message={
+              title={
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
                   <span>
                     <strong>Provider đang hoạt động:</strong> {activeProvider.provider_name}
@@ -802,7 +802,7 @@ export default function KySoCauHinhPage() {
               showIcon
               icon={<ExclamationCircleOutlined />}
               style={{ borderRadius: 12 }}
-              message={
+              title={
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
                   <span>
                     <strong>Chưa có provider nào được kích hoạt.</strong> Vui lòng cấu hình và kích
@@ -975,7 +975,7 @@ export default function KySoCauHinhPage() {
               type="info"
               showIcon
               style={{ marginBottom: 16, borderRadius: 8 }}
-              message={`Đang sửa: ${editingRecord.provider_name}`}
+              title={`Đang sửa: ${editingRecord.provider_name}`}
               description={
                 editingRecord.is_active
                   ? 'Provider này đang hoạt động — thay đổi sẽ áp dụng ngay khi lưu.'
@@ -1108,7 +1108,7 @@ export default function KySoCauHinhPage() {
                   type={testResult.ok ? 'success' : 'error'}
                   showIcon
                   style={{ marginTop: 8, borderRadius: 8 }}
-                  message={testResult.ok ? 'Kết nối thành công' : 'Kết nối thất bại'}
+                  title={testResult.ok ? 'Kết nối thành công' : 'Kết nối thất bại'}
                   description={
                     <div>
                       <div>{testResult.message}</div>
