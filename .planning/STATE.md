@@ -4,7 +4,7 @@ milestone: v1.0
 milestone_name: milestone
 status: completed
 stopped_at: Completed 11-08-PLAN.md — Phase 11 DONE 8/8
-last_updated: "2026-04-21T11:29:02.575Z"
+last_updated: "2026-04-21T11:29:50.143Z"
 last_activity: 2026-04-21
 progress:
   total_phases: 11
@@ -25,8 +25,8 @@ See: .planning/PROJECT.md (updated 2026-04-21 — Milestone v2.0 started)
 
 ## Current Position
 
-Phase: 11 — COMPLETE (8/8 plans)
-Plan: 08 complete — HSCV detail page integrated với useSigning hook + SignModal — nút Ký số hiện có điều kiện cho signer HSCV. MIG-05 + SIGN-03 DONE. 3/3 detail pages (VB đi/VB dự thảo/HSCV) giờ dùng async sign flow thật.
+Phase: 11
+Plan: Not started
 Next: Phase 12 — Menu Ký số + Danh sách 4 tab UI (7 plans) — sau khi user verify human-verify checkpoints của Phase 11
 Status: Phase 11 DONE (all 8 plans committed + SUMMARY.md). Ready for Phase 12 execution.
 Last activity: 2026-04-21
