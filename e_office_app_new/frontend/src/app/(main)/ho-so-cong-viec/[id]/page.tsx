@@ -28,12 +28,14 @@ import {
   ExclamationCircleOutlined, FilePdfOutlined, FileWordOutlined,
   FileExcelOutlined, FileImageOutlined, FileOutlined, LinkOutlined,
   SendOutlined, SwapOutlined, HistoryOutlined,
+  SafetyOutlined, SafetyCertificateOutlined, CheckCircleOutlined,
 } from '@ant-design/icons';
 import { useRouter, useParams } from 'next/navigation';
 import dayjs from 'dayjs';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth.store';
 import { buildTree } from '@/lib/tree-utils';
+import { useSigning } from '@/hooks/use-signing';
 
 const { TextArea } = Input;
 const { DirectoryTree } = Tree;
@@ -153,6 +155,10 @@ interface Attachment {
   file_type: string;
   created_at: string;
   created_by_name: string;
+  // Phase 11 — Ký số (Plan 11-01 ALTER table attachments)
+  is_ca?: boolean;
+  ca_date?: string | null;
+  signed_file_path?: string | null;
 }
 
 interface ChildHscv {
@@ -314,6 +320,9 @@ export default function HscvDetailPage() {
   const params = useParams<{ id: string }>();
   const id = params.id;
   const user = useAuthStore((s) => s.user);
+
+  // Phase 11 — Ký số HSCV (Plan 11-08): shared hook + SignModal
+  const { openSign, renderSignModal } = useSigning();
 
   // Core state
   const [detail, setDetail] = useState<HscvDetail | null>(null);
@@ -1265,6 +1274,16 @@ export default function HscvDetailPage() {
   // HDSD 3.2 — pass hasNumber để getToolbarButtons quyết định hiện nút "Lấy số"
   const toolbarButtons = getToolbarButtons(detail.status, detail.number != null);
 
+  // Phase 11 — Ký số gate (Plan 11-08).
+  // UX gating only — backend fn_attachment_can_sign (Plan 11-01) is authoritative ACL.
+  // Shown ONLY khi: current user là signer được chỉ định + HSCV đang "Chờ trình ký" (2) hoặc "Đã trình ký" (3).
+  const canSignHandling = Boolean(
+    detail &&
+    user?.staffId &&
+    detail.signer_id === user.staffId &&
+    [2, 3].includes(detail.status)
+  );
+
   const tabItems = [
     {
       key: 'info',
@@ -1670,6 +1689,37 @@ export default function HscvDetailPage() {
                   >
                     Tải xuống
                   </Button>
+
+                  {/* Phase 11 — Ký số button (Plan 11-08).
+                      Hiện khi: user là signer của HSCV + status ∈ {2,3} + file PDF + chưa ký. */}
+                  {canSignHandling &&
+                    !att.is_ca &&
+                    att.file_name.toLowerCase().endsWith('.pdf') && (
+                      <Button
+                        size="small"
+                        type="primary"
+                        icon={<SafetyOutlined />}
+                        style={{ backgroundColor: '#059669', borderColor: '#059669' }}
+                        onClick={() => openSign({
+                          attachment: { id: att.id, file_name: att.file_name },
+                          attachmentType: 'handling',
+                          docId: detail.id,
+                          signReason: `Phê duyệt HSCV: ${detail.name}`,
+                          signLocation: detail.unit_name || 'Lào Cai',
+                          onSuccess: fetchAttachments,
+                        })}
+                      >
+                        Ký số
+                      </Button>
+                    )}
+
+                  {/* Badge "Đã ký số" — hiện khi file đã có is_ca từ backend */}
+                  {att.is_ca && (
+                    <Tag color="success" icon={<CheckCircleOutlined />}>
+                      Đã ký số
+                    </Tag>
+                  )}
+
                   <Popconfirm
                     title="Xóa file này?"
                     okText="Xóa"
@@ -2155,6 +2205,9 @@ export default function HscvDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Phase 11 — SignModal từ useSigning hook (Plan 11-08) */}
+      {renderSignModal()}
     </div>
   );
 }
