@@ -28,7 +28,7 @@ Rebuild hệ thống quản lý văn bản điện tử (.NET cũ) thành stack 
 ### v2.0 (Active — Milestone: Tích hợp ký số 2 kênh)
 
 - [x] **Phase 8: Schema foundation + PDF signing generic layer** - 3 bảng mới, migration `staff.sign_phone`, PDF signing pure JS (`node-signpdf` + `node-forge`) (completed 2026-04-21)
-- [ ] **Phase 9: Admin config + provider adapters** - SmartCA VNPT + MySign Viettel adapters, trang Admin cấu hình hệ thống với test connection, dashboard stats
+- [x] **Phase 9: Admin config + provider adapters** - SmartCA VNPT + MySign Viettel adapters, trang Admin cấu hình hệ thống với test connection, dashboard stats (completed 2026-04-21)
 - [ ] **Phase 10: User config page + migrate tab chữ ký số** - Trang `/ky-so/tai-khoan` với form dynamic theo provider + button verify, remove tab cũ trong `/thong-tin-ca-nhan`
 - [ ] **Phase 11: Sign flow + async worker (core)** - API `/ky-so/sign` real, BullMQ worker poll 5s × 3 phút, Socket.IO `SIGN_COMPLETED`, ký lại/hủy transaction
 - [ ] **Phase 12: Menu Ký số + Danh sách 4 tab UI** - Sidebar menu mới, trang `/ky-so/danh-sach` 4 tab dynamic (Cần ký / Đang xử lý / Đã ký / Thất bại), re-wire detail VB pages
@@ -185,7 +185,7 @@ Plans:
 Plans:
 - [x] 09-01-PLAN.md — Backend: provider adapters (strategy pattern) + factory (SmartCA VNPT + MySign Viettel)
 - [x] 09-02-PLAN.md — Backend: API route /api/ky-so/cau-hinh (6 endpoints) + stats SP migration 041
-- [ ] 09-03-PLAN.md — Frontend: Admin config page /ky-so/cau-hinh + sidebar menu Ký số + checkpoint verify
+- [x] 09-03-PLAN.md — Frontend: Admin config page /ky-so/cau-hinh + sidebar menu Ký số + checkpoint verify
 **UI hint**: yes
 
 ### Phase 10: User config page + migrate tab chữ ký số
@@ -266,7 +266,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 6. Tích hợp hệ thống ngoài | -/- | Complete | 2026-04-18 |
 | 7. Polish & Redirect | -/- | Complete | 2026-04-18 |
 | 8. Schema foundation + PDF signing layer | 4/4 | Complete    | 2026-04-21 |
-| 9. Admin config + provider adapters | 0/3 | Planned | - |
+| 9. Admin config + provider adapters | 3/3 | Complete    | 2026-04-21 |
 | 10. User config page | 0/TBD | Not started | - |
 | 11. Sign flow + async worker | 0/TBD | Not started | - |
 | 12. Menu Ký số + Danh sách UI | 0/TBD | Not started | - |
