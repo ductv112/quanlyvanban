@@ -275,17 +275,22 @@ function buildMenuItems({ badgeCounts, isAdmin, roles }: MenuBuildParams): MenuI
     { key: 'ext-thue', icon: <LinkOutlined />, label: <a href="https://thuedientu.gdt.gov.vn" target="_blank" rel="noopener noreferrer">Thuế điện tử</a> },
   );
 
-  // ── KÝ SỐ ── (Admin only — Plan 10 sẽ thêm menu user-level)
+  // ── KÝ SỐ ── (Group hiển thị cho MỌI user; submenu admin-only được guard riêng)
+  items.push({ key: 'grp-kyso', type: 'group', label: 'KÝ SỐ' });
+  // Submenu admin: Cấu hình ký số hệ thống (admin-only)
   if (isAdmin) {
-    items.push(
-      { key: 'grp-kyso', type: 'group', label: 'KÝ SỐ' },
-      {
-        key: '/ky-so/cau-hinh',
-        icon: <SafetyCertificateOutlined />,
-        label: 'Cấu hình ký số hệ thống',
-      },
-    );
+    items.push({
+      key: '/ky-so/cau-hinh',
+      icon: <SafetyCertificateOutlined />,
+      label: 'Cấu hình ký số hệ thống',
+    });
   }
+  // Submenu cho MỌI user: Tài khoản ký số cá nhân (Phase 10 Plan 02)
+  items.push({
+    key: '/ky-so/tai-khoan',
+    icon: <SafetyCertificateOutlined />,
+    label: 'Tài khoản ký số cá nhân',
+  });
 
   // ── HỆ THỐNG ── (Admin only)
   if (isAdmin) {
@@ -374,6 +379,7 @@ const breadcrumbMap: Record<string, string> = {
   '/thong-bao-kenh': 'Cấu hình thông báo',
   '/ky-so': 'Ký số',
   '/ky-so/cau-hinh': 'Cấu hình ký số hệ thống',
+  '/ky-so/tai-khoan': 'Tài khoản ký số cá nhân',
 };
 
 function buildBreadcrumbs(pathname: string) {
