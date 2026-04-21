@@ -1,182 +1,118 @@
-# Requirements: e-Office — Quản lý Văn bản điện tử
+# Requirements
 
-**Defined:** 2026-04-14
-**Core Value:** Luồng văn bản đến → xử lý → văn bản đi phải hoạt động đúng nghiệp vụ cơ quan nhà nước
+**Milestone:** v2.0 Production features — Tích hợp ký số 2 kênh
+**Created:** 2026-04-21
+**Status:** Active
+**Previous milestone (v1.0):** See `MILESTONES.md` — 100% shipped 2026-04-18 (92 test cases, 97.8% HDSD coverage)
 
-## v1 Requirements
+---
 
-### Stabilize (Sprint 0-4 đã build)
+## v2.0 Requirements
 
-- [ ] **STAB-01**: Fix bug visible trên UI — tree mapping, validation, data display
-- [ ] **STAB-02**: Refactor shared patterns — tree utility, handleDbError, API response format
-- [ ] **STAB-03**: Đảm bảo golden path Sprint 0-4 chạy mượt end-to-end
+### SIGN — Signing Integration (8 requirements)
 
-### Hồ sơ công việc (Sprint 5-6)
+- [ ] **SIGN-01:** Admin có thể cấu hình SmartCA VNPT làm provider active với credentials hệ thống (`base_url`, `client_id`, `client_secret`)
+- [ ] **SIGN-02:** Admin có thể cấu hình MySign Viettel làm provider active với credentials hệ thống (`base_url`, `client_id`, `client_secret`, `profile_id`)
+- [ ] **SIGN-03:** User (người có quyền ký: lãnh đạo, cán bộ được giao) có thể ký file PDF đính kèm trên VB đi / VB dự thảo / HSCV trình ký bằng provider active
+- [ ] **SIGN-04:** Hệ thống compute SHA256 hash PDF (PAdES byte range) và gọi API sign của provider active, nhận PKCS7 detached signature, embed vào PDF placeholder bằng `node-signpdf`
+- [ ] **SIGN-05:** Hệ thống poll status transaction từ provider mỗi 5s, tối đa 3 phút (36 lần), để nhận kết quả ký sau khi user xác nhận OTP trên app mobile
+- [ ] **SIGN-06:** User có thể ký lại file sau khi transaction fail/expire — tạo transaction mới, record cũ giữ cho audit
+- [ ] **SIGN-07:** User có thể hủy transaction đang pending (status → cancelled) từ UI
+- [ ] **SIGN-08:** Hệ thống lưu `sign_provider_code` vào attachment sau ký thành công — đảm bảo khi Admin switch provider sau này, lịch sử ký file cũ vẫn hiển thị đúng provider
 
-- [ ] **HSCV-01**: Người dùng xem danh sách HSCV với filter theo trạng thái (10 loại) và badge count
-- [ ] **HSCV-02**: Người dùng tạo/sửa/xóa hồ sơ công việc qua Drawer
-- [ ] **HSCV-03**: Người dùng xem chi tiết HSCV với card tabs (thông tin, VB liên kết, cán bộ, ý kiến, đính kèm, HSCV con)
-- [ ] **HSCV-04**: Người dùng phân công cán bộ xử lý (phụ trách / phối hợp) qua Transfer panel
-- [ ] **HSCV-05**: Người dùng thêm ý kiến xử lý trong HSCV
-- [ ] **HSCV-06**: Người dùng liên kết VB đến/đi/dự thảo vào HSCV
-- [ ] **HSCV-07**: Người dùng chuyển trạng thái HSCV (trình ký → duyệt → hoàn thành / từ chối / trả về)
-- [ ] **HSCV-08**: Admin thiết kế quy trình xử lý (workflow designer) với flowchart kéo thả
-- [ ] **HSCV-09**: Người dùng xem KPI dashboard công việc (tổng, hoàn thành, quá hạn)
-- [ ] **HSCV-10**: Người dùng xem 3 báo cáo thống kê HSCV (theo đơn vị, cán bộ, người giao) + export Excel
+### CFG — Configuration (7 requirements)
 
-### Văn bản liên thông & Giao việc (Sprint 7)
+- [ ] **CFG-01:** Hệ thống enforce "single active provider" — chỉ 1 row `signing_provider_config` có `is_active = true` tại 1 thời điểm (partial unique index)
+- [ ] **CFG-02:** Admin có thể switch provider mà không mất config user cũ — table `staff_signing_config(staff_id, provider_code)` composite PK cho phép giữ config đa provider
+- [ ] **CFG-03:** Admin bấm "Test connection" khi lưu config → hệ thống gọi provider login/get_certificate test → chỉ lưu nếu response OK
+- [ ] **CFG-04:** Credentials admin (`client_secret`) được encrypt bằng pgcrypto `pgp_sym_encrypt` trước khi lưu DB; decrypt khi đọc
+- [ ] **CFG-05:** User có thể cấu hình tài khoản ký số cá nhân theo provider active:
+  - SmartCA VNPT: chỉ input `user_id` (số ĐT/mã định danh)
+  - MySign Viettel: input `user_id` + button "Tải danh sách CTS" → fetch list cert → Select `credential_id`
+- [ ] **CFG-06:** User có thể bấm "Kiểm tra" để verify config cá nhân — hệ thống thử fetch certificate từ provider, update `is_verified = true` + `last_verified_at`
+- [ ] **CFG-07:** Admin có thể xem trang dashboard provider active + stats (số user đã cấu hình, số user verified, số giao dịch ký tháng)
 
-- [ ] **VBLT-01**: Người dùng xem danh sách + chi tiết văn bản liên thông
-- [ ] **VBLT-02**: Người dùng tạo HSCV nhanh từ VB đến (nút "Giao việc")
-- [ ] **VBLT-03**: Người dùng thao tác nhận bàn giao / chuyển lại / hủy duyệt trên VB đến
+### UX — User Experience (13 requirements)
 
-### Tin nhắn & Thông báo (Sprint 8)
+- [ ] **UX-01:** Sidebar có menu "Ký số" riêng (icon SafetyCertificate) với 3 submenu:
+  - Cấu hình ký số hệ thống (Admin only) — `/ky-so/cau-hinh`
+  - Tài khoản ký số cá nhân (Mọi user) — `/ky-so/tai-khoan`
+  - Danh sách ký số (Mọi user) — `/ky-so/danh-sach`
+- [ ] **UX-02:** Trang `/ky-so/danh-sach` có 4 tab với badge count: "Cần ký" / "Đang xử lý" / "Đã ký" / "Thất bại"
+- [ ] **UX-03:** Tab "Cần ký" liệt kê documents có `signer_id = currentUser`:
+  - `outgoing_docs` chưa ký
+  - `drafting_docs` chưa ký
+  - `handling_docs` status IN (2, 3) chưa ký
+  - Button "Ký số" trên mỗi dòng mở modal ký trực tiếp (KHÔNG phải vào detail)
+- [ ] **UX-04:** Tab "Đang xử lý" liệt kê `sign_transactions` WHERE `staff_id = me AND status = 'pending'` — button "Hủy" gọi cancel
+- [ ] **UX-05:** Tab "Đã ký" liệt kê `sign_transactions` WHERE `status = 'completed'` với cột Provider + thời gian ký — button "Xem file" (download + banner Root CA nếu MySign)
+- [ ] **UX-06:** Tab "Thất bại" liệt kê `status IN ('failed', 'expired', 'cancelled')` với `error_message` — button "Ký lại" tạo transaction mới
+- [ ] **UX-07:** Modal ký số có button "Thực hiện ký" disable + spinner `<LoadingOutlined />` ngay khi click, không cho user spam
+- [ ] **UX-08:** Modal ký số có `maskClosable: false`, button "Đóng" (giữ transaction chạy ngầm) vs "Hủy ký số" (mark cancelled)
+- [ ] **UX-09:** Modal ký số hiển thị countdown 3:00 → 0:00 và text "Vui lòng xác nhận OTP trên ứng dụng [SmartCA/MySign] mobile"
+- [ ] **UX-10:** Bell notification hiện toast + badge khi nhận Socket event `SIGN_COMPLETED` / `SIGN_FAILED` — user offline khi nhận cũng thấy notification trong bell dropdown
+- [ ] **UX-11:** Khi user download file ký bằng MySign Viettel, hệ thống hiện banner dismissible với link tải Root CA `.cer` + HDSD PDF. LocalStorage lưu `dismiss_root_ca_banner = true` để không hiện lại
+- [ ] **UX-12:** Trang chi tiết VB (`/van-ban-di/[id]`, `/van-ban-du-thao/[id]`, `/ho-so-cong-viec/[id]`) vẫn giữ button "Ký số" trên file đính kèm — đường dẫn thứ 2 vào flow ký, mở cùng modal
+- [ ] **UX-13:** Tab "Chữ ký số" cũ trong `/thong-tin-ca-nhan` bị remove — migrate user sang `/ky-so/tai-khoan` (menu độc lập)
 
-- [ ] **MSG-01**: Người dùng gửi/nhận tin nhắn nội bộ (inbox, sent, trash) với giao diện mail-like
-- [ ] **MSG-02**: Người dùng trả lời tin nhắn (thread)
-- [ ] **MSG-03**: Hệ thống hiển thị thông báo (bell icon, dropdown, trang thông báo)
-- [ ] **MSG-04**: Hệ thống push realtime qua Socket.IO (VB mới, tin nhắn, thông báo, trạng thái)
+### ASYNC — Async Worker (6 requirements)
 
-### Lịch & Danh bạ (Sprint 9)
+- [ ] **ASYNC-01:** POST `/ky-so/sign` trả `{ transaction_id }` ngay lập tức (< 1s), background worker xử lý polling status
+- [ ] **ASYNC-02:** BullMQ worker poll `provider.getStatus(provider_txn_id)` mỗi 5s, re-queue với delay, tối đa 36 lần retry (3 phút tổng)
+- [ ] **ASYNC-03:** User đóng browser / tắt modal giữa chừng → worker vẫn chạy → kết quả ký vẫn lưu vào DB + MinIO
+- [ ] **ASYNC-04:** Backend restart giữa chừng → BullMQ job persistent trong Redis → job tự resume sau backend start lại
+- [ ] **ASYNC-05:** Khi ký thành công → worker: (1) embed signature PKCS7 vào PDF, (2) upload file signed MinIO key mới, (3) update `attachments.is_ca=true`, (4) Socket.IO emit `SIGN_COMPLETED`, (5) tạo notification bell
+- [ ] **ASYNC-06:** Khi ký thất bại/hết hạn → worker: (1) update `sign_transactions.status`, (2) Socket.IO emit `SIGN_FAILED` với `error_message`, (3) tạo notification bell
 
-- [ ] **CAL-01**: Người dùng quản lý lịch cá nhân (tạo/sửa/xóa sự kiện, calendar view)
-- [ ] **CAL-02**: Admin quản lý lịch cơ quan + view rút gọn
-- [ ] **CAL-03**: Lịch lãnh đạo (riêng, cấu hình quyền xem)
-- [ ] **CAL-04**: Người dùng tra cứu danh bạ điện thoại (từ bảng staff, filter đơn vị/phòng ban)
+### MIG — Schema Migration (5 requirements)
 
-### Dashboard (Sprint 10)
+- [ ] **MIG-01:** Schema migration tạo 3 bảng mới: `signing_provider_config` (admin cấp 1), `staff_signing_config` (user cấp 2), `sign_transactions` (audit log)
+- [ ] **MIG-02:** Alter `attachments` thêm 2 cột: `sign_provider_code VARCHAR(20)` (nullable), `sign_transaction_id BIGINT` (nullable, FK)
+- [ ] **MIG-03:** Migrate data `staff.sign_phone` existing sang `staff_signing_config` với `provider_code='SMARTCA_VNPT'` — clean schema, bảo toàn config cũ
+- [ ] **MIG-04:** Drop column `staff.sign_phone` sau verify migration (hoặc mark deprecated với DEFAULT NULL + trigger warn)
+- [ ] **MIG-05:** Breaking change: backend endpoint `/ky-so/mock/sign` → `/ky-so/sign` (dùng provider thật); cập nhật 3 frontend VB detail pages (`van-ban-di/[id]`, `van-ban-du-thao/[id]`, `ho-so-cong-viec/[id]`)
 
-- [ ] **DASH-01**: Dashboard hiển thị 4 KPI cards dữ liệu thật (VB đến, VB đi, HSCV, việc sắp hạn)
-- [ ] **DASH-02**: Widget "Văn bản mới nhận" + "Việc sắp tới hạn" + "VB đi mới"
-- [ ] **DASH-03**: User có thể kéo thả sắp xếp widget (react-grid-layout)
+### DEP — Deployment & Docs (3 requirements)
 
-### Kho lưu trữ (Sprint 11)
+- [ ] **DEP-01:** Deploy scripts (`deploy/*.sh`, `deploy/*.ps1`) cập nhật seed `signing_provider_config` mặc định disabled (cần admin config sau khi deploy)
+- [ ] **DEP-02:** Copy Root CA Viettel `.cer` + HDSD PDF vào `frontend/public/root-ca/` từ `docs/huong_dan_tich_hop_ky_so_MySign_Viettel/` (build time)
+- [ ] **DEP-03:** HDSD triển khai (`deploy/README.md`) thêm section "Cấu hình ký số sau deploy" hướng dẫn Admin: test connection, distribute Root CA cho end user máy
 
-- [ ] **KHO-01**: Admin quản lý danh mục Kho/Phông (tree + CRUD)
-- [ ] **KHO-02**: Người dùng quản lý hồ sơ lưu trữ (CRUD, filter theo kho/phông)
-- [ ] **KHO-03**: Người dùng mượn/trả hồ sơ (tạo yêu cầu → duyệt → trả)
+**Total: 42 requirements across 6 categories**
 
-### Tài liệu & Hợp đồng (Sprint 12)
+---
 
-- [ ] **DOC-01**: Người dùng quản lý tài liệu chung theo danh mục (Đào tạo, Nội bộ, ISO...) + upload MinIO
-- [ ] **DOC-02**: Người dùng quản lý hợp đồng (CRUD, upload scan, DM loại HĐ)
+## Future Requirements (v2.1+)
 
-### Họp không giấy (Sprint 13)
+- **FPT CA / EasyCA / các provider khác:** Architecture strategy pattern đã support — add provider mới chỉ cần implement interface + register
+- **Multi-provider song song:** Nếu KH yêu cầu sau này (VD: lãnh đạo cấp cao dùng SmartCA, nhân viên dùng MySign) — schema `staff_signing_config` đã sẵn, chỉ cần bỏ constraint single-active
+- **Ký batch nhiều file 1 lượt:** UI + worker hỗ trợ batch sign — scope v2.1+
+- **Timestamping server (TSA):** Thêm TSA signature vào PKCS7 để chứng minh thời gian ký không bị sửa
+- **Long-term validation (LTV):** Embed CRL/OCSP vào PDF signature — hợp pháp lâu dài 10+ năm
+- **Remote signature verify API:** Endpoint độc lập verify chữ ký 1 PDF upload từ ngoài hệ thống
 
-- [ ] **HOP-01**: Admin quản lý phòng họp + loại cuộc họp (danh mục)
-- [ ] **HOP-02**: Người dùng đăng ký/quản lý cuộc họp (CRUD, duyệt, calendar view)
-- [ ] **HOP-03**: Biểu quyết realtime trong cuộc họp (Socket.IO)
-- [ ] **HOP-04**: Thống kê cuộc họp (charts theo tháng/phòng/loại)
+## Out of Scope (v2.0)
 
-### Tích hợp — LGSP (Sprint 14)
-
-- [ ] **LGSP-01**: Hệ thống quản lý OAuth2 token với LGSP server (cache Redis)
-- [ ] **LGSP-02**: Worker polling nhận VB liên thông từ LGSP (edXML → VB đến)
-- [ ] **LGSP-03**: Người dùng gửi VB đi liên thông qua LGSP + tracking trạng thái
-- [ ] **LGSP-04**: Đồng bộ danh sách cơ quan liên thông từ LGSP
-
-### Tích hợp — Ký số (Sprint 15)
-
-- [ ] **SIGN-01**: Người dùng ký số VB qua VNPT SmartCA (ký từ xa, OTP)
-- [ ] **SIGN-02**: Người dùng ký số qua EsignNEAC (đa CA)
-- [ ] **SIGN-03**: UI ký số: chọn phương thức, preview PDF, hiển thị trạng thái đã ký
-
-### Tích hợp — Thông báo đa kênh (Sprint 16)
-
-- [ ] **NOTIF-01**: Worker gửi push notification qua Firebase FCM
-- [ ] **NOTIF-02**: Worker gửi thông báo qua Zalo OA API
-- [ ] **NOTIF-03**: Worker gửi SMS qua gateway
-- [ ] **NOTIF-04**: Worker gửi email notification qua Nodemailer
-
-### Polish & Redirect (Sprint 17)
-
-- [ ] **UI-01**: Menu redirect sang trang đối tác (VNPT/Viettel Invoice, Contract, BHXH, Tax)
-- [ ] **UI-02**: Sidebar menu dynamic từ API quyền + badge counts realtime
-- [ ] **UI-03**: Responsive toàn bộ + hamburger menu mobile + touch-friendly tables
-- [ ] **UI-04**: Polish UX: skeleton loading, empty states, error boundaries, toast, keyboard shortcuts
-
-## v2 Requirements (tuần sau — Deep Stabilize)
-
-- **DEEP-01**: Security audit — JWT secret, RBAC enforcement, XSS prevention, rate limiting
-- **DEEP-02**: Test coverage cơ bản — API tests, frontend state tests
-- **DEEP-03**: Performance tuning — DB pool, query optimization, caching strategy
-- **DEEP-04**: Error handling chuẩn hóa — Zod validation, centralized error middleware
-- **DEEP-05**: Audit logging system
-- **DEEP-06**: Refactor monolithic route files (admin-catalog.ts 1492 lines)
-
-## Out of Scope
-
-| Feature | Reason |
-|---------|--------|
-| Mobile app native (iOS/Android) | Chỉ responsive web, không build native |
-| Thay đổi nghiệp vụ so với hệ thống cũ | Giữ nguyên logic cũ, chỉ cải tiến tech/UI |
-| Multilingual (i18n) | Chỉ tiếng Việt, khách hàng là CQNN Việt Nam |
-| AI/ML features | Không trong scope hiện tại |
-| Offline mode / PWA full | Chỉ cần online |
+- **Mobile app native** — chỉ responsive web, KH dùng browser (không cần build app iOS/Android để confirm OTP — user confirm trên app SmartCA/MySign của VNPT/Viettel đã có)
+- **Client-side Root CA installer** — hệ thống chỉ hiển thị banner + link, KHÔNG tự cài Root CA lên máy user (việc của IT triển khai, không phải code)
+- **Backend Java/DotNet runtime** — quyết định dùng pure JS `node-signpdf` + `node-forge`, KHÔNG spawn `java -jar ViettelFileSigner.jar` hoặc Mono cho .NET DLL
+- **Replacement of VNPT SmartCA / MySign với SDK của bên khác** — chỉ dùng 2 provider này theo yêu cầu, không mix với CKCA chính phủ hoặc khác
+- **Ký file Word/Excel/XML** — v2.0 chỉ ký PDF (file đính kèm upload sẵn dạng PDF hoặc convert sang PDF)
+- **Chữ ký số cho văn bản điện tử XML** (chuẩn quốc gia khác) — scope riêng, cần engineering khác
 
 ## Traceability
 
-Updated during roadmap creation (2026-04-14).
+Filled by `/gsd-roadmapper` khi tạo ROADMAP.md. Mỗi REQ-ID map tới đúng 1 phase.
 
-| Requirement | Phase | Status |
-|-------------|-------|--------|
-| STAB-01 | Phase 1 | Pending |
-| STAB-02 | Phase 1 | Pending |
-| STAB-03 | Phase 1 | Pending |
-| HSCV-01 | Phase 2 | Pending |
-| HSCV-02 | Phase 2 | Pending |
-| HSCV-03 | Phase 2 | Pending |
-| HSCV-04 | Phase 2 | Pending |
-| HSCV-05 | Phase 2 | Pending |
-| HSCV-06 | Phase 2 | Pending |
-| HSCV-07 | Phase 2 | Pending |
-| HSCV-08 | Phase 2 | Pending |
-| HSCV-09 | Phase 2 | Pending |
-| HSCV-10 | Phase 2 | Pending |
-| VBLT-01 | Phase 3 | Pending |
-| VBLT-02 | Phase 3 | Pending |
-| VBLT-03 | Phase 3 | Pending |
-| MSG-01 | Phase 3 | Pending |
-| MSG-02 | Phase 3 | Pending |
-| MSG-03 | Phase 3 | Pending |
-| MSG-04 | Phase 3 | Pending |
-| CAL-01 | Phase 4 | Pending |
-| CAL-02 | Phase 4 | Pending |
-| CAL-03 | Phase 4 | Pending |
-| CAL-04 | Phase 4 | Pending |
-| DASH-01 | Phase 4 | Pending |
-| DASH-02 | Phase 4 | Pending |
-| DASH-03 | Phase 4 | Pending |
-| KHO-01 | Phase 5 | Pending |
-| KHO-02 | Phase 5 | Pending |
-| KHO-03 | Phase 5 | Pending |
-| DOC-01 | Phase 5 | Pending |
-| DOC-02 | Phase 5 | Pending |
-| HOP-01 | Phase 5 | Pending |
-| HOP-02 | Phase 5 | Pending |
-| HOP-03 | Phase 5 | Pending |
-| HOP-04 | Phase 5 | Pending |
-| LGSP-01 | Phase 6 | Pending |
-| LGSP-02 | Phase 6 | Pending |
-| LGSP-03 | Phase 6 | Pending |
-| LGSP-04 | Phase 6 | Pending |
-| SIGN-01 | Phase 6 | Pending |
-| SIGN-02 | Phase 6 | Pending |
-| SIGN-03 | Phase 6 | Pending |
-| NOTIF-01 | Phase 6 | Pending |
-| NOTIF-02 | Phase 6 | Pending |
-| NOTIF-03 | Phase 6 | Pending |
-| NOTIF-04 | Phase 6 | Pending |
-| UI-01 | Phase 7 | Pending |
-| UI-02 | Phase 7 | Pending |
-| UI-03 | Phase 7 | Pending |
-| UI-04 | Phase 7 | Pending |
-
-**Coverage:**
-- v1 requirements: 51 total (note: header said 47, actual count by ID is 51)
-- Mapped to phases: 51
-- Unmapped: 0
+| Category | Count | Phase mapping |
+|----------|-------|---------------|
+| SIGN-*   | 8 | TBD |
+| CFG-*    | 7 | TBD |
+| UX-*     | 13 | TBD |
+| ASYNC-*  | 6 | TBD |
+| MIG-*    | 5 | TBD |
+| DEP-*    | 3 | TBD |
 
 ---
-*Requirements defined: 2026-04-14*
-*Last updated: 2026-04-14 after roadmap creation — traceability populated*
+
+*Updated 2026-04-21 — v1.0 requirements moved to MILESTONES.md as Validated, v2.0 scope defined*
