@@ -218,7 +218,7 @@ Plans:
 Plans:
 - [x] 11-01-PLAN.md — DB + Repo: migration 045 (4 SPs — finalize_sign, can_sign, list_txn, count_txn) + ALTER attachment_handling_docs + typed repository + sign-helpers
 - [x] 11-02-PLAN.md — Infra: BullMQ queue 'signing' + Redis connection singleton + typed job payload + env docs (no worker yet)
-- [ ] 11-03-PLAN.md — Backend: POST /api/ky-so/sign + POST /:id/cancel + GET /:id — async entry point returning transaction_id < 1s
+- [x] 11-03-PLAN.md — Backend: POST /api/ky-so/sign + POST /:id/cancel + GET /:id — async entry point returning transaction_id < 1s
 - [ ] 11-04-PLAN.md — Worker: BullMQ Worker poll-sign-status — embed signature, upload MinIO signed key, emit Socket SIGN_COMPLETED/FAILED, bell notification
 - [ ] 11-05-PLAN.md — Backend: GET /api/ky-so/danh-sach (4 tab list) + /counts (badge) + migration 046 SP for 'Cần ký' tab
 - [ ] 11-06-PLAN.md — Frontend: shared SignModal component + useSigning hook + socket event extensions (functional, polish deferred to Phase 13)

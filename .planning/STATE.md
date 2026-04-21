@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: in_progress
-stopped_at: Completed 11-02-PLAN.md (BullMQ signing queue infrastructure — Producer API + types ready for Plans 03-04)
-last_updated: "2026-04-21T10:25:06.291Z"
+stopped_at: Completed 11-03-PLAN.md (Sign API route — POST /sign + cancel + GET /:id < 1s; MinIO placeholder store bridges route to worker)
+last_updated: "2026-04-21T10:35:15.000Z"
 last_activity: 2026-04-21
 progress:
   total_phases: 11
   completed_phases: 10
   total_plans: 51
-  completed_plans: 45
-  percent: 88
+  completed_plans: 46
+  percent: 90
 ---
 
 # Project State
@@ -25,13 +25,13 @@ See: .planning/PROJECT.md (updated 2026-04-21 — Milestone v2.0 started)
 
 ## Current Position
 
-Phase: 11 — IN PROGRESS (2/8 plans)
-Plan: 02 complete — BullMQ signing queue infrastructure published (Producer API + PollSignStatusJob types)
-Next: Plan 11-03 — Sign API endpoint consuming enqueuePollSignStatus
-Status: Phase 11 wave 1 complete (DB contract + queue infra), ready for wave 2 (sign API)
+Phase: 11 — IN PROGRESS (3/8 plans)
+Plan: 03 complete — Sign API route published (POST /sign + cancel + GET /:id, < 1s producer, MinIO placeholder store)
+Next: Plan 11-04 — Worker completion (BullMQ consumer embeds signature + finalize)
+Status: Phase 11 wave 2 complete (API entry point + placeholder bridge), ready for wave 3 (worker consumer)
 Last activity: 2026-04-21
 
-Progress: [█████████░] 88% (45/51 plans complete)
+Progress: [█████████░] 90% (46/51 plans complete)
 
 ## Performance Metrics
 
@@ -67,6 +67,7 @@ Progress: [█████████░] 88% (45/51 plans complete)
 | Phase 10 P03 | 10min | 1 tasks | 1 files |
 | Phase 11 P01 | 5min | 2 tasks | 3 files |
 | Phase 11 P02 | 4min | 2 tasks | 4 files |
+| Phase 11 P03 | 7min | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -125,6 +126,10 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase 11]: [Phase 11-02]: Separate Worker connection createRedisConnection() — BullMQ v5 yêu cầu Worker exclusive BLPOP, Producer shared singleton OK
 - [Phase 11]: [Phase 11-02]: Manual retry via re-enqueue (attempts:1) — exact 5s × 36 attempts aligned expires_at, không exponential backoff
 - [Phase 11]: [Phase 11-02]: jobId=poll-{txnId}-{attempt} — BullMQ dedupe mitigates T-11-06 double-enqueue DoS không cần app-level lock
+- [Phase 11]: [Phase 11-03]: MinIO placeholder store (prefix 'signing-placeholders/{txnId}.pdf') thay Redis — PDF placeholder ~200KB+ quá lớn cho Redis; MinIO đã có trong stack + key deterministic theo txnId
+- [Phase 11]: [Phase 11-03]: DB transaction tạo TRƯỚC provider.signHash — cần txnId làm documentId provider echo back + làm placeholder key; rollback via updateStatus(failed) + removePlaceholder nếu signHash throw
+- [Phase 11]: [Phase 11-03]: PLACEHOLDER_PREFIX exported để route + Plan 04 worker dùng cùng constant — không hardcode string ở 2 nơi, không drift
+- [Phase 11]: [Phase 11-03]: Mount /api/ky-so/sign TRƯỚC /api/ky-so catch-all (longer-prefix-wins); authenticate only (không requireRoles) — mọi user có quyền đều ký được
 
 ### Pending Todos
 
@@ -156,6 +161,6 @@ v1.0 hoàn thành với 3 quick tasks (HDSD Compliance sprint cuối):
 
 ## Session Continuity
 
-Last session: 2026-04-21T10:25:06.280Z
-Stopped at: Completed 11-02-PLAN.md (BullMQ signing queue infrastructure — Producer API + types ready for Plans 03-04)
-Resume: `/gsd-plan-phase 8`
+Last session: 2026-04-21T10:35:15.000Z
+Stopped at: Completed 11-03-PLAN.md (Sign API route — POST /sign + cancel + GET /:id < 1s; MinIO placeholder store bridges route to worker)
+Resume: `/gsd-execute-phase 11` để tiếp tục Plan 11-04 (worker completion)

@@ -13,11 +13,11 @@
 
 - [ ] **SIGN-01:** Admin có thể cấu hình SmartCA VNPT làm provider active với credentials hệ thống (`base_url`, `client_id`, `client_secret`)
 - [ ] **SIGN-02:** Admin có thể cấu hình MySign Viettel làm provider active với credentials hệ thống (`base_url`, `client_id`, `client_secret`, `profile_id`)
-- [ ] **SIGN-03:** User (người có quyền ký: lãnh đạo, cán bộ được giao) có thể ký file PDF đính kèm trên VB đi / VB dự thảo / HSCV trình ký bằng provider active
+- [x] **SIGN-03:** User (người có quyền ký: lãnh đạo, cán bộ được giao) có thể ký file PDF đính kèm trên VB đi / VB dự thảo / HSCV trình ký bằng provider active
 - [ ] **SIGN-04:** Hệ thống compute SHA256 hash PDF (PAdES byte range) và gọi API sign của provider active, nhận PKCS7 detached signature, embed vào PDF placeholder bằng `node-signpdf`
 - [ ] **SIGN-05:** Hệ thống poll status transaction từ provider mỗi 5s, tối đa 3 phút (36 lần), để nhận kết quả ký sau khi user xác nhận OTP trên app mobile
 - [ ] **SIGN-06:** User có thể ký lại file sau khi transaction fail/expire — tạo transaction mới, record cũ giữ cho audit
-- [ ] **SIGN-07:** User có thể hủy transaction đang pending (status → cancelled) từ UI
+- [x] **SIGN-07:** User có thể hủy transaction đang pending (status → cancelled) từ UI
 - [ ] **SIGN-08:** Hệ thống lưu `sign_provider_code` vào attachment sau ký thành công — đảm bảo khi Admin switch provider sau này, lịch sử ký file cũ vẫn hiển thị đúng provider
 
 ### CFG — Configuration (7 requirements)
@@ -57,7 +57,7 @@
 
 ### ASYNC — Async Worker (6 requirements)
 
-- [ ] **ASYNC-01:** POST `/ky-so/sign` trả `{ transaction_id }` ngay lập tức (< 1s), background worker xử lý polling status
+- [x] **ASYNC-01:** POST `/ky-so/sign` trả `{ transaction_id }` ngay lập tức (< 1s), background worker xử lý polling status
 - [ ] **ASYNC-02:** BullMQ worker poll `provider.getStatus(provider_txn_id)` mỗi 5s, re-queue với delay, tối đa 36 lần retry (3 phút tổng)
 - [ ] **ASYNC-03:** User đóng browser / tắt modal giữa chừng → worker vẫn chạy → kết quả ký vẫn lưu vào DB + MinIO
 - [ ] **ASYNC-04:** Backend restart giữa chừng → BullMQ job persistent trong Redis → job tự resume sau backend start lại
@@ -125,7 +125,7 @@ Mỗi REQ-ID v2.0 map tới đúng 1 phase (8-14). Tổng 42/42 — 100% coverag
 | SIGN-04 | Phase 8 — Schema foundation + PDF signing layer | Complete |
 | SIGN-05 | Phase 11 — Sign flow + async worker | Pending |
 | SIGN-06 | Phase 11 — Sign flow + async worker | Pending |
-| SIGN-07 | Phase 11 — Sign flow + async worker | Pending |
+| SIGN-07 | Phase 11 — Sign flow + async worker | Complete |
 | SIGN-08 | Phase 11 — Sign flow + async worker | Complete |
 | CFG-01 | Phase 9 — Admin config + provider adapters | Complete |
 | CFG-02 | Phase 9 — Admin config + provider adapters | Complete |
