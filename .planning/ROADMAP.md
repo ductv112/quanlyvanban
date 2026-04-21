@@ -29,7 +29,7 @@ Rebuild hệ thống quản lý văn bản điện tử (.NET cũ) thành stack 
 
 - [x] **Phase 8: Schema foundation + PDF signing generic layer** - 3 bảng mới, migration `staff.sign_phone`, PDF signing pure JS (`node-signpdf` + `node-forge`) (completed 2026-04-21)
 - [x] **Phase 9: Admin config + provider adapters** - SmartCA VNPT + MySign Viettel adapters, trang Admin cấu hình hệ thống với test connection, dashboard stats (completed 2026-04-21)
-- [x] **Phase 10: User config page + migrate tab chữ ký số** - Trang `/ky-so/tai-khoan` với form dynamic theo provider + button verify, remove tab cũ trong `/thong-tin-ca-nhan` (completed 2026-04-21)
+- [x] **Phase 10: User config page + migrate tab chữ ký số** - Trang `/ky-so/tai-khoan` với form dynamic theo provider + button verify, remove tab cũ trong `/thong-tin-ca-nhan` (completed 2026-04-21)
 - [ ] **Phase 11: Sign flow + async worker (core)** - API `/ky-so/sign` real, BullMQ worker poll 5s × 3 phút, Socket.IO `SIGN_COMPLETED`, ký lại/hủy transaction
 - [ ] **Phase 12: Menu Ký số + Danh sách 4 tab UI** - Sidebar menu mới, trang `/ky-so/danh-sach` 4 tab dynamic (Cần ký / Đang xử lý / Đã ký / Thất bại), re-wire detail VB pages
 - [ ] **Phase 13: Modal ký số robust + Root CA UX** - Modal countdown 3:00, disable spam, maskClosable=false, banner Root CA Viettel dismissible + link `.cer` + HDSD PDF
@@ -214,7 +214,16 @@ Plans:
   3. User đóng browser / tắt modal giữa chừng → worker vẫn chạy → kết quả ký vẫn lưu vào DB + MinIO; user mở lại thấy file đã ký trong tab "Đã ký"
   4. Backend restart giữa flow ký → BullMQ job persistent trong Redis → job tự resume sau backend start, không mất transaction
   5. User có thể ký lại sau fail/expire (tạo transaction MỚI, không reset record cũ) và hủy transaction pending (status → `cancelled`); tất cả 3 trang detail VB (`van-ban-di/[id]`, `van-ban-du-thao/[id]`, `ho-so-cong-viec/[id]`) đã được cập nhật từ `/ky-so/mock/sign` sang `/ky-so/sign`
-**Plans**: TBD
+**Plans**: 8 plans
+Plans:
+- [ ] 11-01-PLAN.md — DB + Repo: migration 045 (4 SPs — finalize_sign, can_sign, list_txn, count_txn) + ALTER attachment_handling_docs + typed repository + sign-helpers
+- [ ] 11-02-PLAN.md — Infra: BullMQ queue 'signing' + Redis connection singleton + typed job payload + env docs (no worker yet)
+- [ ] 11-03-PLAN.md — Backend: POST /api/ky-so/sign + POST /:id/cancel + GET /:id — async entry point returning transaction_id < 1s
+- [ ] 11-04-PLAN.md — Worker: BullMQ Worker poll-sign-status — embed signature, upload MinIO signed key, emit Socket SIGN_COMPLETED/FAILED, bell notification
+- [ ] 11-05-PLAN.md — Backend: GET /api/ky-so/danh-sach (4 tab list) + /counts (badge) + migration 046 SP for 'Cần ký' tab
+- [ ] 11-06-PLAN.md — Frontend: shared SignModal component + useSigning hook + socket event extensions (functional, polish deferred to Phase 13)
+- [ ] 11-07-PLAN.md — Frontend: migrate VB đi + VB dự thảo detail pages (remove mock OTP) + checkpoint
+- [ ] 11-08-PLAN.md — Frontend: add Ký số button to HSCV detail page (first-time functionality) + checkpoint
 **UI hint**: yes
 
 ### Phase 12: Menu Ký số + Danh sách 4 tab UI
@@ -272,7 +281,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 8. Schema foundation + PDF signing layer | 4/4 | Complete    | 2026-04-21 |
 | 9. Admin config + provider adapters | 3/3 | Complete    | 2026-04-21 |
 | 10. User config page | 3/3 | Complete   | 2026-04-21 |
-| 11. Sign flow + async worker | 0/TBD | Not started | - |
+| 11. Sign flow + async worker | 0/8 | Planned | - |
 | 12. Menu Ký số + Danh sách UI | 0/TBD | Not started | - |
 | 13. Modal ký số + Root CA UX | 0/TBD | Not started | - |
 | 14. Deployment + HDSD + verification | 0/TBD | Not started | - |
