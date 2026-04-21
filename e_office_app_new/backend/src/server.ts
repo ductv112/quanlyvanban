@@ -39,6 +39,9 @@ import profileRoutes from './routes/profile.js';
 import { authenticate, requireRoles } from './middleware/auth.js';
 import { initSocket } from './lib/socket.js';
 import { ensureBucket } from './lib/minio/client.js';
+import { startSigningWorker, stopSigningWorker } from './workers/signing-poll.worker.js';
+import { closeSigningQueue } from './lib/queue/signing-queue.js';
+import { closeRedisConnection } from './lib/queue/redis-connection.js';
 
 const app = express();
 const port = Number(process.env.PORT) || 4000;
@@ -119,6 +122,38 @@ httpServer.listen(port, async () => {
   logger.info(`QLVB Backend running at http://localhost:${port}`);
   logger.info(`Health check: http://localhost:${port}/api/health`);
   try { await ensureBucket(); logger.info('MinIO bucket ready'); } catch (e) { logger.warn('MinIO bucket init failed — file upload sẽ tự tạo khi cần'); }
+
+  // Phase 11: Start BullMQ signing worker (poll-sign-status consumer)
+  // WORKER_ENABLED=false env → skip (useful for CI / sync-only debug)
+  try {
+    startSigningWorker();
+  } catch (err) {
+    logger.error({ err }, 'Failed to start signing worker — async sign flow will not work');
+  }
 });
+
+// --- Graceful shutdown (Phase 11 — ensure in-flight sign jobs finish before exit) ---
+let shuttingDown = false;
+async function shutdown(signal: string): Promise<void> {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  logger.info({ signal }, 'Shutting down gracefully');
+
+  try { await stopSigningWorker(); } catch (err) { logger.warn({ err }, 'stopSigningWorker error'); }
+  try { await closeSigningQueue(); } catch (err) { logger.warn({ err }, 'closeSigningQueue error'); }
+  try { await closeRedisConnection(); } catch (err) { logger.warn({ err }, 'closeRedisConnection error'); }
+
+  httpServer.close(() => {
+    logger.info('HTTP server closed — exit 0');
+    process.exit(0);
+  });
+  // Failsafe: force exit if close() hangs >10s
+  setTimeout(() => {
+    logger.error('Graceful shutdown timeout — force exit 1');
+    process.exit(1);
+  }, 10_000).unref();
+}
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
 
 export default app;
