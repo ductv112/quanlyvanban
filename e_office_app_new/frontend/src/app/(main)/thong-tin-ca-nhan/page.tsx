@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import {
-  Card, Row, Col, Descriptions, Avatar, Form, Input, Button, App, Tag, Tabs, Upload, Space,
+  Card, Row, Col, Descriptions, Avatar, Form, Input, Button, App, Tag, Tabs, Upload, Space, Alert,
 } from 'antd';
 import type { UploadFile, UploadProps } from 'antd';
 import {
@@ -23,22 +24,12 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [savingSignature, setSavingSignature] = useState(false);
   const [signatureFile, setSignatureFile] = useState<File | null>(null);
-  // Track sign_phone value để tính hasChanges (disable Save khi không có thay đổi)
-  const watchedSignPhone = Form.useWatch('sign_phone', signForm) ?? '';
-  const hasChanges =
-    signatureFile !== null ||
-    String(watchedSignPhone).trim() !== String(user?.signPhone || '').trim();
+  // Chỉ track signatureFile — cấu hình tài khoản ký số đã migrate sang /ky-so/tai-khoan
+  const hasImageChange = signatureFile !== null;
 
   useEffect(() => {
     if (!user) fetchMe();
   }, [user, fetchMe]);
-
-  // Pre-fill sign_phone vào signForm khi user load
-  useEffect(() => {
-    if (user) {
-      signForm.setFieldsValue({ sign_phone: user.signPhone || '' });
-    }
-  }, [user, signForm]);
 
   const handleChangePassword = async () => {
     try {
@@ -84,42 +75,26 @@ export default function ProfilePage() {
   };
 
   const handleSaveSignature = async () => {
+    if (!signatureFile) {
+      message.warning('Vui lòng chọn ảnh chữ ký mới');
+      return;
+    }
+
     try {
-      const values = await signForm.validateFields();
-
-      // Validate: ít nhất 1 trong (ảnh chữ ký mới, số SmartCA khác giá trị cũ) phải có
-      if (!hasChanges) {
-        message.warning('Vui lòng nhập tài khoản ký số hoặc chọn ảnh chữ ký mới');
-        return;
-      }
-
       setSavingSignature(true);
 
-      // 1. Upload ảnh nếu có file mới
-      if (signatureFile) {
-        const fd = new FormData();
-        fd.append('file', signatureFile);
-        await api.post('/ho-so-ca-nhan/anh-chu-ky', fd, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
-      }
+      const fd = new FormData();
+      fd.append('file', signatureFile);
+      await api.post('/ho-so-ca-nhan/anh-chu-ky', fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
 
-      // 2. Update sign_phone (nếu khác giá trị cũ hoặc mới nhập)
-      const newPhone = (values.sign_phone || '').trim();
-      if (newPhone !== (user?.signPhone || '')) {
-        await api.patch('/ho-so-ca-nhan/chu-ky-so', {
-          sign_phone: newPhone || null,
-        });
-      }
-
-      message.success('Đã lưu thông tin chữ ký số');
+      message.success('Đã cập nhật ảnh chữ ký');
       await fetchMe(); // refresh store để cập nhật signImageUrl mới
       setSignatureFile(null);
     } catch (err: any) {
       if (err?.response) {
         message.error(err?.response?.data?.message || 'Lưu thất bại');
-      } else if (err?.errorFields) {
-        // Form validation error — đã hiển thị inline
       } else {
         message.error('Có lỗi xảy ra, vui lòng thử lại');
       }
@@ -203,28 +178,28 @@ export default function ProfilePage() {
 
   const signaturePanel = (
     <>
+      <Alert
+        type="info"
+        showIcon
+        style={{ marginBottom: 16, borderRadius: 8 }}
+        title="Thông tin cấu hình ký số đã chuyển trang"
+        description={
+          <span>
+            Cấu hình tài khoản ký số với nhà cung cấp (SmartCA VNPT / MySign Viettel) đã
+            chuyển sang menu{' '}
+            <Link href="/ky-so/tai-khoan" style={{ fontWeight: 600 }}>
+              Ký số → Tài khoản ký số cá nhân
+            </Link>
+            . Trang này chỉ còn quản lý ảnh chữ ký để in trên PDF khi ký.
+          </span>
+        }
+      />
+
       <p style={{ fontSize: 13, color: '#64748b', marginBottom: 20 }}>
-        Cấu hình tài khoản ký số SmartCA và ảnh chữ ký để sử dụng khi ký văn bản điện tử.
+        Tải lên ảnh chữ ký PNG để hệ thống chèn lên văn bản PDF khi ký số.
       </p>
 
       <Form form={signForm} layout="vertical" autoComplete="off">
-        <Form.Item
-          label="Tài khoản ký số (SmartCA)"
-          name="sign_phone"
-          rules={[
-            { pattern: /^[0-9+\-\s()]*$/, message: 'Số điện thoại không hợp lệ' },
-            { max: 20, message: 'Tối đa 20 ký tự' },
-          ]}
-          extra="Nhập số điện thoại đã đăng ký với nhà cung cấp SmartCA. Ví dụ: 84813789393"
-        >
-          <Input
-            placeholder="Ví dụ: 84813789393"
-            maxLength={20}
-            allowClear
-            style={{ borderRadius: 8 }}
-          />
-        </Form.Item>
-
         <Form.Item
           label="Ảnh chữ ký (PNG, khuyến nghị 150×150)"
           extra="Chỉ chấp nhận file PNG, kích thước tối đa 2MB."
@@ -263,11 +238,11 @@ export default function ProfilePage() {
             type="primary"
             icon={<EditOutlined />}
             loading={savingSignature}
-            disabled={!hasChanges}
+            disabled={!hasImageChange}
             onClick={handleSaveSignature}
             style={{ borderRadius: 8, height: 40, fontWeight: 600 }}
           >
-            Lưu thông tin ký số
+            Lưu ảnh chữ ký
           </Button>
         </Space>
       </Form>
@@ -281,7 +256,7 @@ export default function ProfilePage() {
           Thông tin cá nhân
         </h2>
         <p className="page-description">
-          Xem thông tin tài khoản, đổi mật khẩu và cấu hình chữ ký số
+          Xem thông tin tài khoản, đổi mật khẩu và quản lý ảnh chữ ký
         </p>
       </div>
 
@@ -348,14 +323,11 @@ export default function ProfilePage() {
               <Descriptions.Item label={<><ApartmentOutlined style={{ marginRight: 6 }} />Đơn vị</>}>
                 {user.unitName || <span style={{ color: '#94a3b8' }}>Chưa cập nhật</span>}
               </Descriptions.Item>
-              <Descriptions.Item label={<><EditOutlined style={{ marginRight: 6 }} />Tài khoản ký số</>}>
-                {user.signPhone || <span style={{ color: '#94a3b8' }}>Chưa cấu hình</span>}
-              </Descriptions.Item>
             </Descriptions>
           </Card>
         </Col>
 
-        {/* Right: Tabs Đổi mật khẩu / Chữ ký số */}
+        {/* Right: Tabs Đổi mật khẩu / Ảnh chữ ký */}
         <Col xs={24} lg={10}>
           <Card
             variant="borderless"
@@ -381,7 +353,7 @@ export default function ProfilePage() {
                   label: (
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                       <EditOutlined />
-                      Chữ ký số
+                      Ảnh chữ ký
                     </span>
                   ),
                   children: signaturePanel,
