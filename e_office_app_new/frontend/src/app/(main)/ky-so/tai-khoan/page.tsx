@@ -301,7 +301,7 @@ export default function KySoTaiKhoanPage() {
         credential_id: values.credential_id?.trim() || null,
       });
       message.success(
-        'Lưu cấu hình thành công. Vui lòng bấm "Kiểm tra kết nối" để xác thực.',
+        'Lưu cấu hình thành công. Vui lòng bấm "Xác thực tài khoản ký số" để kiểm tra.',
       );
       await fetchConfig();
     } catch (err) {
@@ -486,7 +486,7 @@ export default function KySoTaiKhoanPage() {
             extra={
               config?.is_verified && config.last_verified_at ? (
                 <span style={{ fontSize: 12, color: '#64748B' }}>
-                  Kiểm tra gần nhất:{' '}
+                  Xác thực gần nhất:{' '}
                   {formatDateTime(config.last_verified_at)}
                 </span>
               ) : null
@@ -633,8 +633,8 @@ export default function KySoTaiKhoanPage() {
                 <Tooltip
                   title={
                     !config
-                      ? 'Vui lòng lưu cấu hình trước khi kiểm tra kết nối'
-                      : 'Kết nối tới provider để xác thực user_id và chứng thư'
+                      ? 'Vui lòng lưu cấu hình trước khi xác thực'
+                      : 'Gọi API provider để xác thực mã định danh và lấy thông tin chứng thư số'
                   }
                 >
                   <Button
@@ -643,7 +643,7 @@ export default function KySoTaiKhoanPage() {
                     disabled={!config}
                     onClick={onVerify}
                   >
-                    Kiểm tra kết nối
+                    Xác thực tài khoản ký số
                   </Button>
                 </Tooltip>
               </Space>
