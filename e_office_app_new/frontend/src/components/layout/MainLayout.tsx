@@ -41,6 +41,7 @@ import {
   ApiOutlined,
   NotificationOutlined,
   LinkOutlined,
+  SafetyCertificateOutlined,
 } from '@ant-design/icons';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
@@ -274,6 +275,18 @@ function buildMenuItems({ badgeCounts, isAdmin, roles }: MenuBuildParams): MenuI
     { key: 'ext-thue', icon: <LinkOutlined />, label: <a href="https://thuedientu.gdt.gov.vn" target="_blank" rel="noopener noreferrer">Thuế điện tử</a> },
   );
 
+  // ── KÝ SỐ ── (Admin only — Plan 10 sẽ thêm menu user-level)
+  if (isAdmin) {
+    items.push(
+      { key: 'grp-kyso', type: 'group', label: 'KÝ SỐ' },
+      {
+        key: '/ky-so/cau-hinh',
+        icon: <SafetyCertificateOutlined />,
+        label: 'Cấu hình ký số hệ thống',
+      },
+    );
+  }
+
   // ── HỆ THỐNG ── (Admin only)
   if (isAdmin) {
     items.push(
@@ -359,6 +372,8 @@ const breadcrumbMap: Record<string, string> = {
   '/lgsp': 'Liên thông văn bản',
   '/lgsp/co-quan': 'Cơ quan liên thông',
   '/thong-bao-kenh': 'Cấu hình thông báo',
+  '/ky-so': 'Ký số',
+  '/ky-so/cau-hinh': 'Cấu hình ký số hệ thống',
 };
 
 function buildBreadcrumbs(pathname: string) {
