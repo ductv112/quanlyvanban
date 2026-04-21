@@ -3,74 +3,70 @@
 /**
  * Trang: /ky-so/cau-hinh — Cấu hình ký số hệ thống (Admin only)
  *
- * Nội dung:
- *  - Banner provider đang hoạt động (hoặc cảnh báo chưa kích hoạt)
- *  - 5 stat cards KPI từ provider active (tổng user / đã xác thực / giao dịch tháng / thành công / thất bại)
- *  - Bảng 2 provider (SmartCA VNPT + MySign Viettel) với status, test result, actions
- *  - Drawer thêm/cập nhật cấu hình:
- *      * Radio chọn provider (disable khi edit — không đổi type)
- *      * Fields: base_url, client_id, client_secret, profile_id (chỉ hiện khi MySign)
- *      * Nút "Kiểm tra kết nối" gọi POST /test-connection trực tiếp tới provider
- *      * Nút "Lưu & Kích hoạt" chỉ enable sau khi test pass (OK)
- *      * Nút "Chỉ lưu" (edit mode) lưu không kích hoạt
- *  - Guard admin client-side (defense-in-depth; backend enforce requireRoles)
+ * Thiết kế (fix patch 09-03):
+ *  - Hệ thống CHỈ HỖ TRỢ 2 provider cố định: SmartCA VNPT + MySign Viettel
+ *  - Không còn button "Thêm mới" và không còn "Xóa" — 2 provider được seed sẵn
+ *    bởi migration 043, Admin CHỈ sửa/kích hoạt.
+ *
+ * Layout (top → bottom):
+ *  1. Page header
+ *  2. Alert trạng thái provider đang hoạt động (hoặc warning nếu chưa có)
+ *  3. 5 Stat cards KPI (luôn hiển thị stats của provider đang active, không có tabs)
+ *  4. 2 Card provider song song (Row 2 Col) với actions: "Sửa cấu hình" + "Kích hoạt"
+ *  5. Drawer "Sửa cấu hình — {provider_name}" (không còn radio chọn provider type)
  *
  * Security:
- *  - client_secret TRẢ VỀ từ GET chỉ là '***' (server mask) — KHÔNG bao giờ hiển thị plaintext
+ *  - client_secret trả về từ GET là '***' (server mask)
  *  - Edit: field secret để trống → backend giữ nguyên ciphertext cũ
- *  - Submit/test: payload client_secret là plaintext (qua HTTPS), backend encrypt trước khi lưu
+ *  - Submit/test: payload client_secret là plaintext (HTTPS), backend encrypt trước khi lưu
  *
- * API (từ Plan 09-02):
+ * API (Plan 09-02 + patch 09-03):
  *  GET    /ky-so/cau-hinh                  → { data: { providers: [], active_code } }
  *  POST   /ky-so/cau-hinh/test-connection  → { data: { test_result, message, certificate_subject } }
- *  POST   /ky-so/cau-hinh                  → create (201)
- *  PUT    /ky-so/cau-hinh/:id              → update
+ *  PUT    /ky-so/cau-hinh/:id              → update (bắt buộc có id tồn tại)
  *  PATCH  /ky-so/cau-hinh/:id/active       → activate (auto-deactivate others)
- *  DELETE /ky-so/cau-hinh/:id              → 409 nếu đang active
+ *  POST   /ky-so/cau-hinh                  → 405 (disabled)
+ *  DELETE /ky-so/cau-hinh/:id              → 405 (disabled)
  */
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Card,
-  Table,
   Button,
   Input,
   Form,
-  Radio,
   Drawer,
   Tag,
   Alert,
   Row,
   Col,
   Space,
-  Dropdown,
-  Modal,
   App,
   Empty,
   Skeleton,
+  Descriptions,
+  Badge,
   Tooltip,
 } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
 import {
-  PlusOutlined,
   SafetyCertificateOutlined,
   CheckCircleOutlined,
   CloseCircleOutlined,
-  MoreOutlined,
   ThunderboltOutlined,
   TeamOutlined,
   AuditOutlined,
   RiseOutlined,
   EditOutlined,
-  DeleteOutlined,
   PoweroffOutlined,
   ReloadOutlined,
+  WarningOutlined,
+  ExclamationCircleOutlined,
 } from '@ant-design/icons';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth.store';
 
 // ============================================================================
-// Types — match GET /ky-so/cau-hinh response shape (Plan 09-02)
+// Types — match GET /ky-so/cau-hinh response shape
 // ============================================================================
 
 type ProviderCode = 'SMARTCA_VNPT' | 'MYSIGN_VIETTEL';
@@ -102,7 +98,6 @@ interface ProviderConfig {
 }
 
 interface FormValues {
-  provider_code: ProviderCode;
   base_url: string;
   client_id: string;
   client_secret?: string;
@@ -119,14 +114,20 @@ interface TestResultState {
 // Constants
 // ============================================================================
 
-const PROVIDER_OPTIONS: { value: ProviderCode; label: string; baseUrlHint: string }[] = [
-  { value: 'SMARTCA_VNPT', label: 'SmartCA VNPT', baseUrlHint: 'https://gwsca.vnpt.vn/sca/sp769/v1' },
-  { value: 'MYSIGN_VIETTEL', label: 'MySign Viettel', baseUrlHint: 'https://remotesigning.viettel.vn' },
-];
-
-const PROVIDER_NAME_MAP: Record<ProviderCode, string> = {
-  SMARTCA_VNPT: 'SmartCA VNPT',
-  MYSIGN_VIETTEL: 'MySign Viettel',
+const PROVIDER_META: Record<
+  ProviderCode,
+  { label: string; baseUrlHint: string; needsProfileId: boolean }
+> = {
+  SMARTCA_VNPT: {
+    label: 'SmartCA VNPT',
+    baseUrlHint: 'https://gwsca.vnpt.vn',
+    needsProfileId: false,
+  },
+  MYSIGN_VIETTEL: {
+    label: 'MySign Viettel',
+    baseUrlHint: 'https://remotesigning.viettel.vn',
+    needsProfileId: true,
+  },
 };
 
 // ============================================================================
@@ -163,7 +164,6 @@ export default function KySoCauHinhPage() {
   const [loading, setLoading] = useState(true);
   const [providers, setProviders] = useState<ProviderConfig[]>([]);
   const [activeCode, setActiveCode] = useState<ProviderCode | null>(null);
-  const [selectedStatsCode, setSelectedStatsCode] = useState<ProviderCode | null>(null);
 
   // Drawer state
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -177,8 +177,8 @@ export default function KySoCauHinhPage() {
   // Save state
   const [saving, setSaving] = useState(false);
 
-  // Watched form value — controls conditional profile_id field
-  const selectedProviderCode = Form.useWatch('provider_code', form);
+  // Activating state (when user clicks "Kích hoạt" on card footer)
+  const [activatingCode, setActivatingCode] = useState<ProviderCode | null>(null);
 
   // ──────────────────────────────────────────────────────────────────────────
   // Data fetching
@@ -195,15 +195,9 @@ export default function KySoCauHinhPage() {
       const active = res.data?.active_code ?? null;
       setProviders(list);
       setActiveCode(active);
-      // Preselect stats view: active provider > first configured > SmartCA
-      setSelectedStatsCode((prev) => {
-        if (prev && list.some((p) => p.provider_code === prev)) return prev;
-        if (active) return active;
-        const firstConfigured = list.find((p) => p.id !== null);
-        return firstConfigured?.provider_code ?? list[0]?.provider_code ?? null;
-      });
     } catch (err) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message
         ?? 'Không tải được cấu hình ký số';
       message.error(msg);
     } finally {
@@ -217,45 +211,29 @@ export default function KySoCauHinhPage() {
     }
   }, [user?.isAdmin, fetchConfig]);
 
-  // Reset testedOk whenever form values change (security: new creds must re-test)
-  useEffect(() => {
-    setTestedOk(false);
-    setTestResult(null);
-  }, [selectedProviderCode]);
-
   // ──────────────────────────────────────────────────────────────────────────
   // Derived values
   // ──────────────────────────────────────────────────────────────────────────
-
-  const selectedStats: ProviderStats | null = useMemo(() => {
-    if (!selectedStatsCode) return null;
-    const row = providers.find((p) => p.provider_code === selectedStatsCode);
-    return row?.stats ?? null;
-  }, [providers, selectedStatsCode]);
 
   const activeProvider = useMemo(
     () => providers.find((p) => p.provider_code === activeCode) ?? null,
     [providers, activeCode],
   );
 
+  // Stats hiển thị từ provider đang active (không có switcher tab)
+  const displayStats: ProviderStats | null = activeProvider?.stats ?? null;
+
+  const smartcaProvider = providers.find((p) => p.provider_code === 'SMARTCA_VNPT') ?? null;
+  const mysignProvider = providers.find((p) => p.provider_code === 'MYSIGN_VIETTEL') ?? null;
+
   // ──────────────────────────────────────────────────────────────────────────
   // Drawer handlers
   // ──────────────────────────────────────────────────────────────────────────
-
-  const handleAdd = () => {
-    setEditingRecord(null);
-    form.resetFields();
-    form.setFieldsValue({ provider_code: 'SMARTCA_VNPT' });
-    setTestedOk(false);
-    setTestResult(null);
-    setDrawerOpen(true);
-  };
 
   const handleEdit = (record: ProviderConfig) => {
     setEditingRecord(record);
     form.resetFields();
     form.setFieldsValue({
-      provider_code: record.provider_code,
       base_url: record.base_url ?? '',
       client_id: record.client_id ?? '',
       client_secret: '',
@@ -277,15 +255,12 @@ export default function KySoCauHinhPage() {
   // Map backend validation error msgs → inline field errors
   const setBackendFieldError = (errorMessage: string): boolean => {
     const fieldErrorMap: Record<string, keyof FormValues> = {
-      'provider_code không hợp lệ': 'provider_code',
       'base_url là bắt buộc': 'base_url',
       'base_url phải là HTTPS (trừ localhost)': 'base_url',
       'client_id là bắt buộc': 'client_id',
       'client_id là bắt buộc (≤ 200 ký tự)': 'client_id',
       'client_secret là bắt buộc': 'client_secret',
       'client_secret tối thiểu 8 ký tự': 'client_secret',
-      'provider_name là bắt buộc': 'provider_code',
-      'provider_name là bắt buộc (≤ 100 ký tự)': 'provider_code',
     };
     const fieldName = fieldErrorMap[errorMessage];
     if (fieldName) {
@@ -296,18 +271,22 @@ export default function KySoCauHinhPage() {
   };
 
   // ──────────────────────────────────────────────────────────────────────────
-  // Test connection (no persistence)
+  // Test connection (no persistence) — dùng trong Drawer edit
   // ──────────────────────────────────────────────────────────────────────────
 
   const onTestConnection = async () => {
+    if (!editingRecord) return;
     try {
-      // Validate only the fields needed for test
-      const fields: Array<keyof FormValues> = ['provider_code', 'base_url', 'client_id', 'client_secret'];
-      if (selectedProviderCode === 'MYSIGN_VIETTEL') fields.push('profile_id');
-      const values = await form.validateFields(fields);
+      const fieldsToValidate: Array<keyof FormValues> = ['base_url', 'client_id', 'client_secret'];
+      if (PROVIDER_META[editingRecord.provider_code].needsProfileId) {
+        fieldsToValidate.push('profile_id');
+      }
+      const values = await form.validateFields(fieldsToValidate);
 
       if (!values.client_secret || values.client_secret.length < 1) {
-        form.setFields([{ name: 'client_secret', errors: ['Nhập client_secret để kiểm tra kết nối'] }]);
+        form.setFields([
+          { name: 'client_secret', errors: ['Nhập client_secret để kiểm tra kết nối'] },
+        ]);
         return;
       }
 
@@ -316,9 +295,13 @@ export default function KySoCauHinhPage() {
 
       const { data: res } = await api.post<{
         success: boolean;
-        data: { test_result: 'OK' | 'FAILED'; message: string; certificate_subject: string | null };
+        data: {
+          test_result: 'OK' | 'FAILED';
+          message: string;
+          certificate_subject: string | null;
+        };
       }>('/ky-so/cau-hinh/test-connection', {
-        provider_code: values.provider_code,
+        provider_code: editingRecord.provider_code,
         base_url: values.base_url,
         client_id: values.client_id,
         client_secret: values.client_secret,
@@ -342,8 +325,10 @@ export default function KySoCauHinhPage() {
       }
     } catch (err) {
       setTestedOk(false);
-      const httpErr = err as { response?: { data?: { message?: string } }; errorFields?: unknown[] };
-      // If it's a Form validation error (errorFields) — no toast, just inline
+      const httpErr = err as {
+        response?: { data?: { message?: string } };
+        errorFields?: unknown[];
+      };
       if (httpErr?.errorFields) return;
       const msg = httpErr?.response?.data?.message ?? 'Không kết nối được provider';
       setTestResult({ ok: false, message: msg });
@@ -353,55 +338,41 @@ export default function KySoCauHinhPage() {
   };
 
   // ──────────────────────────────────────────────────────────────────────────
-  // Save (with optional activate)
+  // Save (với option kích hoạt sau khi lưu)
   // ──────────────────────────────────────────────────────────────────────────
 
   const handleSave = async (withActivate: boolean) => {
+    if (!editingRecord || !editingRecord.id) {
+      message.error('Không tìm thấy cấu hình provider đang sửa');
+      return;
+    }
     try {
       const values = await form.validateFields();
       setSaving(true);
 
-      const providerName = PROVIDER_NAME_MAP[values.provider_code];
       const payload: Record<string, unknown> = {
-        provider_code: values.provider_code,
-        provider_name: providerName,
+        provider_code: editingRecord.provider_code,
+        provider_name: editingRecord.provider_name,
         base_url: values.base_url,
         client_id: values.client_id,
         profile_id: values.profile_id?.trim() || null,
       };
 
-      // Only include client_secret if non-empty (PUT allows omit = keep existing)
+      // Chỉ gửi client_secret nếu user nhập — nếu trống, backend giữ ciphertext cũ
       if (values.client_secret && values.client_secret.length > 0) {
         payload.client_secret = values.client_secret;
-      } else if (!editingRecord) {
-        // Create mode — secret required
-        form.setFields([{ name: 'client_secret', errors: ['Nhập client_secret khi tạo cấu hình mới'] }]);
-        setSaving(false);
-        return;
       }
 
-      // Create vs update
-      let savedId: number | null = editingRecord?.id ?? null;
-      if (editingRecord && editingRecord.id) {
-        await api.put(`/ky-so/cau-hinh/${editingRecord.id}`, payload);
-      } else {
-        // set_active is sent during create to let backend activate in one shot
-        if (withActivate) payload.set_active = true;
-        const { data: res } = await api.post<{
-          success: boolean;
-          message: string;
-          data: { id: number };
-        }>('/ky-so/cau-hinh', payload);
-        savedId = res.data?.id ?? null;
-      }
+      await api.put(`/ky-so/cau-hinh/${editingRecord.id}`, payload);
 
-      // For update, call PATCH /active separately if asked
-      if (withActivate && editingRecord && savedId) {
+      // Kích hoạt sau khi lưu (nếu được yêu cầu)
+      if (withActivate) {
         try {
-          await api.patch(`/ky-so/cau-hinh/${savedId}/active`);
+          await api.patch(`/ky-so/cau-hinh/${editingRecord.id}/active`);
         } catch (activateErr) {
-          const msg = (activateErr as { response?: { data?: { message?: string } } })?.response?.data?.message
-            ?? 'Kích hoạt thất bại';
+          const msg =
+            (activateErr as { response?: { data?: { message?: string } } })?.response?.data
+              ?.message ?? 'Kích hoạt thất bại';
           message.warning(`Lưu thành công. ${msg}`);
           handleCloseDrawer();
           await fetchConfig();
@@ -411,18 +382,16 @@ export default function KySoCauHinhPage() {
       }
 
       message.success(
-        withActivate
-          ? 'Lưu và kích hoạt cấu hình thành công'
-          : editingRecord
-            ? 'Cập nhật cấu hình thành công'
-            : 'Lưu cấu hình thành công',
+        withActivate ? 'Lưu và kích hoạt cấu hình thành công' : 'Cập nhật cấu hình thành công',
       );
       handleCloseDrawer();
       await fetchConfig();
     } catch (err) {
-      const httpErr = err as { response?: { data?: { message?: string } }; errorFields?: unknown[] };
+      const httpErr = err as {
+        response?: { data?: { message?: string } };
+        errorFields?: unknown[];
+      };
       if (httpErr?.errorFields) {
-        // Form validation error — already inline
         setSaving(false);
         return;
       }
@@ -436,11 +405,11 @@ export default function KySoCauHinhPage() {
   };
 
   // ──────────────────────────────────────────────────────────────────────────
-  // Activate (from table action)
+  // Kích hoạt provider (từ card footer)
   // ──────────────────────────────────────────────────────────────────────────
 
   const handleActivate = (record: ProviderConfig) => {
-    if (record.id === null) {
+    if (!record.id) {
       message.warning('Provider này chưa được cấu hình');
       return;
     }
@@ -448,57 +417,56 @@ export default function KySoCauHinhPage() {
       message.info('Provider này đang được kích hoạt');
       return;
     }
-    modal.confirm({
-      title: 'Kích hoạt provider',
-      content: `Kích hoạt "${record.provider_name}"? Provider đang hoạt động khác (nếu có) sẽ tự động bị tắt.`,
-      okText: 'Kích hoạt',
-      cancelText: 'Hủy',
-      onOk: async () => {
-        try {
-          await api.patch(`/ky-so/cau-hinh/${record.id}/active`);
-          message.success('Kích hoạt thành công');
-          await fetchConfig();
-        } catch (err) {
-          const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
-            ?? 'Kích hoạt thất bại';
-          message.error(msg);
-        }
-      },
-    });
-  };
 
-  // ──────────────────────────────────────────────────────────────────────────
-  // Delete (block when active)
-  // ──────────────────────────────────────────────────────────────────────────
-
-  const handleDelete = (record: ProviderConfig) => {
-    if (record.id === null) return;
-    if (record.is_active) {
-      message.warning('Không thể xóa provider đang được kích hoạt. Vui lòng chuyển sang provider khác trước.');
+    // Nếu chưa test OK thì cảnh báo
+    if (record.test_result !== 'OK') {
+      modal.warning({
+        title: 'Không thể kích hoạt',
+        content: (
+          <div>
+            <p>
+              Không thể kích hoạt provider <strong>{record.provider_name}</strong> khi chưa kiểm
+              tra kết nối thành công.
+            </p>
+            <p style={{ color: '#64748B', marginBottom: 0 }}>
+              Vui lòng bấm <strong>&quot;Sửa cấu hình&quot;</strong>, nhập đầy đủ thông tin, bấm{' '}
+              <strong>&quot;Kiểm tra kết nối&quot;</strong> cho kết quả OK, rồi mới có thể kích
+              hoạt.
+            </p>
+          </div>
+        ),
+        okText: 'Đã hiểu',
+      });
       return;
     }
+
     modal.confirm({
-      title: 'Xác nhận xóa cấu hình',
+      title: 'Kích hoạt provider',
       content: (
         <div>
-          <p>Xóa cấu hình provider <strong>&quot;{record.provider_name}&quot;</strong>?</p>
-          <p style={{ color: '#DC2626', marginBottom: 0 }}>
-            Hành động này không thể hoàn tác. Bạn có thể cấu hình lại bất cứ lúc nào.
+          <p>
+            Kích hoạt <strong>&quot;{record.provider_name}&quot;</strong>?
+          </p>
+          <p style={{ color: '#64748B', marginBottom: 0 }}>
+            Provider đang hoạt động khác (nếu có) sẽ tự động bị tắt.
           </p>
         </div>
       ),
-      okText: 'Xóa',
+      okText: 'Kích hoạt',
       cancelText: 'Hủy',
-      okButtonProps: { danger: true },
       onOk: async () => {
+        setActivatingCode(record.provider_code);
         try {
-          await api.delete(`/ky-so/cau-hinh/${record.id}`);
-          message.success('Xóa cấu hình thành công');
+          await api.patch(`/ky-so/cau-hinh/${record.id}/active`);
+          message.success(`Đã kích hoạt ${record.provider_name}`);
           await fetchConfig();
         } catch (err) {
-          const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
-            ?? 'Xóa thất bại';
+          const msg =
+            (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+            ?? 'Kích hoạt thất bại';
           message.error(msg);
+        } finally {
+          setActivatingCode(null);
         }
       },
     });
@@ -528,157 +496,209 @@ export default function KySoCauHinhPage() {
   }
 
   // ──────────────────────────────────────────────────────────────────────────
-  // Table columns
+  // Provider card renderer
   // ──────────────────────────────────────────────────────────────────────────
 
-  const columns: ColumnsType<ProviderConfig> = [
-    {
-      title: 'Nhà cung cấp',
-      dataIndex: 'provider_name',
-      key: 'provider_name',
-      width: 200,
-      render: (name: string, record) => (
-        <Space>
-          <SafetyCertificateOutlined
-            style={{
-              color: record.is_active ? '#059669' : '#94A3B8',
-              fontSize: 16,
-            }}
-          />
-          <span style={{ fontWeight: 600, color: '#1B3A5C' }}>{name}</span>
-        </Space>
-      ),
-    },
-    {
-      title: 'Base URL',
-      dataIndex: 'base_url',
-      key: 'base_url',
-      ellipsis: true,
-      render: (v: string | null) =>
-        v ? (
-          <Tooltip title={v}>
-            <span style={{ color: '#475569', fontFamily: 'monospace', fontSize: 12 }}>{v}</span>
-          </Tooltip>
-        ) : (
-          <Tag color="default">Chưa cấu hình</Tag>
-        ),
-    },
-    {
-      title: 'Client ID',
-      dataIndex: 'client_id',
-      key: 'client_id',
-      width: 180,
-      ellipsis: true,
-      render: (v: string | null) =>
-        v ? (
-          <Tooltip title={v}>
-            <span style={{ fontFamily: 'monospace', fontSize: 12 }}>{v}</span>
-          </Tooltip>
-        ) : (
-          <span style={{ color: '#94A3B8' }}>—</span>
-        ),
-    },
-    {
-      title: 'Trạng thái',
-      key: 'status',
-      width: 140,
-      align: 'center',
-      render: (_, record) => {
-        if (record.id === null) {
-          return <Tag color="warning">Chưa cấu hình</Tag>;
-        }
-        if (record.is_active) {
-          return (
-            <Tag color="success" icon={<CheckCircleOutlined />}>
-              Đang hoạt động
-            </Tag>
-          );
-        }
-        return <Tag color="default">Tạm dừng</Tag>;
-      },
-    },
-    {
-      title: 'Kiểm tra kết nối',
-      key: 'test_result',
-      width: 160,
-      align: 'center',
-      render: (_, record) => {
-        if (!record.test_result) {
-          return <span style={{ color: '#94A3B8' }}>Chưa kiểm tra</span>;
-        }
-        if (record.test_result === 'OK') {
-          return (
-            <Tooltip title={`Kiểm tra: ${formatDateTime(record.last_tested_at)}`}>
-              <Tag color="success" icon={<CheckCircleOutlined />}>
-                Thành công
+  const renderProviderCard = (
+    provider: ProviderConfig | null,
+    code: ProviderCode,
+    gradient: string,
+  ) => {
+    const meta = PROVIDER_META[code];
+    const isActive = provider?.is_active ?? false;
+    const isConfigured = !!provider?.id;
+    const isActivating = activatingCode === code;
+
+    return (
+      <Card
+        className="page-card"
+        variant="borderless"
+        style={{
+          height: '100%',
+          border: isActive ? '2px solid #059669' : '1px solid #E2E8F0',
+          boxShadow: isActive
+            ? '0 4px 16px rgba(5, 150, 105, 0.15)'
+            : '0 2px 8px rgba(27, 58, 92, 0.06)',
+        }}
+        styles={{ body: { padding: 20 } }}
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 10,
+                background: gradient,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#fff',
+                fontSize: 16,
+              }}
+            >
+              <SafetyCertificateOutlined />
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontWeight: 600, fontSize: 15, color: '#1B3A5C' }}>{meta.label}</div>
+              <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 2 }}>
+                {isActive ? 'Provider mặc định hệ thống' : 'Provider phụ'}
+              </div>
+            </div>
+            {isActive ? (
+              <Tag
+                color="success"
+                icon={<CheckCircleOutlined />}
+                style={{ margin: 0, fontWeight: 600 }}
+              >
+                Đang kích hoạt
               </Tag>
-            </Tooltip>
-          );
+            ) : (
+              <Tag color="default" style={{ margin: 0 }}>
+                Không hoạt động
+              </Tag>
+            )}
+          </div>
         }
-        return (
-          <Tooltip title={`Kiểm tra: ${formatDateTime(record.last_tested_at)}`}>
-            <Tag color="error" icon={<CloseCircleOutlined />}>
-              Thất bại
-            </Tag>
-          </Tooltip>
-        );
-      },
-    },
-    {
-      title: 'Cập nhật',
-      dataIndex: 'updated_at',
-      key: 'updated_at',
-      width: 150,
-      render: (v: string | null) => (
-        <span style={{ fontSize: 12, color: '#64748B' }}>{formatDateTime(v)}</span>
-      ),
-    },
-    {
-      title: '',
-      key: 'actions',
-      width: 60,
-      align: 'center',
-      fixed: 'right',
-      render: (_, record) => (
-        <Dropdown
-          trigger={['click']}
-          menu={{
-            items: [
-              {
-                key: 'edit',
-                icon: <EditOutlined />,
-                label: record.id ? 'Cập nhật' : 'Cấu hình',
-                onClick: () => handleEdit(record),
-              },
-              {
-                key: 'activate',
-                icon: <PoweroffOutlined />,
-                label: record.is_active ? 'Đang hoạt động' : 'Kích hoạt',
-                disabled: record.is_active || record.id === null,
-                onClick: () => handleActivate(record),
-              },
-              { type: 'divider' },
-              {
-                key: 'delete',
-                icon: <DeleteOutlined />,
-                label: 'Xóa',
-                danger: true,
-                disabled: record.id === null || record.is_active,
-                onClick: () => handleDelete(record),
-              },
-            ],
-          }}
-        >
-          <Button
-            type="text"
-            size="small"
-            icon={<MoreOutlined style={{ fontSize: 18 }} />}
-            style={{ color: '#64748b' }}
-          />
-        </Dropdown>
-      ),
-    },
-  ];
+      >
+        {!provider ? (
+          <Empty description="Đang tải dữ liệu provider..." />
+        ) : (
+          <>
+            <Descriptions
+              column={1}
+              size="small"
+              labelStyle={{ width: 130, color: '#64748B', fontSize: 13 }}
+              contentStyle={{ fontSize: 13, color: '#1B3A5C' }}
+            >
+              <Descriptions.Item label="Base URL">
+                {provider.base_url ? (
+                  <Tooltip title={provider.base_url}>
+                    <span style={{ fontFamily: 'monospace', fontSize: 12 }}>
+                      {provider.base_url}
+                    </span>
+                  </Tooltip>
+                ) : (
+                  <Tag color="warning" style={{ margin: 0 }}>
+                    Chưa cấu hình
+                  </Tag>
+                )}
+              </Descriptions.Item>
+              <Descriptions.Item label="Client ID">
+                {provider.client_id ? (
+                  <Tooltip title={provider.client_id}>
+                    <span style={{ fontFamily: 'monospace', fontSize: 12 }}>
+                      {provider.client_id.length > 40
+                        ? `${provider.client_id.slice(0, 37)}...`
+                        : provider.client_id}
+                    </span>
+                  </Tooltip>
+                ) : (
+                  <span style={{ color: '#94A3B8' }}>—</span>
+                )}
+              </Descriptions.Item>
+              <Descriptions.Item label="Client Secret">
+                {provider.has_secret ? (
+                  <Badge
+                    status="success"
+                    text={
+                      <span style={{ fontFamily: 'monospace', fontSize: 12, color: '#1B3A5C' }}>
+                        ***
+                      </span>
+                    }
+                  />
+                ) : (
+                  <span style={{ color: '#94A3B8' }}>—</span>
+                )}
+              </Descriptions.Item>
+              {meta.needsProfileId && (
+                <Descriptions.Item label="Profile ID">
+                  {provider.profile_id ? (
+                    <span style={{ fontFamily: 'monospace', fontSize: 12 }}>
+                      {provider.profile_id}
+                    </span>
+                  ) : (
+                    <span style={{ color: '#94A3B8' }}>—</span>
+                  )}
+                </Descriptions.Item>
+              )}
+              <Descriptions.Item label="Kiểm tra">
+                {!provider.test_result ? (
+                  <Tag
+                    color="warning"
+                    icon={<WarningOutlined />}
+                    style={{ margin: 0 }}
+                  >
+                    Chưa kiểm tra
+                  </Tag>
+                ) : provider.test_result === 'OK' ? (
+                  <Space size={6}>
+                    <Tag
+                      color="success"
+                      icon={<CheckCircleOutlined />}
+                      style={{ margin: 0 }}
+                    >
+                      Kết nối OK
+                    </Tag>
+                    <span style={{ fontSize: 11, color: '#94A3B8' }}>
+                      {formatDateTime(provider.last_tested_at)}
+                    </span>
+                  </Space>
+                ) : (
+                  <Space size={6}>
+                    <Tag
+                      color="error"
+                      icon={<CloseCircleOutlined />}
+                      style={{ margin: 0 }}
+                    >
+                      Lỗi kết nối
+                    </Tag>
+                    <span style={{ fontSize: 11, color: '#94A3B8' }}>
+                      {formatDateTime(provider.last_tested_at)}
+                    </span>
+                  </Space>
+                )}
+              </Descriptions.Item>
+              <Descriptions.Item label="Cập nhật">
+                <span style={{ fontSize: 12, color: '#64748B' }}>
+                  {formatDateTime(provider.updated_at)}
+                </span>
+              </Descriptions.Item>
+            </Descriptions>
+
+            <div
+              style={{
+                marginTop: 16,
+                paddingTop: 16,
+                borderTop: '1px solid #F1F5F9',
+                display: 'flex',
+                justifyContent: 'flex-end',
+                gap: 8,
+              }}
+            >
+              <Button
+                icon={<EditOutlined />}
+                onClick={() => handleEdit(provider)}
+                disabled={!isConfigured}
+              >
+                Sửa cấu hình
+              </Button>
+              {!isActive && (
+                <Button
+                  type="primary"
+                  icon={<PoweroffOutlined />}
+                  onClick={() => handleActivate(provider)}
+                  loading={isActivating}
+                  disabled={!isConfigured}
+                >
+                  Kích hoạt
+                </Button>
+              )}
+            </div>
+          </>
+        )}
+      </Card>
+    );
+  };
 
   // ──────────────────────────────────────────────────────────────────────────
   // Render
@@ -688,7 +708,7 @@ export default function KySoCauHinhPage() {
     {
       key: 'total_users',
       title: 'Tổng người dùng',
-      value: selectedStats?.total_users ?? 0,
+      value: displayStats?.total_users ?? 0,
       icon: <TeamOutlined />,
       gradient: 'linear-gradient(135deg, #1B3A5C, #2d5a8e)',
       shadow: 'rgba(27,58,92,0.3)',
@@ -696,7 +716,7 @@ export default function KySoCauHinhPage() {
     {
       key: 'verified_users',
       title: 'Đã xác thực',
-      value: selectedStats?.verified_users ?? 0,
+      value: displayStats?.verified_users ?? 0,
       icon: <CheckCircleOutlined />,
       gradient: 'linear-gradient(135deg, #059669, #10b981)',
       shadow: 'rgba(5,150,105,0.3)',
@@ -704,7 +724,7 @@ export default function KySoCauHinhPage() {
     {
       key: 'monthly_transactions',
       title: 'Giao dịch tháng này',
-      value: selectedStats?.monthly_transactions ?? 0,
+      value: displayStats?.monthly_transactions ?? 0,
       icon: <RiseOutlined />,
       gradient: 'linear-gradient(135deg, #0891B2, #06b6d4)',
       shadow: 'rgba(8,145,178,0.3)',
@@ -712,7 +732,7 @@ export default function KySoCauHinhPage() {
     {
       key: 'monthly_completed',
       title: 'Thành công',
-      value: selectedStats?.monthly_completed ?? 0,
+      value: displayStats?.monthly_completed ?? 0,
       icon: <AuditOutlined />,
       gradient: 'linear-gradient(135deg, #7c3aed, #a78bfa)',
       shadow: 'rgba(124,58,237,0.3)',
@@ -720,7 +740,7 @@ export default function KySoCauHinhPage() {
     {
       key: 'monthly_failed',
       title: 'Thất bại',
-      value: selectedStats?.monthly_failed ?? 0,
+      value: displayStats?.monthly_failed ?? 0,
       icon: <CloseCircleOutlined />,
       gradient: 'linear-gradient(135deg, #dc2626, #f87171)',
       shadow: 'rgba(220,38,38,0.3)',
@@ -736,37 +756,71 @@ export default function KySoCauHinhPage() {
           Cấu hình ký số hệ thống
         </h2>
         <p className="page-description">
-          Chọn nhà cung cấp dịch vụ ký số (SmartCA VNPT hoặc MySign Viettel), cấu hình credentials và kích hoạt cho toàn hệ thống
+          Hệ thống hỗ trợ 2 nhà cung cấp dịch vụ ký số: SmartCA VNPT và MySign Viettel. Admin cấu
+          hình credentials và kích hoạt 1 provider cho toàn hệ thống.
         </p>
       </div>
 
-      {/* Active Provider Banner */}
+      {/* Active Provider Banner + Refresh */}
       {!loading && (
-        activeProvider ? (
-          <Alert
-            type="success"
-            showIcon
-            style={{ marginBottom: 16, borderRadius: 12 }}
-            message={
-              <span>
-                <strong>Provider đang hoạt động:</strong> {activeProvider.provider_name}
-                {activeProvider.last_tested_at && (
-                  <span style={{ marginLeft: 12, color: '#64748B', fontSize: 12 }}>
-                    (Kiểm tra lần cuối: {formatDateTime(activeProvider.last_tested_at)})
+        <div style={{ marginBottom: 16 }}>
+          {activeProvider ? (
+            <Alert
+              type="success"
+              showIcon
+              icon={<CheckCircleOutlined />}
+              style={{ borderRadius: 12 }}
+              message={
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+                  <span>
+                    <strong>Provider đang hoạt động:</strong> {activeProvider.provider_name}
+                    {activeProvider.base_url && (
+                      <span style={{ marginLeft: 8, color: '#64748B', fontSize: 12, fontFamily: 'monospace' }}>
+                        ({activeProvider.base_url})
+                      </span>
+                    )}
+                    {activeProvider.last_tested_at && (
+                      <span style={{ marginLeft: 12, color: '#64748B', fontSize: 12 }}>
+                        Kiểm tra lần cuối: {formatDateTime(activeProvider.last_tested_at)}
+                      </span>
+                    )}
                   </span>
-                )}
-              </span>
-            }
-          />
-        ) : (
-          <Alert
-            type="warning"
-            showIcon
-            style={{ marginBottom: 16, borderRadius: 12 }}
-            message="Chưa có provider nào được kích hoạt"
-            description="Vui lòng cấu hình và kích hoạt 1 provider (SmartCA VNPT hoặc MySign Viettel) để bật tính năng ký số trong toàn hệ thống."
-          />
-        )
+                  <Button
+                    icon={<ReloadOutlined />}
+                    onClick={fetchConfig}
+                    disabled={loading}
+                    size="small"
+                  >
+                    Làm mới
+                  </Button>
+                </div>
+              }
+            />
+          ) : (
+            <Alert
+              type="warning"
+              showIcon
+              icon={<ExclamationCircleOutlined />}
+              style={{ borderRadius: 12 }}
+              message={
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+                  <span>
+                    <strong>Chưa có provider nào được kích hoạt.</strong> Vui lòng cấu hình và kích
+                    hoạt 1 provider để bật tính năng ký số.
+                  </span>
+                  <Button
+                    icon={<ReloadOutlined />}
+                    onClick={fetchConfig}
+                    disabled={loading}
+                    size="small"
+                  >
+                    Làm mới
+                  </Button>
+                </div>
+              }
+            />
+          )}
+        </div>
       )}
 
       {/* Stats Section */}
@@ -779,28 +833,17 @@ export default function KySoCauHinhPage() {
           <div className="section-card-header">
             <div
               className="section-card-icon"
-              style={{ background: 'linear-gradient(135deg, #1B3A5C, #0891B2)', color: '#fff' }}
+              style={{
+                background: 'linear-gradient(135deg, #1B3A5C, #0891B2)',
+                color: '#fff',
+              }}
             >
               <ThunderboltOutlined style={{ fontSize: 14 }} />
             </div>
-            <span style={{ fontWeight: 600, color: '#1B3A5C' }}>Thống kê provider</span>
+            <span style={{ fontWeight: 600, color: '#1B3A5C' }}>
+              Thống kê {activeProvider ? `(${activeProvider.provider_name})` : '(chưa có provider)'}
+            </span>
           </div>
-        }
-        extra={
-          providers.length > 0 && (
-            <Radio.Group
-              size="small"
-              value={selectedStatsCode}
-              onChange={(e) => setSelectedStatsCode(e.target.value as ProviderCode)}
-              buttonStyle="solid"
-            >
-              {providers.map((p) => (
-                <Radio.Button key={p.provider_code} value={p.provider_code}>
-                  {p.provider_name}
-                </Radio.Button>
-              ))}
-            </Radio.Group>
-          )
         }
       >
         {loading ? (
@@ -812,7 +855,10 @@ export default function KySoCauHinhPage() {
                 <Card
                   className="stat-card"
                   variant="borderless"
-                  style={{ boxShadow: `0 4px 12px ${card.shadow}`, background: card.gradient }}
+                  style={{
+                    boxShadow: `0 4px 12px ${card.shadow}`,
+                    background: card.gradient,
+                  }}
                   styles={{ body: { padding: '14px 16px' } }}
                 >
                   <div className="stat-card-body">
@@ -857,56 +903,46 @@ export default function KySoCauHinhPage() {
         )}
       </Card>
 
-      {/* Providers Table */}
-      <Card
-        className="page-card"
-        variant="borderless"
-        title={
-          <div className="section-card-header">
-            <div
-              className="section-card-icon"
-              style={{ background: 'linear-gradient(135deg, #0891B2, #06b6d4)', color: '#fff' }}
-            >
-              <SafetyCertificateOutlined style={{ fontSize: 14 }} />
-            </div>
-            <span style={{ fontWeight: 600, color: '#1B3A5C' }}>Danh sách cấu hình</span>
-          </div>
-        }
-        extra={
-          <Space>
-            <Button icon={<ReloadOutlined />} onClick={fetchConfig} disabled={loading}>
-              Làm mới
-            </Button>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={handleAdd}
-            >
-              Thêm / Cấu hình mới
-            </Button>
-          </Space>
-        }
-      >
-        <Table
-          className="enhanced-table"
-          columns={columns}
-          dataSource={providers}
-          rowKey={(r) => r.provider_code}
-          loading={loading}
-          size="middle"
-          sticky
-          scroll={{ x: 1100 }}
-          pagination={false}
-        />
-      </Card>
+      {/* 2 Provider Cards — side by side (stack on mobile) */}
+      {loading ? (
+        <Row gutter={[16, 16]}>
+          <Col xs={24} md={12}>
+            <Card>
+              <Skeleton active paragraph={{ rows: 5 }} />
+            </Card>
+          </Col>
+          <Col xs={24} md={12}>
+            <Card>
+              <Skeleton active paragraph={{ rows: 5 }} />
+            </Card>
+          </Col>
+        </Row>
+      ) : (
+        <Row gutter={[16, 16]}>
+          <Col xs={24} md={12}>
+            {renderProviderCard(
+              smartcaProvider,
+              'SMARTCA_VNPT',
+              'linear-gradient(135deg, #1B3A5C, #0891B2)',
+            )}
+          </Col>
+          <Col xs={24} md={12}>
+            {renderProviderCard(
+              mysignProvider,
+              'MYSIGN_VIETTEL',
+              'linear-gradient(135deg, #7c3aed, #a78bfa)',
+            )}
+          </Col>
+        </Row>
+      )}
 
-      {/* Drawer — Add/Edit */}
+      {/* Drawer — Sửa cấu hình */}
       <Drawer
         forceRender
         title={
           editingRecord
-            ? `Cập nhật cấu hình — ${editingRecord.provider_name}`
-            : 'Thêm cấu hình ký số'
+            ? `Sửa cấu hình — ${editingRecord.provider_name}`
+            : 'Sửa cấu hình'
         }
         open={drawerOpen}
         onClose={handleCloseDrawer}
@@ -916,200 +952,179 @@ export default function KySoCauHinhPage() {
         extra={
           <Space>
             <Button onClick={handleCloseDrawer}>Hủy</Button>
-            {editingRecord && (
+            <Button loading={saving} onClick={() => handleSave(false)}>
+              Lưu
+            </Button>
+            {editingRecord && !editingRecord.is_active && (
               <Button
+                type="primary"
                 loading={saving}
-                onClick={() => handleSave(false)}
+                disabled={!testedOk}
+                onClick={() => handleSave(true)}
+                icon={<PoweroffOutlined />}
               >
-                Chỉ lưu
+                Lưu &amp; Kích hoạt
               </Button>
             )}
-            <Button
-              type="primary"
-              loading={saving}
-              disabled={!testedOk}
-              onClick={() => handleSave(true)}
-              icon={<PoweroffOutlined />}
-            >
-              Lưu & Kích hoạt
-            </Button>
           </Space>
         }
       >
-        <Form
-          form={form}
-          layout="vertical"
-          autoComplete="off"
-          validateTrigger="onSubmit"
-        >
-          <Form.Item
-            name="provider_code"
-            label="Nhà cung cấp"
-            rules={[{ required: true, message: 'Vui lòng chọn nhà cung cấp' }]}
-          >
-            <Radio.Group disabled={!!editingRecord}>
-              {PROVIDER_OPTIONS.map((opt) => (
-                <Radio key={opt.value} value={opt.value}>
-                  {opt.label}
-                </Radio>
-              ))}
-            </Radio.Group>
-          </Form.Item>
-
-          <Form.Item
-            name="base_url"
-            label="Base URL"
-            rules={[
-              { required: true, message: 'Nhập Base URL của provider' },
-              {
-                validator: (_, value: string | undefined) => {
-                  if (!value) return Promise.resolve();
-                  const v = value.trim();
-                  if (v.startsWith('https://') || v.startsWith('http://localhost')) {
-                    return Promise.resolve();
-                  }
-                  return Promise.reject(new Error('Base URL phải bắt đầu bằng https:// (hoặc http://localhost cho dev)'));
-                },
-              },
-            ]}
-            extra={
-              <span style={{ fontSize: 12, color: '#94A3B8' }}>
-                VD: {PROVIDER_OPTIONS.find((o) => o.value === selectedProviderCode)?.baseUrlHint ?? '—'}
-              </span>
-            }
-          >
-            <Input maxLength={500} placeholder="https://..." />
-          </Form.Item>
-
-          <Form.Item
-            name="client_id"
-            label="Client ID"
-            rules={[{ required: true, message: 'Nhập Client ID' }]}
-          >
-            <Input maxLength={200} placeholder="VD: sp_vnpt_xxxx hoặc myapp_client" />
-          </Form.Item>
-
-          <Form.Item
-            name="client_secret"
-            label={
-              <span>
-                Client Secret
-                {editingRecord && (
-                  <Tag color="blue" style={{ marginLeft: 8, fontSize: 11 }}>
-                    Để trống nếu giữ nguyên
-                  </Tag>
-                )}
-              </span>
-            }
-            rules={
-              editingRecord
-                ? [
-                    {
-                      validator: (_, value: string | undefined) => {
-                        if (!value) return Promise.resolve();
-                        if (value.length < 8) {
-                          return Promise.reject(new Error('Client Secret tối thiểu 8 ký tự'));
-                        }
-                        return Promise.resolve();
-                      },
-                    },
-                  ]
-                : [
-                    { required: true, message: 'Nhập Client Secret' },
-                    { min: 8, message: 'Client Secret tối thiểu 8 ký tự' },
-                  ]
-            }
-          >
-            <Input.Password
-              maxLength={500}
-              placeholder={
-                editingRecord
-                  ? 'Để trống nếu giữ nguyên secret cũ'
-                  : 'Nhập client_secret do provider cấp'
+        {editingRecord && (
+          <Form form={form} layout="vertical" autoComplete="off" validateTrigger="onSubmit">
+            <Alert
+              type="info"
+              showIcon
+              style={{ marginBottom: 16, borderRadius: 8 }}
+              message={`Đang sửa: ${editingRecord.provider_name}`}
+              description={
+                editingRecord.is_active
+                  ? 'Provider này đang hoạt động — thay đổi sẽ áp dụng ngay khi lưu.'
+                  : 'Provider này chưa hoạt động. Có thể kích hoạt sau khi kiểm tra kết nối thành công.'
               }
-              autoComplete="new-password"
             />
-          </Form.Item>
 
-          {selectedProviderCode === 'MYSIGN_VIETTEL' && (
             <Form.Item
-              name="profile_id"
-              label="Profile ID"
+              name="base_url"
+              label="Base URL"
               rules={[
-                { required: true, message: 'Profile ID là bắt buộc với MySign Viettel' },
+                { required: true, message: 'Nhập Base URL của provider' },
+                {
+                  validator: (_, value: string | undefined) => {
+                    if (!value) return Promise.resolve();
+                    const v = value.trim();
+                    if (v.startsWith('https://') || v.startsWith('http://localhost')) {
+                      return Promise.resolve();
+                    }
+                    return Promise.reject(
+                      new Error('Base URL phải bắt đầu bằng https:// (hoặc http://localhost cho dev)'),
+                    );
+                  },
+                },
               ]}
               extra={
                 <span style={{ fontSize: 12, color: '#94A3B8' }}>
-                  VD: adss:ras:profile:001 (do Viettel cấp cùng credentials)
+                  VD: {PROVIDER_META[editingRecord.provider_code].baseUrlHint}
                 </span>
               }
             >
-              <Input maxLength={200} placeholder="adss:ras:profile:XXX" />
+              <Input maxLength={500} placeholder="https://..." />
             </Form.Item>
-          )}
 
-          {/* Test Connection block */}
-          <div
-            style={{
-              background: '#F8FAFC',
-              border: '1px solid #E2E8F0',
-              borderRadius: 12,
-              padding: 16,
-              marginTop: 8,
-            }}
-          >
+            <Form.Item
+              name="client_id"
+              label="Client ID"
+              rules={[{ required: true, message: 'Nhập Client ID' }]}
+            >
+              <Input maxLength={200} placeholder="VD: sp_vnpt_xxxx hoặc myapp_client" />
+            </Form.Item>
+
+            <Form.Item
+              name="client_secret"
+              label={
+                <span>
+                  Client Secret
+                  <Tag color="blue" style={{ marginLeft: 8, fontSize: 11 }}>
+                    Để trống nếu giữ nguyên
+                  </Tag>
+                </span>
+              }
+              rules={[
+                {
+                  validator: (_, value: string | undefined) => {
+                    if (!value) return Promise.resolve();
+                    if (value.length < 8) {
+                      return Promise.reject(new Error('Client Secret tối thiểu 8 ký tự'));
+                    }
+                    return Promise.resolve();
+                  },
+                },
+              ]}
+            >
+              <Input.Password
+                maxLength={500}
+                placeholder="Để trống nếu giữ nguyên secret cũ"
+                autoComplete="new-password"
+              />
+            </Form.Item>
+
+            {PROVIDER_META[editingRecord.provider_code].needsProfileId && (
+              <Form.Item
+                name="profile_id"
+                label="Profile ID"
+                rules={[{ required: true, message: 'Profile ID là bắt buộc với MySign Viettel' }]}
+                extra={
+                  <span style={{ fontSize: 12, color: '#94A3B8' }}>
+                    VD: adss:ras:profile:001 (do Viettel cấp cùng credentials)
+                  </span>
+                }
+              >
+                <Input maxLength={200} placeholder="adss:ras:profile:XXX" />
+              </Form.Item>
+            )}
+
+            {/* Test Connection block */}
             <div
               style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: 12,
+                background: '#F8FAFC',
+                border: '1px solid #E2E8F0',
+                borderRadius: 12,
+                padding: 16,
+                marginTop: 8,
               }}
             >
-              <div>
-                <div style={{ fontSize: 14, fontWeight: 600, color: '#1B3A5C' }}>
-                  Kiểm tra kết nối provider
-                </div>
-                <div style={{ fontSize: 12, color: '#64748B', marginTop: 2 }}>
-                  Bắt buộc test thành công trước khi &quot;Lưu &amp; Kích hoạt&quot;
-                </div>
-              </div>
-              <Button
-                type="primary"
-                ghost
-                icon={<ThunderboltOutlined />}
-                onClick={onTestConnection}
-                loading={testing}
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: 12,
+                  flexWrap: 'wrap',
+                  gap: 12,
+                }}
               >
-                Kiểm tra kết nối
-              </Button>
-            </div>
-
-            {testResult && (
-              <Alert
-                type={testResult.ok ? 'success' : 'error'}
-                showIcon
-                style={{ marginTop: 8, borderRadius: 8 }}
-                message={
-                  testResult.ok
-                    ? 'Kết nối thành công'
-                    : 'Kết nối thất bại'
-                }
-                description={
-                  <div>
-                    <div>{testResult.message}</div>
-                    {testResult.ok && testResult.subject && (
-                      <div style={{ marginTop: 4, fontSize: 12 }}>
-                        <strong>Chứng thư:</strong>{' '}
-                        <span style={{ fontFamily: 'monospace' }}>{testResult.subject}</span>
-                      </div>
-                    )}
+                <div style={{ flex: 1, minWidth: 240 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: '#1B3A5C' }}>
+                    Kiểm tra kết nối provider
                   </div>
-                }
-              />
-            )}
-          </div>
-        </Form>
+                  <div style={{ fontSize: 12, color: '#64748B', marginTop: 2 }}>
+                    Bắt buộc test thành công trước khi &quot;Lưu &amp; Kích hoạt&quot;. Nếu chỉ sửa
+                    base_url / client_id không đổi secret, có thể dùng nút &quot;Lưu&quot; mà không
+                    cần test lại.
+                  </div>
+                </div>
+                <Button
+                  type="primary"
+                  ghost
+                  icon={<ThunderboltOutlined />}
+                  onClick={onTestConnection}
+                  loading={testing}
+                >
+                  Kiểm tra kết nối
+                </Button>
+              </div>
+
+              {testResult && (
+                <Alert
+                  type={testResult.ok ? 'success' : 'error'}
+                  showIcon
+                  style={{ marginTop: 8, borderRadius: 8 }}
+                  message={testResult.ok ? 'Kết nối thành công' : 'Kết nối thất bại'}
+                  description={
+                    <div>
+                      <div>{testResult.message}</div>
+                      {testResult.ok && testResult.subject && (
+                        <div style={{ marginTop: 4, fontSize: 12 }}>
+                          <strong>Chứng thư:</strong>{' '}
+                          <span style={{ fontFamily: 'monospace' }}>{testResult.subject}</span>
+                        </div>
+                      )}
+                    </div>
+                  }
+                />
+              )}
+            </div>
+          </Form>
+        )}
       </Drawer>
     </div>
   );
