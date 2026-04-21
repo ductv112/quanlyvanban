@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: in_progress
-stopped_at: Completed 11-03-PLAN.md (Sign API route — POST /sign + cancel + GET /:id < 1s; MinIO placeholder store bridges route to worker)
-last_updated: "2026-04-21T10:35:15.000Z"
+status: completed
+stopped_at: Completed 11-04-PLAN.md (BullMQ worker poll-sign-status + Socket events + bell notification — async sign flow complete end-to-end)
+last_updated: "2026-04-21T10:53:01.391Z"
 last_activity: 2026-04-21
 progress:
   total_phases: 11
   completed_phases: 10
   total_plans: 51
-  completed_plans: 46
-  percent: 90
+  completed_plans: 47
+  percent: 92
 ---
 
 # Project State
@@ -25,13 +25,13 @@ See: .planning/PROJECT.md (updated 2026-04-21 — Milestone v2.0 started)
 
 ## Current Position
 
-Phase: 11 — IN PROGRESS (3/8 plans)
-Plan: 03 complete — Sign API route published (POST /sign + cancel + GET /:id, < 1s producer, MinIO placeholder store)
-Next: Plan 11-04 — Worker completion (BullMQ consumer embeds signature + finalize)
-Status: Phase 11 wave 2 complete (API entry point + placeholder bridge), ready for wave 3 (worker consumer)
+Phase: 11 — IN PROGRESS (4/8 plans)
+Plan: 04 complete — BullMQ worker poll-sign-status consumer — full async sign flow end-to-end (route → queue → worker → embed + upload + finalize → Socket + bell)
+Next: Plan 11-05 — List endpoint (GET /api/ky-so/danh-sach, tabs pending/completed/failed via fn_sign_transaction_list_by_staff)
+Status: Phase 11 wave 3 complete (worker consumer + graceful shutdown), ready for wave 4 (list UI + cancel/retry)
 Last activity: 2026-04-21
 
-Progress: [█████████░] 90% (46/51 plans complete)
+Progress: [█████████░] 92% (47/51 plans complete)
 
 ## Performance Metrics
 
@@ -68,6 +68,7 @@ Progress: [█████████░] 90% (46/51 plans complete)
 | Phase 11 P01 | 5min | 2 tasks | 3 files |
 | Phase 11 P02 | 4min | 2 tasks | 4 files |
 | Phase 11 P03 | 7min | 3 tasks | 3 files |
+| Phase 11 P04 | 8min | 3 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -130,6 +131,11 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase 11]: [Phase 11-03]: DB transaction tạo TRƯỚC provider.signHash — cần txnId làm documentId provider echo back + làm placeholder key; rollback via updateStatus(failed) + removePlaceholder nếu signHash throw
 - [Phase 11]: [Phase 11-03]: PLACEHOLDER_PREFIX exported để route + Plan 04 worker dùng cùng constant — không hardcode string ở 2 nơi, không drift
 - [Phase 11]: [Phase 11-03]: Mount /api/ky-so/sign TRƯỚC /api/ky-so catch-all (longer-prefix-wins); authenticate only (không requireRoles) — mọi user có quyền đều ký được
+- [Phase 11]: [Phase 11-04]: Manual re-enqueue (attempts:1) vs BullMQ auto-retry — exact 5s × 36 attempts aligned với sign_transactions.expires_at
+- [Phase 11]: [Phase 11-04]: handleFailure + rescheduleOrExpire helpers consolidate 7+ failure branches — sửa logic 1 chỗ áp dụng tất cả call sites
+- [Phase 11]: [Phase 11-04]: Short-circuit DB re-read mỗi job — mitigate T-11-13 Redis tampering; attacker inject job cho txn cancelled = no-op
+- [Phase 11]: [Phase 11-04]: Graceful shutdown order stopSigningWorker → closeSigningQueue → closeRedisConnection với failsafe setTimeout(10s).unref() — tránh hang forever nhưng không block event loop
+- [Phase 11]: [Phase 11-04]: noticeRepository.createForStaff dùng fn_notice_create (unit-wide) + notice_type=SIGN_RESULT — pragmatic v2.0 không migration mới; trade-off unit members thấy notice vì rare events + title có tên user
 
 ### Pending Todos
 
@@ -161,6 +167,6 @@ v1.0 hoàn thành với 3 quick tasks (HDSD Compliance sprint cuối):
 
 ## Session Continuity
 
-Last session: 2026-04-21T10:35:15.000Z
-Stopped at: Completed 11-03-PLAN.md (Sign API route — POST /sign + cancel + GET /:id < 1s; MinIO placeholder store bridges route to worker)
+Last session: 2026-04-21T10:53:01.381Z
+Stopped at: Completed 11-04-PLAN.md (BullMQ worker poll-sign-status + Socket events + bell notification — async sign flow complete end-to-end)
 Resume: `/gsd-execute-phase 11` để tiếp tục Plan 11-04 (worker completion)
