@@ -43,3 +43,6 @@ minio_data/
 # Source code cũ (chỉ giữ local để tham khảo)
 docs/source_code_cu/
 docs/e_office_app_old/
+
+# Estimate/báo giá nội bộ — không commit
+docs/Function list & Estimate.xlsx
