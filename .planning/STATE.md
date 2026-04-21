@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 10-03-PLAN.md (Phase 10 COMPLETE — 3/3 plans CFG-05+CFG-06+UX-13 delivered; tab chữ ký số cũ migrated sang /ky-so/tai-khoan)
-last_updated: "2026-04-21T09:40:44.405Z"
+status: completed
+stopped_at: Completed 11-01-PLAN.md (migration 045 + attachment-sign repo + sign-helpers — DB contract for Plans 02-05 published)
+last_updated: "2026-04-21T10:17:47.122Z"
 last_activity: 2026-04-21
 progress:
-  total_phases: 10
+  total_phases: 11
   completed_phases: 10
-  total_plans: 43
-  completed_plans: 43
-  percent: 100
+  total_plans: 51
+  completed_plans: 44
+  percent: 86
 ---
 
 # Project State
@@ -65,6 +65,7 @@ Progress: [██████████] 100% (43/43 plans complete at current
 | Phase 10 P01 | 4min | 2 tasks | 2 files |
 | Phase 10 P02 | 45min | 3 tasks | 2 files |
 | Phase 10 P03 | 10min | 1 tasks | 1 files |
+| Phase 11 P01 | 5min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -115,6 +116,10 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase 10]: [Phase 10-02]: Label 'Xác thực tài khoản ký số' thay 'Kiểm tra kết nối' — action thực tế là verify mã định danh qua API provider, không test connection đơn thuần; mapping 1:1 với badge 'Đã xác thực'
 - [Phase 10]: [Phase 10-02]: Group sidebar KÝ SỐ visible cho MỌI user (restructure từ admin-only) — push group header unconditionally, chỉ wrap submenu 'Cấu hình hệ thống' trong if (isAdmin); scale tốt cho Phase 12 UX-01 thêm submenu 'Danh sách ký số'
 - [Phase 10]: [Phase 10-03]: Migration UI pattern — giữ Tabs 2 tab rename 'Chữ ký số' → 'Ảnh chữ ký' + Alert pointer với Next.js Link sang /ky-so/tai-khoan; KHÔNG hard redirect vì sign_image upload vẫn là functionality hợp lệ ở trang này
+- [Phase 11]: [Phase 11-01]: GET DIAGNOSTICS ROW_COUNT thay FOUND — FOUND là special variable PL/pgSQL, không phải DIAGNOSTICS item; multi-branch UPDATE SP cần v_rows INT capture riêng mỗi branch
+- [Phase 11]: [Phase 11-01]: Permission check fn_attachment_can_sign bao gồm cả approver (không chỉ signer) — outgoing/drafting có 2 field VARCHAR signer+approver; approver trình-ký cũng cần ký được theo legacy .NET flow
+- [Phase 11]: [Phase 11-01]: Admin bypass kép — EXISTS(role 'Quản trị hệ thống') OR staff.is_admin TRUE; cover cả role-based và legacy flag-based admin
+- [Phase 11]: [Phase 11-01]: doc_label compose trong SP (CASE theo doc_type) — FE Phase 12 render 1 query = 1 row hiển thị, giảm latency và loại bỏ client-side join 4 attachment × 4 doc tables
 
 ### Pending Todos
 
@@ -146,6 +151,6 @@ v1.0 hoàn thành với 3 quick tasks (HDSD Compliance sprint cuối):
 
 ## Session Continuity
 
-Last session: 2026-04-21T09:40:44.394Z
-Stopped at: Completed 10-03-PLAN.md (Phase 10 COMPLETE — 3/3 plans CFG-05+CFG-06+UX-13 delivered; tab chữ ký số cũ migrated sang /ky-so/tai-khoan)
+Last session: 2026-04-21T10:17:32.467Z
+Stopped at: Completed 11-01-PLAN.md (migration 045 + attachment-sign repo + sign-helpers — DB contract for Plans 02-05 published)
 Resume: `/gsd-plan-phase 8`
