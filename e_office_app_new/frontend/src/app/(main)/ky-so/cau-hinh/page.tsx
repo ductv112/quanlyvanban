@@ -21,8 +21,9 @@
  *  - Submit/test: payload client_secret là plaintext (HTTPS), backend encrypt trước khi lưu
  *
  * API (Plan 09-02 + patch 09-03):
- *  GET    /ky-so/cau-hinh                  → { data: { providers: [], active_code } }
- *  POST   /ky-so/cau-hinh/test-connection  → { data: { test_result, message, certificate_subject } }
+ *  GET    /ky-so/cau-hinh                  → { data: { providers: [has_secret,...], active_code } }
+ *  POST   /ky-so/cau-hinh/test-connection  → test với credentials user vừa nhập (plaintext trong body)
+ *  POST   /ky-so/cau-hinh/:id/test-saved   → test với credentials đã lưu trong DB (không cần user nhập)
  *  PUT    /ky-so/cau-hinh/:id              → update (bắt buộc có id tồn tại)
  *  PATCH  /ky-so/cau-hinh/:id/active       → activate (auto-deactivate others)
  *  POST   /ky-so/cau-hinh                  → 405 (disabled)
@@ -61,6 +62,10 @@ import {
   ReloadOutlined,
   WarningOutlined,
   ExclamationCircleOutlined,
+  LockOutlined,
+  DatabaseOutlined,
+  KeyOutlined,
+  QuestionCircleOutlined,
 } from '@ant-design/icons';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth.store';
@@ -108,6 +113,12 @@ interface TestResultState {
   ok: boolean;
   message: string;
   subject?: string | null;
+  /**
+   * 'new'  — test với secret user vừa nhập trong form (plaintext body)
+   * 'saved' — test với credentials đã lưu trong DB (endpoint /:id/test-saved)
+   */
+  source: 'new' | 'saved';
+  durationMs?: number;
 }
 
 // ============================================================================
@@ -170,9 +181,12 @@ export default function KySoCauHinhPage() {
   const [editingRecord, setEditingRecord] = useState<ProviderConfig | null>(null);
 
   // Test connection state
-  const [testing, setTesting] = useState(false);
+  // testingSource: null khi idle, 'new' | 'saved' khi đang test (deduplicate 2 button)
+  const [testingSource, setTestingSource] = useState<'new' | 'saved' | null>(null);
   const [testedOk, setTestedOk] = useState(false);
   const [testResult, setTestResult] = useState<TestResultState | null>(null);
+  // Có thực sự user đã gõ secret mới trong form? — enable/disable button "test secret mới"
+  const [secretDirty, setSecretDirty] = useState(false);
 
   // Save state
   const [saving, setSaving] = useState(false);
@@ -241,6 +255,8 @@ export default function KySoCauHinhPage() {
     });
     setTestedOk(false);
     setTestResult(null);
+    setSecretDirty(false);
+    setTestingSource(null);
     setDrawerOpen(true);
   };
 
@@ -249,6 +265,8 @@ export default function KySoCauHinhPage() {
     setEditingRecord(null);
     setTestedOk(false);
     setTestResult(null);
+    setSecretDirty(false);
+    setTestingSource(null);
     form.resetFields();
   };
 
@@ -271,7 +289,9 @@ export default function KySoCauHinhPage() {
   };
 
   // ──────────────────────────────────────────────────────────────────────────
-  // Test connection (no persistence) — dùng trong Drawer edit
+  // Test connection — 2 variant:
+  //   • onTestConnection      — dùng plaintext user vừa nhập trong form (không persist DB)
+  //   • onTestSavedConnection — dùng credentials đã lưu trong DB (persist last_tested_at)
   // ──────────────────────────────────────────────────────────────────────────
 
   const onTestConnection = async () => {
@@ -290,9 +310,10 @@ export default function KySoCauHinhPage() {
         return;
       }
 
-      setTesting(true);
+      setTestingSource('new');
       setTestResult(null);
 
+      const startedAt = Date.now();
       const { data: res } = await api.post<{
         success: boolean;
         data: {
@@ -307,6 +328,7 @@ export default function KySoCauHinhPage() {
         client_secret: values.client_secret,
         profile_id: values.profile_id ?? null,
       });
+      const durationMs = Date.now() - startedAt;
 
       if (res.data?.test_result === 'OK') {
         setTestedOk(true);
@@ -314,6 +336,8 @@ export default function KySoCauHinhPage() {
           ok: true,
           message: res.data.message,
           subject: res.data.certificate_subject,
+          source: 'new',
+          durationMs,
         });
         message.success('Kiểm tra kết nối thành công');
       } else {
@@ -321,6 +345,8 @@ export default function KySoCauHinhPage() {
         setTestResult({
           ok: false,
           message: res.data?.message ?? 'Kết nối thất bại',
+          source: 'new',
+          durationMs,
         });
       }
     } catch (err) {
@@ -331,9 +357,66 @@ export default function KySoCauHinhPage() {
       };
       if (httpErr?.errorFields) return;
       const msg = httpErr?.response?.data?.message ?? 'Không kết nối được provider';
-      setTestResult({ ok: false, message: msg });
+      setTestResult({ ok: false, message: msg, source: 'new' });
     } finally {
-      setTesting(false);
+      setTestingSource(null);
+    }
+  };
+
+  /**
+   * Test config đã lưu trong DB — gọi POST /:id/test-saved.
+   * Không cần form values (ngoại trừ id editingRecord). Backend decrypt secret và
+   * persist last_tested_at. Guard "chưa cấu hình" được backend trả 400.
+   */
+  const onTestSavedConnection = async () => {
+    if (!editingRecord || !editingRecord.id) {
+      message.warning('Không tìm thấy cấu hình provider đang sửa');
+      return;
+    }
+    try {
+      setTestingSource('saved');
+      setTestResult(null);
+
+      const { data: res } = await api.post<{
+        success: boolean;
+        data: {
+          ok: boolean;
+          test_result: 'OK' | 'FAILED';
+          message: string;
+          certificate_subject: string | null;
+          duration_ms: number;
+        };
+      }>(`/ky-so/cau-hinh/${editingRecord.id}/test-saved`);
+
+      if (res.data?.ok) {
+        // testedOk KHÔNG set true ở đây — testedOk dành cho flow "Lưu & Kích hoạt"
+        // (yêu cầu test với secret mới). Test saved chỉ là verify config hiện tại.
+        setTestResult({
+          ok: true,
+          message: res.data.message,
+          subject: res.data.certificate_subject,
+          source: 'saved',
+          durationMs: res.data.duration_ms,
+        });
+        message.success('Kiểm tra cấu hình đã lưu thành công');
+        // Refresh list để card hiển thị last_tested_at + test_result mới
+        fetchConfig();
+      } else {
+        setTestResult({
+          ok: false,
+          message: res.data?.message ?? 'Kết nối thất bại',
+          source: 'saved',
+          durationMs: res.data?.duration_ms,
+        });
+      }
+    } catch (err) {
+      const httpErr = err as {
+        response?: { data?: { message?: string } };
+      };
+      const msg = httpErr?.response?.data?.message ?? 'Không kết nối được provider';
+      setTestResult({ ok: false, message: msg, source: 'saved' });
+    } finally {
+      setTestingSource(null);
     }
   };
 
@@ -985,7 +1068,16 @@ export default function KySoCauHinhPage() {
 
             <Form.Item
               name="base_url"
-              label="Base URL"
+              label={
+                <span>
+                  Base URL{' '}
+                  <Tooltip
+                    title="URL cổng API của nhà cung cấp. Ví dụ: https://gwsca.vnpt.vn (SmartCA VNPT) hoặc https://remotesigning.viettel.vn (MySign Viettel)"
+                  >
+                    <QuestionCircleOutlined style={{ color: '#94A3B8', fontSize: 13 }} />
+                  </Tooltip>
+                </span>
+              }
               rules={[
                 { required: true, message: 'Nhập Base URL của provider' },
                 {
@@ -1012,7 +1104,16 @@ export default function KySoCauHinhPage() {
 
             <Form.Item
               name="client_id"
-              label="Client ID"
+              label={
+                <span>
+                  Client ID{' '}
+                  <Tooltip
+                    title="Mã định danh app QLVB, do nhà cung cấp cấp khi đăng ký tích hợp."
+                  >
+                    <QuestionCircleOutlined style={{ color: '#94A3B8', fontSize: 13 }} />
+                  </Tooltip>
+                </span>
+              }
               rules={[{ required: true, message: 'Nhập Client ID' }]}
             >
               <Input maxLength={200} placeholder="VD: sp_vnpt_xxxx hoặc myapp_client" />
@@ -1022,7 +1123,12 @@ export default function KySoCauHinhPage() {
               name="client_secret"
               label={
                 <span>
-                  Client Secret
+                  Client Secret{' '}
+                  <Tooltip
+                    title="Mật khẩu của app QLVB với nhà cung cấp ký số. Khác với OTP cá nhân của user."
+                  >
+                    <QuestionCircleOutlined style={{ color: '#94A3B8', fontSize: 13 }} />
+                  </Tooltip>
                   <Tag color="blue" style={{ marginLeft: 8, fontSize: 11 }}>
                     Để trống nếu giữ nguyên
                   </Tag>
@@ -1039,11 +1145,37 @@ export default function KySoCauHinhPage() {
                   },
                 },
               ]}
+              extra={
+                editingRecord.has_secret ? (
+                  <span
+                    style={{
+                      fontSize: 12,
+                      color: '#059669',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 4,
+                    }}
+                  >
+                    <LockOutlined />
+                    Client Secret đã được mã hóa và lưu trữ an toàn. Để trống để giữ nguyên, hoặc
+                    nhập secret mới để thay thế.
+                  </span>
+                ) : (
+                  <span style={{ fontSize: 12, color: '#94A3B8' }}>
+                    Chưa cấu hình — nhập Client Secret từ nhà cung cấp.
+                  </span>
+                )
+              }
             >
               <Input.Password
                 maxLength={500}
-                placeholder="Để trống nếu giữ nguyên secret cũ"
+                placeholder={
+                  editingRecord.has_secret
+                    ? 'Để trống nếu giữ nguyên secret cũ'
+                    : 'Nhập Client Secret từ nhà cung cấp'
+                }
                 autoComplete="new-password"
+                onChange={(e) => setSecretDirty(!!e.target.value && e.target.value.length > 0)}
               />
             </Form.Item>
 
@@ -1062,7 +1194,7 @@ export default function KySoCauHinhPage() {
               </Form.Item>
             )}
 
-            {/* Test Connection block */}
+            {/* Test Connection block — 2 variant (saved / new) */}
             <div
               style={{
                 background: '#F8FAFC',
@@ -1072,43 +1204,76 @@ export default function KySoCauHinhPage() {
                 marginTop: 8,
               }}
             >
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginBottom: 12,
-                  flexWrap: 'wrap',
-                  gap: 12,
-                }}
-              >
-                <div style={{ flex: 1, minWidth: 240 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: '#1B3A5C' }}>
-                    Kiểm tra kết nối provider
-                  </div>
-                  <div style={{ fontSize: 12, color: '#64748B', marginTop: 2 }}>
-                    Bắt buộc test thành công trước khi &quot;Lưu &amp; Kích hoạt&quot;. Nếu chỉ sửa
-                    base_url / client_id không đổi secret, có thể dùng nút &quot;Lưu&quot; mà không
-                    cần test lại.
-                  </div>
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: '#1B3A5C' }}>
+                  Kiểm tra kết nối provider
                 </div>
-                <Button
-                  type="primary"
-                  ghost
-                  icon={<ThunderboltOutlined />}
-                  onClick={onTestConnection}
-                  loading={testing}
-                >
-                  Kiểm tra kết nối
-                </Button>
+                <div style={{ fontSize: 12, color: '#64748B', marginTop: 2 }}>
+                  Bắt buộc test thành công (với secret mới) trước khi &quot;Lưu &amp; Kích hoạt&quot;.
+                  Có thể test lại cấu hình đã lưu để verify credentials còn hoạt động.
+                </div>
               </div>
+
+              <Space wrap size={8} style={{ width: '100%' }}>
+                <Tooltip
+                  title={
+                    !editingRecord.has_secret
+                      ? 'Provider chưa cấu hình — nhập credentials và lưu trước khi test'
+                      : 'Dùng Base URL + Client ID + Client Secret đã lưu trong DB để test'
+                  }
+                >
+                  <Button
+                    icon={<DatabaseOutlined />}
+                    onClick={onTestSavedConnection}
+                    loading={testingSource === 'saved'}
+                    disabled={!editingRecord.has_secret || testingSource === 'new'}
+                  >
+                    Kiểm tra cấu hình đã lưu
+                  </Button>
+                </Tooltip>
+                <Tooltip
+                  title={
+                    !secretDirty
+                      ? 'Nhập Client Secret mới trong form để bật nút này'
+                      : 'Test với các giá trị user vừa nhập trong form (không persist DB)'
+                  }
+                >
+                  <Button
+                    type="primary"
+                    ghost
+                    icon={<KeyOutlined />}
+                    onClick={onTestConnection}
+                    loading={testingSource === 'new'}
+                    disabled={!secretDirty || testingSource === 'saved'}
+                  >
+                    Kiểm tra với secret mới
+                  </Button>
+                </Tooltip>
+              </Space>
 
               {testResult && (
                 <Alert
                   type={testResult.ok ? 'success' : 'error'}
                   showIcon
-                  style={{ marginTop: 8, borderRadius: 8 }}
-                  title={testResult.ok ? 'Kết nối thành công' : 'Kết nối thất bại'}
+                  style={{ marginTop: 12, borderRadius: 8 }}
+                  title={
+                    <span>
+                      {testResult.ok ? 'Kết nối thành công' : 'Kết nối thất bại'}{' '}
+                      <Tag
+                        color={testResult.source === 'saved' ? 'blue' : 'purple'}
+                        style={{ marginLeft: 4, fontSize: 11 }}
+                      >
+                        {testResult.source === 'saved'
+                          ? 'Cấu hình đã lưu'
+                          : 'Secret mới nhập'}
+                      </Tag>
+                      {typeof testResult.durationMs === 'number' && (
+                        <span style={{ color: '#94A3B8', fontSize: 11, marginLeft: 4 }}>
+                          ({testResult.durationMs} ms)
+                        </span>
+                      )}
+                    </span>
+                  }
                   description={
                     <div>
                       <div>{testResult.message}</div>
