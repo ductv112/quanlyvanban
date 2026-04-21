@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Completed 11-04-PLAN.md (BullMQ worker poll-sign-status + Socket events + bell notification — async sign flow complete end-to-end)
-last_updated: "2026-04-21T10:53:01.391Z"
+stopped_at: Completed 11-05-PLAN.md (API /api/ky-so/danh-sach 4 tab + /counts — migration 046 SPs Cần ký, repo extension, Phase 12 contract published)
+last_updated: "2026-04-21T11:04:07.082Z"
 last_activity: 2026-04-21
 progress:
   total_phases: 11
   completed_phases: 10
   total_plans: 51
-  completed_plans: 47
-  percent: 92
+  completed_plans: 48
+  percent: 94
 ---
 
 # Project State
@@ -25,13 +25,13 @@ See: .planning/PROJECT.md (updated 2026-04-21 — Milestone v2.0 started)
 
 ## Current Position
 
-Phase: 11 — IN PROGRESS (4/8 plans)
-Plan: 04 complete — BullMQ worker poll-sign-status consumer — full async sign flow end-to-end (route → queue → worker → embed + upload + finalize → Socket + bell)
-Next: Plan 11-05 — List endpoint (GET /api/ky-so/danh-sach, tabs pending/completed/failed via fn_sign_transaction_list_by_staff)
-Status: Phase 11 wave 3 complete (worker consumer + graceful shutdown), ready for wave 4 (list UI + cancel/retry)
+Phase: 11 — IN PROGRESS (5/8 plans)
+Plan: 05 complete — API /api/ky-so/danh-sach 4 tab + /counts (migration 046 SPs fn_sign_need_list_by_staff + fn_sign_need_count_by_staff, repo extension, route + mount) — Phase 12 UI contract published
+Next: Plan 11-06 — Cancel/retry UX (SP sign_transaction_retry + cancel endpoint polish + front-end Socket consumer wiring)
+Status: Phase 11 wave 4 complete (list API + 4 tab counts), ready for wave 5 (cancel/retry + FE modal)
 Last activity: 2026-04-21
 
-Progress: [█████████░] 92% (47/51 plans complete)
+Progress: [█████████░] 94% (48/51 plans complete)
 
 ## Performance Metrics
 
@@ -69,6 +69,7 @@ Progress: [█████████░] 92% (47/51 plans complete)
 | Phase 11 P02 | 4min | 2 tasks | 4 files |
 | Phase 11 P03 | 7min | 3 tasks | 3 files |
 | Phase 11 P04 | 8min | 3 tasks | 4 files |
+| Phase 11 P05 | 7min | 3 tasks | 4 files |
 
 ## Accumulated Context
 

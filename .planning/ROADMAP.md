@@ -220,7 +220,7 @@ Plans:
 - [x] 11-02-PLAN.md — Infra: BullMQ queue 'signing' + Redis connection singleton + typed job payload + env docs (no worker yet)
 - [x] 11-03-PLAN.md — Backend: POST /api/ky-so/sign + POST /:id/cancel + GET /:id — async entry point returning transaction_id < 1s
 - [x] 11-04-PLAN.md — Worker: BullMQ Worker poll-sign-status — embed signature, upload MinIO signed key, emit Socket SIGN_COMPLETED/FAILED, bell notification
-- [ ] 11-05-PLAN.md — Backend: GET /api/ky-so/danh-sach (4 tab list) + /counts (badge) + migration 046 SP for 'Cần ký' tab
+- [x] 11-05-PLAN.md — Backend: GET /api/ky-so/danh-sach (4 tab list) + /counts (badge) + migration 046 SP for 'Cần ký' tab
 - [ ] 11-06-PLAN.md — Frontend: shared SignModal component + useSigning hook + socket event extensions (functional, polish deferred to Phase 13)
 - [ ] 11-07-PLAN.md — Frontend: migrate VB đi + VB dự thảo detail pages (remove mock OTP) + checkpoint
 - [ ] 11-08-PLAN.md — Frontend: add Ký số button to HSCV detail page (first-time functionality) + checkpoint
@@ -281,7 +281,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 8. Schema foundation + PDF signing layer | 4/4 | Complete    | 2026-04-21 |
 | 9. Admin config + provider adapters | 3/3 | Complete    | 2026-04-21 |
 | 10. User config page | 3/3 | Complete   | 2026-04-21 |
-| 11. Sign flow + async worker | 4/8 | In Progress|  |
+| 11. Sign flow + async worker | 5/8 | In Progress|  |
 | 12. Menu Ký số + Danh sách UI | 0/TBD | Not started | - |
 | 13. Modal ký số + Root CA UX | 0/TBD | Not started | - |
 | 14. Deployment + HDSD + verification | 0/TBD | Not started | - |
