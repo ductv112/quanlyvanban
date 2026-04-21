@@ -157,7 +157,7 @@ Mỗi REQ-ID v2.0 map tới đúng 1 phase (8-14). Tổng 42/42 — 100% coverag
 | MIG-02 | Phase 8 — Schema foundation + PDF signing layer | Complete |
 | MIG-03 | Phase 8 — Schema foundation + PDF signing layer | Complete |
 | MIG-04 | Phase 8 — Schema foundation + PDF signing layer | Complete |
-| MIG-05 | Phase 11 — Sign flow + async worker | Pending |
+| MIG-05 | Phase 11 — Sign flow + async worker | Complete |
 | DEP-01 | Phase 14 — Deployment + HDSD + verification | Pending |
 | DEP-02 | Phase 13 — Modal ký số + Root CA UX | Pending |
 | DEP-03 | Phase 14 — Deployment + HDSD + verification | Pending |

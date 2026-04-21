@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Completed 11-05-PLAN.md (API /api/ky-so/danh-sach 4 tab + /counts — migration 046 SPs Cần ký, repo extension, Phase 12 contract published)
-last_updated: "2026-04-21T11:04:07.082Z"
+stopped_at: Completed 11-06-PLAN.md (Shared SignModal + useSigning hook + lib/signing/types.ts + SOCKET_EVENTS extended)
+last_updated: "2026-04-21T11:14:02.535Z"
 last_activity: 2026-04-21
 progress:
   total_phases: 11
   completed_phases: 10
   total_plans: 51
-  completed_plans: 48
-  percent: 94
+  completed_plans: 49
+  percent: 96
 ---
 
 # Project State
@@ -25,13 +25,13 @@ See: .planning/PROJECT.md (updated 2026-04-21 — Milestone v2.0 started)
 
 ## Current Position
 
-Phase: 11 — IN PROGRESS (5/8 plans)
-Plan: 05 complete — API /api/ky-so/danh-sach 4 tab + /counts (migration 046 SPs fn_sign_need_list_by_staff + fn_sign_need_count_by_staff, repo extension, route + mount) — Phase 12 UI contract published
-Next: Plan 11-06 — Cancel/retry UX (SP sign_transaction_retry + cancel endpoint polish + front-end Socket consumer wiring)
-Status: Phase 11 wave 4 complete (list API + 4 tab counts), ready for wave 5 (cancel/retry + FE modal)
+Phase: 11 — IN PROGRESS (6/8 plans)
+Plan: 06 complete — Shared SignModal component + useSigning hook + lib/signing/types.ts + SOCKET_EVENTS (SIGN_COMPLETED/SIGN_FAILED) — FE wire-up ready, Plans 07/08/09 có thể migrate VB đi/VB dự thảo/HSCV detail pages
+Next: Plan 11-07 — VB đi detail page migration (wire useSigning hook vào attachment action menu, thay legacy SigningModal mock)
+Status: Phase 11 wave 5 complete (shared modal + hook), ready for wave 6 (detail page migrations 07/08/09)
 Last activity: 2026-04-21
 
-Progress: [█████████░] 94% (48/51 plans complete)
+Progress: [██████████] 96% (49/51 plans complete)
 
 ## Performance Metrics
 
@@ -70,6 +70,7 @@ Progress: [█████████░] 94% (48/51 plans complete)
 | Phase 11 P03 | 7min | 3 tasks | 3 files |
 | Phase 11 P04 | 8min | 3 tasks | 4 files |
 | Phase 11 P05 | 7min | 3 tasks | 4 files |
+| Phase 11 P06 | 5min | 3 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -137,6 +138,11 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase 11]: [Phase 11-04]: Short-circuit DB re-read mỗi job — mitigate T-11-13 Redis tampering; attacker inject job cho txn cancelled = no-op
 - [Phase 11]: [Phase 11-04]: Graceful shutdown order stopSigningWorker → closeSigningQueue → closeRedisConnection với failsafe setTimeout(10s).unref() — tránh hang forever nhưng không block event loop
 - [Phase 11]: [Phase 11-04]: noticeRepository.createForStaff dùng fn_notice_create (unit-wide) + notice_type=SIGN_RESULT — pragmatic v2.0 không migration mới; trade-off unit members thấy notice vì rare events + title có tên user
+- [Phase 11]: [Phase 11-06]: .tsx extension cho hook (không .ts) — renderSignModal return JSX bắt buộc .tsx; Rule 3 auto-fix 15 TS errors
+- [Phase 11]: [Phase 11-06]: AntD 6 Modal destroyOnHidden (không destroyOnClose deprecated) + width (không size — size chỉ Drawer)
+- [Phase 11]: [Phase 11-06]: successFired useRef guard — onSuccess fire exactly once dù polling + Socket cả 2 nhận completed (mitigate double-refresh parent list)
+- [Phase 11]: [Phase 11-06]: onSuccessRef pattern (ngoài state) cho useSigning — caller inline arrow không trigger re-render loop
+- [Phase 11]: [Phase 11-06]: Đóng (chạy nền) KHÔNG auto-cancel txn — worker tiếp tục poll + bell notification fallback cho Socket miss
 
 ### Pending Todos
 
@@ -168,6 +174,6 @@ v1.0 hoàn thành với 3 quick tasks (HDSD Compliance sprint cuối):
 
 ## Session Continuity
 
-Last session: 2026-04-21T10:53:01.381Z
-Stopped at: Completed 11-04-PLAN.md (BullMQ worker poll-sign-status + Socket events + bell notification — async sign flow complete end-to-end)
+Last session: 2026-04-21T11:14:02.524Z
+Stopped at: Completed 11-06-PLAN.md (Shared SignModal + useSigning hook + lib/signing/types.ts + SOCKET_EVENTS extended)
 Resume: `/gsd-execute-phase 11` để tiếp tục Plan 11-04 (worker completion)
