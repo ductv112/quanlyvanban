@@ -206,13 +206,16 @@ export default function KySoTaiKhoanPage() {
       setConfig(nextConfig);
       setActiveMessage(res.data?.message ?? null);
 
-      if (nextConfig) {
-        form.setFieldsValue({
-          user_id: nextConfig.user_id,
-          credential_id: nextConfig.credential_id ?? undefined,
-        });
-      } else {
-        form.resetFields();
+      // Chỉ set form values khi Form đã mount (chỉ render khi có active provider)
+      // Tránh warning: "useForm not connected to any Form element"
+      if (nextActive && nextConfig) {
+        // Defer tới sau render tiếp theo để Form kịp mount
+        setTimeout(() => {
+          form.setFieldsValue({
+            user_id: nextConfig.user_id,
+            credential_id: nextConfig.credential_id ?? undefined,
+          });
+        }, 0);
       }
     } catch (err) {
       const msg =
