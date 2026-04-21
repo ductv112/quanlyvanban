@@ -30,6 +30,7 @@ import contractRoutes from './routes/contract.js';
 import meetingRoutes from './routes/meeting.js';
 import lgspRoutes from './routes/lgsp.js';
 import digitalSignatureRoutes from './routes/digital-signature.js';
+import kySoCauHinhRoutes from './routes/ky-so-cau-hinh.js';
 import notificationRoutes from './routes/notification.js';
 import sendConfigRoutes from './routes/send-config.js';
 import profileRoutes from './routes/profile.js';
@@ -88,6 +89,8 @@ app.use('/api/cuoc-hop', authenticate, meetingRoutes);
 
 // --- Phase 6: Tich hop he thong ngoai ---
 app.use('/api/lgsp', authenticate, lgspRoutes);
+// Phase 9: Admin config cho ký số — MUST mount BEFORE /api/ky-so generic (longer prefix wins)
+app.use('/api/ky-so/cau-hinh', authenticate, requireRoles('Quản trị hệ thống'), kySoCauHinhRoutes);
 app.use('/api/ky-so', authenticate, digitalSignatureRoutes);
 app.use('/api/thong-bao-kenh', authenticate, notificationRoutes);
 
