@@ -26,6 +26,7 @@ import type {
 import type { HttpClient } from './http-client.js';
 import { createSmartCaVnptProvider } from './smartca-vnpt.provider.js';
 import { createMysignViettelProvider } from './mysign-viettel.provider.js';
+import { getProviderByCode } from './provider-factory.js';
 
 // ============================================================================
 // Mock HttpClient helper — ghi lại call, trả response cài sẵn
@@ -458,5 +459,35 @@ describe('MySign Viettel adapter', () => {
     const provider = createMysignViettelProvider(client);
     const result = await provider.getSignStatus(MYSIGN_ADMIN, { userId: 'u' }, 'TXN');
     assert.equal(result.status, 'pending');
+  });
+});
+
+// ============================================================================
+// Provider factory tests (dispatcher — không đụng DB)
+// ============================================================================
+
+describe('Provider factory — getProviderByCode dispatcher', () => {
+  it('SMARTCA_VNPT → singleton smartcaVnptProvider với code đúng', () => {
+    const provider = getProviderByCode('SMARTCA_VNPT');
+    assert.equal(provider.code, 'SMARTCA_VNPT');
+    assert.equal(typeof provider.testConnection, 'function');
+    assert.equal(typeof provider.listCertificates, 'function');
+    assert.equal(typeof provider.signHash, 'function');
+    assert.equal(typeof provider.getSignStatus, 'function');
+  });
+
+  it('MYSIGN_VIETTEL → singleton mysignViettelProvider với code đúng', () => {
+    const provider = getProviderByCode('MYSIGN_VIETTEL');
+    assert.equal(provider.code, 'MYSIGN_VIETTEL');
+    assert.equal(typeof provider.testConnection, 'function');
+  });
+
+  it('code không hỗ trợ → throw Error "Provider không hỗ trợ"', () => {
+    assert.throws(
+      () => getProviderByCode('UNKNOWN_PROVIDER'),
+      /Provider không hỗ trợ/,
+    );
+    assert.throws(() => getProviderByCode(''), /Provider không hỗ trợ/);
+    assert.throws(() => getProviderByCode('FPT_CA'), /Provider không hỗ trợ/);
   });
 });
