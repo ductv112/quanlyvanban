@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 08-03-PLAN.md (PDF signing generic layer)
-last_updated: "2026-04-21T06:48:09.365Z"
+status: verifying
+stopped_at: Completed 08-04-PLAN.md (Phase 8 FULLY COMPLETE — crypto + 3 repositories ready for Phase 9)
+last_updated: "2026-04-21T06:58:19.428Z"
 last_activity: 2026-04-21
 progress:
   total_phases: 8
-  completed_phases: 7
+  completed_phases: 8
   total_plans: 37
-  completed_plans: 36
-  percent: 97
+  completed_plans: 37
+  percent: 100
 ---
 
 # Project State
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-04-21 — Milestone v2.0 started)
 
 Phase: 8 (Schema foundation + PDF signing generic layer) — EXECUTING
 Plan: 4 of 4
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-04-21
 
 Progress: [░░░░░░░░░░] 0% (0/7 phases complete)
@@ -58,6 +58,7 @@ Progress: [░░░░░░░░░░] 0% (0/7 phases complete)
 | Phase 08 P01 | 25min | 2 tasks | 1 files |
 | Phase 08 P02 | 10min | 1 tasks | 1 files |
 | Phase 08 P03 | 12min | 2 tasks | 3 files |
+| Phase 08 P04 | 5min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -92,6 +93,8 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase 08]: PrecomputedSigner pattern — extend @signpdf/utils.Signer to embed external provider signatures without local key access
 - [Phase 08]: pdf-lib requires useObjectStreams:false for compatibility with @signpdf/placeholder-plain (classic xref only)
 - [Phase 08]: Use Node builtin test runner (node:test via tsx) for signing unit tests — no jest/vitest dependency added
+- [Phase 08]: [Phase 08-04]: SIGNING_SECRET_KEY fail-fast validation (throw on unset/<16 chars) — no weak default to avoid accidental production ship
+- [Phase 08]: [Phase 08-04]: Wave 2 rule caught SP drift — pg_get_function_result() revealed fn_sign_transaction_increment_retry returns new_retry_count (plan had stale retry_count). Repository interface fixed before runtime bug.
 
 ### Pending Todos
 
@@ -123,6 +126,6 @@ v1.0 hoàn thành với 3 quick tasks (HDSD Compliance sprint cuối):
 
 ## Session Continuity
 
-Last session: 2026-04-21T06:48:09.355Z
-Stopped at: Completed 08-03-PLAN.md (PDF signing generic layer)
+Last session: 2026-04-21T06:58:19.417Z
+Stopped at: Completed 08-04-PLAN.md (Phase 8 FULLY COMPLETE — crypto + 3 repositories ready for Phase 9)
 Resume: `/gsd-plan-phase 8`
