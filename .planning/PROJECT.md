@@ -8,9 +8,25 @@ Hệ thống quản lý văn bản điện tử (e-Office) dành cho cơ quan nh
 
 Luồng văn bản đến → xử lý → văn bản đi phải hoạt động đúng nghiệp vụ cơ quan nhà nước — đây là flow cốt lõi mà mọi công chức sử dụng hàng ngày.
 
+## Current Milestone: v2.0 Production features — Tích hợp ký số 2 kênh
+
+**Goal:** Hoàn thiện hệ thống từ demo MVP → sản phẩm triển khai cho khách hàng thật, với khả năng chọn 1 trong 2 nền tảng ký số (SmartCA VNPT hoặc MySign Viettel) và quản lý ký số tập trung qua menu riêng.
+
+**Target features:**
+- Menu "Ký số" riêng ở sidebar: Cấu hình hệ thống (Admin) / Tài khoản cá nhân (User) / Danh sách ký số (4 tab: Cần ký / Đang xử lý / Đã ký / Thất bại)
+- 2 cấp cấu hình: Admin chọn active provider + credentials hệ thống → User cấu hình user_id (+ chọn cert với MySign)
+- Tích hợp thật SmartCA VNPT (`https://gwsca.vnpt.vn/sca/sp769/v1/*`) theo spec source cũ
+- Tích hợp thật MySign Viettel (`{url}/vtss/service/ras/v1/*`) theo tài liệu chính hãng
+- PDF signing Pure JS: `node-signpdf` + `node-forge` (PKCS7 detached), 1 codebase cho cả 2 provider
+- Async decoupled worker (BullMQ poll 5s × max 3 phút) + Socket.IO SIGN_COMPLETED + bell notification offline
+- Modal ký robust: disable spam click, countdown 3:00, "Đóng" (giữ transaction) vs "Hủy ký số" (mark cancelled)
+- Root CA UX: banner dismissible + link `.cer` + PDF HDSD khi file ký bằng MySign
+- Migration `staff.sign_phone` → table mới `staff_signing_config(staff_id, provider_code, config_json)`
+- Lưu `sign_provider_code` vào attachments + transactions để đổi provider không mất lịch sử
+
 ## Requirements
 
-### Validated
+### Validated (v1.0 — Shipped 2026-04-18)
 
 - ✓ Infrastructure: Docker Compose (PostgreSQL, MongoDB, Redis, MinIO) — Sprint 0
 - ✓ Authentication: JWT + refresh token rotation + httpOnly cookie — Sprint 0
@@ -20,31 +36,33 @@ Luồng văn bản đến → xử lý → văn bản đi phải hoạt động 
 - ✓ Quản lý Người dùng: Tree đơn vị + Table NV + avatar MinIO — Sprint 1
 - ✓ Quản lý Nhóm quyền & Phân quyền: Role + Rights tree — Sprint 1
 - ✓ Quản lý Chức năng/Menu: Tree + dynamic sidebar — Sprint 1
-- ✓ 12 module Danh mục & Cấu hình: Sổ VB, Loại VB, Lĩnh vực, Địa bàn, Ủy quyền, Nhóm làm việc, Mẫu thông báo, Cấu hình hệ thống — Sprint 2
+- ✓ 12 module Danh mục & Cấu hình — Sprint 2
 - ✓ Văn bản đến: CRUD + xử lý + chuyển tiếp + đính kèm + lịch sử — Sprint 3
 - ✓ Văn bản đi & Văn bản dự thảo: CRUD + luồng dự thảo → trình ký → phát hành — Sprint 4
+- ✓ Stabilize Sprint 0-4 — v1.0 Phase 1
+- ✓ Hồ sơ công việc (Sprint 5-6) — v1.0 Phase 2
+- ✓ Liên thông & Tin nhắn (Sprint 7-8) — v1.0 Phase 3
+- ✓ Lịch, Danh bạ & Dashboard (Sprint 9-10) — v1.0 Phase 4
+- ✓ Kho lưu trữ, Tài liệu & Họp (Sprint 11-13) — v1.0 Phase 5
+- ✓ Tích hợp hệ thống ngoài (Sprint 14-16): LGSP + Ký số MOCK + Trục CP mock — v1.0 Phase 6
+- ✓ Polish & Redirect (Sprint 17): HDSD Compliance 97.8% — v1.0 Phase 7
 
-### Active
+### Active (v2.0)
 
-- ✓ Stabilize Sprint 0-4: Shared tree utils + error handler extracted, golden path verified — Phase 1
-- ✓ Sprint 5-6: Hồ sơ công việc — CRUD, 6-tab detail, workflow designer, KPI, 3 reports, Excel export — Phase 2
-- [ ] Sprint 7: Văn bản liên thông & Giao việc từ VB
-- [ ] Sprint 8: Tin nhắn nội bộ & Thông báo
-- [ ] Sprint 9: Lịch & Danh bạ
-- [ ] Sprint 10: Dashboard hoàn thiện
-- [ ] Sprint 11: Kho lưu trữ
-- [ ] Sprint 12: Tài liệu chung & Hợp đồng
-- [ ] Sprint 13: Họp không giấy
-- [ ] Sprint 14: Tích hợp — LGSP Liên thông văn bản
-- [ ] Sprint 15: Tích hợp — Ký số điện tử
-- [ ] Sprint 16: Tích hợp — Thông báo đa kênh
-- [ ] Sprint 17: Redirect pages & Polish
+- [ ] SIGN-*: Tích hợp ký số 2 kênh SmartCA VNPT + MySign Viettel
+- [ ] CFG-*: 2 cấp cấu hình (Admin + User) với test connection
+- [ ] UX-*: Menu Ký số + modal robust + Root CA banner
+- [ ] ASYNC-*: BullMQ worker + Socket.IO decoupled flow
+- [ ] MIG-*: Migration schema `staff.sign_phone` → multi-provider
 
 ### Out of Scope
 
 - Mobile app native — chỉ responsive web, không build iOS/Android riêng
-- Deep stabilize (security audit, test coverage, performance tuning) — chuyển sang tuần sau demo
 - Thay đổi nghiệp vụ so với hệ thống cũ — giữ nguyên logic, chỉ cải tiến UX/tech
+- Multi-provider song song (1 user dùng SmartCA, 1 user dùng MySign cùng hệ thống) — chốt 1 provider active toàn hệ thống
+- Ký batch nhiều file 1 lượt — v2.0 chỉ ký từng file riêng
+- FPT CA / EasyCA và các provider khác — chỉ 2 provider SmartCA VNPT + MySign Viettel
+- Thay thế ViettelFileSigner.jar / VnptHashSignatures.dll — dùng pure JS `node-signpdf` + `node-forge`
 
 ## Context
 
@@ -66,11 +84,16 @@ Luồng văn bản đến → xử lý → văn bản đi phải hoạt động 
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Stored Procedures, không ORM | Chỉ đạo từ sếp — toàn bộ business logic trong PostgreSQL | — Pending |
-| Light stabilize trước, deep sau | Deadline gấp — fix visible bugs + refactor shared code, security/test tuần sau | — Pending |
-| Rebuild giữ nguyên nghiệp vụ cũ | Khách hàng quen flow cũ, chỉ cần tech mới + UI đẹp hơn | — Pending |
+| Stored Procedures, không ORM | Chỉ đạo từ sếp — toàn bộ business logic trong PostgreSQL | ✓ Good (v1.0 validated) |
+| Light stabilize trước, deep sau | Deadline gấp demo v1.0 — deep hardening chuyển sang v2.0 | ✓ Good |
+| Rebuild giữ nguyên nghiệp vụ cũ | Khách hàng quen flow cũ, chỉ cần tech mới + UI đẹp hơn | ✓ Good (97.8% HDSD coverage) |
 | Ant Design 6 + custom theme | Consistent UI, không dùng default — Deep Navy palette | ✓ Good |
 | CSS classes, không inline styles | Chống FOUC, maintainability | ✓ Good |
+| **v2.0: 1 provider active cho toàn hệ thống** | Đơn giản support/billing, KH chọn 1 nhà cung cấp khi triển khai | — Pending |
+| **v2.0: Pure JS PDF signing (`node-signpdf`)** | Không phải cài Java/DotNet runtime; PKCS7 detached format chuẩn chung cho cả 2 provider | — Pending |
+| **v2.0: Async decoupled worker (BullMQ)** | User tắt UI vẫn nhận kết quả ký; resilient với backend restart (Redis persistent) | — Pending |
+| **v2.0: Menu Ký số riêng** | Ký số tập trung 1 chỗ, không rải rác trong detail VB | — Pending |
+| **v2.0: Credentials encrypted pgcrypto** | Tránh leak client_secret nếu backup DB rò rỉ | — Pending |
 
 ## Evolution
 
@@ -90,4 +113,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-14 after Phase 1 completion*
+*Last updated: 2026-04-21 — Milestone v2.0 started (Tích hợp ký số 2 kênh)*

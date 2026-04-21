@@ -1,94 +1,97 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
-status: executing
-stopped_at: Phase 5 context gathered
-last_updated: "2026-04-18T08:15:00.000Z"
-last_activity: 2026-04-18 - Completed quick task 260418-jsd: HDSD Compliance fix 6 gap (coverage 90.2% → 97.8%)
+milestone: v2.0
+milestone_name: Production features — Tích hợp ký số 2 kênh
+status: defining_requirements
+stopped_at: Milestone v2.0 initialized
+last_updated: "2026-04-21T04:00:00.000Z"
+last_activity: 2026-04-21 - Milestone v2.0 started — Tích hợp ký số SmartCA VNPT + MySign Viettel
 progress:
-  total_phases: 7
-  completed_phases: 5
-  total_plans: 26
-  completed_plans: 26
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-04-14)
+See: .planning/PROJECT.md (updated 2026-04-21 — Milestone v2.0 started)
 
 **Core value:** Luồng văn bản đến → xử lý → văn bản đi phải hoạt động đúng nghiệp vụ cơ quan nhà nước
-**Current focus:** Phase 4 — Lịch, Danh bạ & Dashboard
+**Current focus:** Milestone v2.0 — Tích hợp ký số 2 kênh (SmartCA VNPT + MySign Viettel)
 
 ## Current Position
 
-Phase: 6
-Plan: Not started
-Status: Ready to execute
-Last activity: 2026-04-14
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-04-21 — Milestone v2.0 started
 
 Progress: [░░░░░░░░░░] 0%
 
 ## Performance Metrics
 
-**Velocity:**
+**Velocity (v1.0 baseline):**
 
-- Total plans completed: 26
-- Average duration: —
-- Total execution time: 0 hours
+- Total plans completed (v1.0): 26
+- v1.0 duration: 4 days (2026-04-14 → 2026-04-18)
+- v1.0 achievement: 7 phases + 3 quick plans, 97.8% HDSD coverage (92 test cases)
 
-**By Phase:**
-
-| Phase | Plans | Total | Avg/Plan |
-|-------|-------|-------|----------|
-| 1 | 3 | - | - |
-| 2 | 8 | - | - |
-| 3 | 5 | - | - |
-| 4 | 4 | - | - |
-| 05 | 6 | - | - |
-
-**Recent Trend:**
-
-- Last 5 plans: —
-- Trend: —
-
-*Updated after each plan completion*
+**v2.0 tracking:** Reset — metrics populated as plans complete
 
 ## Accumulated Context
 
 ### Decisions
 
 Decisions are logged in PROJECT.md Key Decisions table.
-Recent decisions affecting current work:
 
-- [Init]: Stored Procedures, không ORM — business logic trong PostgreSQL
-- [Init]: Light stabilize trước, deep stabilize (security/test) tuần sau demo
-- [Init]: Deadline demo cuối tuần 2026-04-18/19 — 7 phases trong ~4 ngày
+**Key v2.0 decisions (2026-04-21):**
+
+- 1 provider active cho toàn hệ thống (không multi song song) — đơn giản support/billing
+- Pure JS PDF signing với `node-signpdf` + `node-forge` — không cần Java/DotNet runtime
+- Async decoupled worker (BullMQ poll 5s × max 3 phút) — user tắt UI vẫn ký OK
+- Menu "Ký số" riêng ở sidebar với 3 submenu — tập trung quản lý ký số
+- 2 cấp cấu hình: Admin (provider + credentials) → User (user_id + cert)
+- Test connection bắt buộc khi Admin lưu config
+- Lưu `sign_provider_code` vào attachments + transactions để đổi provider không mất lịch sử
+- Migration `staff.sign_phone` → table mới `staff_signing_config` (multi-provider schema)
+- Root CA Viettel: KHÔNG code trong hệ thống, chỉ show banner link + HDSD PDF + `.cer` file
+- Ký lại sau fail: tạo transaction MỚI (giữ record cũ cho audit), không reset record cũ
 
 ### Pending Todos
 
-None yet.
+- Waiting for REQUIREMENTS.md generation
+- Waiting for ROADMAP.md generation
+- Waiting for `/gsd-plan-phase` on first v2.0 phase
 
 ### Blockers/Concerns
 
-- JWT fallback secret chưa fix (codebase scan phát hiện) — Phase 1 phải address
-- requireRoles() chưa được áp dụng consistently — Phase 1
-- Tree mapping duplicate across 6 admin pages — Phase 1 refactor target
-- Route files monolithic (admin-catalog.ts 1492 lines) — deep stabilize tuần sau (v2)
+- **SmartCA VNPT credentials thực tế**: client_id/secret trong source cũ (`Web.config`) có thể đã hết hạn hoặc cho dev env. Cần KH cấp credentials production khi triển khai.
+- **MySign Viettel credentials**: chưa có — cần KH đăng ký với Viettel để lấy `client_id`, `client_secret`, `profile_id`.
+- **Không test được ký thật** trong môi trường dev (không có số ĐT thật đăng ký SmartCA / không có app MySign). User đã confirm chấp nhận: code đầy đủ, test khi triển khai production.
 
-### Quick Tasks Completed
+### Reference Docs (v2.0)
 
-| # | Description | Date | Commit | Status | Directory |
-|---|-------------|------|--------|--------|-----------|
-| 260418-gs7 | Phase 1 — ẩn các module/menu chưa có trong HDSD cũ | 2026-04-18 | 8afd6d7 |  | [260418-gs7-phase-1-n-c-c-module-menu-ch-a-c-trong-h](./quick/260418-gs7-phase-1-n-c-c-module-menu-ch-a-c-trong-h/) |
-| 260418-hlj | HDSD Compliance P0+P1 — SmartCA UI + thu hồi VB liên thông + HSCV mở lại/lấy số | 2026-04-18 | f189464 | Needs Review | [260418-hlj-hdsd-compliance-p0-p1-k-s-smartca-ui-thu](./quick/260418-hlj-hdsd-compliance-p0-p1-k-s-smartca-ui-thu/) |
-| 260418-jsd | HDSD Compliance — fix 6 gap (ký số mock OTP + trục CP mock + chuyển lưu trữ VB đi + hủy HSCV + chuyển tiếp ý kiến + chuyển tiếp HSCV) | 2026-04-18 | 26caf2b | Needs Review | [260418-jsd-hdsd-compliance-fix-6-gap-c-n-l-i-k-s-mo](./quick/260418-jsd-hdsd-compliance-fix-6-gap-c-n-l-i-k-s-mo/) |
+- `docs/huong_dan_tich_hop_ky_so_MySign_Viettel/Tai lieu tich hop dich vu Mysign API+SDK v1.9.pdf` — MySign API spec
+- `docs/huong_dan_tich_hop_ky_so_MySign_Viettel/Viettel Mysign Gateway.postman_collection.json` — 4 API endpoints
+- `docs/huong_dan_tich_hop_ky_so_MySign_Viettel/HUONG DAN CAI DAT CTS ROOT CA VIETTEL Mysign.pdf` — HDSD cài Root CA (cho end user)
+- `docs/source_code_cu/sources/OneWin.WebApp/SmartCA_VNPT/Model.cs` — VNPT SmartCA reference implementation (3 endpoints, credentials trong Web.config)
+
+### v1.0 Quick Tasks (archive reference)
+
+v1.0 hoàn thành với 3 quick tasks (HDSD Compliance sprint cuối):
+
+| # | Description | Commit |
+|---|-------------|--------|
+| 260418-gs7 | Phase 1 — ẩn các module chưa có trong HDSD cũ | 8afd6d7 |
+| 260418-hlj | HDSD Compliance P0+P1 — SmartCA UI + thu hồi VB liên thông + HSCV mở lại/lấy số | f189464 |
+| 260418-jsd | HDSD Compliance — fix 6 gap (ký số mock OTP + trục CP mock + ...) | 26caf2b |
 
 ## Session Continuity
 
-Last session: 2026-04-14T13:44:52.259Z
-Stopped at: Phase 5 context gathered
-Resume file: .planning/phases/05-kho-l-u-tr-t-i-li-u-h-p/05-CONTEXT.md
+Last session: 2026-04-21T04:00:00.000Z
+Stopped at: Milestone v2.0 initialized — ready to define REQUIREMENTS.md
+Resume: `/gsd-plan-phase [N]` sau khi ROADMAP.md được tạo
