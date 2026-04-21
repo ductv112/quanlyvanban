@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Completed 11-06-PLAN.md (Shared SignModal + useSigning hook + lib/signing/types.ts + SOCKET_EVENTS extended)
-last_updated: "2026-04-21T11:14:02.535Z"
+stopped_at: Completed 11-07-PLAN.md
+last_updated: "2026-04-21T11:21:03.913Z"
 last_activity: 2026-04-21
 progress:
   total_phases: 11
   completed_phases: 10
   total_plans: 51
-  completed_plans: 49
-  percent: 96
+  completed_plans: 50
+  percent: 98
 ---
 
 # Project State
@@ -71,6 +71,7 @@ Progress: [██████████] 96% (49/51 plans complete)
 | Phase 11 P04 | 8min | 3 tasks | 4 files |
 | Phase 11 P05 | 7min | 3 tasks | 4 files |
 | Phase 11 P06 | 5min | 3 tasks | 4 files |
+| Phase 11 P07 | 4min | 3 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -143,6 +144,7 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase 11]: [Phase 11-06]: successFired useRef guard — onSuccess fire exactly once dù polling + Socket cả 2 nhận completed (mitigate double-refresh parent list)
 - [Phase 11]: [Phase 11-06]: onSuccessRef pattern (ngoài state) cho useSigning — caller inline arrow không trigger re-render loop
 - [Phase 11]: [Phase 11-06]: Đóng (chạy nền) KHÔNG auto-cancel txn — worker tiếp tục poll + bell notification fallback cho Socket miss
+- [Phase 11]: Plan 07: Migrate VB đi + VB dự thảo detail pages sang useSigning hook. Pure migration — remove mock OTP state + /ky-so/mock/sign, thay bằng openSign() + renderSignModal(). Net -108/+26 lines. Breaking change MIG-05: 2/3 pages done (HSCV pending Plan 11-09).
 
 ### Pending Todos
 
@@ -174,6 +176,6 @@ v1.0 hoàn thành với 3 quick tasks (HDSD Compliance sprint cuối):
 
 ## Session Continuity
 
-Last session: 2026-04-21T11:14:02.524Z
-Stopped at: Completed 11-06-PLAN.md (Shared SignModal + useSigning hook + lib/signing/types.ts + SOCKET_EVENTS extended)
+Last session: 2026-04-21T11:20:57.013Z
+Stopped at: Completed 11-07-PLAN.md
 Resume: `/gsd-execute-phase 11` để tiếp tục Plan 11-04 (worker completion)
