@@ -33,6 +33,7 @@ import digitalSignatureRoutes from './routes/digital-signature.js';
 import kySoCauHinhRoutes from './routes/ky-so-cau-hinh.js';
 import kySoTaiKhoanRoutes from './routes/ky-so-tai-khoan.js';
 import kySoSignRoutes from './routes/ky-so-sign.js';
+import kySoDanhSachRoutes from './routes/ky-so-danh-sach.js';
 import notificationRoutes from './routes/notification.js';
 import sendConfigRoutes from './routes/send-config.js';
 import profileRoutes from './routes/profile.js';
@@ -101,6 +102,8 @@ app.use('/api/ky-so/tai-khoan', authenticate, kySoTaiKhoanRoutes);
 // Phase 11: Async sign flow (POST /sign, GET /sign/:id, POST /sign/:id/cancel)
 // MUST mount BEFORE /api/ky-so generic — longer prefix wins; authenticate only (mọi user)
 app.use('/api/ky-so/sign', authenticate, kySoSignRoutes);
+// Phase 11 Plan 05: Sign list (4 tab) + badge counts — mount BEFORE /api/ky-so catch-all
+app.use('/api/ky-so/danh-sach', authenticate, kySoDanhSachRoutes);
 app.use('/api/ky-so', authenticate, digitalSignatureRoutes);
 app.use('/api/thong-bao-kenh', authenticate, notificationRoutes);
 
