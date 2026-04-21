@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 08-02-PLAN.md (migrate staff.sign_phone + DROP column)
-last_updated: "2026-04-21T06:32:43.069Z"
+stopped_at: Completed 08-03-PLAN.md (PDF signing generic layer)
+last_updated: "2026-04-21T06:48:09.365Z"
 last_activity: 2026-04-21
 progress:
   total_phases: 8
   completed_phases: 7
   total_plans: 37
-  completed_plans: 35
-  percent: 95
+  completed_plans: 36
+  percent: 97
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-21 — Milestone v2.0 started)
 ## Current Position
 
 Phase: 8 (Schema foundation + PDF signing generic layer) — EXECUTING
-Plan: 3 of 4
+Plan: 4 of 4
 Status: Ready to execute
 Last activity: 2026-04-21
 
@@ -57,6 +57,7 @@ Progress: [░░░░░░░░░░] 0% (0/7 phases complete)
 **Total: 42 REQ-IDs (100% coverage, no orphans)**
 | Phase 08 P01 | 25min | 2 tasks | 1 files |
 | Phase 08 P02 | 10min | 1 tasks | 1 files |
+| Phase 08 P03 | 12min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -88,6 +89,9 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase 08]: attachment_type enum includes handling (4 values) to match plan's ALTER of attachment_handling_docs
 - [Phase 08]: [Phase 08-02]: Data migration DO block pattern — info_schema guard + EXECUTE dynamic SQL + ON CONFLICT DO NOTHING + target>=source verify + RAISE EXCEPTION rollback — re-runnable forever
 - [Phase 08]: [Phase 08-02]: Keep sign_ca + sign_image in staff table — out of scope MIG-04; sign_ca for UI cert subject display, sign_image for PDF stamp
+- [Phase 08]: PrecomputedSigner pattern — extend @signpdf/utils.Signer to embed external provider signatures without local key access
+- [Phase 08]: pdf-lib requires useObjectStreams:false for compatibility with @signpdf/placeholder-plain (classic xref only)
+- [Phase 08]: Use Node builtin test runner (node:test via tsx) for signing unit tests — no jest/vitest dependency added
 
 ### Pending Todos
 
@@ -119,6 +123,6 @@ v1.0 hoàn thành với 3 quick tasks (HDSD Compliance sprint cuối):
 
 ## Session Continuity
 
-Last session: 2026-04-21T06:32:43.058Z
-Stopped at: Completed 08-02-PLAN.md (migrate staff.sign_phone + DROP column)
+Last session: 2026-04-21T06:48:09.355Z
+Stopped at: Completed 08-03-PLAN.md (PDF signing generic layer)
 Resume: `/gsd-plan-phase 8`

@@ -167,7 +167,7 @@ Plans:
 Plans:
 - [x] 08-01-PLAN.md — DB: schema 3 bảng mới (signing_provider_config, staff_signing_config, sign_transactions) + ALTER 4 attachment tables + 15 SPs CRUD
 - [x] 08-02-PLAN.md — DB: data migration staff.sign_phone → staff_signing_config (atomic DO block) + DROP column
-- [ ] 08-03-PLAN.md — Backend: generic PDF signing (@signpdf/signpdf + node-forge), 3 function export (computePdfHash, signPdf, prepareSignPdf) + unit test
+- [x] 08-03-PLAN.md — Backend: generic PDF signing (@signpdf/signpdf + node-forge), 3 function export (computePdfHash, signPdf, prepareSignPdf) + unit test
 - [ ] 08-04-PLAN.md — Backend: crypto helper (pgp_sym_encrypt) + 3 repositories (signing-provider-config, staff-signing-config, sign-transaction) gọi 15 SPs
 **UI hint**: no
 
