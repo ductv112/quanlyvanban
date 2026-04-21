@@ -32,6 +32,7 @@ import lgspRoutes from './routes/lgsp.js';
 import digitalSignatureRoutes from './routes/digital-signature.js';
 import kySoCauHinhRoutes from './routes/ky-so-cau-hinh.js';
 import kySoTaiKhoanRoutes from './routes/ky-so-tai-khoan.js';
+import kySoSignRoutes from './routes/ky-so-sign.js';
 import notificationRoutes from './routes/notification.js';
 import sendConfigRoutes from './routes/send-config.js';
 import profileRoutes from './routes/profile.js';
@@ -94,6 +95,9 @@ app.use('/api/lgsp', authenticate, lgspRoutes);
 app.use('/api/ky-so/cau-hinh', authenticate, requireRoles('Quản trị hệ thống'), kySoCauHinhRoutes);
 // Phase 10: User config ký số cá nhân — mount BEFORE /api/ky-so generic, authenticate only (mọi user)
 app.use('/api/ky-so/tai-khoan', authenticate, kySoTaiKhoanRoutes);
+// Phase 11: Async sign flow (POST /sign, GET /sign/:id, POST /sign/:id/cancel)
+// MUST mount BEFORE /api/ky-so generic — longer prefix wins; authenticate only (mọi user)
+app.use('/api/ky-so/sign', authenticate, kySoSignRoutes);
 app.use('/api/ky-so', authenticate, digitalSignatureRoutes);
 app.use('/api/thong-bao-kenh', authenticate, notificationRoutes);
 
