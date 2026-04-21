@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.0
-milestone_name: Production features — Tích hợp ký số 2 kênh
-status: ready_to_plan
-stopped_at: Roadmap v2.0 created (Phase 8-14)
-last_updated: "2026-04-21T05:00:00.000Z"
-last_activity: 2026-04-21 - ROADMAP.md v2.0 tạo xong (7 phases, 42 REQ-IDs mapped 100%)
+milestone: v1.0
+milestone_name: milestone
+status: executing
+stopped_at: Completed 08-01-PLAN.md (signing schema foundation + 15 SPs)
+last_updated: "2026-04-21T06:27:31.545Z"
+last_activity: 2026-04-21
 progress:
-  total_phases: 7
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  total_phases: 8
+  completed_phases: 7
+  total_plans: 37
+  completed_plans: 34
+  percent: 92
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-21 — Milestone v2.0 started)
 
 **Core value:** Luồng văn bản đến → xử lý → văn bản đi phải hoạt động đúng nghiệp vụ cơ quan nhà nước
-**Current focus:** Milestone v2.0 — Tích hợp ký số 2 kênh (SmartCA VNPT + MySign Viettel)
+**Current focus:** Phase 8 — Schema foundation + PDF signing generic layer
 
 ## Current Position
 
-Phase: 8
-Plan: —
-Status: Ready to plan
-Last activity: 2026-04-21 — ROADMAP.md v2.0 tạo xong, sẵn sàng `/gsd-plan-phase 8`
+Phase: 8 (Schema foundation + PDF signing generic layer) — EXECUTING
+Plan: 2 of 4
+Status: Ready to execute
+Last activity: 2026-04-21
 
 Progress: [░░░░░░░░░░] 0% (0/7 phases complete)
 
@@ -55,6 +55,7 @@ Progress: [░░░░░░░░░░] 0% (0/7 phases complete)
 | 14 | Deployment + HDSD + verification | 2 | Phase 13 |
 
 **Total: 42 REQ-IDs (100% coverage, no orphans)**
+| Phase 08 P01 | 25min | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -81,6 +82,9 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - Phase 8 = foundation (schema + generic PDF layer) không có UI → giúp downstream không block bởi UI changes
 - Phase 11 là phase lớn nhất (12 REQs) nhưng coherent: toàn bộ core sign flow + async worker phải ship cùng lúc để user test được end-to-end
 - Phase 14 tách riêng deployment để ensure HDSD + seed scripts không bị quên cuối milestone
+- [Phase 08]: BYTEA client_secret forces Node-side pgp_sym_encrypt at boundary (plaintext column rejected)
+- [Phase 08]: Partial unique index on is_active=TRUE gives database-level single-active provider guarantee (vs trigger)
+- [Phase 08]: attachment_type enum includes handling (4 values) to match plan's ALTER of attachment_handling_docs
 
 ### Pending Todos
 
@@ -112,6 +116,6 @@ v1.0 hoàn thành với 3 quick tasks (HDSD Compliance sprint cuối):
 
 ## Session Continuity
 
-Last session: 2026-04-21T05:00:00.000Z
-Stopped at: ROADMAP.md v2.0 tạo xong — sẵn sàng plan Phase 8
+Last session: 2026-04-21T06:27:31.529Z
+Stopped at: Completed 08-01-PLAN.md (signing schema foundation + 15 SPs)
 Resume: `/gsd-plan-phase 8`

@@ -153,8 +153,8 @@ Mỗi REQ-ID v2.0 map tới đúng 1 phase (8-14). Tổng 42/42 — 100% coverag
 | ASYNC-04 | Phase 11 — Sign flow + async worker | Pending |
 | ASYNC-05 | Phase 11 — Sign flow + async worker | Pending |
 | ASYNC-06 | Phase 11 — Sign flow + async worker | Pending |
-| MIG-01 | Phase 8 — Schema foundation + PDF signing layer | Pending |
-| MIG-02 | Phase 8 — Schema foundation + PDF signing layer | Pending |
+| MIG-01 | Phase 8 — Schema foundation + PDF signing layer | Complete |
+| MIG-02 | Phase 8 — Schema foundation + PDF signing layer | Complete |
 | MIG-03 | Phase 8 — Schema foundation + PDF signing layer | Pending |
 | MIG-04 | Phase 8 — Schema foundation + PDF signing layer | Pending |
 | MIG-05 | Phase 11 — Sign flow + async worker | Pending |
