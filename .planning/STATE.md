@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 09-02-PLAN.md (Phase 9 Plan 2 — 6 Admin endpoints /api/ky-so/cau-hinh + fn_signing_stats SP ready for Plan 03 frontend)
-last_updated: "2026-04-21T08:45:53.988Z"
+stopped_at: Completed 10-01-PLAN.md (Phase 10 Plan 1 — 4 user-level /api/ky-so/tai-khoan endpoints authenticate-only ready for Plan 02 frontend)
+last_updated: "2026-04-21T09:08:58.593Z"
 last_activity: 2026-04-21
 progress:
-  total_phases: 9
+  total_phases: 10
   completed_phases: 9
-  total_plans: 40
-  completed_plans: 40
-  percent: 100
+  total_plans: 43
+  completed_plans: 41
+  percent: 95
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-21 — Milestone v2.0 started)
 
 **Core value:** Luồng văn bản đến → xử lý → văn bản đi phải hoạt động đúng nghiệp vụ cơ quan nhà nước
-**Current focus:** Phase 9 — Admin config API + provider adapters (SmartCA VNPT + MySign Viettel)
+**Current focus:** Phase 10 — User config page (CFG-05 + CFG-06) for user-level signing config
 
 ## Current Position
 
-Phase: 9
-Plan: Not started
-Status: In progress — Plan 03 (Admin config frontend page) next
+Phase: 10
+Plan: 01 complete — Plan 02 (User config frontend page) next
+Status: In progress — Phase 10 started
 Last activity: 2026-04-21
 
-Progress: [██████████] 98% (39/40 plans complete)
+Progress: [██████████] 95% (41/43 plans complete)
 
 ## Performance Metrics
 
@@ -61,6 +61,7 @@ Progress: [██████████] 98% (39/40 plans complete)
 | Phase 08 P04 | 5min | 2 tasks | 5 files |
 | Phase 09 P01 | 10min | 3 tasks | 6 files |
 | Phase 09 P02 | 4min | 3 tasks | 3 files |
+| Phase 10 P01 | 4min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -104,6 +105,9 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase 09]: [Phase 09-02]: Migration 042 (not 041) — plan draft had stale number, 041 already used by migrate_sign_phone in Phase 8 (Rule 3 auto-fix)
 - [Phase 09]: [Phase 09-02]: Mount /api/ky-so/cau-hinh BEFORE /api/ky-so generic — longer-prefix-wins pattern preserves requireRoles admin guard without leaking to digital-signature mock routes
 - [Phase 09]: [Phase 09-02]: GET /cau-hinh returns skeleton rows for never-configured providers — UI loops both codes uniformly, no client-side merge
+- [Phase 10]: [Phase 10-01]: staffId luôn từ JWT (req.user.staffId), KHÔNG từ body — mitigate T-10-01 Tampering cho user-level signing config
+- [Phase 10]: [Phase 10-01]: Verify fail = HTTP 200 với verified:false (không 500) — cert-not-found là business outcome, không phải server error; FE parse data.verified flag thống nhất
+- [Phase 10]: [Phase 10-01]: Mount /api/ky-so/tai-khoan riêng với authenticate-only (không requireRoles) BEFORE /api/ky-so generic — longer-prefix-wins tách biệt admin guard khỏi user endpoint
 
 ### Pending Todos
 
@@ -135,6 +139,6 @@ v1.0 hoàn thành với 3 quick tasks (HDSD Compliance sprint cuối):
 
 ## Session Continuity
 
-Last session: 2026-04-21T07:40:42.004Z
-Stopped at: Completed 09-02-PLAN.md (Phase 9 Plan 2 — 6 Admin endpoints /api/ky-so/cau-hinh + fn_signing_stats SP ready for Plan 03 frontend)
+Last session: 2026-04-21T09:08:58.581Z
+Stopped at: Completed 10-01-PLAN.md (Phase 10 Plan 1 — 4 user-level /api/ky-so/tai-khoan endpoints authenticate-only ready for Plan 02 frontend)
 Resume: `/gsd-plan-phase 8`

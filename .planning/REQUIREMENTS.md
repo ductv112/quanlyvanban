@@ -131,8 +131,8 @@ Mỗi REQ-ID v2.0 map tới đúng 1 phase (8-14). Tổng 42/42 — 100% coverag
 | CFG-02 | Phase 9 — Admin config + provider adapters | Complete |
 | CFG-03 | Phase 9 — Admin config + provider adapters | Complete |
 | CFG-04 | Phase 9 — Admin config + provider adapters | Complete |
-| CFG-05 | Phase 10 — User config page | Pending |
-| CFG-06 | Phase 10 — User config page | Pending |
+| CFG-05 | Phase 10 — User config page | Complete |
+| CFG-06 | Phase 10 — User config page | Complete |
 | CFG-07 | Phase 9 — Admin config + provider adapters | Complete |
 | UX-01 | Phase 12 — Menu Ký số + Danh sách UI | Pending |
 | UX-02 | Phase 12 — Menu Ký số + Danh sách UI | Pending |

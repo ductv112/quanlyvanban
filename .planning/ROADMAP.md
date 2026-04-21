@@ -199,7 +199,7 @@ Plans:
   4. Khi Admin switch provider, config cũ của user ở provider khác vẫn giữ (composite PK `staff_id + provider_code`) — user không phải nhập lại nếu quay lại provider cũ
 **Plans**: 3 plans
 Plans:
-- [ ] 10-01-PLAN.md — Backend API /api/ky-so/tai-khoan (4 endpoints: GET/POST/certificates/verify, authenticate only)
+- [x] 10-01-PLAN.md — Backend API /api/ky-so/tai-khoan (4 endpoints: GET/POST/certificates/verify, authenticate only)
 - [ ] 10-02-PLAN.md — Frontend trang /ky-so/tai-khoan + sidebar submenu 'Tài khoản ký số cá nhân' cho mọi user (checkpoint)
 - [ ] 10-03-PLAN.md — Remove tab 'Chữ ký số' cũ trong /thong-tin-ca-nhan, thêm Alert pointer sang /ky-so/tai-khoan
 **UI hint**: yes
@@ -271,7 +271,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 7. Polish & Redirect | -/- | Complete | 2026-04-18 |
 | 8. Schema foundation + PDF signing layer | 4/4 | Complete    | 2026-04-21 |
 | 9. Admin config + provider adapters | 3/3 | Complete    | 2026-04-21 |
-| 10. User config page | 0/3 | Not started | - |
+| 10. User config page | 1/3 | In Progress|  |
 | 11. Sign flow + async worker | 0/TBD | Not started | - |
 | 12. Menu Ký số + Danh sách UI | 0/TBD | Not started | - |
 | 13. Modal ký số + Root CA UX | 0/TBD | Not started | - |
