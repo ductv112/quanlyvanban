@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 09-01-PLAN.md (Phase 9 Plan 1 — provider adapters + factory ready for Plan 02 API routes)
-last_updated: "2026-04-21T07:31:23.234Z"
+stopped_at: Completed 09-02-PLAN.md (Phase 9 Plan 2 — 6 Admin endpoints /api/ky-so/cau-hinh + fn_signing_stats SP ready for Plan 03 frontend)
+last_updated: "2026-04-21T07:40:42.014Z"
 last_activity: 2026-04-21
 progress:
   total_phases: 9
   completed_phases: 8
   total_plans: 40
-  completed_plans: 38
-  percent: 95
+  completed_plans: 39
+  percent: 98
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-04-21 — Milestone v2.0 started)
 ## Current Position
 
 Phase: 9
-Plan: 1/3 (09-01 complete — provider adapters)
-Status: In progress — Plan 02 (Admin config API) next
+Plan: 2/3 (09-02 complete — Admin config API + fn_signing_stats SP)
+Status: In progress — Plan 03 (Admin config frontend page) next
 Last activity: 2026-04-21
 
-Progress: [██████████] 95% (38/40 plans complete)
+Progress: [██████████] 98% (39/40 plans complete)
 
 ## Performance Metrics
 
@@ -60,6 +60,7 @@ Progress: [██████████] 95% (38/40 plans complete)
 | Phase 08 P03 | 12min | 2 tasks | 3 files |
 | Phase 08 P04 | 5min | 2 tasks | 5 files |
 | Phase 09 P01 | 10min | 3 tasks | 6 files |
+| Phase 09 P02 | 4min | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -100,6 +101,9 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase 09]: [Phase 09-01]: HttpClient interface + DI factory — tests inject mock qua create*Provider(httpClient?), production dùng singleton với default fetch wrapper
 - [Phase 09]: [Phase 09-01]: Stateless MySign adapter (no token cache) — fresh login every call prevents race in Phase 11 multi-concurrency BullMQ worker
 - [Phase 09]: [Phase 09-01]: SmartCA getSignStatus là POST (không GET) — Model.cs Query() helper hardcode POST, plan draft sai method
+- [Phase 09]: [Phase 09-02]: Migration 042 (not 041) — plan draft had stale number, 041 already used by migrate_sign_phone in Phase 8 (Rule 3 auto-fix)
+- [Phase 09]: [Phase 09-02]: Mount /api/ky-so/cau-hinh BEFORE /api/ky-so generic — longer-prefix-wins pattern preserves requireRoles admin guard without leaking to digital-signature mock routes
+- [Phase 09]: [Phase 09-02]: GET /cau-hinh returns skeleton rows for never-configured providers — UI loops both codes uniformly, no client-side merge
 
 ### Pending Todos
 
@@ -131,6 +135,6 @@ v1.0 hoàn thành với 3 quick tasks (HDSD Compliance sprint cuối):
 
 ## Session Continuity
 
-Last session: 2026-04-21T07:31:23.220Z
-Stopped at: Completed 09-01-PLAN.md (Phase 9 Plan 1 — provider adapters + factory ready for Plan 02 API routes)
+Last session: 2026-04-21T07:40:42.004Z
+Stopped at: Completed 09-02-PLAN.md (Phase 9 Plan 2 — 6 Admin endpoints /api/ky-so/cau-hinh + fn_signing_stats SP ready for Plan 03 frontend)
 Resume: `/gsd-plan-phase 8`

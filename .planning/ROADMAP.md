@@ -184,7 +184,7 @@ Plans:
 **Plans**: 3 plans
 Plans:
 - [x] 09-01-PLAN.md — Backend: provider adapters (strategy pattern) + factory (SmartCA VNPT + MySign Viettel)
-- [ ] 09-02-PLAN.md — Backend: API route /api/ky-so/cau-hinh (6 endpoints) + stats SP migration 041
+- [x] 09-02-PLAN.md — Backend: API route /api/ky-so/cau-hinh (6 endpoints) + stats SP migration 041
 - [ ] 09-03-PLAN.md — Frontend: Admin config page /ky-so/cau-hinh + sidebar menu Ký số + checkpoint verify
 **UI hint**: yes
 
