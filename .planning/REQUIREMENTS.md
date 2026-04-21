@@ -102,17 +102,81 @@
 
 ## Traceability
 
-Filled by `/gsd-roadmapper` khi tạo ROADMAP.md. Mỗi REQ-ID map tới đúng 1 phase.
+Mỗi REQ-ID v2.0 map tới đúng 1 phase (8-14). Tổng 42/42 — 100% coverage, không có orphan.
+
+### Category summary
 
 | Category | Count | Phase mapping |
 |----------|-------|---------------|
-| SIGN-*   | 8 | TBD |
-| CFG-*    | 7 | TBD |
-| UX-*     | 13 | TBD |
-| ASYNC-*  | 6 | TBD |
-| MIG-*    | 5 | TBD |
-| DEP-*    | 3 | TBD |
+| SIGN-*   | 8 | SIGN-04 → Phase 8; SIGN-01, SIGN-02 → Phase 9; SIGN-03, SIGN-05, SIGN-06, SIGN-07, SIGN-08 → Phase 11 |
+| CFG-*    | 7 | CFG-01, CFG-02, CFG-03, CFG-04, CFG-07 → Phase 9; CFG-05, CFG-06 → Phase 10 |
+| UX-*     | 13 | UX-13 → Phase 10; UX-01, UX-02, UX-03, UX-04, UX-05, UX-06, UX-12 → Phase 12; UX-07, UX-08, UX-09, UX-10, UX-11 → Phase 13 |
+| ASYNC-*  | 6 | Tất cả → Phase 11 |
+| MIG-*    | 5 | MIG-01, MIG-02, MIG-03, MIG-04 → Phase 8; MIG-05 → Phase 11 |
+| DEP-*    | 3 | DEP-02 → Phase 13; DEP-01, DEP-03 → Phase 14 |
+
+### Chi tiết REQ → Phase
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| SIGN-01 | Phase 9 — Admin config + provider adapters | Pending |
+| SIGN-02 | Phase 9 — Admin config + provider adapters | Pending |
+| SIGN-03 | Phase 11 — Sign flow + async worker | Pending |
+| SIGN-04 | Phase 8 — Schema foundation + PDF signing layer | Pending |
+| SIGN-05 | Phase 11 — Sign flow + async worker | Pending |
+| SIGN-06 | Phase 11 — Sign flow + async worker | Pending |
+| SIGN-07 | Phase 11 — Sign flow + async worker | Pending |
+| SIGN-08 | Phase 11 — Sign flow + async worker | Pending |
+| CFG-01 | Phase 9 — Admin config + provider adapters | Pending |
+| CFG-02 | Phase 9 — Admin config + provider adapters | Pending |
+| CFG-03 | Phase 9 — Admin config + provider adapters | Pending |
+| CFG-04 | Phase 9 — Admin config + provider adapters | Pending |
+| CFG-05 | Phase 10 — User config page | Pending |
+| CFG-06 | Phase 10 — User config page | Pending |
+| CFG-07 | Phase 9 — Admin config + provider adapters | Pending |
+| UX-01 | Phase 12 — Menu Ký số + Danh sách UI | Pending |
+| UX-02 | Phase 12 — Menu Ký số + Danh sách UI | Pending |
+| UX-03 | Phase 12 — Menu Ký số + Danh sách UI | Pending |
+| UX-04 | Phase 12 — Menu Ký số + Danh sách UI | Pending |
+| UX-05 | Phase 12 — Menu Ký số + Danh sách UI | Pending |
+| UX-06 | Phase 12 — Menu Ký số + Danh sách UI | Pending |
+| UX-07 | Phase 13 — Modal ký số + Root CA UX | Pending |
+| UX-08 | Phase 13 — Modal ký số + Root CA UX | Pending |
+| UX-09 | Phase 13 — Modal ký số + Root CA UX | Pending |
+| UX-10 | Phase 13 — Modal ký số + Root CA UX | Pending |
+| UX-11 | Phase 13 — Modal ký số + Root CA UX | Pending |
+| UX-12 | Phase 12 — Menu Ký số + Danh sách UI | Pending |
+| UX-13 | Phase 10 — User config page | Pending |
+| ASYNC-01 | Phase 11 — Sign flow + async worker | Pending |
+| ASYNC-02 | Phase 11 — Sign flow + async worker | Pending |
+| ASYNC-03 | Phase 11 — Sign flow + async worker | Pending |
+| ASYNC-04 | Phase 11 — Sign flow + async worker | Pending |
+| ASYNC-05 | Phase 11 — Sign flow + async worker | Pending |
+| ASYNC-06 | Phase 11 — Sign flow + async worker | Pending |
+| MIG-01 | Phase 8 — Schema foundation + PDF signing layer | Pending |
+| MIG-02 | Phase 8 — Schema foundation + PDF signing layer | Pending |
+| MIG-03 | Phase 8 — Schema foundation + PDF signing layer | Pending |
+| MIG-04 | Phase 8 — Schema foundation + PDF signing layer | Pending |
+| MIG-05 | Phase 11 — Sign flow + async worker | Pending |
+| DEP-01 | Phase 14 — Deployment + HDSD + verification | Pending |
+| DEP-02 | Phase 13 — Modal ký số + Root CA UX | Pending |
+| DEP-03 | Phase 14 — Deployment + HDSD + verification | Pending |
+
+### Phase load
+
+| Phase | # REQs | Categories |
+|-------|--------|------------|
+| Phase 8 | 5 | MIG (4) + SIGN (1) |
+| Phase 9 | 7 | SIGN (2) + CFG (5) |
+| Phase 10 | 3 | CFG (2) + UX (1) |
+| Phase 11 | 12 | SIGN (5) + ASYNC (6) + MIG (1) |
+| Phase 12 | 7 | UX (7) |
+| Phase 13 | 6 | UX (5) + DEP (1) |
+| Phase 14 | 2 | DEP (2) |
+| **Total** | **42** | — |
+
+Coverage: 42/42 ✓ — no orphan, no duplicate
 
 ---
 
-*Updated 2026-04-21 — v1.0 requirements moved to MILESTONES.md as Validated, v2.0 scope defined*
+*Updated 2026-04-21 — Traceability hoàn tất sau khi tạo ROADMAP.md v2.0 (Phase 8-14)*

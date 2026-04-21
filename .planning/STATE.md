@@ -2,12 +2,12 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Production features — Tích hợp ký số 2 kênh
-status: defining_requirements
-stopped_at: Milestone v2.0 initialized
-last_updated: "2026-04-21T04:00:00.000Z"
-last_activity: 2026-04-21 - Milestone v2.0 started — Tích hợp ký số SmartCA VNPT + MySign Viettel
+status: ready_to_plan
+stopped_at: Roadmap v2.0 created (Phase 8-14)
+last_updated: "2026-04-21T05:00:00.000Z"
+last_activity: 2026-04-21 - ROADMAP.md v2.0 tạo xong (7 phases, 42 REQ-IDs mapped 100%)
 progress:
-  total_phases: 0
+  total_phases: 7
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-04-21 — Milestone v2.0 started)
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 8
 Plan: —
-Status: Defining requirements
-Last activity: 2026-04-21 — Milestone v2.0 started
+Status: Ready to plan
+Last activity: 2026-04-21 — ROADMAP.md v2.0 tạo xong, sẵn sàng `/gsd-plan-phase 8`
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [░░░░░░░░░░] 0% (0/7 phases complete)
 
 ## Performance Metrics
 
@@ -41,6 +41,20 @@ Progress: [░░░░░░░░░░] 0%
 - v1.0 achievement: 7 phases + 3 quick plans, 97.8% HDSD coverage (92 test cases)
 
 **v2.0 tracking:** Reset — metrics populated as plans complete
+
+**v2.0 planned phases (Phase 8-14):**
+
+| Phase | Title | REQ count | Dependency |
+|-------|-------|-----------|------------|
+| 8 | Schema foundation + PDF signing layer | 5 | — (v1.0 shipped) |
+| 9 | Admin config + provider adapters | 7 | Phase 8 |
+| 10 | User config page + migrate tab | 3 | Phase 9 |
+| 11 | Sign flow + async worker (core) | 12 | Phase 10 |
+| 12 | Menu Ký số + Danh sách 4 tab UI | 7 | Phase 11 |
+| 13 | Modal ký số robust + Root CA UX | 6 | Phase 12 |
+| 14 | Deployment + HDSD + verification | 2 | Phase 13 |
+
+**Total: 42 REQ-IDs (100% coverage, no orphans)**
 
 ## Accumulated Context
 
@@ -61,11 +75,17 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - Root CA Viettel: KHÔNG code trong hệ thống, chỉ show banner link + HDSD PDF + `.cer` file
 - Ký lại sau fail: tạo transaction MỚI (giữ record cũ cho audit), không reset record cũ
 
+**Roadmap decisions (2026-04-21):**
+
+- Phase granularity: coarse (7 phases cho 42 REQs — trung bình 6 REQs/phase)
+- Phase 8 = foundation (schema + generic PDF layer) không có UI → giúp downstream không block bởi UI changes
+- Phase 11 là phase lớn nhất (12 REQs) nhưng coherent: toàn bộ core sign flow + async worker phải ship cùng lúc để user test được end-to-end
+- Phase 14 tách riêng deployment để ensure HDSD + seed scripts không bị quên cuối milestone
+
 ### Pending Todos
 
-- Waiting for REQUIREMENTS.md generation
-- Waiting for ROADMAP.md generation
-- Waiting for `/gsd-plan-phase` on first v2.0 phase
+- `/gsd-plan-phase 8` — lên kế hoạch chi tiết Phase 8 (schema foundation + PDF signing layer)
+- Chuẩn bị docs reference cho Phase 9: đối chiếu code cũ `OneWin.WebApp/SmartCA_VNPT/Model.cs` (3 endpoints VNPT) và postman collection MySign Viettel (4 endpoints)
 
 ### Blockers/Concerns
 
@@ -92,6 +112,6 @@ v1.0 hoàn thành với 3 quick tasks (HDSD Compliance sprint cuối):
 
 ## Session Continuity
 
-Last session: 2026-04-21T04:00:00.000Z
-Stopped at: Milestone v2.0 initialized — ready to define REQUIREMENTS.md
-Resume: `/gsd-plan-phase [N]` sau khi ROADMAP.md được tạo
+Last session: 2026-04-21T05:00:00.000Z
+Stopped at: ROADMAP.md v2.0 tạo xong — sẵn sàng plan Phase 8
+Resume: `/gsd-plan-phase 8`
