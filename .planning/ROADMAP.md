@@ -239,7 +239,7 @@ Plans:
 **Plans**: 3 plans
 Plans:
 - [x] 11.1-01-PLAN.md — Schema consolidation: hợp nhất 18 migration files thành 1 file master idempotent (database/schema/000_schema_v2.0.sql) + archive folder skeleton
-- [ ] 11.1-02-PLAN.md — Seed data: tách required data (001_required_data.sql) + rich demo data (002_demo_data.sql, 150+ records)
+- [x] 11.1-02-PLAN.md — Seed data: tách required data (001_required_data.sql) + rich demo data (002_demo_data.sql, 150+ records)
 - [ ] 11.1-03-PLAN.md — Deploy scripts (reset-db.sh/.ps1 + deploy.sh/.ps1) + move 18 migrations vào archive + CLAUDE.md DB Migration Strategy rules + human-verify checkpoint
 **UI hint**: no
 
@@ -299,7 +299,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 9. Admin config + provider adapters | 3/3 | Complete    | 2026-04-21 |
 | 10. User config page | 3/3 | Complete   | 2026-04-21 |
 | 11. Sign flow + async worker | 8/8 | Complete    | 2026-04-21 |
-| 11.1. DB Consolidation & Seed Strategy | 1/3 | In progress | - |
+| 11.1. DB Consolidation & Seed Strategy | 2/3 | In Progress|  |
 | 12. Menu Ký số + Danh sách UI | 0/TBD | Not started | - |
 | 13. Modal ký số + Root CA UX | 0/TBD | Not started | - |
 | 14. Deployment + HDSD + verification | 0/TBD | Not started | - |

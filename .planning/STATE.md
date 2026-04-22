@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: in_progress
-stopped_at: Completed 11.1-01-PLAN.md — Master idempotent schema v2.0 (1/3)
-last_updated: "2026-04-22T07:27:12Z"
+status: executing
+stopped_at: Completed 11.1-02-PLAN.md — Seed data 001 required + 002 demo (2/3)
+last_updated: "2026-04-22T07:45:18.998Z"
 last_activity: 2026-04-22
 progress:
-  total_phases: 12
+  total_phases: 13
   completed_phases: 11
   total_plans: 54
-  completed_plans: 52
-  percent: 96
+  completed_plans: 53
+  percent: 98
 ---
 
 # Project State
@@ -26,12 +26,12 @@ See: .planning/PROJECT.md (updated 2026-04-21 — Milestone v2.0 started)
 ## Current Position
 
 Phase: 11.1
-Plan: 02 (next — seed required data + rich demo)
-Next: Plan 11.1-02 — tách required data (001_required_data.sql) + rich demo data (002_demo_data.sql, 150+ records)
-Status: Phase 11.1 IN PROGRESS (1/3 plans complete). Master schema v2.0 verified idempotent on dev DB.
+Plan: 03 (next — archive old migrations + update deploy scripts)
+Next: Plan 11.1-03 — move 18 file migrations cũ → archive/, update deploy scripts + dev onboarding README dùng schema/ + seed/ flow
+Status: Phase 11.1 IN PROGRESS (2/3 plans complete). Master schema v2.0 + 2 file seed (001 + 002) verified idempotent trên dev DB, 425 records seeded total.
 Last activity: 2026-04-22
 
-Progress: [█████████▓] 96% (52/54 plans complete — 11 phases Complete + Phase 11.1 1/3)
+Progress: [██████████] 98% (53/54 plans complete — 11 phases Complete + Phase 11.1 2/3)
 
 ## Performance Metrics
 
@@ -74,6 +74,7 @@ Progress: [█████████▓] 96% (52/54 plans complete — 11 phas
 | Phase 11 P07 | 4min | 3 tasks | 2 files |
 | Phase 11 P08 | 3min | 2 tasks | 1 files |
 | Phase 11.1 P01 | 11min | 3 tasks | 4 files |
+| Phase 11.1 P02 | 8min | 3 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -153,6 +154,11 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase 11.1]: [Plan 11.1-01]: ADD CONSTRAINT DO block catch 4 SQLSTATE codes (42710 duplicate_object, 42P07 duplicate_table, 42P16 invalid_table_definition cho multiple PKs, 42701 duplicate_column) — idempotent re-apply tested trên dev DB.
 - [Phase 11.1]: [Plan 11.1-01]: SET client_min_messages = notice trước final DO block — pg_dump set warning suppress NOTICE, cần reset để 'Schema v2.0 applied OK' hiển thị.
 - [Phase 11.1]: [Plan 11.1-01]: Loại trừ 041 data migration + 043 seed khỏi master; Plan 02 sẽ tạo seed riêng. Final state DB không có staff.sign_phone.
+- [Phase 11.1]: [Plan 11.1-02]: Tách 2 file seed (001 required + 002 demo) thay vì 1 file mono seed_full_demo.sql — production chỉ chạy 001, dev/test chạy cả 2; production-safe không có TRUNCATE/DELETE.
+- [Phase 11.1]: [Plan 11.1-02]: DO block guard ở đầu seed 002 — RAISE EXCEPTION rõ ràng nếu seed 001 chưa chạy (check admin user + root dept), tránh lỗi FK khó debug giữa chừng.
+- [Phase 11.1]: [Plan 11.1-02]: Session variable app.signing_secret_key + RAISE EXCEPTION nếu length < 16 — fail-fast thay vì encrypt bằng NULL key rồi backend không decrypt được.
+- [Phase 11.1]: [Plan 11.1-02]: generate_series + CASE + mod pattern cho bulk records phong phú — 50 VB đến trong 20 dòng code, dễ tăng/giảm số lượng; mix đầy đủ urgent/secret/type qua mod arithmetic.
+- [Phase 11.1]: [Plan 11.1-02]: Schema column mismatch fix — plan giả định 6 cột không tồn tại trong bảng thực tế (user_incoming_docs/attachment_*/outgoing_docs/drafting_docs/handling_docs/inter_incoming_docs); đọc \d table trước khi INSERT là bắt buộc.
 
 ### Pending Todos
 
@@ -184,6 +190,6 @@ v1.0 hoàn thành với 3 quick tasks (HDSD Compliance sprint cuối):
 
 ## Session Continuity
 
-Last session: 2026-04-22T07:27:12Z
-Stopped at: Completed 11.1-01-PLAN.md — Master idempotent schema v2.0 ready (1/3 plans of Phase 11.1)
+Last session: 2026-04-22T07:45:18.986Z
+Stopped at: Completed 11.1-02-PLAN.md — Seed data 001 required + 002 demo (2/3)
 Resume: `/gsd-execute-phase 11.1` để tiếp tục Plan 11.1-02 (seed required data + rich demo data)
