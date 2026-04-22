@@ -650,8 +650,10 @@ export default function KySoCauHinhPage() {
             <Descriptions
               column={1}
               size="small"
-              labelStyle={{ width: 130, color: '#64748B', fontSize: 13 }}
-              contentStyle={{ fontSize: 13, color: '#1B3A5C' }}
+              styles={{
+                label: { width: 130, color: '#64748B', fontSize: 13 },
+                content: { fontSize: 13, color: '#1B3A5C' },
+              }}
             >
               <Descriptions.Item label="Base URL">
                 {provider.base_url ? (

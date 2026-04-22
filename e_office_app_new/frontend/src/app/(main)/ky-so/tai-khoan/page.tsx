@@ -595,10 +595,12 @@ export default function KySoTaiKhoanPage() {
                   size="small"
                   bordered
                   style={{ marginBottom: 16 }}
-                  labelStyle={{
-                    width: 160,
-                    background: '#F8FAFC',
-                    color: '#64748B',
+                  styles={{
+                    label: {
+                      width: 160,
+                      background: '#F8FAFC',
+                      color: '#64748B',
+                    },
                   }}
                 >
                   <Descriptions.Item label="Chủ thể chứng thư">
