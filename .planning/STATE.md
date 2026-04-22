@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 11.1-02-PLAN.md — Seed data 001 required + 002 demo (2/3)
-last_updated: "2026-04-22T09:23:50.515Z"
-last_activity: 2026-04-22 -- Phase 12 planning complete
+stopped_at: Completed 12-01-PLAN.md — BE endpoint download + sidebar submenu (1/3 of Phase 12)
+last_updated: "2026-04-22T09:42:00.852Z"
+last_activity: 2026-04-22
 progress:
   total_phases: 13
   completed_phases: 11
   total_plans: 57
-  completed_plans: 53
-  percent: 93
+  completed_plans: 54
+  percent: 95
 ---
 
 # Project State
@@ -21,15 +21,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-21 — Milestone v2.0 started)
 
 **Core value:** Luồng văn bản đến → xử lý → văn bản đi phải hoạt động đúng nghiệp vụ cơ quan nhà nước
-**Current focus:** Phase 11 — Sign flow + async worker (BullMQ + real provider integration)
+**Current focus:** Phase 12 — Menu Ký số + Danh sách 4 tab UI
 
 ## Current Position
 
-Phase: 12
-Plan: Not started
+Phase: 12 (Menu Ký số + Danh sách 4 tab UI) — EXECUTING
+Plan: 2 of 3
 Next: Plan 11.1-03 — move 18 file migrations cũ → archive/, update deploy scripts + dev onboarding README dùng schema/ + seed/ flow
 Status: Ready to execute
-Last activity: 2026-04-22 -- Phase 12 planning complete
+Last activity: 2026-04-22
 
 Progress: [██████████] 98% (53/54 plans complete — 11 phases Complete + Phase 11.1 2/3)
 
@@ -75,6 +75,7 @@ Progress: [██████████] 98% (53/54 plans complete — 11 phas
 | Phase 11 P08 | 3min | 2 tasks | 1 files |
 | Phase 11.1 P01 | 11min | 3 tasks | 4 files |
 | Phase 11.1 P02 | 8min | 3 tasks | 2 files |
+| Phase 12 P01 | 4min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -159,6 +160,9 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase 11.1]: [Plan 11.1-02]: Session variable app.signing_secret_key + RAISE EXCEPTION nếu length < 16 — fail-fast thay vì encrypt bằng NULL key rồi backend không decrypt được.
 - [Phase 11.1]: [Plan 11.1-02]: generate_series + CASE + mod pattern cho bulk records phong phú — 50 VB đến trong 20 dòng code, dễ tăng/giảm số lượng; mix đầy đủ urgent/secret/type qua mod arithmetic.
 - [Phase 11.1]: [Plan 11.1-02]: Schema column mismatch fix — plan giả định 6 cột không tồn tại trong bảng thực tế (user_incoming_docs/attachment_*/outgoing_docs/drafting_docs/handling_docs/inter_incoming_docs); đọc \d table trước khi INSERT là bắt buộc.
+- [Phase 12]: [Plan 12-01]: GET /:id/download owner-or-admin bypass (khác cancel + GET /:id owner-only) — admin cần audit/support quyền truy cập file đã ký; dùng TokenPayload.isAdmin boolean từ JWT không cần DB query role
+- [Phase 12]: [Plan 12-01]: file_name compute client-side từ segment cuối signed_file_path với prefix 'signed_' — không query thêm attachment table, trade-off tên hiển thị có thể là 'signed_txn-7-signed.pdf'
+- [Phase 12]: [Plan 12-01]: Cache-Control: no-store header — ngăn browser/proxy cache URL HMAC presigned (T-12-06 mitigation), vì TTL 600s vẫn đủ leak window nếu cache response
 
 ### Pending Todos
 
@@ -190,6 +194,6 @@ v1.0 hoàn thành với 3 quick tasks (HDSD Compliance sprint cuối):
 
 ## Session Continuity
 
-Last session: 2026-04-22T07:45:18.986Z
-Stopped at: Completed 11.1-02-PLAN.md — Seed data 001 required + 002 demo (2/3)
+Last session: 2026-04-22T09:42:00.841Z
+Stopped at: Completed 12-01-PLAN.md — BE endpoint download + sidebar submenu (1/3 of Phase 12)
 Resume: `/gsd-execute-phase 11.1` để tiếp tục Plan 11.1-02 (seed required data + rich demo data)
