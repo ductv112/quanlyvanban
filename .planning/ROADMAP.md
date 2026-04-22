@@ -304,6 +304,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 10. User config page | 3/3 | Complete   | 2026-04-21 |
 | 11. Sign flow + async worker | 8/8 | Complete    | 2026-04-21 |
 | 11.1. DB Consolidation & Seed Strategy | 2/3 | Complete    | 2026-04-22 |
-| 12. Menu Ký số + Danh sách UI | 3/3 | Complete   | 2026-04-22 |
+| 12. Menu Ký số + Danh sách UI | 3/3 | Complete    | 2026-04-22 |
 | 13. Modal ký số + Root CA UX | 0/TBD | Not started | - |
 | 14. Deployment + HDSD + verification | 0/TBD | Not started | - |

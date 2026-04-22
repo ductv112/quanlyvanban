@@ -4,14 +4,14 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Completed 12-02-PLAN.md — FE page /ky-so/danh-sach 4 tabs + socket realtime + URL sync (2/3 of Phase 12)
-last_updated: "2026-04-22T09:56:54.349Z"
+last_updated: "2026-04-22T10:13:09.094Z"
 last_activity: 2026-04-22
 progress:
   total_phases: 13
-  completed_phases: 11
+  completed_phases: 12
   total_plans: 57
-  completed_plans: 55
-  percent: 96
+  completed_plans: 56
+  percent: 98
 ---
 
 # Project State
@@ -25,8 +25,8 @@ See: .planning/PROJECT.md (updated 2026-04-21 — Milestone v2.0 started)
 
 ## Current Position
 
-Phase: 12 (Menu Ký số + Danh sách 4 tab UI) — EXECUTING
-Plan: 3 of 3
+Phase: 12
+Plan: Not started
 Next: Plan 11.1-03 — move 18 file migrations cũ → archive/, update deploy scripts + dev onboarding README dùng schema/ + seed/ flow
 Status: Ready to execute
 Last activity: 2026-04-22
