@@ -226,6 +226,23 @@ Plans:
 - [x] 11-08-PLAN.md — Frontend: add Ký số button to HSCV detail page (first-time functionality) + checkpoint
 **UI hint**: yes
 
+### Phase 11.1: DB Consolidation & Seed Strategy (INSERTED)
+**Goal**: Gộp tất cả migrations hiện tại thành 1 file schema master idempotent (DROP IF EXISTS trước CREATE để không còn lỗi SP overload cũ), viết seed data phong phú cho test, cập nhật deploy scripts để reset-db chạy 1 phát là xong. Mục tiêu: pull code ở máy mới → reset-db → test ngay không lỗi.
+**Depends on**: Phase 11
+**Requirements**: (urgent insertion — addresses tech debt, no new REQ-IDs)
+**Success Criteria** (what must be TRUE):
+  1. `database/schema/000_schema_v2.0.sql` master idempotent — DROP IF EXISTS tất cả SPs trước CREATE, có thể re-run không lỗi overload
+  2. `database/seed/002_demo_data.sql` phong phú: 50+ VB đến/đi/dự thảo, 20+ HSCV, 10+ user với các phòng ban, đính kèm PDF mẫu, provider config seed sẵn
+  3. `deploy/reset-db.sh` + `.ps1` chạy 1 phát xong: drop DB → recreate → run schema → run seeds → app sẵn sàng test
+  4. Migrations cũ (001-046 + quick_*.sql) move vào `database/archive/` — giữ lịch sử nhưng không chạy
+  5. CLAUDE.md cập nhật rules DB migration mới: edit schema master + bump version khi milestone mới, KHÔNG thêm file 047+ rời
+**Plans**: 3 plans
+Plans:
+- [ ] 11.1-01-PLAN.md — Schema consolidation: hợp nhất 18 migration files thành 1 file master idempotent (database/schema/000_schema_v2.0.sql) + archive folder skeleton
+- [ ] 11.1-02-PLAN.md — Seed data: tách required data (001_required_data.sql) + rich demo data (002_demo_data.sql, 150+ records)
+- [ ] 11.1-03-PLAN.md — Deploy scripts (reset-db.sh/.ps1 + deploy.sh/.ps1) + move 18 migrations vào archive + CLAUDE.md DB Migration Strategy rules + human-verify checkpoint
+**UI hint**: no
+
 ### Phase 12: Menu Ký số + Danh sách 4 tab UI
 **Goal**: Menu "Ký số" xuất hiện ở sidebar với 3 submenu, trang `/ky-so/danh-sach` có 4 tab dynamic giúp user quản lý tập trung mọi giao dịch ký số của mình
 **Depends on**: Phase 11
@@ -282,6 +299,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 9. Admin config + provider adapters | 3/3 | Complete    | 2026-04-21 |
 | 10. User config page | 3/3 | Complete   | 2026-04-21 |
 | 11. Sign flow + async worker | 8/8 | Complete    | 2026-04-21 |
+| 11.1. DB Consolidation & Seed Strategy | 0/3 | Not started | - |
 | 12. Menu Ký số + Danh sách UI | 0/TBD | Not started | - |
 | 13. Modal ký số + Root CA UX | 0/TBD | Not started | - |
 | 14. Deployment + HDSD + verification | 0/TBD | Not started | - |
