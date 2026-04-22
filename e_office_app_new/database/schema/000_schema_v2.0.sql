@@ -20177,6 +20177,30 @@ DO $done$ BEGIN RAISE NOTICE 'Schema v2.0 applied OK'; END $done$;
 -- master schema is applied as a single psql script with \set ON_ERROR_STOP on.
 -- ============================================================================
 
+-- ============================================================================
+-- RE-CLEANUP: Drop lai tat ca SPs fn_* TRUOC KHI append-section tao SP moi
+-- Muc tiêu: phan pg_dump phia tren da tao SP (vi du fn_department_get_tree voi
+-- 1 param). Append-section nay tao SP CUNG TEN nhung KHAC signature (2 params).
+-- `CREATE OR REPLACE FUNCTION` CHI replace SP cung signature → khac signature
+-- tao overload moi → dan den duplicate trong pg_proc.
+-- Giai phap: DROP het fn_* 1 lan nua truoc append-section → append-section tao
+-- tu dau, khong overload. Idempotent re-run KHONG loi (drop if exists + cascade).
+-- ============================================================================
+DO $cleanup_before_append$
+DECLARE r RECORD;
+BEGIN
+  FOR r IN
+    SELECT n.nspname, p.proname, pg_get_function_identity_arguments(p.oid) AS args
+    FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname IN ('public', 'edoc', 'esto', 'cont', 'iso')
+      AND p.proname LIKE 'fn_%'
+  LOOP
+    EXECUTE format('DROP FUNCTION IF EXISTS %I.%I(%s) CASCADE', r.nspname, r.proname, r.args);
+  END LOOP;
+END $cleanup_before_append$;
+-- ============================================================================
+
 -- ==== 030_department_subtree_permissions ====
 -- ================================================================
 -- Migration 030: Phân quyền dữ liệu theo cây phòng ban
