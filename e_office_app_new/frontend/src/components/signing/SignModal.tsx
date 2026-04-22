@@ -331,7 +331,7 @@ export default function SignModal(props: SignModalProps) {
       }
       onCancel={handleClose}
       width={560}
-      maskClosable={false}
+      mask={{ closable: false }}
       destroyOnHidden
       footer={footer}
     >
