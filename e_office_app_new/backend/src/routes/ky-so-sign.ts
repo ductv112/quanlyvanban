@@ -1,11 +1,12 @@
 /**
  * Route: /api/ky-so/sign — Async sign flow entry point (Phase 11).
  *
- * 3 endpoints (chỉ cần `authenticate` — KHÔNG requireRoles vì mọi user đều
+ * 4 endpoints (chỉ cần `authenticate` — KHÔNG requireRoles vì mọi user đều
  * có thể ký nếu có quyền trên attachment cụ thể):
- *   POST   /            — Bắt đầu flow ký (< 1s response, enqueue poll job)
- *   POST   /:id/cancel  — Hủy transaction đang pending
- *   GET    /:id         — Xem trạng thái transaction (frontend fallback polling)
+ *   POST   /              — Bắt đầu flow ký (< 1s response, enqueue poll job)
+ *   POST   /:id/cancel    — Hủy transaction đang pending
+ *   GET    /:id/download  — Presigned URL cho file đã ký (owner-or-admin)
+ *   GET    /:id           — Xem trạng thái transaction (frontend fallback polling)
  *
  * SECURITY:
  *   - T-11-01 Tampering: staffId LUÔN từ `req.user.staffId` (JWT), KHÔNG bao giờ
@@ -14,6 +15,12 @@
  *     KHÔNG ký số (nghiệp vụ cơ quan nhà nước).
  *   - T-11-03 Info Disclosure: GET /:id owner-only (so sánh `txn.staff_id`
  *     với `req.user.staffId`) → user không đọc được transaction của người khác.
+ *   - T-12-01 Info Disclosure: GET /:id/download owner-or-admin only + chỉ completed
+ *   - T-12-02 Info Disclosure: reject txn chưa complete / không có signed_file_path
+ *   - T-12-06 Info Disclosure: Cache-Control: no-store chặn browser cache URL
+ *
+ * Rate limit (T-12-03) deferred Phase 14 — accept risk cho v2.0 demo
+ * (authenticated endpoint, staff nội bộ, không public).
  *
  * Performance target: POST / < 1s typical:
  *   - DB lookups (provider + config): ~50ms
@@ -48,6 +55,7 @@ import {
   removePlaceholder,
   PLACEHOLDER_PREFIX,
 } from '../lib/signing/placeholder-store.js';
+import { getFileUrl } from '../lib/minio/client.js';
 import {
   enqueuePollSignStatus,
   cancelPollJobsForTransaction,
@@ -380,6 +388,70 @@ router.post('/:id/cancel', async (req: Request, res: Response) => {
       success: true,
       data: { transaction_id: id },
       message: 'Đã hủy giao dịch ký số',
+    });
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
+
+// ============================================================================
+// GET /:id/download — Presigned URL cho file PDF đã ký (owner-or-admin only)
+// Response: { success: true, data: { url, file_name, expires_in: 600 } }
+// TTL 600s (10 phút), header Cache-Control: no-store (T-12-06).
+// Rate limit (T-12-03) deferred Phase 14 — accept risk cho v2.0 demo.
+// ============================================================================
+router.get('/:id/download', async (req: Request, res: Response) => {
+  try {
+    const { staffId, isAdmin } = (req as AuthRequest).user;
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id) || id <= 0) {
+      res.status(400).json({ success: false, message: 'ID không hợp lệ' });
+      return;
+    }
+
+    const txn = await signTransactionRepository.getById(id);
+    if (!txn) {
+      res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy giao dịch ký số',
+      });
+      return;
+    }
+    // SECURITY T-12-01: owner-or-admin only (mitigate info disclosure)
+    if (txn.staff_id !== staffId && !isAdmin) {
+      res.status(403).json({
+        success: false,
+        message: 'Bạn không có quyền tải file của giao dịch này',
+      });
+      return;
+    }
+    // SECURITY T-12-02: chỉ cho download khi đã hoàn tất + có signed file
+    if (txn.status !== 'completed' || !txn.signed_file_path) {
+      res.status(404).json({
+        success: false,
+        message: 'Giao dịch chưa có file đã ký',
+      });
+      return;
+    }
+
+    // Presigned URL TTL 600s (10 phút)
+    const url = await getFileUrl(txn.signed_file_path, 600);
+
+    // T-12-06: Ngăn browser/proxy cache URL có HMAC signature
+    res.setHeader('Cache-Control', 'no-store');
+
+    // file_name: prefix 'signed_' vào segment cuối của signed_file_path
+    const segments = txn.signed_file_path.split('/');
+    const lastSegment = segments[segments.length - 1] || 'signed.pdf';
+    const fileName = lastSegment.startsWith('signed_') ? lastSegment : `signed_${lastSegment}`;
+
+    res.json({
+      success: true,
+      data: {
+        url,
+        file_name: fileName,
+        expires_in: 600,
+      },
     });
   } catch (error) {
     handleDbError(error, res);
