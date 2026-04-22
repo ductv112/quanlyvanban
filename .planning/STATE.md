@@ -4,7 +4,7 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Completed 11.1-02-PLAN.md — Seed data 001 required + 002 demo (2/3)
-last_updated: "2026-04-22T07:45:18.998Z"
+last_updated: "2026-04-22T08:49:26.510Z"
 last_activity: 2026-04-22
 progress:
   total_phases: 13
@@ -25,8 +25,8 @@ See: .planning/PROJECT.md (updated 2026-04-21 — Milestone v2.0 started)
 
 ## Current Position
 
-Phase: 11.1
-Plan: 03 (next — archive old migrations + update deploy scripts)
+Phase: 12
+Plan: Not started
 Next: Plan 11.1-03 — move 18 file migrations cũ → archive/, update deploy scripts + dev onboarding README dùng schema/ + seed/ flow
 Status: Phase 11.1 IN PROGRESS (2/3 plans complete). Master schema v2.0 + 2 file seed (001 + 002) verified idempotent trên dev DB, 425 records seeded total.
 Last activity: 2026-04-22
