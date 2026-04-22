@@ -54,7 +54,8 @@ DROP TRIGGER IF EXISTS trg_staff_updated_at ON public.staff;
 --   CREATE SEQUENCE -> CREATE SEQUENCE IF NOT EXISTS
 --   CREATE INDEX -> CREATE INDEX IF NOT EXISTS
 --   CREATE FUNCTION -> CREATE OR REPLACE FUNCTION
---   ADD CONSTRAINT -> DO block catching 42710 (duplicate_object)
+--   ADD CONSTRAINT -> DO block swallowing errors neu constraint da ton tai
+--     (duplicate_object 42710, duplicate_table 42P07, invalid_table_definition 42P16)
 --   CREATE TRIGGER -> preceded by DROP TRIGGER IF EXISTS (above)
 -- ============================================================================
 
@@ -15580,7 +15581,12 @@ ALTER TABLE ONLY public.work_calendar ALTER COLUMN id SET DEFAULT nextval('publi
 DO $add_con$ BEGIN
 ALTER TABLE ONLY cont.contract_attachments
     ADD CONSTRAINT contract_attachments_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -15590,7 +15596,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY cont.contract_types
     ADD CONSTRAINT contract_types_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -15600,7 +15611,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY cont.contracts
     ADD CONSTRAINT contracts_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -15610,7 +15626,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.attachment_drafting_docs
     ADD CONSTRAINT attachment_drafting_docs_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -15620,7 +15641,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.attachment_handling_docs
     ADD CONSTRAINT attachment_handling_docs_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -15630,7 +15656,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.attachment_incoming_docs
     ADD CONSTRAINT attachment_incoming_docs_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -15640,7 +15671,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.attachment_inter_incoming_docs
     ADD CONSTRAINT attachment_inter_incoming_docs_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -15650,7 +15686,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.attachment_outgoing_docs
     ADD CONSTRAINT attachment_outgoing_docs_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -15660,7 +15701,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.delegations
     ADD CONSTRAINT delegations_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -15670,7 +15716,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.device_tokens
     ADD CONSTRAINT device_tokens_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -15680,7 +15731,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.digital_signatures
     ADD CONSTRAINT digital_signatures_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -15690,7 +15746,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.doc_books
     ADD CONSTRAINT doc_books_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -15700,7 +15761,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.doc_columns
     ADD CONSTRAINT doc_columns_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -15710,7 +15776,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.doc_columns
     ADD CONSTRAINT doc_columns_type_id_column_name_key UNIQUE (type_id, column_name);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -15720,7 +15791,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.doc_fields
     ADD CONSTRAINT doc_fields_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -15730,7 +15806,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.doc_flow_step_links
     ADD CONSTRAINT doc_flow_step_links_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -15740,7 +15821,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.doc_flow_step_staff
     ADD CONSTRAINT doc_flow_step_staff_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -15750,7 +15836,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.doc_flow_steps
     ADD CONSTRAINT doc_flow_steps_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -15760,7 +15851,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.doc_flows
     ADD CONSTRAINT doc_flows_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -15770,7 +15866,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.doc_types
     ADD CONSTRAINT doc_types_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -15780,7 +15881,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.drafting_docs
     ADD CONSTRAINT drafting_docs_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -15790,7 +15896,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.email_templates
     ADD CONSTRAINT email_templates_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -15800,7 +15911,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.handling_doc_links
     ADD CONSTRAINT handling_doc_links_handling_doc_id_doc_type_doc_id_key UNIQUE (handling_doc_id, doc_type, doc_id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -15810,7 +15926,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.handling_doc_links
     ADD CONSTRAINT handling_doc_links_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -15820,7 +15941,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.handling_docs
     ADD CONSTRAINT handling_docs_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -15830,7 +15956,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.incoming_docs
     ADD CONSTRAINT incoming_docs_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -15840,7 +15971,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.inter_incoming_docs
     ADD CONSTRAINT inter_incoming_docs_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -15850,7 +15986,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.leader_notes
     ADD CONSTRAINT leader_notes_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -15860,7 +16001,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.lgsp_config
     ADD CONSTRAINT lgsp_config_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -15870,7 +16016,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.lgsp_organizations
     ADD CONSTRAINT lgsp_organizations_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -15880,7 +16031,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.lgsp_tracking
     ADD CONSTRAINT lgsp_tracking_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -15890,7 +16046,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.meeting_types
     ADD CONSTRAINT meeting_types_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -15900,7 +16061,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.message_recipients
     ADD CONSTRAINT message_recipients_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -15910,7 +16076,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.messages
     ADD CONSTRAINT messages_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -15920,7 +16091,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.notice_reads
     ADD CONSTRAINT notice_reads_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -15930,7 +16106,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.notices
     ADD CONSTRAINT notices_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -15940,7 +16121,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.notification_logs
     ADD CONSTRAINT notification_logs_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -15950,7 +16136,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.notification_preferences
     ADD CONSTRAINT notification_preferences_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -15960,7 +16151,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.opinion_handling_docs
     ADD CONSTRAINT opinion_handling_docs_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -15970,7 +16166,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.organizations
     ADD CONSTRAINT organizations_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -15980,7 +16181,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.organizations
     ADD CONSTRAINT organizations_unit_id_key UNIQUE (unit_id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -15990,7 +16196,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.outgoing_docs
     ADD CONSTRAINT outgoing_docs_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16000,7 +16211,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.room_schedule_answers
     ADD CONSTRAINT room_schedule_answers_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16010,7 +16226,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.room_schedule_attachments
     ADD CONSTRAINT room_schedule_attachments_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16020,7 +16241,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.room_schedule_questions
     ADD CONSTRAINT room_schedule_questions_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16030,7 +16256,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.room_schedule_staff
     ADD CONSTRAINT room_schedule_staff_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16040,7 +16271,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.room_schedule_staff
     ADD CONSTRAINT room_schedule_staff_room_schedule_id_staff_id_key UNIQUE (room_schedule_id, staff_id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16050,7 +16286,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.room_schedule_votes
     ADD CONSTRAINT room_schedule_votes_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16060,7 +16301,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.room_schedule_votes
     ADD CONSTRAINT room_schedule_votes_question_id_staff_id_key UNIQUE (question_id, staff_id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16070,7 +16316,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.room_schedules
     ADD CONSTRAINT room_schedules_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16080,7 +16331,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.rooms
     ADD CONSTRAINT rooms_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16090,7 +16346,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.send_doc_user_configs
     ADD CONSTRAINT send_doc_user_configs_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16100,7 +16361,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.send_doc_user_configs
     ADD CONSTRAINT send_doc_user_configs_user_id_target_user_id_config_type_key UNIQUE (user_id, target_user_id, config_type);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16110,7 +16376,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.sign_transactions
     ADD CONSTRAINT sign_transactions_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16120,7 +16391,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.signers
     ADD CONSTRAINT signers_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16130,7 +16406,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.signers
     ADD CONSTRAINT signers_unit_id_staff_id_key UNIQUE (unit_id, staff_id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16140,7 +16421,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.sms_templates
     ADD CONSTRAINT sms_templates_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16150,7 +16436,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.staff_handling_docs
     ADD CONSTRAINT staff_handling_docs_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16160,7 +16451,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.staff_notes
     ADD CONSTRAINT staff_notes_doc_type_doc_id_staff_id_key UNIQUE (doc_type, doc_id, staff_id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16170,7 +16466,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.staff_notes
     ADD CONSTRAINT staff_notes_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16180,7 +16481,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.device_tokens
     ADD CONSTRAINT uq_device_token UNIQUE (device_token);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16190,7 +16496,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.doc_flow_step_links
     ADD CONSTRAINT uq_doc_flow_step_links UNIQUE (from_step_id, to_step_id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16200,7 +16511,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.doc_flow_step_staff
     ADD CONSTRAINT uq_doc_flow_step_staff UNIQUE (step_id, staff_id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16210,7 +16526,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.doc_flows
     ADD CONSTRAINT uq_doc_flows_unit_name_version UNIQUE (unit_id, name, version);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16220,7 +16541,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.lgsp_organizations
     ADD CONSTRAINT uq_lgsp_org_code UNIQUE (org_code);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16230,7 +16556,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.message_recipients
     ADD CONSTRAINT uq_msg_recipients_message_staff UNIQUE (message_id, staff_id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16240,7 +16571,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.notice_reads
     ADD CONSTRAINT uq_notice_reads_notice_staff UNIQUE (notice_id, staff_id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16250,7 +16586,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.notification_preferences
     ADD CONSTRAINT uq_notif_pref_staff_channel UNIQUE (staff_id, channel);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16260,7 +16601,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.user_drafting_docs
     ADD CONSTRAINT user_drafting_docs_drafting_doc_id_staff_id_key UNIQUE (drafting_doc_id, staff_id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16270,7 +16616,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.user_drafting_docs
     ADD CONSTRAINT user_drafting_docs_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16280,7 +16631,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.user_incoming_docs
     ADD CONSTRAINT user_incoming_docs_incoming_doc_id_staff_id_key UNIQUE (incoming_doc_id, staff_id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16290,7 +16646,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.user_incoming_docs
     ADD CONSTRAINT user_incoming_docs_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16300,7 +16661,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.user_outgoing_docs
     ADD CONSTRAINT user_outgoing_docs_outgoing_doc_id_staff_id_key UNIQUE (outgoing_doc_id, staff_id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16310,7 +16676,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.user_outgoing_docs
     ADD CONSTRAINT user_outgoing_docs_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16320,7 +16691,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.work_group_members
     ADD CONSTRAINT work_group_members_group_id_staff_id_key UNIQUE (group_id, staff_id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16330,7 +16706,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.work_group_members
     ADD CONSTRAINT work_group_members_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16340,7 +16721,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.work_groups
     ADD CONSTRAINT work_groups_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16350,7 +16736,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY esto.borrow_request_records
     ADD CONSTRAINT borrow_request_records_borrow_request_id_record_id_key UNIQUE (borrow_request_id, record_id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16360,7 +16751,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY esto.borrow_request_records
     ADD CONSTRAINT borrow_request_records_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16370,7 +16766,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY esto.borrow_requests
     ADD CONSTRAINT borrow_requests_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16380,7 +16781,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY esto.document_archives
     ADD CONSTRAINT document_archives_doc_type_doc_id_key UNIQUE (doc_type, doc_id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16390,7 +16796,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY esto.document_archives
     ADD CONSTRAINT document_archives_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16400,7 +16811,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY esto.fonds
     ADD CONSTRAINT fonds_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16410,7 +16826,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY esto.records
     ADD CONSTRAINT records_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16420,7 +16841,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY esto.warehouses
     ADD CONSTRAINT warehouses_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16430,7 +16856,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY iso.document_categories
     ADD CONSTRAINT document_categories_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16440,7 +16871,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY iso.documents
     ADD CONSTRAINT documents_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16450,7 +16886,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY public.action_of_role
     ADD CONSTRAINT action_of_role_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16460,7 +16901,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY public.action_of_role
     ADD CONSTRAINT action_of_role_role_id_right_id_key UNIQUE (role_id, right_id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16470,7 +16916,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY public.calendar_events
     ADD CONSTRAINT calendar_events_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16480,7 +16931,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY public.communes
     ADD CONSTRAINT communes_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16490,7 +16946,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY public.configurations
     ADD CONSTRAINT configurations_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16500,7 +16961,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY public.configurations
     ADD CONSTRAINT configurations_unit_id_key_key UNIQUE (unit_id, key);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16510,7 +16976,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY public.departments
     ADD CONSTRAINT departments_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16520,7 +16991,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY public.districts
     ADD CONSTRAINT districts_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16530,7 +17006,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY public.login_history
     ADD CONSTRAINT login_history_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16540,7 +17021,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY public.staff_signing_config
     ADD CONSTRAINT pk_staff_signing_config PRIMARY KEY (staff_id, provider_code);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16550,7 +17036,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY public.positions
     ADD CONSTRAINT positions_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16560,7 +17051,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY public.provinces
     ADD CONSTRAINT provinces_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16570,7 +17066,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY public.refresh_tokens
     ADD CONSTRAINT refresh_tokens_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16580,7 +17081,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY public.rights
     ADD CONSTRAINT rights_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16590,7 +17096,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY public.role_of_staff
     ADD CONSTRAINT role_of_staff_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16600,7 +17111,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY public.role_of_staff
     ADD CONSTRAINT role_of_staff_staff_id_role_id_key UNIQUE (staff_id, role_id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16610,7 +17126,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY public.roles
     ADD CONSTRAINT roles_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16620,7 +17141,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY public.signing_provider_config
     ADD CONSTRAINT signing_provider_config_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16630,7 +17156,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY public.staff
     ADD CONSTRAINT staff_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16640,7 +17171,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY public.staff
     ADD CONSTRAINT staff_username_key UNIQUE (username);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16650,7 +17186,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY public.signing_provider_config
     ADD CONSTRAINT uq_signing_provider_config_code UNIQUE (provider_code);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16660,7 +17201,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY public.work_calendar
     ADD CONSTRAINT work_calendar_date_key UNIQUE (date);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -16670,7 +17216,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY public.work_calendar
     ADD CONSTRAINT work_calendar_pkey PRIMARY KEY (id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -17359,7 +17910,12 @@ CREATE TRIGGER trg_staff_updated_at BEFORE UPDATE ON public.staff FOR EACH ROW E
 DO $add_con$ BEGIN
 ALTER TABLE ONLY cont.contract_attachments
     ADD CONSTRAINT contract_attachments_contract_id_fkey FOREIGN KEY (contract_id) REFERENCES cont.contracts(id) ON DELETE CASCADE;
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -17369,7 +17925,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY cont.contracts
     ADD CONSTRAINT contracts_contract_type_id_fkey FOREIGN KEY (contract_type_id) REFERENCES cont.contract_types(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -17379,7 +17940,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.attachment_drafting_docs
     ADD CONSTRAINT attachment_drafting_docs_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.staff(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -17389,7 +17955,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.attachment_drafting_docs
     ADD CONSTRAINT attachment_drafting_docs_drafting_doc_id_fkey FOREIGN KEY (drafting_doc_id) REFERENCES edoc.drafting_docs(id) ON DELETE CASCADE;
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -17399,7 +17970,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.attachment_drafting_docs
     ADD CONSTRAINT attachment_drafting_docs_sign_transaction_id_fkey FOREIGN KEY (sign_transaction_id) REFERENCES edoc.sign_transactions(id) ON DELETE SET NULL;
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -17409,7 +17985,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.attachment_handling_docs
     ADD CONSTRAINT attachment_handling_docs_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.staff(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -17419,7 +18000,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.attachment_handling_docs
     ADD CONSTRAINT attachment_handling_docs_handling_doc_id_fkey FOREIGN KEY (handling_doc_id) REFERENCES edoc.handling_docs(id) ON DELETE CASCADE;
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -17429,7 +18015,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.attachment_handling_docs
     ADD CONSTRAINT attachment_handling_docs_sign_transaction_id_fkey FOREIGN KEY (sign_transaction_id) REFERENCES edoc.sign_transactions(id) ON DELETE SET NULL;
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -17439,7 +18030,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.attachment_incoming_docs
     ADD CONSTRAINT attachment_incoming_docs_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.staff(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -17449,7 +18045,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.attachment_incoming_docs
     ADD CONSTRAINT attachment_incoming_docs_incoming_doc_id_fkey FOREIGN KEY (incoming_doc_id) REFERENCES edoc.incoming_docs(id) ON DELETE CASCADE;
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -17459,7 +18060,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.attachment_incoming_docs
     ADD CONSTRAINT attachment_incoming_docs_sign_transaction_id_fkey FOREIGN KEY (sign_transaction_id) REFERENCES edoc.sign_transactions(id) ON DELETE SET NULL;
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -17469,7 +18075,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.attachment_inter_incoming_docs
     ADD CONSTRAINT attachment_inter_incoming_docs_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.staff(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -17479,7 +18090,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.attachment_inter_incoming_docs
     ADD CONSTRAINT attachment_inter_incoming_docs_inter_incoming_doc_id_fkey FOREIGN KEY (inter_incoming_doc_id) REFERENCES edoc.inter_incoming_docs(id) ON DELETE CASCADE;
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -17489,7 +18105,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.attachment_outgoing_docs
     ADD CONSTRAINT attachment_outgoing_docs_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.staff(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -17499,7 +18120,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.attachment_outgoing_docs
     ADD CONSTRAINT attachment_outgoing_docs_outgoing_doc_id_fkey FOREIGN KEY (outgoing_doc_id) REFERENCES edoc.outgoing_docs(id) ON DELETE CASCADE;
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -17509,7 +18135,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.attachment_outgoing_docs
     ADD CONSTRAINT attachment_outgoing_docs_sign_transaction_id_fkey FOREIGN KEY (sign_transaction_id) REFERENCES edoc.sign_transactions(id) ON DELETE SET NULL;
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -17519,7 +18150,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.delegations
     ADD CONSTRAINT delegations_from_staff_id_fkey FOREIGN KEY (from_staff_id) REFERENCES public.staff(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -17529,7 +18165,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.delegations
     ADD CONSTRAINT delegations_to_staff_id_fkey FOREIGN KEY (to_staff_id) REFERENCES public.staff(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -17539,7 +18180,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.device_tokens
     ADD CONSTRAINT device_tokens_staff_id_fkey FOREIGN KEY (staff_id) REFERENCES public.staff(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -17549,7 +18195,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.digital_signatures
     ADD CONSTRAINT digital_signatures_staff_id_fkey FOREIGN KEY (staff_id) REFERENCES public.staff(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -17559,7 +18210,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.doc_books
     ADD CONSTRAINT doc_books_unit_id_fkey FOREIGN KEY (unit_id) REFERENCES public.departments(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -17569,7 +18225,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.doc_fields
     ADD CONSTRAINT doc_fields_unit_id_fkey FOREIGN KEY (unit_id) REFERENCES public.departments(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -17579,7 +18240,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.doc_flow_step_links
     ADD CONSTRAINT doc_flow_step_links_from_step_id_fkey FOREIGN KEY (from_step_id) REFERENCES edoc.doc_flow_steps(id) ON DELETE CASCADE;
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -17589,7 +18255,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.doc_flow_step_links
     ADD CONSTRAINT doc_flow_step_links_to_step_id_fkey FOREIGN KEY (to_step_id) REFERENCES edoc.doc_flow_steps(id) ON DELETE CASCADE;
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -17599,7 +18270,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.doc_flow_step_staff
     ADD CONSTRAINT doc_flow_step_staff_staff_id_fkey FOREIGN KEY (staff_id) REFERENCES public.staff(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -17609,7 +18285,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.doc_flow_step_staff
     ADD CONSTRAINT doc_flow_step_staff_step_id_fkey FOREIGN KEY (step_id) REFERENCES edoc.doc_flow_steps(id) ON DELETE CASCADE;
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -17619,7 +18300,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.doc_flow_steps
     ADD CONSTRAINT doc_flow_steps_flow_id_fkey FOREIGN KEY (flow_id) REFERENCES edoc.doc_flows(id) ON DELETE CASCADE;
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -17629,7 +18315,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.doc_flows
     ADD CONSTRAINT doc_flows_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.staff(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -17639,7 +18330,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.doc_flows
     ADD CONSTRAINT doc_flows_doc_field_id_fkey FOREIGN KEY (doc_field_id) REFERENCES edoc.doc_fields(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -17649,7 +18345,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.doc_flows
     ADD CONSTRAINT doc_flows_unit_id_fkey FOREIGN KEY (unit_id) REFERENCES public.departments(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -17659,7 +18360,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.doc_types
     ADD CONSTRAINT doc_types_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES edoc.doc_types(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -17669,7 +18375,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.drafting_docs
     ADD CONSTRAINT drafting_docs_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.staff(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -17679,7 +18390,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.drafting_docs
     ADD CONSTRAINT drafting_docs_doc_book_id_fkey FOREIGN KEY (doc_book_id) REFERENCES edoc.doc_books(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -17689,7 +18405,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.drafting_docs
     ADD CONSTRAINT drafting_docs_doc_field_id_fkey FOREIGN KEY (doc_field_id) REFERENCES edoc.doc_fields(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -17699,7 +18420,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.drafting_docs
     ADD CONSTRAINT drafting_docs_doc_type_id_fkey FOREIGN KEY (doc_type_id) REFERENCES edoc.doc_types(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -17709,7 +18435,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.drafting_docs
     ADD CONSTRAINT drafting_docs_drafting_unit_id_fkey FOREIGN KEY (drafting_unit_id) REFERENCES public.departments(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -17719,7 +18450,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.drafting_docs
     ADD CONSTRAINT drafting_docs_drafting_user_id_fkey FOREIGN KEY (drafting_user_id) REFERENCES public.staff(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -17729,7 +18465,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.drafting_docs
     ADD CONSTRAINT drafting_docs_publish_unit_id_fkey FOREIGN KEY (publish_unit_id) REFERENCES public.departments(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -17739,7 +18480,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.drafting_docs
     ADD CONSTRAINT drafting_docs_unit_id_fkey FOREIGN KEY (unit_id) REFERENCES public.departments(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -17749,7 +18495,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.email_templates
     ADD CONSTRAINT email_templates_unit_id_fkey FOREIGN KEY (unit_id) REFERENCES public.departments(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -17759,7 +18510,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.handling_doc_links
     ADD CONSTRAINT handling_doc_links_handling_doc_id_fkey FOREIGN KEY (handling_doc_id) REFERENCES edoc.handling_docs(id) ON DELETE CASCADE;
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -17769,7 +18525,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.handling_docs
     ADD CONSTRAINT handling_docs_complete_user_id_fkey FOREIGN KEY (complete_user_id) REFERENCES public.staff(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -17779,7 +18540,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.handling_docs
     ADD CONSTRAINT handling_docs_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.staff(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -17789,7 +18555,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.handling_docs
     ADD CONSTRAINT handling_docs_curator_fkey FOREIGN KEY (curator) REFERENCES public.staff(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -17799,7 +18570,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.handling_docs
     ADD CONSTRAINT handling_docs_department_id_fkey FOREIGN KEY (department_id) REFERENCES public.departments(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -17809,7 +18585,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.handling_docs
     ADD CONSTRAINT handling_docs_doc_book_id_fkey FOREIGN KEY (doc_book_id) REFERENCES edoc.doc_books(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -17819,7 +18600,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.handling_docs
     ADD CONSTRAINT handling_docs_doc_field_id_fkey FOREIGN KEY (doc_field_id) REFERENCES edoc.doc_fields(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -17829,7 +18615,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.handling_docs
     ADD CONSTRAINT handling_docs_doc_type_id_fkey FOREIGN KEY (doc_type_id) REFERENCES edoc.doc_types(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -17839,7 +18630,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.handling_docs
     ADD CONSTRAINT handling_docs_drafting_unit_id_fkey FOREIGN KEY (drafting_unit_id) REFERENCES public.departments(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -17849,7 +18645,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.handling_docs
     ADD CONSTRAINT handling_docs_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES edoc.handling_docs(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -17859,7 +18660,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.handling_docs
     ADD CONSTRAINT handling_docs_publish_unit_id_fkey FOREIGN KEY (publish_unit_id) REFERENCES public.departments(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -17869,7 +18675,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.handling_docs
     ADD CONSTRAINT handling_docs_signer_fkey FOREIGN KEY (signer) REFERENCES public.staff(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -17879,7 +18690,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.handling_docs
     ADD CONSTRAINT handling_docs_unit_id_fkey FOREIGN KEY (unit_id) REFERENCES public.departments(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -17889,7 +18705,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.incoming_docs
     ADD CONSTRAINT incoming_docs_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.staff(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -17899,7 +18720,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.incoming_docs
     ADD CONSTRAINT incoming_docs_doc_book_id_fkey FOREIGN KEY (doc_book_id) REFERENCES edoc.doc_books(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -17909,7 +18735,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.incoming_docs
     ADD CONSTRAINT incoming_docs_doc_field_id_fkey FOREIGN KEY (doc_field_id) REFERENCES edoc.doc_fields(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -17919,7 +18750,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.incoming_docs
     ADD CONSTRAINT incoming_docs_doc_type_id_fkey FOREIGN KEY (doc_type_id) REFERENCES edoc.doc_types(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -17929,7 +18765,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.incoming_docs
     ADD CONSTRAINT incoming_docs_unit_id_fkey FOREIGN KEY (unit_id) REFERENCES public.departments(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -17939,7 +18780,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.inter_incoming_docs
     ADD CONSTRAINT inter_incoming_docs_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.staff(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -17949,7 +18795,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.inter_incoming_docs
     ADD CONSTRAINT inter_incoming_docs_doc_field_id_fkey FOREIGN KEY (doc_field_id) REFERENCES edoc.doc_fields(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -17959,7 +18810,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.inter_incoming_docs
     ADD CONSTRAINT inter_incoming_docs_doc_type_id_fkey FOREIGN KEY (doc_type_id) REFERENCES edoc.doc_types(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -17969,7 +18825,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.inter_incoming_docs
     ADD CONSTRAINT inter_incoming_docs_unit_id_fkey FOREIGN KEY (unit_id) REFERENCES public.departments(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -17979,7 +18840,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.leader_notes
     ADD CONSTRAINT leader_notes_drafting_doc_id_fkey FOREIGN KEY (drafting_doc_id) REFERENCES edoc.drafting_docs(id) ON DELETE CASCADE;
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -17989,7 +18855,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.leader_notes
     ADD CONSTRAINT leader_notes_incoming_doc_id_fkey FOREIGN KEY (incoming_doc_id) REFERENCES edoc.incoming_docs(id) ON DELETE CASCADE;
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -17999,7 +18870,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.leader_notes
     ADD CONSTRAINT leader_notes_outgoing_doc_id_fkey FOREIGN KEY (outgoing_doc_id) REFERENCES edoc.outgoing_docs(id) ON DELETE CASCADE;
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18009,7 +18885,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.leader_notes
     ADD CONSTRAINT leader_notes_staff_id_fkey FOREIGN KEY (staff_id) REFERENCES public.staff(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18019,7 +18900,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.lgsp_config
     ADD CONSTRAINT lgsp_config_unit_id_fkey FOREIGN KEY (unit_id) REFERENCES public.departments(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18029,7 +18915,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.lgsp_tracking
     ADD CONSTRAINT lgsp_tracking_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.staff(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18039,7 +18930,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.lgsp_tracking
     ADD CONSTRAINT lgsp_tracking_incoming_doc_id_fkey FOREIGN KEY (incoming_doc_id) REFERENCES edoc.incoming_docs(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18049,7 +18945,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.lgsp_tracking
     ADD CONSTRAINT lgsp_tracking_outgoing_doc_id_fkey FOREIGN KEY (outgoing_doc_id) REFERENCES edoc.outgoing_docs(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18059,7 +18960,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.message_recipients
     ADD CONSTRAINT message_recipients_message_id_fkey FOREIGN KEY (message_id) REFERENCES edoc.messages(id) ON DELETE CASCADE;
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18069,7 +18975,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.message_recipients
     ADD CONSTRAINT message_recipients_staff_id_fkey FOREIGN KEY (staff_id) REFERENCES public.staff(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18079,7 +18990,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.messages
     ADD CONSTRAINT messages_from_staff_id_fkey FOREIGN KEY (from_staff_id) REFERENCES public.staff(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18089,7 +19005,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.messages
     ADD CONSTRAINT messages_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES edoc.messages(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18099,7 +19020,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.notice_reads
     ADD CONSTRAINT notice_reads_notice_id_fkey FOREIGN KEY (notice_id) REFERENCES edoc.notices(id) ON DELETE CASCADE;
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18109,7 +19035,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.notice_reads
     ADD CONSTRAINT notice_reads_staff_id_fkey FOREIGN KEY (staff_id) REFERENCES public.staff(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18119,7 +19050,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.notices
     ADD CONSTRAINT notices_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.staff(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18129,7 +19065,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.notices
     ADD CONSTRAINT notices_unit_id_fkey FOREIGN KEY (unit_id) REFERENCES public.departments(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18139,7 +19080,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.notification_logs
     ADD CONSTRAINT notification_logs_staff_id_fkey FOREIGN KEY (staff_id) REFERENCES public.staff(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18149,7 +19095,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.notification_preferences
     ADD CONSTRAINT notification_preferences_staff_id_fkey FOREIGN KEY (staff_id) REFERENCES public.staff(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18159,7 +19110,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.opinion_handling_docs
     ADD CONSTRAINT opinion_handling_docs_handling_doc_id_fkey FOREIGN KEY (handling_doc_id) REFERENCES edoc.handling_docs(id) ON DELETE CASCADE;
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18169,7 +19125,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.opinion_handling_docs
     ADD CONSTRAINT opinion_handling_docs_staff_id_fkey FOREIGN KEY (staff_id) REFERENCES public.staff(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18179,7 +19140,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.organizations
     ADD CONSTRAINT organizations_unit_id_fkey FOREIGN KEY (unit_id) REFERENCES public.departments(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18189,7 +19155,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.outgoing_docs
     ADD CONSTRAINT outgoing_docs_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.staff(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18199,7 +19170,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.outgoing_docs
     ADD CONSTRAINT outgoing_docs_doc_book_id_fkey FOREIGN KEY (doc_book_id) REFERENCES edoc.doc_books(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18209,7 +19185,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.outgoing_docs
     ADD CONSTRAINT outgoing_docs_doc_field_id_fkey FOREIGN KEY (doc_field_id) REFERENCES edoc.doc_fields(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18219,7 +19200,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.outgoing_docs
     ADD CONSTRAINT outgoing_docs_doc_type_id_fkey FOREIGN KEY (doc_type_id) REFERENCES edoc.doc_types(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18229,7 +19215,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.outgoing_docs
     ADD CONSTRAINT outgoing_docs_drafting_unit_id_fkey FOREIGN KEY (drafting_unit_id) REFERENCES public.departments(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18239,7 +19230,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.outgoing_docs
     ADD CONSTRAINT outgoing_docs_drafting_user_id_fkey FOREIGN KEY (drafting_user_id) REFERENCES public.staff(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18249,7 +19245,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.outgoing_docs
     ADD CONSTRAINT outgoing_docs_publish_unit_id_fkey FOREIGN KEY (publish_unit_id) REFERENCES public.departments(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18259,7 +19260,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.outgoing_docs
     ADD CONSTRAINT outgoing_docs_unit_id_fkey FOREIGN KEY (unit_id) REFERENCES public.departments(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18269,7 +19275,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.room_schedule_answers
     ADD CONSTRAINT room_schedule_answers_room_schedule_question_id_fkey FOREIGN KEY (room_schedule_question_id) REFERENCES edoc.room_schedule_questions(id) ON DELETE CASCADE;
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18279,7 +19290,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.room_schedule_attachments
     ADD CONSTRAINT room_schedule_attachments_room_schedule_id_fkey FOREIGN KEY (room_schedule_id) REFERENCES edoc.room_schedules(id) ON DELETE CASCADE;
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18289,7 +19305,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.room_schedule_questions
     ADD CONSTRAINT room_schedule_questions_room_schedule_id_fkey FOREIGN KEY (room_schedule_id) REFERENCES edoc.room_schedules(id) ON DELETE CASCADE;
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18299,7 +19320,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.room_schedule_staff
     ADD CONSTRAINT room_schedule_staff_room_schedule_id_fkey FOREIGN KEY (room_schedule_id) REFERENCES edoc.room_schedules(id) ON DELETE CASCADE;
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18309,7 +19335,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.room_schedule_votes
     ADD CONSTRAINT room_schedule_votes_answer_id_fkey FOREIGN KEY (answer_id) REFERENCES edoc.room_schedule_answers(id) ON DELETE CASCADE;
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18319,7 +19350,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.room_schedule_votes
     ADD CONSTRAINT room_schedule_votes_question_id_fkey FOREIGN KEY (question_id) REFERENCES edoc.room_schedule_questions(id) ON DELETE CASCADE;
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18329,7 +19365,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.room_schedules
     ADD CONSTRAINT room_schedules_meeting_type_id_fkey FOREIGN KEY (meeting_type_id) REFERENCES edoc.meeting_types(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18339,7 +19380,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.room_schedules
     ADD CONSTRAINT room_schedules_room_id_fkey FOREIGN KEY (room_id) REFERENCES edoc.rooms(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18349,7 +19395,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.send_doc_user_configs
     ADD CONSTRAINT send_doc_user_configs_target_user_id_fkey FOREIGN KEY (target_user_id) REFERENCES public.staff(id) ON DELETE CASCADE;
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18359,7 +19410,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.send_doc_user_configs
     ADD CONSTRAINT send_doc_user_configs_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.staff(id) ON DELETE CASCADE;
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18369,7 +19425,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.sign_transactions
     ADD CONSTRAINT sign_transactions_staff_id_fkey FOREIGN KEY (staff_id) REFERENCES public.staff(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18379,7 +19440,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.signers
     ADD CONSTRAINT signers_department_id_fkey FOREIGN KEY (department_id) REFERENCES public.departments(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18389,7 +19455,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.signers
     ADD CONSTRAINT signers_staff_id_fkey FOREIGN KEY (staff_id) REFERENCES public.staff(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18399,7 +19470,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.signers
     ADD CONSTRAINT signers_unit_id_fkey FOREIGN KEY (unit_id) REFERENCES public.departments(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18409,7 +19485,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.sms_templates
     ADD CONSTRAINT sms_templates_unit_id_fkey FOREIGN KEY (unit_id) REFERENCES public.departments(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18419,7 +19500,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.staff_handling_docs
     ADD CONSTRAINT staff_handling_docs_handling_doc_id_fkey FOREIGN KEY (handling_doc_id) REFERENCES edoc.handling_docs(id) ON DELETE CASCADE;
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18429,7 +19515,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.staff_handling_docs
     ADD CONSTRAINT staff_handling_docs_staff_id_fkey FOREIGN KEY (staff_id) REFERENCES public.staff(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18439,7 +19530,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.staff_notes
     ADD CONSTRAINT staff_notes_staff_id_fkey FOREIGN KEY (staff_id) REFERENCES public.staff(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18449,7 +19545,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.user_drafting_docs
     ADD CONSTRAINT user_drafting_docs_drafting_doc_id_fkey FOREIGN KEY (drafting_doc_id) REFERENCES edoc.drafting_docs(id) ON DELETE CASCADE;
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18459,7 +19560,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.user_drafting_docs
     ADD CONSTRAINT user_drafting_docs_sent_by_fkey FOREIGN KEY (sent_by) REFERENCES public.staff(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18469,7 +19575,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.user_drafting_docs
     ADD CONSTRAINT user_drafting_docs_staff_id_fkey FOREIGN KEY (staff_id) REFERENCES public.staff(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18479,7 +19590,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.user_incoming_docs
     ADD CONSTRAINT user_incoming_docs_incoming_doc_id_fkey FOREIGN KEY (incoming_doc_id) REFERENCES edoc.incoming_docs(id) ON DELETE CASCADE;
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18489,7 +19605,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.user_incoming_docs
     ADD CONSTRAINT user_incoming_docs_staff_id_fkey FOREIGN KEY (staff_id) REFERENCES public.staff(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18499,7 +19620,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.user_outgoing_docs
     ADD CONSTRAINT user_outgoing_docs_outgoing_doc_id_fkey FOREIGN KEY (outgoing_doc_id) REFERENCES edoc.outgoing_docs(id) ON DELETE CASCADE;
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18509,7 +19635,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.user_outgoing_docs
     ADD CONSTRAINT user_outgoing_docs_sent_by_fkey FOREIGN KEY (sent_by) REFERENCES public.staff(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18519,7 +19650,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.user_outgoing_docs
     ADD CONSTRAINT user_outgoing_docs_staff_id_fkey FOREIGN KEY (staff_id) REFERENCES public.staff(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18529,7 +19665,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.work_group_members
     ADD CONSTRAINT work_group_members_group_id_fkey FOREIGN KEY (group_id) REFERENCES edoc.work_groups(id) ON DELETE CASCADE;
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18539,7 +19680,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.work_group_members
     ADD CONSTRAINT work_group_members_staff_id_fkey FOREIGN KEY (staff_id) REFERENCES public.staff(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18549,7 +19695,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY edoc.work_groups
     ADD CONSTRAINT work_groups_unit_id_fkey FOREIGN KEY (unit_id) REFERENCES public.departments(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18559,7 +19710,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY esto.borrow_request_records
     ADD CONSTRAINT borrow_request_records_borrow_request_id_fkey FOREIGN KEY (borrow_request_id) REFERENCES esto.borrow_requests(id) ON DELETE CASCADE;
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18569,7 +19725,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY esto.borrow_request_records
     ADD CONSTRAINT borrow_request_records_record_id_fkey FOREIGN KEY (record_id) REFERENCES esto.records(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18579,7 +19740,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY esto.document_archives
     ADD CONSTRAINT document_archives_archived_by_fkey FOREIGN KEY (archived_by) REFERENCES public.staff(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18589,7 +19755,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY esto.document_archives
     ADD CONSTRAINT document_archives_fond_id_fkey FOREIGN KEY (fond_id) REFERENCES esto.fonds(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18599,7 +19770,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY esto.document_archives
     ADD CONSTRAINT document_archives_record_id_fkey FOREIGN KEY (record_id) REFERENCES esto.records(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18609,7 +19785,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY esto.document_archives
     ADD CONSTRAINT document_archives_warehouse_id_fkey FOREIGN KEY (warehouse_id) REFERENCES esto.warehouses(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18619,7 +19800,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY esto.records
     ADD CONSTRAINT records_fond_id_fkey FOREIGN KEY (fond_id) REFERENCES esto.fonds(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18629,7 +19815,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY esto.records
     ADD CONSTRAINT records_warehouse_id_fkey FOREIGN KEY (warehouse_id) REFERENCES esto.warehouses(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18639,7 +19830,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY esto.warehouses
     ADD CONSTRAINT warehouses_unit_id_fkey FOREIGN KEY (unit_id) REFERENCES public.departments(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18649,7 +19845,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY iso.documents
     ADD CONSTRAINT documents_category_id_fkey FOREIGN KEY (category_id) REFERENCES iso.document_categories(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18659,7 +19860,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY public.action_of_role
     ADD CONSTRAINT action_of_role_right_id_fkey FOREIGN KEY (right_id) REFERENCES public.rights(id) ON DELETE CASCADE;
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18669,7 +19875,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY public.action_of_role
     ADD CONSTRAINT action_of_role_role_id_fkey FOREIGN KEY (role_id) REFERENCES public.roles(id) ON DELETE CASCADE;
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18679,7 +19890,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY public.calendar_events
     ADD CONSTRAINT calendar_events_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.staff(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18689,7 +19905,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY public.calendar_events
     ADD CONSTRAINT calendar_events_unit_id_fkey FOREIGN KEY (unit_id) REFERENCES public.departments(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18699,7 +19920,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY public.communes
     ADD CONSTRAINT communes_district_id_fkey FOREIGN KEY (district_id) REFERENCES public.districts(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18709,7 +19935,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY public.configurations
     ADD CONSTRAINT configurations_unit_id_fkey FOREIGN KEY (unit_id) REFERENCES public.departments(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18719,7 +19950,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY public.departments
     ADD CONSTRAINT departments_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.departments(id) ON DELETE SET NULL;
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18729,7 +19965,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY public.districts
     ADD CONSTRAINT districts_province_id_fkey FOREIGN KEY (province_id) REFERENCES public.provinces(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18739,7 +19980,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY public.login_history
     ADD CONSTRAINT login_history_staff_id_fkey FOREIGN KEY (staff_id) REFERENCES public.staff(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18749,7 +19995,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY public.refresh_tokens
     ADD CONSTRAINT refresh_tokens_staff_id_fkey FOREIGN KEY (staff_id) REFERENCES public.staff(id) ON DELETE CASCADE;
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18759,7 +20010,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY public.rights
     ADD CONSTRAINT rights_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.rights(id) ON DELETE SET NULL;
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18769,7 +20025,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY public.role_of_staff
     ADD CONSTRAINT role_of_staff_role_id_fkey FOREIGN KEY (role_id) REFERENCES public.roles(id) ON DELETE CASCADE;
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18779,7 +20040,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY public.role_of_staff
     ADD CONSTRAINT role_of_staff_staff_id_fkey FOREIGN KEY (staff_id) REFERENCES public.staff(id) ON DELETE CASCADE;
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18789,7 +20055,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY public.roles
     ADD CONSTRAINT roles_unit_id_fkey FOREIGN KEY (unit_id) REFERENCES public.departments(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18799,7 +20070,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY public.signing_provider_config
     ADD CONSTRAINT signing_provider_config_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.staff(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18809,7 +20085,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY public.signing_provider_config
     ADD CONSTRAINT signing_provider_config_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES public.staff(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18819,7 +20100,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY public.staff
     ADD CONSTRAINT staff_department_id_fkey FOREIGN KEY (department_id) REFERENCES public.departments(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18829,7 +20115,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY public.staff
     ADD CONSTRAINT staff_position_id_fkey FOREIGN KEY (position_id) REFERENCES public.positions(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18839,7 +20130,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY public.staff_signing_config
     ADD CONSTRAINT staff_signing_config_staff_id_fkey FOREIGN KEY (staff_id) REFERENCES public.staff(id) ON DELETE CASCADE;
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18849,7 +20145,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 DO $add_con$ BEGIN
 ALTER TABLE ONLY public.staff
     ADD CONSTRAINT staff_unit_id_fkey FOREIGN KEY (unit_id) REFERENCES public.departments(id);
-EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $add_con$;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+  WHEN SQLSTATE '42P16' THEN NULL;  -- invalid_table_definition (multiple primary keys)
+  WHEN SQLSTATE '42701' THEN NULL;  -- duplicate_column (neu ALTER ADD COLUMN)
+END $add_con$;
 
 
 --
@@ -18861,4 +20162,6 @@ EXCEPTION WHEN duplicate_object THEN NULL; WHEN duplicate_table THEN NULL; END $
 
 
 -- Phan 8: Thong bao hoan thanh
+-- Reset client_min_messages (pg_dump set it to warning, nen NOTICE bi an)
+SET client_min_messages = notice;
 DO $done$ BEGIN RAISE NOTICE 'Schema v2.0 applied OK'; END $done$;
