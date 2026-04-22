@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: completed
-stopped_at: Completed 11-08-PLAN.md — Phase 11 DONE 8/8
-last_updated: "2026-04-21T11:29:50.143Z"
-last_activity: 2026-04-21
+status: in_progress
+stopped_at: Completed 11.1-01-PLAN.md — Master idempotent schema v2.0 (1/3)
+last_updated: "2026-04-22T07:27:12Z"
+last_activity: 2026-04-22
 progress:
-  total_phases: 11
+  total_phases: 12
   completed_phases: 11
-  total_plans: 51
-  completed_plans: 51
-  percent: 100
+  total_plans: 54
+  completed_plans: 52
+  percent: 96
 ---
 
 # Project State
@@ -25,13 +25,13 @@ See: .planning/PROJECT.md (updated 2026-04-21 — Milestone v2.0 started)
 
 ## Current Position
 
-Phase: 11
-Plan: Not started
-Next: Phase 12 — Menu Ký số + Danh sách 4 tab UI (7 plans) — sau khi user verify human-verify checkpoints của Phase 11
-Status: Phase 11 DONE (all 8 plans committed + SUMMARY.md). Ready for Phase 12 execution.
-Last activity: 2026-04-21
+Phase: 11.1
+Plan: 02 (next — seed required data + rich demo)
+Next: Plan 11.1-02 — tách required data (001_required_data.sql) + rich demo data (002_demo_data.sql, 150+ records)
+Status: Phase 11.1 IN PROGRESS (1/3 plans complete). Master schema v2.0 verified idempotent on dev DB.
+Last activity: 2026-04-22
 
-Progress: [██████████] 100% (51/51 plans complete)
+Progress: [█████████▓] 96% (52/54 plans complete — 11 phases Complete + Phase 11.1 1/3)
 
 ## Performance Metrics
 
@@ -73,6 +73,7 @@ Progress: [██████████] 100% (51/51 plans complete)
 | Phase 11 P06 | 5min | 3 tasks | 4 files |
 | Phase 11 P07 | 4min | 3 tasks | 2 files |
 | Phase 11 P08 | 3min | 2 tasks | 1 files |
+| Phase 11.1 P01 | 11min | 3 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -147,6 +148,11 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase 11]: [Phase 11-06]: Đóng (chạy nền) KHÔNG auto-cancel txn — worker tiếp tục poll + bell notification fallback cho Socket miss
 - [Phase 11]: Plan 07: Migrate VB đi + VB dự thảo detail pages sang useSigning hook. Pure migration — remove mock OTP state + /ky-so/mock/sign, thay bằng openSign() + renderSignModal(). Net -108/+26 lines. Breaking change MIG-05: 2/3 pages done (HSCV pending Plan 11-09).
 - [Phase 11]: Plan 11-08: HSCV Ký số button — first-time integration (không phải migration). canSignHandling gate = signer_id === user.staffId + status ∈ {2,3}. attachmentType='handling' lần đầu có FE consumer.
+- [Phase 11.1]: [Plan 11.1-01]: pg_dump --schema-only + node transform script thay merge thủ công 25K dòng SQL — auto-capture all SP signatures, reduce risk mất SP hoặc conflict constraint.
+- [Phase 11.1]: [Plan 11.1-01]: DROP ALL fn_* functions loop ở Phần 3 master schema — zero maintenance khi thêm SP mới; thay thế band-aid `quick_260418_zz_cleanup_duplicates.sql`.
+- [Phase 11.1]: [Plan 11.1-01]: ADD CONSTRAINT DO block catch 4 SQLSTATE codes (42710 duplicate_object, 42P07 duplicate_table, 42P16 invalid_table_definition cho multiple PKs, 42701 duplicate_column) — idempotent re-apply tested trên dev DB.
+- [Phase 11.1]: [Plan 11.1-01]: SET client_min_messages = notice trước final DO block — pg_dump set warning suppress NOTICE, cần reset để 'Schema v2.0 applied OK' hiển thị.
+- [Phase 11.1]: [Plan 11.1-01]: Loại trừ 041 data migration + 043 seed khỏi master; Plan 02 sẽ tạo seed riêng. Final state DB không có staff.sign_phone.
 
 ### Pending Todos
 
@@ -178,6 +184,6 @@ v1.0 hoàn thành với 3 quick tasks (HDSD Compliance sprint cuối):
 
 ## Session Continuity
 
-Last session: 2026-04-21T11:29:02.564Z
-Stopped at: Completed 11-08-PLAN.md — Phase 11 DONE 8/8
-Resume: `/gsd-execute-phase 11` để tiếp tục Plan 11-04 (worker completion)
+Last session: 2026-04-22T07:27:12Z
+Stopped at: Completed 11.1-01-PLAN.md — Master idempotent schema v2.0 ready (1/3 plans of Phase 11.1)
+Resume: `/gsd-execute-phase 11.1` để tiếp tục Plan 11.1-02 (seed required data + rich demo data)
