@@ -1402,7 +1402,7 @@ export default function HscvDetailPage() {
           <Table
             columns={linkedDocsColumns}
             dataSource={linkedDocs}
-            rowKey="id"
+            rowKey="link_id"
             loading={linkedDocsLoading}
             size="small"
             locale={{
