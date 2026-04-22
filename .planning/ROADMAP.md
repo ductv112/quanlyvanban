@@ -253,7 +253,11 @@ Plans:
   3. Tab "Cần ký" liệt kê VB đi / dự thảo / HSCV có `signer_id = currentUser` chưa ký; button "Ký số" mở modal ký trực tiếp không cần vào trang detail
   4. Tab "Đang xử lý" có button "Hủy" gọi cancel transaction; tab "Đã ký" có button "Xem file" (download + banner Root CA nếu MySign); tab "Thất bại" có button "Ký lại" tạo transaction mới
   5. Trang chi tiết VB (`van-ban-di/[id]`, `van-ban-du-thao/[id]`, `ho-so-cong-viec/[id]`) giữ button "Ký số" trên file đính kèm — đường dẫn thứ 2 vào flow ký, mở cùng modal như tab "Cần ký"
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 12-01-PLAN.md — BE endpoint GET /api/ky-so/sign/:id/download + sidebar submenu Danh sách ký số + breadcrumb entry
+- [ ] 12-02-PLAN.md — FE trang /ky-so/danh-sach 4 tab (Cần ký / Đang xử lý / Đã ký / Thất bại) + realtime socket
+- [ ] 12-03-PLAN.md — E2E verify + seed SQL 4 test state + UAT checkpoint (không regression AC#5)
 **UI hint**: yes
 
 ### Phase 13: Modal ký số robust + Root CA UX
@@ -300,6 +304,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 10. User config page | 3/3 | Complete   | 2026-04-21 |
 | 11. Sign flow + async worker | 8/8 | Complete    | 2026-04-21 |
 | 11.1. DB Consolidation & Seed Strategy | 2/3 | Complete    | 2026-04-22 |
-| 12. Menu Ký số + Danh sách UI | 0/TBD | Not started | - |
+| 12. Menu Ký số + Danh sách UI | 0/3 | Not started | - |
 | 13. Modal ký số + Root CA UX | 0/TBD | Not started | - |
 | 14. Deployment + HDSD + verification | 0/TBD | Not started | - |
