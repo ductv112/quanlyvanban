@@ -46,3 +46,6 @@ docs/e_office_app_old/
 
 # Estimate/báo giá nội bộ — không commit
 docs/Function list & Estimate.xlsx
+
+# Doc tích hợp ký số MySign Viettel (~400MB — SDK + demo code) — chỉ giữ local
+docs/huong_dan_tich_hop_ky_so_MySign_Viettel/
