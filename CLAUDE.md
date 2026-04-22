@@ -460,6 +460,111 @@ Do not make direct repo edits outside a GSD workflow unless the user explicitly 
 
 
 
+## DB Migration Strategy (v2.0+)
+
+### Source of truth
+
+Từ Phase 11.1 (2026-04-22), toàn bộ schema + SPs + triggers nằm trong **1 file MASTER duy nhất**:
+
+**`e_office_app_new/database/schema/000_schema_v2.0.sql`** (20,168 dòng, idempotent)
+
+### Flow reset DB
+
+```
+1. drop schemas (edoc, esto, cont, iso, public)
+2. apply init/01_create_schemas.sql       (schemas + extensions)
+3. apply schema/000_schema_v2.0.sql       (MASTER — tables + SPs + triggers)
+4. apply seed/001_required_data.sql       (admin + roles + rights + 2 providers)
+5. apply seed/002_demo_data.sql           (optional — rich demo 312 records)
+```
+
+Script: `deploy/reset-db.sh` (Linux) / `deploy/reset-db-windows.ps1` (Windows).
+
+### Khi thêm feature mới cần schema change
+
+**KHÔNG tạo file `database/migrations/047_*.sql` rời.**
+
+Thay vào đó:
+
+1. **Edit trực tiếp `database/schema/000_schema_v2.0.sql`:**
+   - Thêm `CREATE TABLE IF NOT EXISTS` ở phần Tables
+   - Thêm `CREATE OR REPLACE FUNCTION` ở phần Functions
+   - Nếu ALTER cột hiện có → inline `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` (tránh ALTER rời)
+
+2. **Đảm bảo idempotent:**
+   - `DROP IF EXISTS` trước `CREATE` cho SPs/triggers (file đầu có DO loop DROP ALL `fn_*`)
+   - `IF NOT EXISTS` cho tables/indexes/columns
+   - `ADD CONSTRAINT` wrap trong DO block catch 4 SQLSTATE: 42710 (duplicate_object), 42P07 (duplicate_table), 42P16 (invalid_table_definition cho multi PK), 42701 (duplicate_column)
+
+3. **Chạy trên dev DB để verify:**
+   ```bash
+   bash deploy/reset-db.sh   # drop + apply từ đầu — lần 1
+   # Sau đó apply lại master schema LẦN 2:
+   docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev -v ON_ERROR_STOP=1 \
+     -f - < e_office_app_new/database/schema/000_schema_v2.0.sql
+   # Lần 2 PHẢI zero error (idempotent)
+   ```
+
+4. **Verify không có SP overload:**
+   ```sql
+   SELECT count(*) FROM (
+     SELECT n.nspname, p.proname, count(*)
+     FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+     WHERE n.nspname IN ('public','edoc','esto','cont','iso') AND p.proname LIKE 'fn_%'
+     GROUP BY 1,2 HAVING count(*) > 1
+   ) t;
+   -- Phải = 0
+   ```
+
+### Khi nào bump version (v2.1, v2.2, ...)
+
+Khi kết thúc 1 milestone lớn (ví dụ: v2.0 ký số xong → v2.1 báo cáo thống kê mới):
+
+1. Rename `000_schema_v2.0.sql` → `000_schema_v2.1.sql` (giữ file tại `schema/`)
+2. Move migrations v2.0 của milestone cũ sang `archive/v2.0-finalized/`
+3. Update paths trong 6 deploy scripts + `deploy/README.md`
+4. Update reference trong section này của CLAUDE.md
+
+**Lý do bump:** Khi file master > 25,000 dòng, hoặc khi cần cắt "clean slate" cho customer mới (không load history cũ).
+
+### Migration trong production
+
+**First-time deploy** (`deploy/deploy.sh` / `deploy/deploy-windows.ps1`):
+- Fresh install → apply init + schema master + seed 001 (KHÔNG seed 002)
+- Update deploy (DB đã có data) → re-apply schema master (idempotent), KHÔNG seed
+
+**Update code** (`deploy/update.sh` / `deploy/update-windows.ps1`):
+- Pull code + rebuild + re-apply `schema/000_schema_v2.0.sql`
+- File master idempotent → apply lại an toàn, không mất data
+
+### Seed data
+
+- **`seed/001_required_data.sql`** — idempotent (`INSERT ... ON CONFLICT DO NOTHING`), production-safe, có thể chạy nhiều lần. Production deploy chạy.
+- **`seed/002_demo_data.sql`** — chỉ test env, production KHÔNG chạy. Có guard kiểm tra 001 đã apply (RAISE EXCEPTION nếu chưa).
+
+### Environment variable bắt buộc
+
+Trước khi apply `seed/001_required_data.sql`, **PHẢI set session variable** cho `pgp_sym_encrypt` encrypt `client_secret` của provider:
+
+```bash
+# Backend .env
+SIGNING_SECRET_KEY=<32+ ký tự>
+
+# Khi chạy psql -f seed/001_required_data.sql:
+psql -c "SET app.signing_secret_key='<same key>';" -f seed/001_required_data.sql
+```
+
+Deploy scripts đã handle việc này tự động (dùng `JWT_SECRET` làm `SIGNING_SECRET_KEY`).
+
+### Archive folder
+
+- `database/archive/v1.0-migrations/` — lịch sử migrations Phase 1-7 (KHÔNG chạy)
+- `database/archive/v2.0-incrementals/` — lịch sử migrations Phase 8-11 (KHÔNG chạy)
+
+Giữ để revert nếu cần. **KHÔNG xóa khỏi git.**
+
+
+
 <!-- GSD:profile-start -->
 ## Developer Profile
 
