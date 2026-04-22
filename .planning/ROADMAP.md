@@ -270,7 +270,13 @@ Plans:
   3. Bell notification hiện toast + badge khi Socket event `SIGN_COMPLETED` / `SIGN_FAILED` đến; user offline lúc nhận cũng thấy notification trong dropdown bell khi đăng nhập lại
   4. Khi user download file ký bằng MySign Viettel, banner dismissible xuất hiện với link tải Root CA `.cer` + HDSD PDF; localStorage lưu `dismiss_root_ca_banner=true` để không hiện lại
   5. File Root CA Viettel `.cer` + HDSD cài Root CA PDF được copy vào `frontend/public/root-ca/` sẵn sàng tải về từ URL tĩnh (không cần API call)
-**Plans**: TBD
+**Plans**: 5 plans
+Plans:
+- [ ] 13-01-PLAN.md — BE notification infrastructure (table notifications + 5 SPs + repository + routes + worker extend persist trước emit)
+- [ ] 13-02-PLAN.md — FE bell component (api-notifications lib + BellNotification + MainLayout swap from /api/thong-bao → /api/notifications + toast)
+- [ ] 13-03-PLAN.md — SignModal polish (countdown circular 3:00 + color states + expired transition + caller disable spam + verify 2 button)
+- [ ] 13-04-PLAN.md — Root CA (copy .cer + PDF vào public/root-ca/ + RootCABanner component + integration danh-sach page download trigger)
+- [ ] 13-05-PLAN.md — E2E + UAT checkpoint (seed test notifications + verification report + 7 UAT cases human-verify)
 **UI hint**: yes
 
 ### Phase 14: Deployment + HDSD triển khai + verification
