@@ -1,5 +1,7 @@
 -- ============================================================================
--- e-Office Master Schema v2.0.1 (consolidated 2026-04-22)
+-- e-Office Master Schema v2.0.2 (consolidated 2026-04-22)
+-- v2.0.2 (2026-04-22) — critical fix: targeted DROP in mid-file cleanup (only SPs
+--                       re-created by append section, avoid losing ~290 other SPs)
 -- v2.0.1 (2026-04-22) — fix patch: merge restore_030_to_037 SPs (dept_ids scoping)
 -- v2.0   (2026-04-22) — initial consolidation (Plan 11.1-01)
 -- Hop nhat tu: 000_full_schema + 7 quick_*.sql + 040-046 (tru 041 data mig + 043 seed)
@@ -20178,13 +20180,15 @@ DO $done$ BEGIN RAISE NOTICE 'Schema v2.0 applied OK'; END $done$;
 -- ============================================================================
 
 -- ============================================================================
--- RE-CLEANUP: Drop lai tat ca SPs fn_* TRUOC KHI append-section tao SP moi
+-- RE-CLEANUP: Drop CHI NHUNG SPs se duoc append-section re-create (targeted)
 -- Muc tiêu: phan pg_dump phia tren da tao SP (vi du fn_department_get_tree voi
 -- 1 param). Append-section nay tao SP CUNG TEN nhung KHAC signature (2 params).
 -- `CREATE OR REPLACE FUNCTION` CHI replace SP cung signature → khac signature
 -- tao overload moi → dan den duplicate trong pg_proc.
--- Giai phap: DROP het fn_* 1 lan nua truoc append-section → append-section tao
--- tu dau, khong overload. Idempotent re-run KHONG loi (drop if exists + cascade).
+-- Giai phap: DROP CHI cac SPs co trong append-section (theo proname) truoc khi
+-- append-section tao tu dau → tranh overload. Idempotent re-run KHONG loi.
+-- CRITICAL FIX 2026-04-22: truoc day DROP het fn_* (LIKE 'fn_%') → mat ~290 SPs
+-- khac (fn_auth_login, fn_position_*, etc.) khong duoc append-section re-create.
 -- ============================================================================
 DO $cleanup_before_append$
 DECLARE r RECORD;
@@ -20194,7 +20198,112 @@ BEGIN
     FROM pg_proc p
     JOIN pg_namespace n ON n.oid = p.pronamespace
     WHERE n.nspname IN ('public', 'edoc', 'esto', 'cont', 'iso')
-      AND p.proname LIKE 'fn_%'
+      AND p.proname IN (
+        'fn_borrow_request_create',
+        'fn_borrow_request_get_list',
+        'fn_calendar_event_create',
+        'fn_calendar_event_get_list',
+        'fn_calendar_event_update',
+        'fn_config_get_list',
+        'fn_config_upsert',
+        'fn_contract_create',
+        'fn_contract_get_list',
+        'fn_contract_type_create',
+        'fn_contract_type_get_list',
+        'fn_dashboard_calendar_today',
+        'fn_dashboard_doc_by_department',
+        'fn_dashboard_doc_by_month',
+        'fn_dashboard_get_stats',
+        'fn_dashboard_get_stats_extra',
+        'fn_dashboard_ontime_rate',
+        'fn_dashboard_recent_incoming',
+        'fn_dashboard_recent_notices',
+        'fn_dashboard_recent_outgoing',
+        'fn_dashboard_task_by_status',
+        'fn_dashboard_top_departments',
+        'fn_delegation_get_list',
+        'fn_department_get_tree',
+        'fn_directory_get_list',
+        'fn_doc_book_create',
+        'fn_doc_book_get_list',
+        'fn_doc_book_set_default',
+        'fn_doc_category_get_tree',
+        'fn_doc_field_create',
+        'fn_doc_field_get_list',
+        'fn_doc_flow_create',
+        'fn_doc_flow_get_list',
+        'fn_document_archive_create',
+        'fn_document_create',
+        'fn_document_get_list',
+        'fn_drafting_doc_approve',
+        'fn_drafting_doc_count_unread',
+        'fn_drafting_doc_create',
+        'fn_drafting_doc_get_list',
+        'fn_drafting_doc_reject',
+        'fn_email_template_create',
+        'fn_email_template_get_list',
+        'fn_fond_create',
+        'fn_fond_get_tree',
+        'fn_get_ancestor_unit',
+        'fn_get_department_subtree',
+        'fn_get_fonds_list',
+        'fn_get_warehouses_list',
+        'fn_handling_doc_count_by_status',
+        'fn_handling_doc_create',
+        'fn_handling_doc_get_for_link',
+        'fn_handling_doc_get_list',
+        'fn_handling_doc_kpi',
+        'fn_incoming_doc_approve',
+        'fn_incoming_doc_count_unread',
+        'fn_incoming_doc_create',
+        'fn_incoming_doc_get_list',
+        'fn_incoming_doc_get_next_number',
+        'fn_incoming_doc_get_sendable_staff',
+        'fn_inter_incoming_create',
+        'fn_inter_incoming_get_list',
+        'fn_meeting_type_create',
+        'fn_meeting_type_get_list',
+        'fn_message_delete',
+        'fn_message_get_by_id',
+        'fn_message_get_sent',
+        'fn_message_get_trash',
+        'fn_message_permanent_delete',
+        'fn_message_reply',
+        'fn_message_restore',
+        'fn_notice_create',
+        'fn_notice_get_list',
+        'fn_notice_mark_all_read',
+        'fn_organization_get',
+        'fn_organization_upsert',
+        'fn_outgoing_doc_approve',
+        'fn_outgoing_doc_check_number',
+        'fn_outgoing_doc_count_unread',
+        'fn_outgoing_doc_create',
+        'fn_outgoing_doc_get_list',
+        'fn_outgoing_doc_get_next_number',
+        'fn_outgoing_doc_reject',
+        'fn_record_create',
+        'fn_record_get_list',
+        'fn_report_handling_by_assigner',
+        'fn_report_handling_by_resolver',
+        'fn_report_handling_by_unit',
+        'fn_role_create',
+        'fn_room_create',
+        'fn_room_get_list',
+        'fn_room_schedule_create',
+        'fn_room_schedule_get_list',
+        'fn_room_schedule_stats',
+        'fn_signer_create',
+        'fn_signer_get_list',
+        'fn_sms_template_create',
+        'fn_sms_template_get_list',
+        'fn_staff_auto_unit_id',
+        'fn_staff_get_list',
+        'fn_warehouse_create',
+        'fn_warehouse_get_tree',
+        'fn_work_group_create',
+        'fn_work_group_get_list'
+      )
   LOOP
     EXECUTE format('DROP FUNCTION IF EXISTS %I.%I(%s) CASCADE', r.nspname, r.proname, r.args);
   END LOOP;
