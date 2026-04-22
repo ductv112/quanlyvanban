@@ -291,6 +291,12 @@ function buildMenuItems({ badgeCounts, isAdmin, roles }: MenuBuildParams): MenuI
     icon: <SafetyCertificateOutlined />,
     label: 'Tài khoản ký số cá nhân',
   });
+  // Submenu cho MỌI user: Danh sách ký số (Phase 12 Plan 01)
+  items.push({
+    key: '/ky-so/danh-sach',
+    icon: <SafetyCertificateOutlined />,
+    label: 'Danh sách ký số',
+  });
 
   // ── HỆ THỐNG ── (Admin only)
   if (isAdmin) {
@@ -380,6 +386,7 @@ const breadcrumbMap: Record<string, string> = {
   '/ky-so': 'Ký số',
   '/ky-so/cau-hinh': 'Cấu hình ký số hệ thống',
   '/ky-so/tai-khoan': 'Tài khoản ký số cá nhân',
+  '/ky-so/danh-sach': 'Danh sách ký số',
 };
 
 function buildBreadcrumbs(pathname: string) {
