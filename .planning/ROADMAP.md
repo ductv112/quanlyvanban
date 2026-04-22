@@ -31,7 +31,7 @@ Rebuild hệ thống quản lý văn bản điện tử (.NET cũ) thành stack 
 - [x] **Phase 9: Admin config + provider adapters** - SmartCA VNPT + MySign Viettel adapters, trang Admin cấu hình hệ thống với test connection, dashboard stats (completed 2026-04-21)
 - [x] **Phase 10: User config page + migrate tab chữ ký số** - Trang `/ky-so/tai-khoan` với form dynamic theo provider + button verify, remove tab cũ trong `/thong-tin-ca-nhan` (completed 2026-04-21)
 - [x] **Phase 11: Sign flow + async worker (core)** - API `/ky-so/sign` real, BullMQ worker poll 5s × 3 phút, Socket.IO `SIGN_COMPLETED`, ký lại/hủy transaction (completed 2026-04-21)
-- [ ] **Phase 12: Menu Ký số + Danh sách 4 tab UI** - Sidebar menu mới, trang `/ky-so/danh-sach` 4 tab dynamic (Cần ký / Đang xử lý / Đã ký / Thất bại), re-wire detail VB pages
+- [x] **Phase 12: Menu Ký số + Danh sách 4 tab UI** - Sidebar menu mới, trang `/ky-so/danh-sach` 4 tab dynamic (Cần ký / Đang xử lý / Đã ký / Thất bại), re-wire detail VB pages (completed 2026-04-22)
 - [ ] **Phase 13: Modal ký số robust + Root CA UX** - Modal countdown 3:00, disable spam, maskClosable=false, banner Root CA Viettel dismissible + link `.cer` + HDSD PDF
 - [ ] **Phase 14: Deployment + HDSD triển khai + verification** - Deploy scripts seed provider config disabled, copy Root CA static files, HDSD cho IT triển khai, UAT cuối
 
@@ -257,7 +257,7 @@ Plans:
 Plans:
 - [x] 12-01-PLAN.md — BE endpoint GET /api/ky-so/sign/:id/download + sidebar submenu Danh sách ký số + breadcrumb entry
 - [x] 12-02-PLAN.md — FE trang /ky-so/danh-sach 4 tab (Cần ký / Đang xử lý / Đã ký / Thất bại) + realtime socket
-- [ ] 12-03-PLAN.md — E2E verify + seed SQL 4 test state + UAT checkpoint (không regression AC#5)
+- [x] 12-03-PLAN.md — E2E verify + seed SQL 4 test state + UAT checkpoint (không regression AC#5)
 **UI hint**: yes
 
 ### Phase 13: Modal ký số robust + Root CA UX
@@ -304,6 +304,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 10. User config page | 3/3 | Complete   | 2026-04-21 |
 | 11. Sign flow + async worker | 8/8 | Complete    | 2026-04-21 |
 | 11.1. DB Consolidation & Seed Strategy | 2/3 | Complete    | 2026-04-22 |
-| 12. Menu Ký số + Danh sách UI | 2/3 | In Progress|  |
+| 12. Menu Ký số + Danh sách UI | 3/3 | Complete   | 2026-04-22 |
 | 13. Modal ký số + Root CA UX | 0/TBD | Not started | - |
 | 14. Deployment + HDSD + verification | 0/TBD | Not started | - |
