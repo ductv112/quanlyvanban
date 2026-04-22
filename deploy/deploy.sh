@@ -204,60 +204,52 @@ docker compose -f docker-compose.prod.yml ps
 log "Bước 4 hoàn thành"
 
 # ============================================================
-# BƯỚC 5: Chạy database migrations + seed demo (nếu fresh install)
+# BƯỚC 5: Apply DB schema + seed (v2.0 consolidated)
+#   - init/01_create_schemas.sql  → schemas + extensions
+#   - schema/000_schema_v2.0.sql  → MASTER idempotent (tables + SPs + triggers)
+#   - seed/001_required_data.sql  → admin + roles + rights + 2 provider config
+#   KHÔNG chạy seed/002_demo_data.sql (production deploy — không demo data)
 # ============================================================
-log "Bước 5/10: Chạy database migrations..."
+log "Bước 5/10: Apply DB schema + seed..."
 
-# Tracking table để skip migration đã apply
-docker exec -i qlvb_postgres psql -U $PG_USER -d $PG_DB -c "
-CREATE TABLE IF NOT EXISTS public._migration_history (
-  filename VARCHAR(255) PRIMARY KEY,
-  applied_at TIMESTAMPTZ DEFAULT NOW()
-);" > /dev/null 2>&1
-
-apply_migration() {
-  local file=$1
-  local fname=$(basename "$file")
-  local exists=$(docker exec qlvb_postgres psql -U $PG_USER -d $PG_DB -tAc \
-    "SELECT 1 FROM public._migration_history WHERE filename='$fname'" 2>/dev/null | tr -d '[:space:]')
-  if [ "$exists" = "1" ]; then
-    return 0
-  fi
-  log "  → $fname"
-  if ! docker exec -i qlvb_postgres psql -U $PG_USER -d $PG_DB -v ON_ERROR_STOP=1 \
-       -f - < "$file" > /dev/null 2>&1; then
-    err "Migration $fname thất bại"
-  fi
-  docker exec -i qlvb_postgres psql -U $PG_USER -d $PG_DB -c \
-    "INSERT INTO public._migration_history (filename) VALUES ('$fname') ON CONFLICT DO NOTHING" > /dev/null 2>&1
-}
-
-# Apply base schema
-apply_migration "$WORK_DIR/database/migrations/000_full_schema.sql"
-
-# Apply các quick migration (hlj, jsd, ...) — sorted tự nhiên
-for f in $(ls "$WORK_DIR"/database/migrations/quick_*.sql 2>/dev/null | sort); do
-  apply_migration "$f"
-done
-
-# Seed demo data chỉ khi DB trống (fresh install)
+# Kiểm tra DB đã có data chưa (detect fresh install vs update)
 STAFF_COUNT=$(docker exec qlvb_postgres psql -U $PG_USER -d $PG_DB -tAc \
   "SELECT COUNT(*) FROM public.staff" 2>/dev/null | tr -d '[:space:]')
-if [ "$STAFF_COUNT" = "0" ] || [ -z "$STAFF_COUNT" ]; then
-  log "  → Seed demo data (lần đầu)..."
-  if [ -f "$WORK_DIR/database/seed_full_demo.sql" ]; then
-    # seed có DISABLE TRIGGER ALL (pg_dump) — cần superuser postgres
-    docker exec -i qlvb_postgres psql -U postgres -d $PG_DB -v ON_ERROR_STOP=1 \
-      -f - < "$WORK_DIR/database/seed_full_demo.sql" > /dev/null 2>&1 \
-      || warn "Seed demo thất bại (không critical)"
-  else
-    warn "Không tìm thấy seed_full_demo.sql — bỏ qua"
-  fi
+
+if [ -z "$STAFF_COUNT" ] || [ "$STAFF_COUNT" = "0" ]; then
+  log "  → Fresh install — apply schema v2.0 + seed 001..."
+
+  # 5a. Init schemas + extensions
+  log "  → init/01_create_schemas.sql"
+  docker exec -i qlvb_postgres psql -U $PG_USER -d $PG_DB -v ON_ERROR_STOP=1 -f - \
+    < "$WORK_DIR/database/init/01_create_schemas.sql" > /dev/null 2>&1 \
+    || err "Init schemas thất bại"
+
+  # 5b. Apply master schema (idempotent — có thể re-run an toàn)
+  log "  → schema/000_schema_v2.0.sql (master — tables + SPs + triggers)"
+  docker exec -i qlvb_postgres psql -U $PG_USER -d $PG_DB -v ON_ERROR_STOP=1 -f - \
+    < "$WORK_DIR/database/schema/000_schema_v2.0.sql" > /dev/null 2>&1 \
+    || err "Schema master thất bại"
+
+  # 5c. Apply seed 001 — required data + 2 provider config
+  #     Dùng JWT_SECRET làm app.signing_secret_key (match backend .env SIGNING_SECRET_KEY)
+  log "  → seed/001_required_data.sql (admin/Admin@123 + 2 providers)"
+  docker exec -i qlvb_postgres psql -U $PG_USER -d $PG_DB -v ON_ERROR_STOP=1 \
+    -c "SET app.signing_secret_key = '$JWT_SECRET';" \
+    -f - < "$WORK_DIR/database/seed/001_required_data.sql" > /dev/null 2>&1 \
+    || err "Seed 001 thất bại — kiểm tra JWT_SECRET ≥ 16 ký tự"
+
+  log "  → Fresh install hoàn thành (admin/Admin@123 sẵn sàng)"
 else
-  log "  → Đã có $STAFF_COUNT staff — bỏ qua seed"
+  # Update deploy — re-apply master schema để đồng bộ SP mới, KHÔNG seed
+  log "  → Update deploy — re-apply master schema (idempotent)..."
+  docker exec -i qlvb_postgres psql -U $PG_USER -d $PG_DB -v ON_ERROR_STOP=1 -f - \
+    < "$WORK_DIR/database/schema/000_schema_v2.0.sql" > /dev/null 2>&1 \
+    || err "Schema master re-apply thất bại"
+  log "  → Đã có $STAFF_COUNT staff — bỏ qua seed, giữ nguyên data"
 fi
 
-log "Database migrations hoàn thành"
+log "Bước 5 hoàn thành"
 
 # ============================================================
 # BƯỚC 6: Cấu hình Backend
@@ -292,6 +284,9 @@ MINIO_BUCKET=documents
 JWT_SECRET=$JWT_SECRET
 JWT_ACCESS_EXPIRES=15m
 JWT_REFRESH_EXPIRES=7d
+
+# PHẢI match key đã dùng khi seed 001 encrypt provider client_secret (Bước 5)
+SIGNING_SECRET_KEY=$JWT_SECRET
 EOF
 
 cd "$WORK_DIR/backend"

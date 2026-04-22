@@ -224,55 +224,53 @@ if (Test-Path $gitDir) {
 
 $WORK_DIR = Join-Path $repoDir 'e_office_app_new'
 
-# Chay migrations + seed demo (neu fresh install)
-Log 'Chay database migrations...'
+# Apply DB schema + seed (v2.0 consolidated)
+#   - init/01_create_schemas.sql  -> schemas + extensions
+#   - schema/000_schema_v2.0.sql  -> MASTER idempotent (tables + SPs + triggers)
+#   - seed/001_required_data.sql  -> admin + roles + rights + 2 provider config
+#   KHONG chay seed/002_demo_data.sql (production deploy - khong demo data)
+Log 'Apply DB schema + seed...'
 $env:PGPASSWORD = $PG_PASS
 
-# Tracking table de skip migration da apply
-$sqlTracking = "CREATE TABLE IF NOT EXISTS public._migration_history (filename VARCHAR(255) PRIMARY KEY, applied_at TIMESTAMPTZ DEFAULT NOW());"
-& $psqlExe -U $PG_USER -d $PG_DB -p 5432 -h 127.0.0.1 -c $sqlTracking 2>$null | Out-Null
-
-function Apply-Migration {
-    param([string]$File)
-    $fname = Split-Path $File -Leaf
-    $exists = & $psqlExe -U $PG_USER -d $PG_DB -p 5432 -h 127.0.0.1 -tAc "SELECT 1 FROM public._migration_history WHERE filename='$fname'" 2>$null
-    if ($exists -match '1') { return }
-    Log "  -> $fname"
-    & $psqlExe -U $PG_USER -d $PG_DB -p 5432 -h 127.0.0.1 -v ON_ERROR_STOP=1 -f $File 2>$null
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "[XX] Migration $fname that bai" -ForegroundColor Red
-        exit 1
-    }
-    & $psqlExe -U $PG_USER -d $PG_DB -p 5432 -h 127.0.0.1 -c "INSERT INTO public._migration_history (filename) VALUES ('$fname') ON CONFLICT DO NOTHING" 2>$null | Out-Null
-}
-
-# Apply base schema
-$migrationsDir = Join-Path $WORK_DIR 'database\migrations'
-Apply-Migration (Join-Path $migrationsDir '000_full_schema.sql')
-
-# Apply quick migrations (hlj, jsd, ...)
-Get-ChildItem -Path $migrationsDir -Filter 'quick_*.sql' | Sort-Object Name | ForEach-Object {
-    Apply-Migration $_.FullName
-}
-
-# Seed demo chi khi DB trong (fresh install)
+# Kiem tra DB da co data chua (detect fresh install vs update)
 $staffCount = & $psqlExe -U $PG_USER -d $PG_DB -p 5432 -h 127.0.0.1 -tAc "SELECT COUNT(*) FROM public.staff" 2>$null
 $staffCount = ($staffCount -replace '\s','')
-if ($staffCount -eq '0' -or [string]::IsNullOrEmpty($staffCount)) {
-    $seedFile = Join-Path $WORK_DIR 'database\seed_full_demo.sql'
-    if (Test-Path $seedFile) {
-        Log "  -> Seed demo data (lan dau)..."
-        # seed có DISABLE TRIGGER ALL (pg_dump) - cần superuser postgres
-        & $psqlExe -U postgres -d $PG_DB -p 5432 -h 127.0.0.1 -v ON_ERROR_STOP=1 -f $seedFile 2>$null
-        if ($LASTEXITCODE -ne 0) { Warn 'Seed demo that bai (khong critical)' }
-    } else {
-        Warn 'Khong tim thay seed_full_demo.sql'
-    }
+
+if ([string]::IsNullOrEmpty($staffCount) -or $staffCount -eq '0') {
+    Log '  -> Fresh install - apply schema v2.0 + seed 001...'
+
+    # 1. Init schemas + extensions
+    $initFile = Join-Path $WORK_DIR 'database\init\01_create_schemas.sql'
+    Log "  -> init/01_create_schemas.sql"
+    & $psqlExe -U $PG_USER -d $PG_DB -p 5432 -h 127.0.0.1 -v ON_ERROR_STOP=1 -f $initFile 2>$null
+    if ($LASTEXITCODE -ne 0) { Write-Host '[XX] Init schemas that bai' -ForegroundColor Red; exit 1 }
+
+    # 2. Apply master schema (idempotent)
+    $schemaFile = Join-Path $WORK_DIR 'database\schema\000_schema_v2.0.sql'
+    Log "  -> schema/000_schema_v2.0.sql (master - tables + SPs + triggers)"
+    & $psqlExe -U $PG_USER -d $PG_DB -p 5432 -h 127.0.0.1 -v ON_ERROR_STOP=1 -f $schemaFile 2>$null
+    if ($LASTEXITCODE -ne 0) { Write-Host '[XX] Schema master that bai' -ForegroundColor Red; exit 1 }
+
+    # 3. Apply seed 001 - required data + 2 provider config
+    #    Dung JWT_SECRET lam app.signing_secret_key (match backend .env SIGNING_SECRET_KEY)
+    $seed1File = Join-Path $WORK_DIR 'database\seed\001_required_data.sql'
+    Log "  -> seed/001_required_data.sql (admin/Admin@123 + 2 providers)"
+    & $psqlExe -U $PG_USER -d $PG_DB -p 5432 -h 127.0.0.1 -v ON_ERROR_STOP=1 `
+      -c "SET app.signing_secret_key = '$JWT_SECRET';" `
+      -f $seed1File 2>$null
+    if ($LASTEXITCODE -ne 0) { Write-Host '[XX] Seed 001 that bai - kiem tra JWT_SECRET >= 16 ky tu' -ForegroundColor Red; exit 1 }
+
+    Log '  -> Fresh install hoan thanh (admin/Admin@123 san sang)'
 } else {
-    Log "  -> Da co $staffCount staff - bo qua seed"
+    # Update deploy - re-apply master schema de dong bo SP moi, KHONG seed
+    Log '  -> Update deploy - re-apply master schema (idempotent)...'
+    $schemaFile = Join-Path $WORK_DIR 'database\schema\000_schema_v2.0.sql'
+    & $psqlExe -U $PG_USER -d $PG_DB -p 5432 -h 127.0.0.1 -v ON_ERROR_STOP=1 -f $schemaFile 2>$null
+    if ($LASTEXITCODE -ne 0) { Write-Host '[XX] Schema master re-apply that bai' -ForegroundColor Red; exit 1 }
+    Log "  -> Da co $staffCount staff - bo qua seed, giu nguyen data"
 }
 
-Log 'Database migrations hoan thanh'
+Log 'Database setup hoan thanh'
 
 # ============================================================
 # BUOC 7: Build Backend + Frontend
@@ -310,6 +308,9 @@ MINIO_BUCKET=documents
 JWT_SECRET=$JWT_SECRET
 JWT_ACCESS_EXPIRES=15m
 JWT_REFRESH_EXPIRES=7d
+
+# PHAI match key da dung khi seed 001 encrypt provider client_secret
+SIGNING_SECRET_KEY=$JWT_SECRET
 "@
 $backendEnvPath = Join-Path $WORK_DIR 'backend\.env'
 [System.IO.File]::WriteAllText($backendEnvPath, $backendEnv)

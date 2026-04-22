@@ -1,10 +1,16 @@
 # ============================================================
 # e-Office - Reset DB Windows Server (CHI DUNG CHO TEST)
-# Wipe sach DB -> re-run schema + migrations + seed demo
+# Flow v2.0 consolidated: schema master + 2 file seed (KHONG loop migrations/)
 #
 # [!!] CANH BAO: Xoa TOAN BO data - KHONG dung tren production that
-# Chay: PowerShell (Administrator): .\reset-db-windows.ps1
+# Chay: PowerShell (Administrator):
+#   .\reset-db-windows.ps1              # seed ca required + demo
+#   .\reset-db-windows.ps1 -NoDemo      # chi seed required (production-like)
 # ============================================================
+
+param(
+    [switch]$NoDemo
+)
 
 # Continue thay vì Stop — PS 5.1 bug: 'Stop' trip khi native command (psql) output NOTICE ra stderr
 $ErrorActionPreference = "Continue"
@@ -15,6 +21,13 @@ $psqlExe  = 'C:\PostgreSQL\16\bin\psql.exe'
 $PG_DB    = 'qlvb_prod'
 $PG_USER  = 'qlvb_admin'
 $PG_PASS  = 'QlvbProd2026'
+
+# Session variable cho pgp_sym_encrypt trong seed/001 — PHAI match backend SIGNING_SECRET_KEY (.env)
+if ($env:SIGNING_SECRET_KEY) {
+    $SIGNING_KEY = $env:SIGNING_SECRET_KEY
+} else {
+    $SIGNING_KEY = 'qlvb-signing-dev-key-change-production-2026'
+}
 
 function Log($msg)  { Write-Host "[OK] $msg" -ForegroundColor Green }
 function Warn($msg) { Write-Host "[!!] $msg" -ForegroundColor Yellow }
@@ -33,6 +46,9 @@ if (-not (Test-Path $psqlExe)) {
 Write-Host ''
 Write-Host '================================================================' -ForegroundColor Red
 Write-Host "  [!!] RESET DB - se xoa SACH toan bo data trong $PG_DB" -ForegroundColor Red
+if ($NoDemo) {
+    Write-Host '  (-NoDemo: chi seed required, KHONG seed demo 002)' -ForegroundColor Yellow
+}
 Write-Host '================================================================' -ForegroundColor Red
 Write-Host ''
 
@@ -77,76 +93,99 @@ GRANT ALL ON SCHEMA public TO PUBLIC;
 & $psqlExe -U $PG_USER -d $PG_DB -p 5432 -h 127.0.0.1 -v ON_ERROR_STOP=1 -c $sqlDrop 2>$null
 if ($LASTEXITCODE -ne 0) { Err 'Drop schemas that bai' }
 
-Log 'Schemas da duoc reset'
+Log 'Schemas da reset'
 
 # ============================================================
-# 3. Apply base schema + quick migrations
+# 3. Apply init schemas (01_create_schemas.sql)
 # ============================================================
-Log 'Apply migrations...'
+Log 'Apply init/01_create_schemas.sql (extensions + schemas edoc/esto/cont/iso)...'
 
-# Tracking table
-$sqlTracking = "CREATE TABLE IF NOT EXISTS public._migration_history (filename VARCHAR(255) PRIMARY KEY, applied_at TIMESTAMPTZ DEFAULT NOW());"
-& $psqlExe -U $PG_USER -d $PG_DB -p 5432 -h 127.0.0.1 -c $sqlTracking 2>$null | Out-Null
+$initFile = Join-Path $WORK_DIR 'database\init\01_create_schemas.sql'
+if (-not (Test-Path $initFile)) { Err "Khong tim thay $initFile" }
 
-function Apply-Migration {
-    param([string]$File)
-    $fname = Split-Path $File -Leaf
-    Log "  -> $fname"
-    # Log errors + output to tmp file để debug nếu fail
-    $logFile = Join-Path $env:TEMP "migrate_$fname.log"
-    & $psqlExe -U $PG_USER -d $PG_DB -p 5432 -h 127.0.0.1 -v ON_ERROR_STOP=1 -f $File > $logFile 2>&1
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host ""
-        Write-Host "---- psql output (cuối file) ----" -ForegroundColor Yellow
-        Get-Content $logFile -Tail 30
-        Write-Host "---- full log: $logFile ----" -ForegroundColor Yellow
-        Err "Migration $fname that bai"
-    }
-    Remove-Item $logFile -ErrorAction SilentlyContinue
-    & $psqlExe -U $PG_USER -d $PG_DB -p 5432 -h 127.0.0.1 -c "INSERT INTO public._migration_history (filename) VALUES ('$fname') ON CONFLICT DO NOTHING" 2>$null | Out-Null
+$initLog = Join-Path $env:TEMP 'init_schemas.log'
+& $psqlExe -U $PG_USER -d $PG_DB -p 5432 -h 127.0.0.1 -v ON_ERROR_STOP=1 -f $initFile > $initLog 2>&1
+if ($LASTEXITCODE -ne 0) {
+    Write-Host ''
+    Write-Host '---- init_schemas psql output (cuoi file) ----' -ForegroundColor Yellow
+    Get-Content $initLog -Tail 30
+    Err 'Init schemas that bai'
 }
+Remove-Item $initLog -ErrorAction SilentlyContinue
 
-$migrationsDir = Join-Path $WORK_DIR 'database\migrations'
-Apply-Migration (Join-Path $migrationsDir '000_full_schema.sql')
+# ============================================================
+# 4. Apply master schema v2.0
+# ============================================================
+Log 'Apply schema/000_schema_v2.0.sql (MASTER - tables + SPs + triggers)...'
 
-Get-ChildItem -Path $migrationsDir -Filter 'quick_*.sql' | Sort-Object Name | ForEach-Object {
-    Apply-Migration $_.FullName
+$schemaFile = Join-Path $WORK_DIR 'database\schema\000_schema_v2.0.sql'
+if (-not (Test-Path $schemaFile)) { Err "Khong tim thay $schemaFile" }
+
+$schemaLog = Join-Path $env:TEMP 'schema_master.log'
+& $psqlExe -U $PG_USER -d $PG_DB -p 5432 -h 127.0.0.1 -v ON_ERROR_STOP=1 -f $schemaFile > $schemaLog 2>&1
+if ($LASTEXITCODE -ne 0) {
+    Write-Host ''
+    Write-Host '---- schema_master psql output (cuoi file) ----' -ForegroundColor Yellow
+    Get-Content $schemaLog -Tail 30
+    Write-Host "---- full log: $schemaLog ----" -ForegroundColor Yellow
+    Err 'Schema master that bai'
 }
+Remove-Item $schemaLog -ErrorAction SilentlyContinue
 
 # ============================================================
-# 4. Seed demo data
+# 5. Apply seed 001 (required data)
+#    PHAI set app.signing_secret_key cho pgp_sym_encrypt trong seed
 # ============================================================
-Log 'Seed demo data...'
-$seedFile = Join-Path $WORK_DIR 'database\seed_full_demo.sql'
-if (Test-Path $seedFile) {
-    $seedLog = Join-Path $env:TEMP 'seed_full_demo.log'
-    # seed_full_demo.sql là hand-written với INSERT INTO (col,...) VALUES — schema-resilient
-    # Vẫn cần superuser cho TRUNCATE CASCADE
-    & $psqlExe -U postgres -d $PG_DB -p 5432 -h 127.0.0.1 -v ON_ERROR_STOP=1 -f $seedFile > $seedLog 2>&1
+Log 'Apply seed/001_required_data.sql (admin + roles + rights + 2 providers)...'
+
+$seed1File = Join-Path $WORK_DIR 'database\seed\001_required_data.sql'
+if (-not (Test-Path $seed1File)) { Err "Khong tim thay $seed1File" }
+
+$seed1Log = Join-Path $env:TEMP 'seed_001.log'
+& $psqlExe -U $PG_USER -d $PG_DB -p 5432 -h 127.0.0.1 -v ON_ERROR_STOP=1 `
+  -c "SET app.signing_secret_key = '$SIGNING_KEY';" `
+  -f $seed1File > $seed1Log 2>&1
+if ($LASTEXITCODE -ne 0) {
+    Write-Host ''
+    Write-Host '---- seed_001 psql output (cuoi file) ----' -ForegroundColor Yellow
+    Get-Content $seed1Log -Tail 30
+    Err 'Seed 001 that bai (kiem tra SIGNING_SECRET_KEY env var - can >= 16 ky tu)'
+}
+Remove-Item $seed1Log -ErrorAction SilentlyContinue
+
+# ============================================================
+# 6. Apply seed 002 (demo) - SKIP neu -NoDemo
+# ============================================================
+if (-not $NoDemo) {
+    Log 'Apply seed/002_demo_data.sql (rich demo data 312 records)...'
+
+    $seed2File = Join-Path $WORK_DIR 'database\seed\002_demo_data.sql'
+    if (-not (Test-Path $seed2File)) { Err "Khong tim thay $seed2File" }
+
+    $seed2Log = Join-Path $env:TEMP 'seed_002.log'
+    & $psqlExe -U $PG_USER -d $PG_DB -p 5432 -h 127.0.0.1 -v ON_ERROR_STOP=1 -f $seed2File > $seed2Log 2>&1
     if ($LASTEXITCODE -ne 0) {
-        Warn 'Seed demo that bai'
-        Write-Host ""
-        Write-Host "---- seed_full_demo psql output (cuối file) ----" -ForegroundColor Yellow
-        Get-Content $seedLog -Tail 30
-        Write-Host "---- full log: $seedLog ----" -ForegroundColor Yellow
-    } else {
-        Remove-Item $seedLog -ErrorAction SilentlyContinue
+        Write-Host ''
+        Write-Host '---- seed_002 psql output (cuoi file) ----' -ForegroundColor Yellow
+        Get-Content $seed2Log -Tail 30
+        Err 'Seed 002 that bai'
     }
-
-    # Verify admin account được tạo
-    $adminCheck = & $psqlExe -U $PG_USER -d $PG_DB -p 5432 -h 127.0.0.1 -tAc "SELECT COUNT(*) FROM public.staff WHERE username='admin'" 2>$null
-    $adminCheck = ($adminCheck -replace '\s','')
-    if ($adminCheck -eq '1') {
-        Log "  OK admin account đã tạo"
-    } else {
-        Warn "  Chưa có admin account - cần seed thủ công"
-    }
+    Remove-Item $seed2Log -ErrorAction SilentlyContinue
 } else {
-    Warn 'Khong tim thay seed_full_demo.sql'
+    Warn 'Skip seed/002_demo_data.sql (-NoDemo) - DB chi co required data'
+}
+
+# Verify admin account
+$adminCheck = & $psqlExe -U $PG_USER -d $PG_DB -p 5432 -h 127.0.0.1 -tAc "SELECT COUNT(*) FROM public.staff WHERE username='admin'" 2>$null
+$adminCheck = ($adminCheck -replace '\s','')
+if ($adminCheck -eq '1') {
+    Log 'OK admin account da tao (admin/Admin@123)'
+} else {
+    Warn 'CHUA co admin account - kiem tra seed 001 logs'
 }
 
 # ============================================================
-# 5. Rebuild + restart (optional)
+# 7. Rebuild + restart (optional)
 # ============================================================
 $rebuild = Read-Host 'Rebuild backend + frontend? [y/N]'
 if ($rebuild -eq 'y' -or $rebuild -eq 'Y') {
@@ -171,9 +210,14 @@ if ($rebuild -eq 'y' -or $rebuild -eq 'Y') {
 
 Write-Host ''
 Write-Host '================================================================' -ForegroundColor Green
-Log 'DB da reset + apply day du migrations + seed demo'
+Log 'DB reset thanh cong'
 Write-Host ''
-Write-Host '  Demo accounts: xem chi tiet trong seed_full_demo.sql'
+Write-Host '  Admin: username=admin, password=Admin@123'
 Write-Host '  Login: http://<server-ip>'
+if (-not $NoDemo) {
+    Write-Host '  Demo data: 10 users, 50 VB den, 30 VB di, 20 du thao, 15 HSCV, 2 provider config'
+} else {
+    Write-Host '  -NoDemo mode: chi admin + 2 provider config (production-like)'
+}
 Write-Host '================================================================' -ForegroundColor Green
 Write-Host ''

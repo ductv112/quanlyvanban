@@ -40,33 +40,28 @@ cd "$WORK_DIR/frontend"
 npm install > /dev/null 2>&1
 npm run build > /dev/null 2>&1
 
-# Apply migration mới (idempotent — tracking qua public._migration_history)
-log "Kiểm tra migration mới..."
+# Re-apply master schema v2.0 (idempotent) — đồng bộ SP mới nếu schema thay đổi
+# File schema/000_schema_v2.0.sql safe để chạy lại vì:
+#   - DROP ALL fn_* đầu file + CREATE OR REPLACE cho SPs
+#   - CREATE TABLE IF NOT EXISTS + ADD CONSTRAINT wrapped trong DO block catch duplicate
+# KHÔNG chạy seed (giữ nguyên data production)
+log "Re-apply master schema (đồng bộ SPs mới, idempotent)..."
 
 PG_DB_UP="qlvb_prod"
 PG_USER_UP="qlvb_admin"
 
-docker exec -i qlvb_postgres psql -U $PG_USER_UP -d $PG_DB_UP -c "
-CREATE TABLE IF NOT EXISTS public._migration_history (
-  filename VARCHAR(255) PRIMARY KEY,
-  applied_at TIMESTAMPTZ DEFAULT NOW()
-);" > /dev/null 2>&1
-
-for f in $(ls "$WORK_DIR"/database/migrations/quick_*.sql 2>/dev/null | sort); do
-  fname=$(basename "$f")
-  exists=$(docker exec qlvb_postgres psql -U $PG_USER_UP -d $PG_DB_UP -tAc \
-    "SELECT 1 FROM public._migration_history WHERE filename='$fname'" 2>/dev/null | tr -d '[:space:]')
-  if [ "$exists" != "1" ]; then
-    log "  → Apply $fname"
-    if ! docker exec -i qlvb_postgres psql -U $PG_USER_UP -d $PG_DB_UP -v ON_ERROR_STOP=1 \
-         -f - < "$f" > /dev/null 2>&1; then
-      echo "Migration $fname thất bại — kiểm tra thủ công"
-      exit 1
-    fi
-    docker exec -i qlvb_postgres psql -U $PG_USER_UP -d $PG_DB_UP -c \
-      "INSERT INTO public._migration_history (filename) VALUES ('$fname') ON CONFLICT DO NOTHING" > /dev/null 2>&1
+SCHEMA_FILE="$WORK_DIR/database/schema/000_schema_v2.0.sql"
+if [ -f "$SCHEMA_FILE" ]; then
+  if ! docker exec -i qlvb_postgres psql -U $PG_USER_UP -d $PG_DB_UP -v ON_ERROR_STOP=1 \
+       -f - < "$SCHEMA_FILE" > /dev/null 2>&1; then
+    echo "Schema master re-apply thất bại — kiểm tra thủ công"
+    exit 1
   fi
-done
+  log "  → schema/000_schema_v2.0.sql re-applied OK"
+else
+  echo "Không tìm thấy $SCHEMA_FILE — kiểm tra cấu trúc repo"
+  exit 1
+fi
 
 # Restart apps
 log "Restart ứng dụng..."

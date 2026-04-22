@@ -1,9 +1,11 @@
 #!/bin/bash
 # ============================================================
 # e-Office — Reset DB (CHỈ DÙNG CHO TEST SERVER)
-# Wipe sạch DB → re-run schema + migrations + seed demo
+# Flow v2.0 consolidated: schema master + 2 file seed (KHÔNG loop migrations/)
 #
 # ⚠️ CẢNH BÁO: Xóa TOÀN BỘ data — KHÔNG dùng trên production thật
+# Usage: sudo bash reset-db.sh [--no-demo]
+#   --no-demo: bỏ qua seed/002 demo data (production deploy dùng flag này)
 # ============================================================
 
 set -e
@@ -12,6 +14,17 @@ APP_DIR="/opt/eoffice/quanlyvanban"
 WORK_DIR="$APP_DIR/e_office_app_new"
 PG_DB="qlvb_prod"
 PG_USER="qlvb_admin"
+
+# Session variable cho pgp_sym_encrypt trong seed/001 — PHẢI match backend SIGNING_SECRET_KEY (.env)
+SIGNING_KEY="${SIGNING_SECRET_KEY:-qlvb-signing-dev-key-change-production-2026}"
+
+# Parse flags
+NO_DEMO=false
+for arg in "$@"; do
+  case "$arg" in
+    --no-demo) NO_DEMO=true ;;
+  esac
+done
 
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -28,10 +41,12 @@ fi
 echo ""
 echo "================================================================"
 echo -e "  ${RED}⚠ RESET DB — sẽ xóa SẠCH toàn bộ data trong $PG_DB${NC}"
+if [ "$NO_DEMO" = "true" ]; then
+  echo -e "  ${YELLOW}(--no-demo: chỉ seed required data, KHÔNG seed demo 002)${NC}"
+fi
 echo "================================================================"
 echo ""
 
-# Confirm (yêu cầu gõ chính xác 'yes')
 read -p "Xác nhận xóa sạch DB? Gõ 'yes' để tiếp tục: " confirm
 if [ "$confirm" != "yes" ]; then
   echo "Đã hủy."
@@ -40,7 +55,7 @@ fi
 echo ""
 
 # ============================================================
-# 1. Pull code mới (optional nhưng tiện)
+# 1. Pull code mới (optional)
 # ============================================================
 if [ -d "$APP_DIR/.git" ]; then
   log "Pull code mới..."
@@ -67,53 +82,53 @@ GRANT ALL ON SCHEMA public TO $PG_USER;
 GRANT ALL ON SCHEMA public TO PUBLIC;
 " > /dev/null || err "Drop schemas thất bại"
 
-log "Schemas đã được reset"
+log "Schemas đã reset"
 
 # ============================================================
-# 3. Apply base schema + quick migrations
+# 3. Apply init (schemas + extensions)
 # ============================================================
-log "Apply 000_full_schema.sql..."
+log "Apply init/01_create_schemas.sql (schemas edoc/esto/cont/iso + extensions)..."
 
-# Migration tracking table
-docker exec -i qlvb_postgres psql -U $PG_USER -d $PG_DB -v ON_ERROR_STOP=1 -c "
-CREATE TABLE IF NOT EXISTS public._migration_history (
-  filename VARCHAR(255) PRIMARY KEY,
-  applied_at TIMESTAMPTZ DEFAULT NOW()
-);" > /dev/null
-
-apply_migration() {
-  local file=$1
-  local fname=$(basename "$file")
-  log "  → $fname"
-  if ! docker exec -i qlvb_postgres psql -U $PG_USER -d $PG_DB -v ON_ERROR_STOP=1 \
-       -f - < "$file" > /dev/null 2>&1; then
-    err "Migration $fname thất bại"
-  fi
-  docker exec -i qlvb_postgres psql -U $PG_USER -d $PG_DB -c \
-    "INSERT INTO public._migration_history (filename) VALUES ('$fname') ON CONFLICT DO NOTHING" > /dev/null 2>&1
-}
-
-apply_migration "$WORK_DIR/database/migrations/000_full_schema.sql"
-
-for f in $(ls "$WORK_DIR"/database/migrations/quick_*.sql 2>/dev/null | sort); do
-  apply_migration "$f"
-done
+docker exec -i qlvb_postgres psql -U $PG_USER -d $PG_DB -v ON_ERROR_STOP=1 -f - \
+  < "$WORK_DIR/database/init/01_create_schemas.sql" > /dev/null \
+  || err "Init schemas thất bại"
 
 # ============================================================
-# 4. Seed demo data
+# 4. Apply master schema v2.0
 # ============================================================
-log "Seed demo data..."
-if [ -f "$WORK_DIR/database/seed_full_demo.sql" ]; then
-  # seed có DISABLE TRIGGER ALL (pg_dump) — cần superuser postgres
-  docker exec -i qlvb_postgres psql -U postgres -d $PG_DB -v ON_ERROR_STOP=1 \
-    -f - < "$WORK_DIR/database/seed_full_demo.sql" > /dev/null 2>&1 \
-    || warn "Seed demo thất bại"
+log "Apply schema/000_schema_v2.0.sql (MASTER — tables + SPs + triggers)..."
+
+docker exec -i qlvb_postgres psql -U $PG_USER -d $PG_DB -v ON_ERROR_STOP=1 -f - \
+  < "$WORK_DIR/database/schema/000_schema_v2.0.sql" > /dev/null \
+  || err "Schema master thất bại"
+
+# ============================================================
+# 5. Apply seed 001 (required data)
+#    PHẢI set app.signing_secret_key để pgp_sym_encrypt encrypt client_secret
+# ============================================================
+log "Apply seed/001_required_data.sql (admin + roles + rights + 2 providers)..."
+
+# Dùng -v để SET variable via psql \set, sau đó seed file làm SET LOCAL
+# Cách an toàn: gộp SET + \i trong 1 session qua heredoc
+docker exec -i qlvb_postgres psql -U $PG_USER -d $PG_DB -v ON_ERROR_STOP=1 \
+  -c "SET app.signing_secret_key = '$SIGNING_KEY';" \
+  -f - < "$WORK_DIR/database/seed/001_required_data.sql" > /dev/null \
+  || err "Seed 001 thất bại (kiểm tra SIGNING_SECRET_KEY env var — cần ≥ 16 ký tự)"
+
+# ============================================================
+# 6. Apply seed 002 (demo) — SKIP nếu --no-demo
+# ============================================================
+if [ "$NO_DEMO" = "false" ]; then
+  log "Apply seed/002_demo_data.sql (rich demo data 312 records)..."
+  docker exec -i qlvb_postgres psql -U $PG_USER -d $PG_DB -v ON_ERROR_STOP=1 -f - \
+    < "$WORK_DIR/database/seed/002_demo_data.sql" > /dev/null \
+    || err "Seed 002 thất bại"
 else
-  warn "Không tìm thấy seed_full_demo.sql"
+  warn "Skip seed/002_demo_data.sql (--no-demo) — DB chỉ có required data"
 fi
 
 # ============================================================
-# 5. Rebuild backend + frontend (optional)
+# 7. Rebuild backend + frontend (optional)
 # ============================================================
 read -p "Rebuild backend + frontend? [y/N] " rebuild
 if [ "$rebuild" = "y" ] || [ "$rebuild" = "Y" ]; then
@@ -133,9 +148,14 @@ fi
 
 echo ""
 echo "================================================================"
-log "DB đã reset + apply đầy đủ migrations + seed demo"
+log "DB reset thành công"
 echo ""
-echo "  Demo accounts trong seed_full_demo.sql — check file để biết"
+echo "  Admin: username=admin, password=Admin@123"
 echo "  Login: http://<server-ip>"
+if [ "$NO_DEMO" = "false" ]; then
+  echo "  Demo data: 10 users, 50 VB đến, 30 VB đi, 20 dự thảo, 15 HSCV, 2 provider config"
+else
+  echo "  --no-demo mode: chỉ admin + 2 provider config (production-like)"
+fi
 echo "================================================================"
 echo ""

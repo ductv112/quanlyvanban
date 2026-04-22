@@ -30,29 +30,29 @@ Set-Location "$WORK_DIR\frontend"
 npm install 2>$null | Out-Null
 npm run build 2>$null | Out-Null
 
-# Apply migration moi (idempotent - tracking qua public._migration_history)
-Log "Kiem tra migration moi..."
+# Re-apply master schema v2.0 (idempotent) - dong bo SP moi neu schema thay doi
+# File schema/000_schema_v2.0.sql safe de chay lai vi:
+#   - DROP ALL fn_* dau file + CREATE OR REPLACE cho SPs
+#   - CREATE TABLE IF NOT EXISTS + ADD CONSTRAINT wrapped trong DO block catch duplicate
+# KHONG chay seed (giu nguyen data production)
+Log "Re-apply master schema (dong bo SPs moi, idempotent)..."
 $psqlExe = 'C:\PostgreSQL\16\bin\psql.exe'
 $PG_DB   = 'qlvb_prod'
 $PG_USER = 'qlvb_admin'
 $PG_PASS = 'QlvbProd2026'
 $env:PGPASSWORD = $PG_PASS
 
-& $psqlExe -U $PG_USER -d $PG_DB -p 5432 -h 127.0.0.1 -c "CREATE TABLE IF NOT EXISTS public._migration_history (filename VARCHAR(255) PRIMARY KEY, applied_at TIMESTAMPTZ DEFAULT NOW());" 2>$null | Out-Null
-
-$migrationsDir = Join-Path $WORK_DIR 'database\migrations'
-Get-ChildItem -Path $migrationsDir -Filter 'quick_*.sql' | Sort-Object Name | ForEach-Object {
-    $fname = $_.Name
-    $exists = & $psqlExe -U $PG_USER -d $PG_DB -p 5432 -h 127.0.0.1 -tAc "SELECT 1 FROM public._migration_history WHERE filename='$fname'" 2>$null
-    if ($exists -notmatch '1') {
-        Log "  -> Apply $fname"
-        & $psqlExe -U $PG_USER -d $PG_DB -p 5432 -h 127.0.0.1 -v ON_ERROR_STOP=1 -f $_.FullName 2>$null
-        if ($LASTEXITCODE -ne 0) {
-            Write-Host "[XX] Migration $fname that bai - kiem tra thu cong" -ForegroundColor Red
-            exit 1
-        }
-        & $psqlExe -U $PG_USER -d $PG_DB -p 5432 -h 127.0.0.1 -c "INSERT INTO public._migration_history (filename) VALUES ('$fname') ON CONFLICT DO NOTHING" 2>$null | Out-Null
+$schemaFile = Join-Path $WORK_DIR 'database\schema\000_schema_v2.0.sql'
+if (Test-Path $schemaFile) {
+    & $psqlExe -U $PG_USER -d $PG_DB -p 5432 -h 127.0.0.1 -v ON_ERROR_STOP=1 -f $schemaFile 2>$null
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "[XX] Schema master re-apply that bai - kiem tra thu cong" -ForegroundColor Red
+        exit 1
     }
+    Log "  -> schema/000_schema_v2.0.sql re-applied OK"
+} else {
+    Write-Host "[XX] Khong tim thay $schemaFile - kiem tra cau truc repo" -ForegroundColor Red
+    exit 1
 }
 
 # Restart
