@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 12-01-PLAN.md — BE endpoint download + sidebar submenu (1/3 of Phase 12)
-last_updated: "2026-04-22T09:42:00.852Z"
+stopped_at: Completed 12-02-PLAN.md — FE page /ky-so/danh-sach 4 tabs + socket realtime + URL sync (2/3 of Phase 12)
+last_updated: "2026-04-22T09:56:54.349Z"
 last_activity: 2026-04-22
 progress:
   total_phases: 13
   completed_phases: 11
   total_plans: 57
-  completed_plans: 54
-  percent: 95
+  completed_plans: 55
+  percent: 96
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-21 — Milestone v2.0 started)
 ## Current Position
 
 Phase: 12 (Menu Ký số + Danh sách 4 tab UI) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Next: Plan 11.1-03 — move 18 file migrations cũ → archive/, update deploy scripts + dev onboarding README dùng schema/ + seed/ flow
 Status: Ready to execute
 Last activity: 2026-04-22
@@ -76,6 +76,7 @@ Progress: [██████████] 98% (53/54 plans complete — 11 phas
 | Phase 11.1 P01 | 11min | 3 tasks | 4 files |
 | Phase 11.1 P02 | 8min | 3 tasks | 2 files |
 | Phase 12 P01 | 4min | 2 tasks | 2 files |
+| Phase 12 P02 | 15min | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -163,6 +164,10 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase 12]: [Plan 12-01]: GET /:id/download owner-or-admin bypass (khác cancel + GET /:id owner-only) — admin cần audit/support quyền truy cập file đã ký; dùng TokenPayload.isAdmin boolean từ JWT không cần DB query role
 - [Phase 12]: [Plan 12-01]: file_name compute client-side từ segment cuối signed_file_path với prefix 'signed_' — không query thêm attachment table, trade-off tên hiển thị có thể là 'signed_txn-7-signed.pdf'
 - [Phase 12]: [Plan 12-01]: Cache-Control: no-store header — ngăn browser/proxy cache URL HMAC presigned (T-12-06 mitigation), vì TTL 600s vẫn đủ leak window nếu cache response
+- [Phase 12]: [Plan 12-02]: API path convention '/ky-so/...' không '/api/ky-so/...' — axios instance có baseURL='/api' sẵn; Rule 1 auto-fix khớp SignModal + cau-hinh + tai-khoan pages
+- [Phase 12]: [Plan 12-02]: Socket refresh-all pattern — SIGN_COMPLETED/FAILED fire → refetch cả counts + list hiện tại, bất kể transaction_id có trong list hay không (counts có thể đổi từ tab khác)
+- [Phase 12]: [Plan 12-02]: File đơn 806 dòng thay tách component — D-14 cho phép; 4 useMemo columns + 3 useCallback actions + inline helpers, 1 điểm maintain dễ trace
+- [Phase 12]: [Plan 12-02]: parsePositiveInt + parsePageSize guard URL tampering (T-12-04/07) — reject -1/NaN/9999, cap 100 khớp BE SP; defense-in-depth
 
 ### Pending Todos
 
@@ -194,6 +199,6 @@ v1.0 hoàn thành với 3 quick tasks (HDSD Compliance sprint cuối):
 
 ## Session Continuity
 
-Last session: 2026-04-22T09:42:00.841Z
-Stopped at: Completed 12-01-PLAN.md — BE endpoint download + sidebar submenu (1/3 of Phase 12)
+Last session: 2026-04-22T09:56:54.314Z
+Stopped at: Completed 12-02-PLAN.md — FE page /ky-so/danh-sach 4 tabs + socket realtime + URL sync (2/3 of Phase 12)
 Resume: `/gsd-execute-phase 11.1` để tiếp tục Plan 11.1-02 (seed required data + rich demo data)

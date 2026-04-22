@@ -135,11 +135,11 @@ Mỗi REQ-ID v2.0 map tới đúng 1 phase (8-14). Tổng 42/42 — 100% coverag
 | CFG-06 | Phase 10 — User config page | Complete |
 | CFG-07 | Phase 9 — Admin config + provider adapters | Complete |
 | UX-01 | Phase 12 — Menu Ký số + Danh sách UI | Complete |
-| UX-02 | Phase 12 — Menu Ký số + Danh sách UI | Pending |
-| UX-03 | Phase 12 — Menu Ký số + Danh sách UI | Pending |
-| UX-04 | Phase 12 — Menu Ký số + Danh sách UI | Pending |
-| UX-05 | Phase 12 — Menu Ký số + Danh sách UI | Pending |
-| UX-06 | Phase 12 — Menu Ký số + Danh sách UI | Pending |
+| UX-02 | Phase 12 — Menu Ký số + Danh sách UI | Complete |
+| UX-03 | Phase 12 — Menu Ký số + Danh sách UI | Complete |
+| UX-04 | Phase 12 — Menu Ký số + Danh sách UI | Complete |
+| UX-05 | Phase 12 — Menu Ký số + Danh sách UI | Complete |
+| UX-06 | Phase 12 — Menu Ký số + Danh sách UI | Complete |
 | UX-07 | Phase 13 — Modal ký số + Root CA UX | Pending |
 | UX-08 | Phase 13 — Modal ký số + Root CA UX | Pending |
 | UX-09 | Phase 13 — Modal ký số + Root CA UX | Pending |
