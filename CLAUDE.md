@@ -516,6 +516,35 @@ Thay vào đó:
    -- Phải = 0
    ```
 
+5. **Verify SP count không bị hụt** (sau re-apply schema):
+   ```sql
+   SELECT count(*) FROM pg_proc
+   WHERE pronamespace IN ('public'::regnamespace, 'edoc'::regnamespace)
+     AND proname LIKE 'fn_%';
+   -- Phải ≥ 200 (baseline Phase 11.1 v2.0.2 = 386 SPs)
+   ```
+
+### ⚠️ Lesson học được (DON'T repeat!)
+
+**SAI pattern (đã gây bug 2 lần trong Phase 11.1):**
+
+- **Pattern `DROP FUNCTION ... LIKE 'fn_%'` quá broad** — drop TẤT CẢ SP prefix `fn_`, nhưng append section chỉ CREATE lại subset → các SP pre-append bị mất vĩnh viễn → app chết (login fail, list fail toàn bộ).
+
+**ĐÚNG pattern khi consolidate schema multi-layer:**
+
+- **DROP SP chỉ target chính xác danh sách sẽ CREATE ngay sau đó:**
+  ```sql
+  DROP FUNCTION IF EXISTS schema.fn_name(args) CASCADE;
+  -- HOẶC dùng IN list cụ thể:
+  WHERE proname IN ('fn_incoming_doc_get_list', 'fn_department_get_tree', ...)
+  ```
+
+- **Lý do:** `CREATE OR REPLACE FUNCTION` **chỉ replace** khi cùng tên + **cùng signature**. Nếu signature khác (VD: thêm param `p_dept_ids`) → tạo **overload mới** thay vì replace → DB có 2 bản SP → runtime ambiguous error.
+
+- **Nguyên tắc:** Drop chỉ những gì **chắc chắn sẽ CREATE lại ngay sau đó**. Không dùng `LIKE 'prefix%'` hoặc `DROP ALL`.
+
+- **Post-apply check bắt buộc:** Count SPs sau apply phải ≥ baseline (386 cho Phase 11.1 v2.0.2). Nếu thiếu → có SP bị drop mà không được re-create.
+
 ### Khi nào bump version (v2.1, v2.2, ...)
 
 Khi kết thúc 1 milestone lớn (ví dụ: v2.0 ký số xong → v2.1 báo cáo thống kê mới):
