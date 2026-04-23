@@ -55,6 +55,7 @@ import {
 import { staffSigningConfigRepository } from '../repositories/staff-signing-config.repository.js';
 import { attachmentSignRepository } from '../repositories/attachment-sign.repository.js';
 import { noticeRepository } from '../repositories/notice.repository.js';
+import { bellNotificationRepository } from '../repositories/notifications.repository.js';
 import { getProviderByCodeWithCredentials } from '../services/signing/providers/provider-factory.js';
 import type { ProviderCode } from '../services/signing/providers/provider.interface.js';
 import { signPdf } from '../services/signing/pdf-signer.js';
@@ -124,7 +125,34 @@ async function handleFailure(
   // 2. Cleanup MinIO placeholder
   await removePlaceholder(txnId);
 
-  // 3. Socket emit
+  // 3. Phase 13 — Bell notification PERSONAL (public.notifications): PERSIST TRƯỚC
+  //    emit Socket để offline user thấy khi login lại. Best-effort — DB source of truth.
+  try {
+    await bellNotificationRepository.create(
+      staffId,
+      'sign_failed',
+      status === 'expired' ? 'Ký số hết hạn' : 'Ký số thất bại',
+      status === 'expired'
+        ? `Giao dịch ký số #${txnId} đã hết hạn sau 3 phút không xác nhận: ${errMsg}`
+        : `Giao dịch ký số #${txnId} thất bại: ${errMsg}`,
+      '/ky-so/danh-sach?tab=failed',
+      {
+        transaction_id: txnId,
+        provider_code: providerCode,
+        attachment_id: attachmentId,
+        attachment_type: attachmentType,
+        error_message: errMsg,
+        status,
+      },
+    );
+  } catch (err) {
+    logger.warn(
+      { err, txnId },
+      'Failed to create personal bell notification (sign_failed) — best-effort',
+    );
+  }
+
+  // 4. Socket emit (best-effort — user online nhận ngay)
   emitSignFailed(staffId, {
     transaction_id: txnId,
     provider_code: providerCode,
@@ -134,7 +162,8 @@ async function handleFailure(
     status,
   });
 
-  // 4. Bell notification (persistent)
+  // 5. Bell notification UNIT-WIDE legacy (Phase 11 — edoc.notice) — coexist 2 kênh.
+  //    Remove after Phase 13 FE migrates fully sang /api/notifications — decision defer.
   try {
     await noticeRepository.createForStaff(
       staffId,
@@ -145,7 +174,7 @@ async function handleFailure(
       'SIGN_RESULT',
     );
   } catch (err) {
-    logger.warn({ err, txnId }, 'Failed to create failure notification');
+    logger.warn({ err, txnId }, 'Failed to create failure notification (legacy)');
   }
 }
 
@@ -448,7 +477,34 @@ async function processJob(job: Job<PollSignStatusJob>): Promise<void> {
   // 6g. Cleanup placeholder
   await removePlaceholder(signTransactionId);
 
-  // 6h. Socket + bell
+  // 6h. Phase 13 — Bell notification PERSONAL (public.notifications): PERSIST TRƯỚC
+  //     emit Socket để offline user thấy khi login lại. Best-effort — DB source of truth.
+  try {
+    await bellNotificationRepository.create(
+      txn.staff_id,
+      'sign_completed',
+      `Ký số thành công: ${fileName}`,
+      `Giao dịch ký số #${signTransactionId} đã hoàn tất lúc ${new Date().toLocaleString('vi-VN')}. Nhấn để xem file đã ký.`,
+      '/ky-so/danh-sach?tab=completed',
+      {
+        transaction_id: signTransactionId,
+        provider_code: txn.provider_code,
+        attachment_id: txn.attachment_id,
+        attachment_type: txn.attachment_type,
+        doc_id: txn.doc_id,
+        doc_type: txn.doc_type,
+        signed_file_path: signedKey,
+        completed_at: new Date().toISOString(),
+      },
+    );
+  } catch (err) {
+    logger.warn(
+      { err, txnId: signTransactionId },
+      'Failed to create personal bell notification (sign_completed) — best-effort',
+    );
+  }
+
+  // 6i. Socket emit (Phase 11 — best-effort, user online nhận ngay)
   emitSignCompleted(txn.staff_id, {
     transaction_id: signTransactionId,
     provider_code: txn.provider_code,
@@ -460,6 +516,7 @@ async function processJob(job: Job<PollSignStatusJob>): Promise<void> {
     completed_at: new Date().toISOString(),
   });
 
+  // 6j. Bell notification UNIT-WIDE legacy (Phase 11 — edoc.notice) — coexist 2 kênh.
   try {
     await noticeRepository.createForStaff(
       txn.staff_id,
@@ -468,7 +525,7 @@ async function processJob(job: Job<PollSignStatusJob>): Promise<void> {
       'SIGN_RESULT',
     );
   } catch (err) {
-    logger.warn({ err, txnId: signTransactionId }, 'Failed to create completion notification');
+    logger.warn({ err, txnId: signTransactionId }, 'Failed to create completion notification (legacy)');
   }
 
   logger.info({ ...ctx, signedKey }, 'Sign completed successfully');
