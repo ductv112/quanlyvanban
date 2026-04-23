@@ -144,7 +144,7 @@ Mỗi REQ-ID v2.0 map tới đúng 1 phase (8-14). Tổng 42/42 — 100% coverag
 | UX-08 | Phase 13 — Modal ký số + Root CA UX | Complete |
 | UX-09 | Phase 13 — Modal ký số + Root CA UX | Complete |
 | UX-10 | Phase 13 — Modal ký số + Root CA UX | Complete |
-| UX-11 | Phase 13 — Modal ký số + Root CA UX | Pending |
+| UX-11 | Phase 13 — Modal ký số + Root CA UX | Complete |
 | UX-12 | Phase 12 — Menu Ký số + Danh sách UI | Pending |
 | UX-13 | Phase 10 — User config page | Complete |
 | ASYNC-01 | Phase 11 — Sign flow + async worker | Complete |
@@ -159,7 +159,7 @@ Mỗi REQ-ID v2.0 map tới đúng 1 phase (8-14). Tổng 42/42 — 100% coverag
 | MIG-04 | Phase 8 — Schema foundation + PDF signing layer | Complete |
 | MIG-05 | Phase 11 — Sign flow + async worker | Complete |
 | DEP-01 | Phase 14 — Deployment + HDSD + verification | Pending |
-| DEP-02 | Phase 13 — Modal ký số + Root CA UX | Pending |
+| DEP-02 | Phase 13 — Modal ký số + Root CA UX | Complete |
 | DEP-03 | Phase 14 — Deployment + HDSD + verification | Pending |
 
 ### Phase load
