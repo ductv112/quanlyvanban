@@ -184,7 +184,16 @@ BEGIN
     RAISE EXCEPTION 'app.signing_secret_key chưa set hoặc quá ngắn (cần >= 16 ký tự). Chạy: SET app.signing_secret_key=''<key>'' trước khi \i file này';
   END IF;
 
-  -- SmartCA VNPT (active=TRUE với credentials dev từ source cũ .NET)
+  -- ⚠️ LƯU Ý: Nếu DB đã có row provider từ seed cũ (is_active đang bật + dev creds),
+  -- ON CONFLICT DO NOTHING sẽ KHÔNG overwrite. Chạy UPDATE thủ công để reset:
+  --   UPDATE public.signing_provider_config
+  --      SET is_active=FALSE, client_id='', client_secret=pgp_sym_encrypt('', v_key)
+  --    WHERE provider_code='SMARTCA_VNPT';
+  -- Hoặc chạy reset-db-windows.ps1 để reset fresh DB.
+
+  -- SmartCA VNPT (production-safe: is_active=FALSE + empty credentials)
+  -- Admin PHẢI login /ky-so/cau-hinh và nhập real credentials trước khi user ký được.
+  -- Xem: deploy/README.md section "Development setup sau reset-db".
   INSERT INTO public.signing_provider_config
     (provider_code, provider_name, base_url, client_id, client_secret,
      profile_id, extra_config, is_active, created_by, updated_by)
@@ -192,16 +201,17 @@ BEGIN
     'SMARTCA_VNPT',
     'SmartCA VNPT',
     'https://gwsca.vnpt.vn',
-    '4d00-638392811079166938.apps.smartcaapi.com',
-    pgp_sym_encrypt('ZjA4MjE4NDg-MjU3Mi00ZDAw', v_key),
+    '',
+    pgp_sym_encrypt('', v_key),
     NULL,
     '{}'::jsonb,
-    TRUE,
+    FALSE,
     1, 1
   )
   ON CONFLICT (provider_code) DO NOTHING;
 
-  -- MySign Viettel (active=FALSE, placeholder chưa cấu hình)
+  -- MySign Viettel (production-safe: is_active=FALSE + placeholder credentials)
+  -- Admin PHẢI login /ky-so/cau-hinh và nhập real credentials + profile_id từ Viettel.
   INSERT INTO public.signing_provider_config
     (provider_code, provider_name, base_url, client_id, client_secret,
      profile_id, extra_config, is_active, created_by, updated_by)
@@ -218,5 +228,5 @@ BEGIN
   )
   ON CONFLICT (provider_code) DO NOTHING;
 
-  RAISE NOTICE 'seed/001_required_data.sql: Master data OK (admin/Admin@123, 2 providers seeded)';
+  RAISE NOTICE 'seed/001_required_data.sql: Master data OK (admin/Admin@123, 2 providers disabled — admin must configure via /ky-so/cau-hinh)';
 END $$;
