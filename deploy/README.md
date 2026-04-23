@@ -169,6 +169,27 @@ Client → IIS (:80)
 - **Password:** Admin@123
 - Đổi mật khẩu ngay sau khi đăng nhập lần đầu
 
+## Development setup sau reset-db
+
+Sau khi chạy `.\reset-db-windows.ps1`, cả 2 provider ký số ở trạng thái **disabled** (`is_active=FALSE` + empty credentials) để đảm bảo production-safe. Admin bắt buộc phải cấu hình thủ công trước khi người dùng có thể ký số.
+
+**Quy trình config provider (dev/test/production):**
+
+1. Đăng nhập admin: username `admin`, password `Admin@123` (đổi mật khẩu ngay sau lần đăng nhập đầu tiên)
+2. Vào menu **Ký số → Cấu hình ký số hệ thống** (URL: `/ky-so/cau-hinh`)
+3. Chọn provider cần enable:
+   - **SmartCA VNPT**: nhập `base_url`, `client_id`, `client_secret`
+   - **MySign Viettel**: nhập `base_url`, `client_id`, `client_secret`, `profile_id`
+4. Credentials dev/test: đọc từ file nội bộ `.env.dev-creds` (KHÔNG commit vào git). Credentials production: yêu cầu khách hàng cấp từ VNPT/Viettel.
+5. Bấm **Test connection** → chỉ lưu được nếu provider trả response OK
+6. Bật toggle **Kích hoạt** → Lưu
+
+**Lưu ý:**
+
+- Chỉ 1 provider active tại 1 thời điểm (partial unique index enforce). Khi bật provider A → provider B tự động bị disabled.
+- Nếu đổi `SIGNING_SECRET_KEY` sau config, credentials cũ không decrypt được — phải login và nhập lại.
+- KHÔNG hardcode credentials vào seed file hay commit `.env.dev-creds` vào git.
+
 ## Tham khảo
 
 - `.planning/phases/11.1-db-consolidation-seed-strategy/` — chi tiết Phase 11.1 (schema consolidation + seed strategy)
