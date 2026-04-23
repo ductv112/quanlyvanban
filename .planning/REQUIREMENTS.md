@@ -140,9 +140,9 @@ Mỗi REQ-ID v2.0 map tới đúng 1 phase (8-14). Tổng 42/42 — 100% coverag
 | UX-04 | Phase 12 — Menu Ký số + Danh sách UI | Complete |
 | UX-05 | Phase 12 — Menu Ký số + Danh sách UI | Complete |
 | UX-06 | Phase 12 — Menu Ký số + Danh sách UI | Complete |
-| UX-07 | Phase 13 — Modal ký số + Root CA UX | Pending |
-| UX-08 | Phase 13 — Modal ký số + Root CA UX | Pending |
-| UX-09 | Phase 13 — Modal ký số + Root CA UX | Pending |
+| UX-07 | Phase 13 — Modal ký số + Root CA UX | Complete |
+| UX-08 | Phase 13 — Modal ký số + Root CA UX | Complete |
+| UX-09 | Phase 13 — Modal ký số + Root CA UX | Complete |
 | UX-10 | Phase 13 — Modal ký số + Root CA UX | Pending |
 | UX-11 | Phase 13 — Modal ký số + Root CA UX | Pending |
 | UX-12 | Phase 12 — Menu Ký số + Danh sách UI | Pending |

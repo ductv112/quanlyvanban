@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 13-01-notification-backend-infrastructure-PLAN.md
-last_updated: "2026-04-23T06:23:53.117Z"
+stopped_at: Completed 13-03-signmodal-countdown-polish-PLAN.md
+last_updated: "2026-04-23T06:36:10.293Z"
 last_activity: 2026-04-23
 progress:
   total_phases: 14
   completed_phases: 12
   total_plans: 62
-  completed_plans: 57
-  percent: 92
+  completed_plans: 58
+  percent: 94
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-21 — Milestone v2.0 started)
 ## Current Position
 
 Phase: 13 (modal-ky-so-robust-root-ca-ux) — EXECUTING
-Plan: 2 of 5
+Plan: 3 of 5
 Next: Plan 11.1-03 — move 18 file migrations cũ → archive/, update deploy scripts + dev onboarding README dùng schema/ + seed/ flow
 Status: Ready to execute
 Last activity: 2026-04-23
@@ -78,6 +78,7 @@ Progress: [██████████] 98% (53/54 plans complete — 11 phas
 | Phase 12 P01 | 4min | 2 tasks | 2 files |
 | Phase 12 P02 | 15min | 2 tasks | 1 files |
 | Phase 13 P01 | 9min | 3 tasks | 5 files |
+| Phase 13 P03 | 6min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -174,6 +175,10 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase 13]: [Phase 13-01]: Coexist 2 bell channels — bellNotificationRepository.create (new personal) + noticeRepository.createForStaff (legacy unit-wide) — defer legacy removal to Phase 14 after FE Plan 13-02 fully migrate
 - [Phase 13]: [Phase 13-01]: Schema master APPEND 180 lines cho public.notifications + 5 SPs idempotent — targeted DROP FUNCTION với exact signature + CASCADE; tránh SAI pattern LIKE 'prefix%' đã gây bug Phase 11.1
 - [Phase 13]: [Phase 13-01]: IDOR mitigation via SP owner check — fn_notification_mark_read(p_id, p_staff_id) có WHERE id=$1 AND staff_id=$2; route trả 404 cho cả not-found + owner-mismatch không leak existence (T-13-02/03/04)
+- [Phase 13]: [Plan 13-03]: COUNTDOWN_MS=180_000 thay MAX_MODAL_LIFETIME_MS=240_000 — khớp BE expires_at, FE local timer authoritative cho UX countdown (không clock sync với BE)
+- [Phase 13]: [Plan 13-03]: expiredFired useRef guard áp dụng cả countdown tick CỘNG onFailed socket — BE emit sign_failed status=expired không setStatus lần 2 nếu FE timer đã fire
+- [Phase 13]: [Plan 13-03]: openSign functional setState guard (if prev.open return prev) — stale closure safe, 3 lớp spam-click defense (caller disabled + initiating + hook guard)
+- [Phase 13]: [Plan 13-03]: useMemo deps 2 column defs (needSignColumns, failedColumns) thêm signModalOpen — React rebuild khi modal mở/đóng để disabled prop update đúng
 
 ### Pending Todos
 
@@ -205,6 +210,6 @@ v1.0 hoàn thành với 3 quick tasks (HDSD Compliance sprint cuối):
 
 ## Session Continuity
 
-Last session: 2026-04-23T06:23:53.100Z
-Stopped at: Completed 13-01-notification-backend-infrastructure-PLAN.md
+Last session: 2026-04-23T06:36:10.282Z
+Stopped at: Completed 13-03-signmodal-countdown-polish-PLAN.md
 Resume: `/gsd-execute-phase 11.1` để tiếp tục Plan 11.1-02 (seed required data + rich demo data)
