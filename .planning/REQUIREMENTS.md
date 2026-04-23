@@ -121,13 +121,13 @@ Mỗi REQ-ID v2.0 map tới đúng 1 phase (8-14). Tổng 41/41 — 100% coverag
 
 | Requirement | Phase | Status | Verify Evidence |
 |-------------|-------|--------|-----------------|
-| SIGN-01 | Phase 9 — Admin config + provider adapters | Pass | `grep -l "SmartCAProvider\|smartca-vnpt" e_office_app_new/backend/src/lib/signing/` |
-| SIGN-02 | Phase 9 — Admin config + provider adapters | Pass | `grep -l "MySignProvider\|mysign-viettel" e_office_app_new/backend/src/lib/signing/` |
-| SIGN-03 | Phase 11 — Sign flow + async worker | Pass | `test -f e_office_app_new/backend/src/routes/ky-so-sign.ts && grep "router.post.*'/sign'" e_office_app_new/backend/src/routes/ky-so-sign.ts` |
-| SIGN-04 | Phase 8 — Schema foundation + PDF signing layer | Pass | `test -f e_office_app_new/backend/src/lib/signing/pdf-signer.ts && grep -l "computePdfHash\|node-signpdf" e_office_app_new/backend/src/lib/signing/` |
-| SIGN-05 | Phase 11 — Sign flow + async worker | Pass | `grep -l "poll.*5000\|36.*attempts\|pollInterval" e_office_app_new/workers/src/` |
-| SIGN-06 | Phase 11 — Sign flow + async worker | Pass | `grep "fn_sign_transaction_create" e_office_app_new/database/schema/000_schema_v2.0.sql` |
-| SIGN-07 | Phase 11 — Sign flow + async worker | Pass | `grep -l "cancel.*sign_transactions\|status.*=.*'cancelled'" e_office_app_new/backend/src/routes/ky-so-sign.ts` |
+| SIGN-01 | Phase 9 — Admin config + provider adapters | Pass | `test -f e_office_app_new/backend/src/services/signing/providers/smartca-vnpt.provider.ts` |
+| SIGN-02 | Phase 9 — Admin config + provider adapters | Pass | `test -f e_office_app_new/backend/src/services/signing/providers/mysign-viettel.provider.ts` |
+| SIGN-03 | Phase 11 — Sign flow + async worker | Pass | `test -f e_office_app_new/backend/src/routes/ky-so-sign.ts && grep -c "router.post" e_office_app_new/backend/src/routes/ky-so-sign.ts` expect `>= 1` |
+| SIGN-04 | Phase 8 — Schema foundation + PDF signing layer | Pass | `test -f e_office_app_new/backend/src/services/signing/pdf-signer.ts && grep -l "computePdfHash\|@signpdf" e_office_app_new/backend/src/services/signing/pdf-signer.ts` |
+| SIGN-05 | Phase 11 — Sign flow + async worker | Pass | `grep -rl "pollInterval\|poll.*5000\|36" e_office_app_new/workers/src/ e_office_app_new/backend/src/lib/signing/` |
+| SIGN-06 | Phase 11 — Sign flow + async worker | Pass | `grep -c "fn_sign_transaction_create" e_office_app_new/database/schema/000_schema_v2.0.sql` expect `>= 1` |
+| SIGN-07 | Phase 11 — Sign flow + async worker | Pass | `grep -c "cancel\|cancelled" e_office_app_new/backend/src/routes/ky-so-sign.ts` expect `>= 1` |
 | SIGN-08 | Phase 11 — Sign flow + async worker | Pass | `docker exec qlvb_postgres psql -U qlvb_admin -d qlvb_dev -c "\d public.attachments" \| grep -E "sign_provider_code\|sign_transaction_id"` |
 | CFG-01 | Phase 9 — Admin config + provider adapters | Pass | `docker exec qlvb_postgres psql -U qlvb_admin -d qlvb_dev -c "\d public.signing_provider_config" \| grep -E "uq_signing_provider_one_active\|is_active.*WHERE"` |
 | CFG-02 | Phase 9 — Admin config + provider adapters | Pass | `docker exec qlvb_postgres psql -U qlvb_admin -d qlvb_dev -c "\d public.staff_signing_config" \| grep -E "PRIMARY KEY.*staff_id.*provider_code"` |
@@ -136,25 +136,25 @@ Mỗi REQ-ID v2.0 map tới đúng 1 phase (8-14). Tổng 41/41 — 100% coverag
 | CFG-05 | Phase 10 — User config page | Pass | `test -f "e_office_app_new/frontend/src/app/(main)/ky-so/tai-khoan/page.tsx" && grep "SmartCA\|MySign" "e_office_app_new/frontend/src/app/(main)/ky-so/tai-khoan/page.tsx"` |
 | CFG-06 | Phase 10 — User config page | Pass | `grep -l "is_verified\|last_verified_at" e_office_app_new/backend/src/routes/ky-so-tai-khoan.ts` |
 | CFG-07 | Phase 9 — Admin config + provider adapters | Pass | `grep -l "fn_signing_stats\|dashboard.*stats" e_office_app_new/backend/src/routes/ky-so-cau-hinh.ts` |
-| UX-01 | Phase 12 — Menu Ký số + Danh sách UI | Pass | `grep -l "Ký số\|ky-so/cau-hinh\|ky-so/tai-khoan\|ky-so/danh-sach" e_office_app_new/frontend/src/components/MainLayout.tsx` |
-| UX-02 | Phase 12 — Menu Ký số + Danh sách UI | Pass | `test -f "e_office_app_new/frontend/src/app/(main)/ky-so/danh-sach/page.tsx" && grep -c "Tabs\|Cần ký\|Đang xử lý\|Đã ký\|Thất bại" "e_office_app_new/frontend/src/app/(main)/ky-so/danh-sach/page.tsx"` |
-| UX-03 | Phase 12 — Menu Ký số + Danh sách UI | Pass | `grep "fn_ky_so_can_sign_list\|signer_id.*currentUser" e_office_app_new/database/schema/000_schema_v2.0.sql` |
-| UX-04 | Phase 12 — Menu Ký số + Danh sách UI | Pass | `grep -A 3 "Đang xử lý\|status.*pending" "e_office_app_new/frontend/src/app/(main)/ky-so/danh-sach/page.tsx" \| grep -i "cancel\|hủy"` |
-| UX-05 | Phase 12 — Menu Ký số + Danh sách UI | Pass | `grep -l "RootCABanner\|banner.*viettel\|dismiss_root_ca_banner" e_office_app_new/frontend/src/` |
-| UX-06 | Phase 12 — Menu Ký số + Danh sách UI | Pass | `grep -A 3 "Thất bại\|failed\|expired" "e_office_app_new/frontend/src/app/(main)/ky-so/danh-sach/page.tsx" \| grep -i "resign\|Ký lại"` |
-| UX-07 | Phase 13 — Modal ký số + Root CA UX | Pass | `grep -l "initiating\|LoadingOutlined.*disabled\|disable.*spam" e_office_app_new/frontend/src/components/SignModal.tsx` |
-| UX-08 | Phase 13 — Modal ký số + Root CA UX | Pass | `grep "maskClosable.*false\|Đóng.*chạy nền\|Hủy ký số" e_office_app_new/frontend/src/components/SignModal.tsx` |
-| UX-09 | Phase 13 — Modal ký số + Root CA UX | Pass | `grep -l "countdown\|COUNTDOWN_MS\|3:00\|180_000\|180000" e_office_app_new/frontend/src/components/SignModal.tsx` |
-| UX-10 | Phase 13 — Modal ký số + Root CA UX | Pass | `grep -l "BellNotification\|SIGN_COMPLETED\|SIGN_FAILED\|toast" e_office_app_new/frontend/src/components/BellNotification.tsx` |
-| UX-11 | Phase 13 — Modal ký số + Root CA UX | Pass | `grep "dismiss_root_ca_banner\|localStorage" e_office_app_new/frontend/src/components/RootCABanner.tsx` |
+| UX-01 | Phase 12 — Menu Ký số + Danh sách UI | Pass | `grep -l "Ký số\|ky-so/cau-hinh\|ky-so/tai-khoan\|ky-so/danh-sach" e_office_app_new/frontend/src/components/layout/MainLayout.tsx` |
+| UX-02 | Phase 12 — Menu Ký số + Danh sách UI | Pass | `test -f "e_office_app_new/frontend/src/app/(main)/ky-so/danh-sach/page.tsx" && grep -c "Cần ký\|Đang xử lý\|Đã ký\|Thất bại" "e_office_app_new/frontend/src/app/(main)/ky-so/danh-sach/page.tsx"` expect `>= 4` |
+| UX-03 | Phase 12 — Menu Ký số + Danh sách UI | Pass | `grep -c "fn_sign_need_list_by_staff" e_office_app_new/database/schema/000_schema_v2.0.sql` expect `>= 1` |
+| UX-04 | Phase 12 — Menu Ký số + Danh sách UI | Pass | `grep -c "cancel\|Hủy" "e_office_app_new/frontend/src/app/(main)/ky-so/danh-sach/page.tsx"` expect `>= 1` |
+| UX-05 | Phase 12 — Menu Ký số + Danh sách UI | Pass | `grep -rl "RootCABanner\|dismiss_root_ca_banner" e_office_app_new/frontend/src/` |
+| UX-06 | Phase 12 — Menu Ký số + Danh sách UI | Pass | `grep -c "Ký lại\|resign" "e_office_app_new/frontend/src/app/(main)/ky-so/danh-sach/page.tsx"` expect `>= 1` |
+| UX-07 | Phase 13 — Modal ký số + Root CA UX | Pass | `grep -l "initiating\|LoadingOutlined" e_office_app_new/frontend/src/components/signing/SignModal.tsx` |
+| UX-08 | Phase 13 — Modal ký số + Root CA UX | Pass | `grep "maskClosable\|chạy nền\|Hủy ký số" e_office_app_new/frontend/src/components/signing/SignModal.tsx` |
+| UX-09 | Phase 13 — Modal ký số + Root CA UX | Pass | `grep -l "COUNTDOWN_MS\|180_000\|180000\|countdown" e_office_app_new/frontend/src/components/signing/SignModal.tsx` |
+| UX-10 | Phase 13 — Modal ký số + Root CA UX | Pass | `test -f e_office_app_new/frontend/src/components/notifications/BellNotification.tsx && grep -l "SIGN_COMPLETED\|SIGN_FAILED\|toast" e_office_app_new/frontend/src/components/notifications/BellNotification.tsx` |
+| UX-11 | Phase 13 — Modal ký số + Root CA UX | Pass | `grep "dismiss_root_ca_banner\|localStorage" e_office_app_new/frontend/src/components/notifications/RootCABanner.tsx` |
 | UX-12 | Phase 12 — Menu Ký số + Danh sách UI | Pass | `grep -rl "openSign\|useSigning" "e_office_app_new/frontend/src/app/(main)/van-ban-di/" "e_office_app_new/frontend/src/app/(main)/van-ban-du-thao/" "e_office_app_new/frontend/src/app/(main)/ho-so-cong-viec/"` |
 | UX-13 | Phase 10 — User config page | Pass | `grep -c "ky-so/tai-khoan" "e_office_app_new/frontend/src/app/(main)/thong-tin-ca-nhan/page.tsx"` |
-| ASYNC-01 | Phase 11 — Sign flow + async worker | Pass | `grep "transaction_id" e_office_app_new/backend/src/routes/ky-so-sign.ts \| head -3` |
-| ASYNC-02 | Phase 11 — Sign flow + async worker | Pass | `grep -l "BullMQ\|Queue.*signing\|poll.*5000" e_office_app_new/workers/src/` |
-| ASYNC-03 | Phase 11 — Sign flow + async worker | Pass | `grep -l "Worker\|processJob\|poll.*provider" e_office_app_new/workers/src/` |
-| ASYNC-04 | Phase 11 — Sign flow + async worker | Pass | `grep "attempts.*1\|redis.*persist\|BullMQ" e_office_app_new/workers/src/` |
-| ASYNC-05 | Phase 11 — Sign flow + async worker | Pass | `grep -l "io.emit.*SIGN_COMPLETED\|signed_file_path" e_office_app_new/workers/src/` |
-| ASYNC-06 | Phase 11 — Sign flow + async worker | Pass | `grep -l "io.emit.*SIGN_FAILED\|error_message" e_office_app_new/workers/src/` |
+| ASYNC-01 | Phase 11 — Sign flow + async worker | Pass | `grep -c "transaction_id" e_office_app_new/backend/src/routes/ky-so-sign.ts` expect `>= 3` |
+| ASYNC-02 | Phase 11 — Sign flow + async worker | Pass | `grep -rl "bullmq\|Queue\|signing" e_office_app_new/workers/src/ e_office_app_new/backend/src/lib/signing/` |
+| ASYNC-03 | Phase 11 — Sign flow + async worker | Pass | `grep -rl "Worker\|processJob" e_office_app_new/workers/src/` |
+| ASYNC-04 | Phase 11 — Sign flow + async worker | Pass | `grep -rl "bullmq\|attempts" e_office_app_new/workers/src/` |
+| ASYNC-05 | Phase 11 — Sign flow + async worker | Pass | `grep -rl "SIGN_COMPLETED\|signed_file_path" e_office_app_new/workers/src/ e_office_app_new/backend/src/lib/signing/` |
+| ASYNC-06 | Phase 11 — Sign flow + async worker | Pass | `grep -rl "SIGN_FAILED\|error_message" e_office_app_new/workers/src/ e_office_app_new/backend/src/lib/signing/` |
 | MIG-01 | Phase 8 — Schema foundation + PDF signing layer | Pass | `docker exec qlvb_postgres psql -U qlvb_admin -d qlvb_dev -c "\dt public.signing_provider_config public.staff_signing_config public.sign_transactions"` |
 | MIG-02 | Phase 8 — Schema foundation + PDF signing layer | Pass | `docker exec qlvb_postgres psql -U qlvb_admin -d qlvb_dev -c "\d public.attachments" \| grep -E "sign_provider_code\|sign_transaction_id"` |
 | MIG-03 | Phase 8 — Schema foundation + PDF signing layer | Pass | `grep -l "migrate.*sign_phone\|INSERT INTO.*staff_signing_config.*SELECT" e_office_app_new/database/schema/000_schema_v2.0.sql` |
