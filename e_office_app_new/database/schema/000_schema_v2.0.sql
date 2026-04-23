@@ -25341,3 +25341,183 @@ $$;
 -- (đã được cập nhật trong migration 030, chỉ ghi chú)
 -- ==========================================
 
+-- ============================================================================
+-- SECTION: Phase 13 — Bell Notification Infrastructure (added 2026-04-22)
+-- Mục đích: persistent bell notification cho sign_completed + sign_failed events
+-- Scope hiện tại: CHỈ 2 type (sign_completed, sign_failed) — D-05 Phase 13
+-- ============================================================================
+
+-- --- Table ---
+CREATE TABLE IF NOT EXISTS public.notifications (
+  id            BIGSERIAL PRIMARY KEY,
+  staff_id      INTEGER NOT NULL REFERENCES public.staff(id) ON DELETE CASCADE,
+  type          VARCHAR(50) NOT NULL,
+  title         VARCHAR(200) NOT NULL,
+  message       TEXT,
+  link          VARCHAR(500),
+  metadata      JSONB,
+  is_read       BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  read_at       TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_notifications_staff_unread
+  ON public.notifications(staff_id, is_read, created_at DESC);
+
+-- --- Targeted DROP (chính xác tên + args, KHÔNG dùng LIKE broad) ---
+DROP FUNCTION IF EXISTS public.fn_notification_create(INTEGER, VARCHAR, VARCHAR, TEXT, VARCHAR, JSONB) CASCADE;
+DROP FUNCTION IF EXISTS public.fn_notification_list(INTEGER, INTEGER, INTEGER) CASCADE;
+DROP FUNCTION IF EXISTS public.fn_notification_unread_count(INTEGER) CASCADE;
+DROP FUNCTION IF EXISTS public.fn_notification_mark_read(BIGINT, INTEGER) CASCADE;
+DROP FUNCTION IF EXISTS public.fn_notification_mark_all_read(INTEGER) CASCADE;
+
+-- --- SP 1: Create notification ---
+CREATE OR REPLACE FUNCTION public.fn_notification_create(
+  p_staff_id    INTEGER,
+  p_type        VARCHAR,
+  p_title       VARCHAR,
+  p_message     TEXT,
+  p_link        VARCHAR,
+  p_metadata    JSONB
+) RETURNS TABLE (
+  success BOOLEAN,
+  message TEXT,
+  id      BIGINT
+) LANGUAGE plpgsql AS $$
+DECLARE
+  v_id BIGINT;
+BEGIN
+  IF p_staff_id IS NULL OR NOT EXISTS (SELECT 1 FROM public.staff s WHERE s.id = p_staff_id) THEN
+    RETURN QUERY SELECT FALSE, 'Nhân viên không tồn tại'::TEXT, 0::BIGINT;
+    RETURN;
+  END IF;
+  IF p_type IS NULL OR length(trim(p_type)) = 0 THEN
+    RETURN QUERY SELECT FALSE, 'Loại thông báo không được để trống'::TEXT, 0::BIGINT;
+    RETURN;
+  END IF;
+  IF p_title IS NULL OR length(trim(p_title)) = 0 THEN
+    RETURN QUERY SELECT FALSE, 'Tiêu đề không được để trống'::TEXT, 0::BIGINT;
+    RETURN;
+  END IF;
+
+  INSERT INTO public.notifications(staff_id, type, title, message, link, metadata)
+  VALUES (p_staff_id, p_type, p_title, p_message, p_link, p_metadata)
+  RETURNING public.notifications.id INTO v_id;
+
+  RETURN QUERY SELECT TRUE, 'Đã tạo thông báo'::TEXT, v_id;
+END;
+$$;
+
+-- --- SP 2: List notifications paginated (newest first) ---
+-- NOTE: "type" là reserved word trong RETURNS TABLE → phải QUOTE bằng "" (checklist lỗi #4)
+CREATE OR REPLACE FUNCTION public.fn_notification_list(
+  p_staff_id  INTEGER,
+  p_limit     INTEGER,
+  p_offset    INTEGER
+) RETURNS TABLE (
+  id          BIGINT,
+  staff_id    INTEGER,
+  "type"      VARCHAR,
+  title       VARCHAR,
+  message     TEXT,
+  link        VARCHAR,
+  metadata    JSONB,
+  is_read     BOOLEAN,
+  created_at  TIMESTAMPTZ,
+  read_at     TIMESTAMPTZ,
+  total_count BIGINT
+) LANGUAGE plpgsql AS $$
+DECLARE
+  v_limit  INTEGER := COALESCE(p_limit, 10);
+  v_offset INTEGER := COALESCE(p_offset, 0);
+  v_total  BIGINT;
+BEGIN
+  IF v_limit > 100 THEN v_limit := 100; END IF;
+  IF v_limit < 1 THEN v_limit := 10; END IF;
+  IF v_offset < 0 THEN v_offset := 0; END IF;
+
+  SELECT COUNT(*) INTO v_total FROM public.notifications n WHERE n.staff_id = p_staff_id;
+
+  RETURN QUERY
+  SELECT
+    n.id,
+    n.staff_id,
+    n.type,
+    n.title,
+    n.message,
+    n.link,
+    n.metadata,
+    n.is_read,
+    n.created_at,
+    n.read_at,
+    v_total AS total_count
+  FROM public.notifications n
+  WHERE n.staff_id = p_staff_id
+  ORDER BY n.created_at DESC, n.id DESC
+  LIMIT v_limit OFFSET v_offset;
+END;
+$$;
+
+-- --- SP 3: Unread count ---
+CREATE OR REPLACE FUNCTION public.fn_notification_unread_count(
+  p_staff_id INTEGER
+) RETURNS TABLE (count BIGINT) LANGUAGE plpgsql AS $$
+BEGIN
+  RETURN QUERY
+  SELECT COUNT(*)::BIGINT FROM public.notifications n
+  WHERE n.staff_id = p_staff_id AND n.is_read = FALSE;
+END;
+$$;
+
+-- --- SP 4: Mark one read (owner check qua staff_id) ---
+CREATE OR REPLACE FUNCTION public.fn_notification_mark_read(
+  p_id       BIGINT,
+  p_staff_id INTEGER
+) RETURNS TABLE (
+  success BOOLEAN,
+  message TEXT
+) LANGUAGE plpgsql AS $$
+DECLARE
+  v_rows INTEGER;
+BEGIN
+  UPDATE public.notifications
+  SET is_read = TRUE, read_at = NOW()
+  WHERE id = p_id AND staff_id = p_staff_id AND is_read = FALSE;
+  GET DIAGNOSTICS v_rows = ROW_COUNT;
+
+  IF v_rows = 0 THEN
+    -- Có thể record không tồn tại, không thuộc staff, hoặc đã đọc
+    IF NOT EXISTS (SELECT 1 FROM public.notifications WHERE id = p_id AND staff_id = p_staff_id) THEN
+      RETURN QUERY SELECT FALSE, 'Thông báo không tồn tại hoặc không thuộc về bạn'::TEXT;
+      RETURN;
+    END IF;
+    RETURN QUERY SELECT TRUE, 'Thông báo đã được đánh dấu đã đọc trước đó'::TEXT;
+    RETURN;
+  END IF;
+
+  RETURN QUERY SELECT TRUE, 'Đã đánh dấu đã đọc'::TEXT;
+END;
+$$;
+
+-- --- SP 5: Mark all read ---
+CREATE OR REPLACE FUNCTION public.fn_notification_mark_all_read(
+  p_staff_id INTEGER
+) RETURNS TABLE (
+  success       BOOLEAN,
+  message       TEXT,
+  updated_count INTEGER
+) LANGUAGE plpgsql AS $$
+DECLARE
+  v_rows INTEGER;
+BEGIN
+  UPDATE public.notifications
+  SET is_read = TRUE, read_at = NOW()
+  WHERE staff_id = p_staff_id AND is_read = FALSE;
+  GET DIAGNOSTICS v_rows = ROW_COUNT;
+
+  RETURN QUERY SELECT TRUE, 'Đã đánh dấu tất cả đã đọc'::TEXT, v_rows;
+END;
+$$;
+
+-- End of Phase 13 Notification section
+
