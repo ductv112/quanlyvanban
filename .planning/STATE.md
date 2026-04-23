@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 13 context gathered
-last_updated: "2026-04-22T10:49:11.148Z"
-last_activity: 2026-04-22 -- Phase 13 planning complete
+stopped_at: Completed 13-01-notification-backend-infrastructure-PLAN.md
+last_updated: "2026-04-23T06:23:53.117Z"
+last_activity: 2026-04-23
 progress:
   total_phases: 14
   completed_phases: 12
   total_plans: 62
-  completed_plans: 56
-  percent: 90
+  completed_plans: 57
+  percent: 92
 ---
 
 # Project State
@@ -21,15 +21,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-21 — Milestone v2.0 started)
 
 **Core value:** Luồng văn bản đến → xử lý → văn bản đi phải hoạt động đúng nghiệp vụ cơ quan nhà nước
-**Current focus:** Phase 12 — Menu Ký số + Danh sách 4 tab UI
+**Current focus:** Phase 13 — modal-ky-so-robust-root-ca-ux
 
 ## Current Position
 
-Phase: 12
-Plan: Not started
+Phase: 13 (modal-ky-so-robust-root-ca-ux) — EXECUTING
+Plan: 2 of 5
 Next: Plan 11.1-03 — move 18 file migrations cũ → archive/, update deploy scripts + dev onboarding README dùng schema/ + seed/ flow
 Status: Ready to execute
-Last activity: 2026-04-22 -- Phase 13 planning complete
+Last activity: 2026-04-23
 
 Progress: [██████████] 98% (53/54 plans complete — 11 phases Complete + Phase 11.1 2/3)
 
@@ -77,6 +77,7 @@ Progress: [██████████] 98% (53/54 plans complete — 11 phas
 | Phase 11.1 P02 | 8min | 3 tasks | 2 files |
 | Phase 12 P01 | 4min | 2 tasks | 2 files |
 | Phase 12 P02 | 15min | 2 tasks | 1 files |
+| Phase 13 P01 | 9min | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -168,6 +169,11 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase 12]: [Plan 12-02]: Socket refresh-all pattern — SIGN_COMPLETED/FAILED fire → refetch cả counts + list hiện tại, bất kể transaction_id có trong list hay không (counts có thể đổi từ tab khác)
 - [Phase 12]: [Plan 12-02]: File đơn 806 dòng thay tách component — D-14 cho phép; 4 useMemo columns + 3 useCallback actions + inline helpers, 1 điểm maintain dễ trace
 - [Phase 12]: [Plan 12-02]: parsePositiveInt + parsePageSize guard URL tampering (T-12-04/07) — reject -1/NaN/9999, cap 100 khớp BE SP; defense-in-depth
+- [Phase 13]: [Phase 13-01]: Rename plan's notificationRepository → bellNotificationRepository — avoid collision with existing notification.repository.ts (multichannel edoc.fn_notification_log_*); 2 files coexist with distinct responsibilities
+- [Phase 13]: [Phase 13-01]: Worker persist bell notification TRƯỚC emit Socket — offline user safe (DB source of truth, socket emit best-effort realtime for online user)
+- [Phase 13]: [Phase 13-01]: Coexist 2 bell channels — bellNotificationRepository.create (new personal) + noticeRepository.createForStaff (legacy unit-wide) — defer legacy removal to Phase 14 after FE Plan 13-02 fully migrate
+- [Phase 13]: [Phase 13-01]: Schema master APPEND 180 lines cho public.notifications + 5 SPs idempotent — targeted DROP FUNCTION với exact signature + CASCADE; tránh SAI pattern LIKE 'prefix%' đã gây bug Phase 11.1
+- [Phase 13]: [Phase 13-01]: IDOR mitigation via SP owner check — fn_notification_mark_read(p_id, p_staff_id) có WHERE id=$1 AND staff_id=$2; route trả 404 cho cả not-found + owner-mismatch không leak existence (T-13-02/03/04)
 
 ### Pending Todos
 
@@ -199,6 +205,6 @@ v1.0 hoàn thành với 3 quick tasks (HDSD Compliance sprint cuối):
 
 ## Session Continuity
 
-Last session: 2026-04-22T10:21:51.021Z
-Stopped at: Phase 13 context gathered
+Last session: 2026-04-23T06:23:53.100Z
+Stopped at: Completed 13-01-notification-backend-infrastructure-PLAN.md
 Resume: `/gsd-execute-phase 11.1` để tiếp tục Plan 11.1-02 (seed required data + rich demo data)
