@@ -1,19 +1,23 @@
 # Deploy e-Office Production
 
 ## Yêu cầu server
-- **Linux**: Ubuntu 22.04+ hoặc Debian 12+ (dùng script `.sh`)
-- **Windows**: Windows Server 2022 + IIS (dùng script `.ps1`)
+
+- **Windows Server 2022** + **IIS** (URL Rewrite + Application Request Routing)
 - RAM tối thiểu: 4GB (khuyến nghị 8GB)
 - Disk: 40GB+
-- Port 80 mở cho HTTP
+- Port 80 mở cho HTTP (443 nếu bật HTTPS)
+- Quyền Administrator để chạy PowerShell scripts
 
-## Chọn scripts theo OS
+> **Lưu ý:** Dự án hiện CHỈ hỗ trợ Windows Server. Hệ điều hành khác không được support.
 
-| Task | Linux | Windows |
-|---|---|---|
-| Deploy lần đầu | `deploy.sh` | `deploy-windows.ps1` |
-| Update code | `update.sh` | `update-windows.ps1` |
-| Reset DB (test) | `reset-db.sh` | `reset-db-windows.ps1` |
+## Scripts có sẵn
+
+| Task | Script |
+|------|--------|
+| Deploy lần đầu | `deploy-windows.ps1` |
+| Update code | `update-windows.ps1` |
+| Reset DB (test) | `reset-db-windows.ps1` |
+| Cấu hình IIS reverse proxy | `setup-iis.ps1` |
 
 ## Cấu trúc DB (v2.0 consolidated)
 
@@ -22,7 +26,7 @@ Từ Phase 11.1 (2026-04-22), DB được tổ chức như sau:
 ```
 e_office_app_new/database/
 ├── init/
-│   └── 01_create_schemas.sql         # Bootstrap Docker — schemas + extensions
+│   └── 01_create_schemas.sql         # Bootstrap — schemas + extensions
 ├── schema/
 │   └── 000_schema_v2.0.sql           # MASTER idempotent schema (tables + SPs + triggers)
 ├── seed/
@@ -35,30 +39,26 @@ e_office_app_new/database/
     └── v2.0-incrementals/            # Lịch sử Phase 8-11 (KHÔNG chạy)
 ```
 
-**Luật:** KHÔNG thêm file `migrations/*.sql` rời. Edit trực tiếp `schema/000_schema_v2.0.sql`. Xem `CLAUDE.md` section "DB Migration Strategy (v2.0+)" để biết rules.
+**Luật:** KHÔNG thêm file migrations rời. Edit trực tiếp `schema/000_schema_v2.0.sql`. Xem `CLAUDE.md` section "DB Migration Strategy (v2.0+)" để biết rules.
 
 ## Environment variable BẮT BUỘC
 
 Trước khi chạy seed 001, backend + DB **PHẢI dùng chung key** để encrypt/decrypt `client_secret` của provider ký số:
 
 **Backend `.env`:**
-```bash
+
+```env
 SIGNING_SECRET_KEY=<32+ ký tự random hex>
 ```
 
-Các script deploy tự động dùng `JWT_SECRET` làm `SIGNING_SECRET_KEY` để 2 key nhất quán. Reset-db scripts đọc biến env `SIGNING_SECRET_KEY` (nếu có) và set vào session `app.signing_secret_key` trước apply seed 001. Nếu không có env var, dùng hardcoded dev key.
+Các script deploy tự động dùng `JWT_SECRET` làm `SIGNING_SECRET_KEY` để 2 key nhất quán. Script `reset-db-windows.ps1` đọc biến env `SIGNING_SECRET_KEY` (nếu có) và set vào session `app.signing_secret_key` trước apply seed 001. Nếu không có env var, dùng hardcoded dev key.
 
 **Lưu ý quan trọng:** Khi đổi `SIGNING_SECRET_KEY` sau deploy, client_secret của provider config **KHÔNG decrypt được** — Admin PHẢI login vào `/ky-so/cau-hinh` và nhập lại credentials (không phải reset DB).
 
 ## Deploy lần đầu
 
-**Linux:**
-```bash
-ssh <user>@103.97.134.87
-sudo bash /opt/eoffice/quanlyvanban/deploy/deploy.sh
-```
+Chạy trong PowerShell (Run as Administrator):
 
-**Windows (PowerShell Administrator):**
 ```powershell
 Set-ExecutionPolicy Bypass -Scope Process -Force
 cd C:\qlvb\quanlyvanban\deploy
@@ -66,56 +66,46 @@ cd C:\qlvb\quanlyvanban\deploy
 ```
 
 Script tự động:
-1. Cài Docker, Node.js 20, Nginx, PM2
+
+1. Cài Git, Node.js 20, PostgreSQL 16, Redis, MinIO, PM2
 2. Clone code từ GitHub
-3. Khởi động 4 Docker services (PostgreSQL, MongoDB, Redis, MinIO)
+3. Tạo database `qlvb_prod` + user `qlvb_admin`
 4. Apply DB v2.0:
    - `init/01_create_schemas.sql` (schemas + extensions)
    - `schema/000_schema_v2.0.sql` (master — tables + SPs + triggers)
-   - `seed/001_required_data.sql` (admin/Admin@123 + 2 provider config)
+   - `seed/001_required_data.sql` (admin + roles + rights + 2 provider config)
    - **KHÔNG** chạy `seed/002_demo_data.sql` (production không có demo data)
 5. Build backend + frontend
-6. Cấu hình Nginx reverse proxy
-7. Cấu hình firewall (chỉ mở 22, 80, 443)
+6. Khởi động PM2 (eoffice-api + eoffice-web)
+7. Mở Firewall port 80, 443
+
+Sau khi `deploy-windows.ps1` xong, chạy `setup-iis.ps1` để cấu hình IIS reverse proxy (URL Rewrite + ARR trỏ `/` → Next.js `:3000` và `/api/*` → Express `:4000`).
 
 ## Cập nhật code
 
-**Linux:**
-```bash
-sudo bash /opt/eoffice/quanlyvanban/deploy/update.sh
-```
+Chạy trong PowerShell (Run as Administrator):
 
-**Windows (PowerShell Administrator):**
 ```powershell
 cd C:\qlvb\quanlyvanban\deploy
 .\update-windows.ps1
 ```
 
 Script tự động:
-- Pull code mới từ GitHub
-- Rebuild backend + frontend
+
+- Pull code mới từ GitHub (`git reset --hard origin/main`)
+- `npm install` + `npm run build` backend + frontend
 - **Re-apply `schema/000_schema_v2.0.sql`** (idempotent — đồng bộ SPs mới nếu có thay đổi, giữ nguyên data)
-- Restart pm2
+- Restart PM2
 - **KHÔNG** re-run seed (giữ nguyên data đang có)
 
 ## Reset toàn bộ DB (CHỈ CHO TEST SERVER)
 
-⚠️ Xóa sạch data — dùng khi muốn test lại từ DB trống tinh:
+Xóa sạch data — chỉ dùng khi muốn test lại từ DB trống tinh. Chạy trong PowerShell (Run as Administrator):
 
-**Linux:**
-```bash
-# Mặc định: seed cả required + demo (150+ records test UI)
-sudo bash /opt/eoffice/quanlyvanban/deploy/reset-db.sh
-
-# Production simulation: chỉ seed required data
-sudo bash /opt/eoffice/quanlyvanban/deploy/reset-db.sh --no-demo
-```
-
-**Windows (PowerShell Administrator):**
 ```powershell
 cd C:\qlvb\quanlyvanban\deploy
 
-# Mặc định: seed cả required + demo
+# Mặc định: seed cả required + demo (312 records test UI)
 .\reset-db-windows.ps1
 
 # Production simulation: chỉ seed required data
@@ -123,30 +113,21 @@ cd C:\qlvb\quanlyvanban\deploy
 ```
 
 Script tự động:
-1. Hỏi xác nhận gõ `yes`
-2. Pull code mới
+
+1. Hỏi xác nhận — gõ chính xác `yes` để tiếp tục
+2. Pull code mới (nếu là git repo)
 3. DROP tất cả schemas (`edoc`, `esto`, `cont`, `iso`, `public`)
 4. Apply `init/01_create_schemas.sql` (schemas + extensions)
 5. Apply `schema/000_schema_v2.0.sql` (master)
-6. Apply `seed/001_required_data.sql` — dùng env var `SIGNING_SECRET_KEY` cho `app.signing_secret_key`
-7. Apply `seed/002_demo_data.sql` (skip nếu `--no-demo` / `-NoDemo`)
-8. Hỏi có rebuild + restart không
-
-## Backup database
-
-```bash
-# Chạy thủ công
-sudo bash /opt/eoffice/quanlyvanban/deploy/backup.sh
-
-# Đặt lịch backup tự động 2h sáng mỗi ngày
-sudo crontab -e
-# Thêm dòng:
-0 2 * * * /opt/eoffice/quanlyvanban/deploy/backup.sh >> /var/log/eoffice/backup.log 2>&1
-```
+6. Apply `seed/001_required_data.sql` — dùng env var `SIGNING_SECRET_KEY` set vào session `app.signing_secret_key`
+7. Apply `seed/002_demo_data.sql` (skip nếu `-NoDemo`)
+8. Hỏi có rebuild + restart PM2 không
 
 ## Quản lý thường ngày
 
-```bash
+Chạy trong PowerShell:
+
+```powershell
 pm2 status              # Xem trạng thái
 pm2 logs                # Xem logs realtime
 pm2 logs eoffice-api    # Logs backend
@@ -154,31 +135,33 @@ pm2 logs eoffice-web    # Logs frontend
 pm2 restart all         # Restart tất cả
 pm2 restart eoffice-api # Restart backend
 
-docker compose -f /opt/eoffice/quanlyvanban/e_office_app_new/docker-compose.prod.yml ps
-docker compose -f /opt/eoffice/quanlyvanban/e_office_app_new/docker-compose.prod.yml logs postgres
+# Services Windows
+Get-Service postgresql-16, Redis, minio
+Restart-Service Redis
 ```
 
 ## Kiến trúc
 
 ```
-Client → Nginx (:80)
-           ├─ /        → Next.js (:3000)  ← PM2
-           └─ /api/    → Express (:4000)  ← PM2
-                          ├─ PostgreSQL (:5432)  ← Docker
-                          ├─ MongoDB (:27017)    ← Docker
-                          ├─ Redis (:6379)       ← Docker
-                          └─ MinIO (:9000)       ← Docker
+Client → IIS (:80)
+          ├─ /        → Next.js (:3000)  ← PM2
+          └─ /api/    → Express (:4000)  ← PM2
+                         ├─ PostgreSQL (:5432)  ← Windows service
+                         ├─ Redis (:6379)       ← Windows service
+                         └─ MinIO (:9000)       ← Windows service (NSSM)
 ```
 
 ## File cấu hình
 
 | File | Đường dẫn |
 |------|-----------|
-| Backend env | `/opt/eoffice/quanlyvanban/e_office_app_new/backend/.env` |
-| Frontend env | `/opt/eoffice/quanlyvanban/e_office_app_new/frontend/.env.local` |
-| PM2 | `/opt/eoffice/quanlyvanban/e_office_app_new/ecosystem.config.cjs` |
-| Nginx | `/etc/nginx/sites-available/eoffice` |
-| Docker | `/opt/eoffice/quanlyvanban/e_office_app_new/docker-compose.prod.yml` |
+| Backend env  | `C:\qlvb\quanlyvanban\e_office_app_new\backend\.env` |
+| Frontend env | `C:\qlvb\quanlyvanban\e_office_app_new\frontend\.env.local` |
+| PM2          | `C:\qlvb\quanlyvanban\e_office_app_new\ecosystem.config.cjs` |
+| IIS config   | `C:\inetpub\wwwroot\web.config` (tạo bởi `setup-iis.ps1`) |
+| PostgreSQL   | `C:\PostgreSQL\16\data\postgresql.conf` |
+| Redis        | `C:\Program Files\Redis\redis.windows-service.conf` |
+| MinIO data   | `C:\minio\data` |
 
 ## Tài khoản mặc định
 
