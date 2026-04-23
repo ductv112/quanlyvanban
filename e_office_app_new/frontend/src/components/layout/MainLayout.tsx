@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Layout, Menu, Avatar, Dropdown, Badge, Breadcrumb, Skeleton, App, Button, Typography, Drawer } from 'antd';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Layout, Menu, Avatar, Dropdown, Breadcrumb, Skeleton, App, Drawer } from 'antd';
 import type { MenuProps } from 'antd';
 import {
   DashboardOutlined,
@@ -48,9 +48,9 @@ import Link from 'next/link';
 import { useAuthStore } from '@/stores/auth.store';
 import { api } from '@/lib/api';
 import { initSocket, disconnectSocket, SOCKET_EVENTS } from '@/lib/socket';
+import BellNotification from '@/components/notifications/BellNotification';
 
 const { Header, Sider, Content } = Layout;
-const { Text } = Typography;
 
 type MenuItem = Required<MenuProps>['items'][number];
 
@@ -434,16 +434,6 @@ function getOpenKeys(pathname: string, items: MenuItem[]): string[] {
   return [];
 }
 
-// ─── Notification item type ──────────────────────────────────────────────────
-
-interface NotifItem {
-  id: number;
-  title: string;
-  content: string;
-  is_read: boolean;
-  created_at: string;
-}
-
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
@@ -453,10 +443,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const { user, isLoading, fetchMe, logout } = useAuthStore();
   const { modal, message } = App.useApp();
 
-  // Bell notification state
-  const [notifItems, setNotifItems] = useState<NotifItem[]>([]);
+  // Sidebar menu badge count cho '/thong-bao' route (legacy /api/thong-bao unit-wide).
+  // Header bell icon đã migrate sang <BellNotification /> consume /api/notifications riêng.
   const [notifUnreadCount, setNotifUnreadCount] = useState(0);
-  const [bellOpen, setBellOpen] = useState(false);
 
   // Badge counts for sidebar menu items
   const [badgeCounts, setBadgeCounts] = useState<{ vbDen: number; tinNhan: number }>({ vbDen: 0, tinNhan: 0 });
@@ -540,34 +529,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Fetch notifications on bell click
-  const handleBellOpenChange = useCallback(async (open: boolean) => {
-    setBellOpen(open);
-    if (open) {
-      try {
-        const { data: res } = await api.get('/thong-bao', {
-          params: { page: 1, page_size: 10 },
-        });
-        const list: NotifItem[] = res.data?.list || res.data || [];
-        setNotifItems(list);
-      } catch {
-        // Silent
-      }
-    }
-  }, []);
-
-  // Mark all read from bell dropdown
-  const handleBellMarkAllRead = async () => {
-    try {
-      await api.patch('/thong-bao/mark-all-read');
-      setNotifUnreadCount(0);
-      setNotifItems((prev) => prev.map((n) => ({ ...n, is_read: true })));
-      message.success('Đã đánh dấu tất cả là đã đọc');
-    } catch {
-      // Silent
-    }
-  };
-
   const handleMenuClick: MenuProps['onClick'] = ({ key }) => {
     // External links open via <a> tag — skip router navigation
     if (key.startsWith('ext-')) return;
@@ -626,81 +587,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       </div>
     );
   }
-
-  // Bell dropdown overlay content
-  const bellDropdownContent = (
-    <div className="notif-bell-overlay">
-      {/* Header */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: '12px 16px',
-        borderBottom: '1px solid #F1F5F9',
-      }}>
-        <Text style={{ fontSize: 16, fontWeight: 600, color: '#1B3A5C' }}>Thông báo</Text>
-        <Button
-          type="link"
-          size="small"
-          style={{ fontSize: 12, color: '#0891B2', padding: 0 }}
-          onClick={handleBellMarkAllRead}
-        >
-          Đánh dấu tất cả đã đọc
-        </Button>
-      </div>
-
-      {/* Notification items */}
-      {notifItems.length === 0 ? (
-        <div style={{ padding: '16px', textAlign: 'center', color: '#94A3B8', fontSize: 13 }}>Không có thông báo</div>
-      ) : (
-        notifItems.map((item) => (
-          <div
-            key={item.id}
-            className={`notif-item${!item.is_read ? ' unread' : ''}`}
-            onClick={() => router.push('/thong-bao')}
-            style={{ cursor: 'pointer' }}
-          >
-            <div style={{
-              width: 28, height: 28, borderRadius: '50%', background: '#EFF8FF',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-            }}>
-              <BellOutlined style={{ color: '#0891B2', fontSize: 12 }} />
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{
-                fontSize: 13, fontWeight: !item.is_read ? 600 : 400, color: '#1B3A5C',
-                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-              }}>
-                {item.title}
-              </div>
-              <div style={{ fontSize: 12, color: '#94A3B8', marginTop: 2 }}>
-                {new Date(item.created_at).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-              </div>
-            </div>
-          </div>
-        ))
-      )}
-
-      {/* Footer link */}
-      <div style={{
-        padding: '10px 16px',
-        borderTop: '1px solid #F1F5F9',
-        textAlign: 'center',
-      }}>
-        <Button
-          type="link"
-          size="small"
-          style={{ fontSize: 13, color: '#0891B2' }}
-          onClick={() => {
-            setBellOpen(false);
-            router.push('/thong-bao');
-          }}
-        >
-          Xem tất cả thông báo
-        </Button>
-      </div>
-    </div>
-  );
 
   // Sidebar menu content — shared between Sider and mobile Drawer
   const sidebarMenuContent = (
@@ -820,21 +706,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
           </div>
 
           <div className="main-header-right">
-            {/* Bell icon with dropdown */}
-            <Dropdown
-              open={bellOpen}
-              onOpenChange={handleBellOpenChange}
-              placement="bottomRight"
-              trigger={['click']}
-              popupRender={() => bellDropdownContent}
-            >
-              <Badge count={notifUnreadCount} size="small" overflowCount={99}>
-                <BellOutlined
-                  className="main-header-icon"
-                  style={{ cursor: 'pointer' }}
-                />
-              </Badge>
-            </Dropdown>
+            {/* Phase 13 — personal bell notification (consume /api/notifications) */}
+            <BellNotification />
 
             <Dropdown menu={{ items: userMenuItems }} placement="bottomRight" trigger={['click']}>
               <div className="main-user-dropdown">
