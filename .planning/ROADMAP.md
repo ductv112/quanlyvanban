@@ -315,4 +315,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 11.1. DB Consolidation & Seed Strategy | 2/3 | Complete    | 2026-04-22 |
 | 12. Menu Ký số + Danh sách UI | 3/3 | Complete    | 2026-04-22 |
 | 13. Modal ký số + Root CA UX | 5/5 | Complete    | 2026-04-23 |
-| 14. Deployment + HDSD + verification | 3/3 | Complete   | 2026-04-23 |
+| 14. Deployment + HDSD + verification | 3/3 | Complete    | 2026-04-23 |
