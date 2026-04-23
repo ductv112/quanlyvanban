@@ -291,7 +291,7 @@ Plans:
 Plans:
 - [x] 14-01-cleanup-linux-rewrite-readme-PLAN.md — Xóa 4 file Linux shell scripts + rewrite deploy/README.md Windows-only
 - [ ] 14-02-seed-fix-dev-workflow-PLAN.md — Fix seed 001_required_data.sql (cả 2 provider disabled + empty creds) + thêm section Development setup vào README
-- [ ] 14-03-requirements-roadmap-audit-PLAN.md — Update REQUIREMENTS.md (41 REQ + 2 column Verify Evidence/Status, remove DEP-03) + đồng bộ ROADMAP.md Phase 14 section
+- [x] 14-03-requirements-roadmap-audit-PLAN.md — Update REQUIREMENTS.md (41 REQ + 2 column Verify Evidence/Status, remove DEP-03) + đồng bộ ROADMAP.md Phase 14 section
 **UI hint**: no
 
 ## Progress
@@ -315,4 +315,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 11.1. DB Consolidation & Seed Strategy | 2/3 | Complete    | 2026-04-22 |
 | 12. Menu Ký số + Danh sách UI | 3/3 | Complete    | 2026-04-22 |
 | 13. Modal ký số + Root CA UX | 5/5 | Complete    | 2026-04-23 |
-| 14. Deployment + HDSD + verification | 1/3 | In Progress|  |
+| 14. Deployment + HDSD + verification | 2/3 | In Progress|  |

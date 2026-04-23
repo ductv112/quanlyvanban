@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 14-01-cleanup-linux-rewrite-readme-PLAN.md
-last_updated: "2026-04-23T08:32:11.768Z"
+stopped_at: Completed 14-03-requirements-roadmap-audit-PLAN.md
+last_updated: "2026-04-23T08:44:31.170Z"
 last_activity: 2026-04-23
 progress:
   total_phases: 15
   completed_phases: 13
   total_plans: 65
-  completed_plans: 62
-  percent: 95
+  completed_plans: 63
+  percent: 97
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-21 — Milestone v2.0 started)
 ## Current Position
 
 Phase: 14 (deployment-hdsd-verification) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Next: Plan 11.1-03 — move 18 file migrations cũ → archive/, update deploy scripts + dev onboarding README dùng schema/ + seed/ flow
 Status: Ready to execute
 Last activity: 2026-04-23
@@ -82,6 +82,7 @@ Progress: [██████████] 98% (53/54 plans complete — 11 phas
 | Phase 13 P02 | 8min | 3 tasks | 3 files |
 | Phase 13 P04 | 7min | 2 tasks | 4 files |
 | Phase 14 P01 | 2min | 2 tasks | 5 files |
+| Phase 14 P03 | 7min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -190,6 +191,8 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase 13]: [Plan 13-04]: Dismiss UX pattern qua localStorage per-browser + defense-in-depth check trong component — parent set visible=true + component lại check localStorage lần nữa trước render, bảo vệ race condition SSR/hydration và lỗi logic parent
 - [Phase 13]: [Plan 13-04]: Banner trigger trong handleDownload filter 3 điều kiện: provider_code==='MYSIGN_VIETTEL' AND typeof window !== 'undefined' AND localStorage.dismiss_root_ca_banner !== 'true' — chỉ Viettel (không SmartCA VNPT), chỉ client-side (SSR safe), chỉ khi chưa dismiss vĩnh viễn
 - [Phase 14]: Plan 14-01: Windows-only lock (D-01) + remove 4 Linux .sh scripts (D-02) — git history giữ nguyên để recoverable; README.md rewrite 177 lines 12 H2 sections
+- [Phase 14]: Plan 14-03: Verify Evidence paths phải khớp repo thực tế — plan prescribed paths giả định bị sai với cấu trúc sub-folder (services/signing, components/signing, components/notifications); spot-check 9 REQ + sửa 20+ evidence cells (Rule 1 auto-fix)
+- [Phase 14]: Plan 14-03: REQUIREMENTS.md v2.0 = 41 REQ (DEP-03 deferred v2.1). Thêm column Verify Evidence concrete → milestone acceptance audit time 5-10h → 30min. ROADMAP.md Phase 14 SC 4→3 items (remove AC-02 HDSD cấu hình + AC-03 UAT cuối per D-09/D-10)
 
 ### Pending Todos
 
@@ -221,6 +224,6 @@ v1.0 hoàn thành với 3 quick tasks (HDSD Compliance sprint cuối):
 
 ## Session Continuity
 
-Last session: 2026-04-23T08:32:11.755Z
-Stopped at: Completed 14-01-cleanup-linux-rewrite-readme-PLAN.md
+Last session: 2026-04-23T08:44:31.158Z
+Stopped at: Completed 14-03-requirements-roadmap-audit-PLAN.md
 Resume: `/gsd-execute-phase 11.1` để tiếp tục Plan 11.1-02 (seed required data + rich demo data)
