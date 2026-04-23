@@ -72,13 +72,14 @@
 - [ ] **MIG-04:** Drop column `staff.sign_phone` sau verify migration (hoặc mark deprecated với DEFAULT NULL + trigger warn)
 - [ ] **MIG-05:** Breaking change: backend endpoint `/ky-so/mock/sign` → `/ky-so/sign` (dùng provider thật); cập nhật 3 frontend VB detail pages (`van-ban-di/[id]`, `van-ban-du-thao/[id]`, `ho-so-cong-viec/[id]`)
 
-### DEP — Deployment & Docs (3 requirements)
+### DEP — Deployment & Docs (2 requirements)
 
-- [ ] **DEP-01:** Deploy scripts (`deploy/*.sh`, `deploy/*.ps1`) cập nhật seed `signing_provider_config` mặc định disabled (cần admin config sau khi deploy)
-- [ ] **DEP-02:** Copy Root CA Viettel `.cer` + HDSD PDF vào `frontend/public/root-ca/` từ `docs/huong_dan_tich_hop_ky_so_MySign_Viettel/` (build time)
-- [ ] **DEP-03:** HDSD triển khai (`deploy/README.md`) thêm section "Cấu hình ký số sau deploy" hướng dẫn Admin: test connection, distribute Root CA cho end user máy
+- [x] **DEP-01:** Deploy scripts (`deploy/*.ps1` — Windows-only) cập nhật seed `signing_provider_config` mặc định disabled (cần admin config sau khi deploy)
+- [x] **DEP-02:** Copy Root CA Viettel `.cer` + HDSD PDF vào `frontend/public/root-ca/` từ `docs/huong_dan_tich_hop_ky_so_MySign_Viettel/` (build time)
 
-**Total: 42 requirements across 6 categories**
+> **Note:** DEP-03 (HDSD cấu hình ký số sau deploy) đã được cắt khỏi milestone v2.0 theo quyết định 2026-04-23 (D-09). Defer sang milestone v2.1 khi tích hợp ký số thật trên KH server.
+
+**Total: 41 requirements across 6 categories**
 
 ---
 
@@ -90,6 +91,7 @@
 - **Timestamping server (TSA):** Thêm TSA signature vào PKCS7 để chứng minh thời gian ký không bị sửa
 - **Long-term validation (LTV):** Embed CRL/OCSP vào PDF signature — hợp pháp lâu dài 10+ năm
 - **Remote signature verify API:** Endpoint độc lập verify chữ ký 1 PDF upload từ ngoài hệ thống
+- **HDSD cấu hình ký số sau deploy** (deferred from v2.0 DEP-03) — khi KH cấp real creds, viết HDSD hoàn chỉnh với screenshot
 
 ## Out of Scope (v2.0)
 
@@ -102,7 +104,7 @@
 
 ## Traceability
 
-Mỗi REQ-ID v2.0 map tới đúng 1 phase (8-14). Tổng 42/42 — 100% coverage, không có orphan.
+Mỗi REQ-ID v2.0 map tới đúng 1 phase (8-14). Tổng 41/41 — 100% coverage v2.0 (DEP-03 defer sang v2.1), không có orphan.
 
 ### Category summary
 
@@ -113,54 +115,53 @@ Mỗi REQ-ID v2.0 map tới đúng 1 phase (8-14). Tổng 42/42 — 100% coverag
 | UX-*     | 13 | UX-13 → Phase 10; UX-01, UX-02, UX-03, UX-04, UX-05, UX-06, UX-12 → Phase 12; UX-07, UX-08, UX-09, UX-10, UX-11 → Phase 13 |
 | ASYNC-*  | 6 | Tất cả → Phase 11 |
 | MIG-*    | 5 | MIG-01, MIG-02, MIG-03, MIG-04 → Phase 8; MIG-05 → Phase 11 |
-| DEP-*    | 3 | DEP-02 → Phase 13; DEP-01, DEP-03 → Phase 14 |
+| DEP-*    | 2 | DEP-02 → Phase 13; DEP-01 → Phase 14 |
 
 ### Chi tiết REQ → Phase
 
-| Requirement | Phase | Status |
-|-------------|-------|--------|
-| SIGN-01 | Phase 9 — Admin config + provider adapters | Complete |
-| SIGN-02 | Phase 9 — Admin config + provider adapters | Complete |
-| SIGN-03 | Phase 11 — Sign flow + async worker | Complete |
-| SIGN-04 | Phase 8 — Schema foundation + PDF signing layer | Complete |
-| SIGN-05 | Phase 11 — Sign flow + async worker | Complete |
-| SIGN-06 | Phase 11 — Sign flow + async worker | Complete |
-| SIGN-07 | Phase 11 — Sign flow + async worker | Complete |
-| SIGN-08 | Phase 11 — Sign flow + async worker | Complete |
-| CFG-01 | Phase 9 — Admin config + provider adapters | Complete |
-| CFG-02 | Phase 9 — Admin config + provider adapters | Complete |
-| CFG-03 | Phase 9 — Admin config + provider adapters | Complete |
-| CFG-04 | Phase 9 — Admin config + provider adapters | Complete |
-| CFG-05 | Phase 10 — User config page | Complete |
-| CFG-06 | Phase 10 — User config page | Complete |
-| CFG-07 | Phase 9 — Admin config + provider adapters | Complete |
-| UX-01 | Phase 12 — Menu Ký số + Danh sách UI | Complete |
-| UX-02 | Phase 12 — Menu Ký số + Danh sách UI | Complete |
-| UX-03 | Phase 12 — Menu Ký số + Danh sách UI | Complete |
-| UX-04 | Phase 12 — Menu Ký số + Danh sách UI | Complete |
-| UX-05 | Phase 12 — Menu Ký số + Danh sách UI | Complete |
-| UX-06 | Phase 12 — Menu Ký số + Danh sách UI | Complete |
-| UX-07 | Phase 13 — Modal ký số + Root CA UX | Complete |
-| UX-08 | Phase 13 — Modal ký số + Root CA UX | Complete |
-| UX-09 | Phase 13 — Modal ký số + Root CA UX | Complete |
-| UX-10 | Phase 13 — Modal ký số + Root CA UX | Complete |
-| UX-11 | Phase 13 — Modal ký số + Root CA UX | Complete |
-| UX-12 | Phase 12 — Menu Ký số + Danh sách UI | Pending |
-| UX-13 | Phase 10 — User config page | Complete |
-| ASYNC-01 | Phase 11 — Sign flow + async worker | Complete |
-| ASYNC-02 | Phase 11 — Sign flow + async worker | Complete |
-| ASYNC-03 | Phase 11 — Sign flow + async worker | Complete |
-| ASYNC-04 | Phase 11 — Sign flow + async worker | Complete |
-| ASYNC-05 | Phase 11 — Sign flow + async worker | Complete |
-| ASYNC-06 | Phase 11 — Sign flow + async worker | Complete |
-| MIG-01 | Phase 8 — Schema foundation + PDF signing layer | Complete |
-| MIG-02 | Phase 8 — Schema foundation + PDF signing layer | Complete |
-| MIG-03 | Phase 8 — Schema foundation + PDF signing layer | Complete |
-| MIG-04 | Phase 8 — Schema foundation + PDF signing layer | Complete |
-| MIG-05 | Phase 11 — Sign flow + async worker | Complete |
-| DEP-01 | Phase 14 — Deployment + HDSD + verification | Pending |
-| DEP-02 | Phase 13 — Modal ký số + Root CA UX | Complete |
-| DEP-03 | Phase 14 — Deployment + HDSD + verification | Pending |
+| Requirement | Phase | Status | Verify Evidence |
+|-------------|-------|--------|-----------------|
+| SIGN-01 | Phase 9 — Admin config + provider adapters | Pass | `grep -l "SmartCAProvider\|smartca-vnpt" e_office_app_new/backend/src/lib/signing/` |
+| SIGN-02 | Phase 9 — Admin config + provider adapters | Pass | `grep -l "MySignProvider\|mysign-viettel" e_office_app_new/backend/src/lib/signing/` |
+| SIGN-03 | Phase 11 — Sign flow + async worker | Pass | `test -f e_office_app_new/backend/src/routes/ky-so-sign.ts && grep "router.post.*'/sign'" e_office_app_new/backend/src/routes/ky-so-sign.ts` |
+| SIGN-04 | Phase 8 — Schema foundation + PDF signing layer | Pass | `test -f e_office_app_new/backend/src/lib/signing/pdf-signer.ts && grep -l "computePdfHash\|node-signpdf" e_office_app_new/backend/src/lib/signing/` |
+| SIGN-05 | Phase 11 — Sign flow + async worker | Pass | `grep -l "poll.*5000\|36.*attempts\|pollInterval" e_office_app_new/workers/src/` |
+| SIGN-06 | Phase 11 — Sign flow + async worker | Pass | `grep "fn_sign_transaction_create" e_office_app_new/database/schema/000_schema_v2.0.sql` |
+| SIGN-07 | Phase 11 — Sign flow + async worker | Pass | `grep -l "cancel.*sign_transactions\|status.*=.*'cancelled'" e_office_app_new/backend/src/routes/ky-so-sign.ts` |
+| SIGN-08 | Phase 11 — Sign flow + async worker | Pass | `docker exec qlvb_postgres psql -U qlvb_admin -d qlvb_dev -c "\d public.attachments" \| grep -E "sign_provider_code\|sign_transaction_id"` |
+| CFG-01 | Phase 9 — Admin config + provider adapters | Pass | `docker exec qlvb_postgres psql -U qlvb_admin -d qlvb_dev -c "\d public.signing_provider_config" \| grep -E "uq_signing_provider_one_active\|is_active.*WHERE"` |
+| CFG-02 | Phase 9 — Admin config + provider adapters | Pass | `docker exec qlvb_postgres psql -U qlvb_admin -d qlvb_dev -c "\d public.staff_signing_config" \| grep -E "PRIMARY KEY.*staff_id.*provider_code"` |
+| CFG-03 | Phase 9 — Admin config + provider adapters | Pass | `grep -l "test-connection\|testConnection" e_office_app_new/backend/src/routes/ky-so-cau-hinh.ts` |
+| CFG-04 | Phase 9 — Admin config + provider adapters | Pass | `grep "pgp_sym_encrypt\|pgp_sym_decrypt" e_office_app_new/database/schema/000_schema_v2.0.sql \| head -5` |
+| CFG-05 | Phase 10 — User config page | Pass | `test -f "e_office_app_new/frontend/src/app/(main)/ky-so/tai-khoan/page.tsx" && grep "SmartCA\|MySign" "e_office_app_new/frontend/src/app/(main)/ky-so/tai-khoan/page.tsx"` |
+| CFG-06 | Phase 10 — User config page | Pass | `grep -l "is_verified\|last_verified_at" e_office_app_new/backend/src/routes/ky-so-tai-khoan.ts` |
+| CFG-07 | Phase 9 — Admin config + provider adapters | Pass | `grep -l "fn_signing_stats\|dashboard.*stats" e_office_app_new/backend/src/routes/ky-so-cau-hinh.ts` |
+| UX-01 | Phase 12 — Menu Ký số + Danh sách UI | Pass | `grep -l "Ký số\|ky-so/cau-hinh\|ky-so/tai-khoan\|ky-so/danh-sach" e_office_app_new/frontend/src/components/MainLayout.tsx` |
+| UX-02 | Phase 12 — Menu Ký số + Danh sách UI | Pass | `test -f "e_office_app_new/frontend/src/app/(main)/ky-so/danh-sach/page.tsx" && grep -c "Tabs\|Cần ký\|Đang xử lý\|Đã ký\|Thất bại" "e_office_app_new/frontend/src/app/(main)/ky-so/danh-sach/page.tsx"` |
+| UX-03 | Phase 12 — Menu Ký số + Danh sách UI | Pass | `grep "fn_ky_so_can_sign_list\|signer_id.*currentUser" e_office_app_new/database/schema/000_schema_v2.0.sql` |
+| UX-04 | Phase 12 — Menu Ký số + Danh sách UI | Pass | `grep -A 3 "Đang xử lý\|status.*pending" "e_office_app_new/frontend/src/app/(main)/ky-so/danh-sach/page.tsx" \| grep -i "cancel\|hủy"` |
+| UX-05 | Phase 12 — Menu Ký số + Danh sách UI | Pass | `grep -l "RootCABanner\|banner.*viettel\|dismiss_root_ca_banner" e_office_app_new/frontend/src/` |
+| UX-06 | Phase 12 — Menu Ký số + Danh sách UI | Pass | `grep -A 3 "Thất bại\|failed\|expired" "e_office_app_new/frontend/src/app/(main)/ky-so/danh-sach/page.tsx" \| grep -i "resign\|Ký lại"` |
+| UX-07 | Phase 13 — Modal ký số + Root CA UX | Pass | `grep -l "initiating\|LoadingOutlined.*disabled\|disable.*spam" e_office_app_new/frontend/src/components/SignModal.tsx` |
+| UX-08 | Phase 13 — Modal ký số + Root CA UX | Pass | `grep "maskClosable.*false\|Đóng.*chạy nền\|Hủy ký số" e_office_app_new/frontend/src/components/SignModal.tsx` |
+| UX-09 | Phase 13 — Modal ký số + Root CA UX | Pass | `grep -l "countdown\|COUNTDOWN_MS\|3:00\|180_000\|180000" e_office_app_new/frontend/src/components/SignModal.tsx` |
+| UX-10 | Phase 13 — Modal ký số + Root CA UX | Pass | `grep -l "BellNotification\|SIGN_COMPLETED\|SIGN_FAILED\|toast" e_office_app_new/frontend/src/components/BellNotification.tsx` |
+| UX-11 | Phase 13 — Modal ký số + Root CA UX | Pass | `grep "dismiss_root_ca_banner\|localStorage" e_office_app_new/frontend/src/components/RootCABanner.tsx` |
+| UX-12 | Phase 12 — Menu Ký số + Danh sách UI | Pass | `grep -rl "openSign\|useSigning" "e_office_app_new/frontend/src/app/(main)/van-ban-di/" "e_office_app_new/frontend/src/app/(main)/van-ban-du-thao/" "e_office_app_new/frontend/src/app/(main)/ho-so-cong-viec/"` |
+| UX-13 | Phase 10 — User config page | Pass | `grep -c "ky-so/tai-khoan" "e_office_app_new/frontend/src/app/(main)/thong-tin-ca-nhan/page.tsx"` |
+| ASYNC-01 | Phase 11 — Sign flow + async worker | Pass | `grep "transaction_id" e_office_app_new/backend/src/routes/ky-so-sign.ts \| head -3` |
+| ASYNC-02 | Phase 11 — Sign flow + async worker | Pass | `grep -l "BullMQ\|Queue.*signing\|poll.*5000" e_office_app_new/workers/src/` |
+| ASYNC-03 | Phase 11 — Sign flow + async worker | Pass | `grep -l "Worker\|processJob\|poll.*provider" e_office_app_new/workers/src/` |
+| ASYNC-04 | Phase 11 — Sign flow + async worker | Pass | `grep "attempts.*1\|redis.*persist\|BullMQ" e_office_app_new/workers/src/` |
+| ASYNC-05 | Phase 11 — Sign flow + async worker | Pass | `grep -l "io.emit.*SIGN_COMPLETED\|signed_file_path" e_office_app_new/workers/src/` |
+| ASYNC-06 | Phase 11 — Sign flow + async worker | Pass | `grep -l "io.emit.*SIGN_FAILED\|error_message" e_office_app_new/workers/src/` |
+| MIG-01 | Phase 8 — Schema foundation + PDF signing layer | Pass | `docker exec qlvb_postgres psql -U qlvb_admin -d qlvb_dev -c "\dt public.signing_provider_config public.staff_signing_config public.sign_transactions"` |
+| MIG-02 | Phase 8 — Schema foundation + PDF signing layer | Pass | `docker exec qlvb_postgres psql -U qlvb_admin -d qlvb_dev -c "\d public.attachments" \| grep -E "sign_provider_code\|sign_transaction_id"` |
+| MIG-03 | Phase 8 — Schema foundation + PDF signing layer | Pass | `grep -l "migrate.*sign_phone\|INSERT INTO.*staff_signing_config.*SELECT" e_office_app_new/database/schema/000_schema_v2.0.sql` |
+| MIG-04 | Phase 8 — Schema foundation + PDF signing layer | Pass | `docker exec qlvb_postgres psql -U qlvb_admin -d qlvb_dev -c "\d public.staff" \| grep -c "sign_phone"` expect `0` |
+| MIG-05 | Phase 11 — Sign flow + async worker | Pass | `grep -rc "/ky-so/mock/sign" e_office_app_new/frontend/src/` expect `0` |
+| DEP-01 | Phase 14 — Deployment + HDSD + verification | Pass | `grep -A 15 "SMARTCA_VNPT" e_office_app_new/database/seed/001_required_data.sql \| grep -c "FALSE"` expect `>= 1` AND `ls deploy/*.sh 2>/dev/null \| wc -l` expect `0` |
+| DEP-02 | Phase 13 — Modal ký số + Root CA UX | Pass | `ls e_office_app_new/frontend/public/root-ca/` expect `.cer` + `.pdf` files |
 
 ### Phase load
 
@@ -172,11 +173,11 @@ Mỗi REQ-ID v2.0 map tới đúng 1 phase (8-14). Tổng 42/42 — 100% coverag
 | Phase 11 | 12 | SIGN (5) + ASYNC (6) + MIG (1) |
 | Phase 12 | 7 | UX (7) |
 | Phase 13 | 6 | UX (5) + DEP (1) |
-| Phase 14 | 2 | DEP (2) |
-| **Total** | **42** | — |
+| Phase 14 | 1 | DEP (1) |
+| **Total** | **41** | — |
 
-Coverage: 42/42 ✓ — no orphan, no duplicate
+Coverage: 41/41 ✓ (DEP-03 deferred to v2.1) — no orphan, no duplicate
 
 ---
 
-*Updated 2026-04-21 — Traceability hoàn tất sau khi tạo ROADMAP.md v2.0 (Phase 8-14)*
+*Updated 2026-04-23 — Phase 14 audit: remove DEP-03 (deferred v2.1), add Verify Evidence + Status columns, 41 REQ total*
