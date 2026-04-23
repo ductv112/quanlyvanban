@@ -223,8 +223,13 @@ export default function DanhSachKySoPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [initialLoading, setInitialLoading] = useState<boolean>(true);
 
-  // --- Sign modal hook (consume Phase 11-06, KHÔNG sửa)
-  const { openSign, renderSignModal } = useSigning();
+  // --- Sign modal hook (Phase 11-06 + Phase 13-03 isOpen spam-click guard)
+  const {
+    openSign,
+    renderSignModal,
+    // Phase 13 — D-18/D-19: disable trigger button khi modal open tránh tạo 2 txn
+    isOpen: signModalOpen,
+  } = useSigning();
 
   // ==========================================================================
   // URL sync
@@ -491,13 +496,15 @@ export default function DanhSachKySoPage() {
             type="primary"
             icon={<SafetyCertificateOutlined />}
             onClick={() => handleSign(row)}
+            // Phase 13 — D-18/D-19 spam-click guard
+            disabled={signModalOpen}
           >
             Ký số
           </Button>
         ),
       },
     ],
-    [handleSign],
+    [handleSign, signModalOpen],
   );
 
   const pendingColumns: ColumnsType<TxnRow> = useMemo(
@@ -668,13 +675,15 @@ export default function DanhSachKySoPage() {
             type="primary"
             icon={<ReloadOutlined />}
             onClick={() => handleSign(row)}
+            // Phase 13 — D-18/D-19 spam-click guard
+            disabled={signModalOpen}
           >
             Ký lại
           </Button>
         ),
       },
     ],
-    [handleSign],
+    [handleSign, signModalOpen],
   );
 
   // Map tab key → columns

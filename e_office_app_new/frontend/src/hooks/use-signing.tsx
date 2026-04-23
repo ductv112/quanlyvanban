@@ -71,14 +71,19 @@ export function useSigning() {
   const onSuccessRef = useRef<(() => void) | undefined>(undefined);
 
   const openSign = useCallback((params: OpenSignParams) => {
-    onSuccessRef.current = params.onSuccess;
-    setState({
-      open: true,
-      attachment: params.attachment,
-      attachmentType: params.attachmentType,
-      docId: params.docId,
-      signReason: params.signReason,
-      signLocation: params.signLocation,
+    // Phase 13 — D-18 spam-click guard: bỏ qua nếu modal đã mở.
+    // Dùng functional setState để đọc state mới nhất, tránh stale closure.
+    setState((prev) => {
+      if (prev.open) return prev;
+      onSuccessRef.current = params.onSuccess;
+      return {
+        open: true,
+        attachment: params.attachment,
+        attachmentType: params.attachmentType,
+        docId: params.docId,
+        signReason: params.signReason,
+        signLocation: params.signLocation,
+      };
     });
   }, []);
 
@@ -116,5 +121,17 @@ export function useSigning() {
     );
   }, [state, closeSign, handleSuccess]);
 
-  return { openSign, closeSign, renderSignModal };
+  return {
+    openSign,
+    closeSign,
+    renderSignModal,
+    /**
+     * Phase 13 — D-18, D-19: caller dùng để disable trigger button (VD: "Ký số",
+     * "Ký lại") tránh spam-click mở 2 modal = tạo 2 transaction. 3 lớp bảo vệ:
+     *  1. `openSign` no-op nếu hook state.open=true (guard bên dưới)
+     *  2. SignModal `initiating` state disable internal action khi POST /sign đang fire
+     *  3. Caller button `disabled={isOpen}` — lớp này (UX nhìn thấy)
+     */
+    isOpen: state.open,
+  };
 }
