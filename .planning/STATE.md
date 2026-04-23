@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 14 context gathered — 10 decisions, scope cut DEP-03 + AC-03, Windows-only
-last_updated: "2026-04-23T08:13:46.008Z"
+stopped_at: Completed 14-01-cleanup-linux-rewrite-readme-PLAN.md
+last_updated: "2026-04-23T08:32:11.768Z"
 last_activity: 2026-04-23
 progress:
   total_phases: 15
   completed_phases: 13
-  total_plans: 62
-  completed_plans: 61
-  percent: 98
+  total_plans: 65
+  completed_plans: 62
+  percent: 95
 ---
 
 # Project State
@@ -21,12 +21,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-21 — Milestone v2.0 started)
 
 **Core value:** Luồng văn bản đến → xử lý → văn bản đi phải hoạt động đúng nghiệp vụ cơ quan nhà nước
-**Current focus:** Phase 13 — modal-ky-so-robust-root-ca-ux
+**Current focus:** Phase 14 — deployment-hdsd-verification
 
 ## Current Position
 
-Phase: 13
-Plan: Not started
+Phase: 14 (deployment-hdsd-verification) — EXECUTING
+Plan: 2 of 3
 Next: Plan 11.1-03 — move 18 file migrations cũ → archive/, update deploy scripts + dev onboarding README dùng schema/ + seed/ flow
 Status: Ready to execute
 Last activity: 2026-04-23
@@ -81,6 +81,7 @@ Progress: [██████████] 98% (53/54 plans complete — 11 phas
 | Phase 13 P03 | 6min | 2 tasks | 3 files |
 | Phase 13 P02 | 8min | 3 tasks | 3 files |
 | Phase 13 P04 | 7min | 2 tasks | 4 files |
+| Phase 14 P01 | 2min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -188,6 +189,7 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase 13]: [Plan 13-04]: Static asset via Next.js public/ folder — /root-ca/*.cer + .pdf commit vào git, không gitignore; deploy server pull từ git không cần copy script riêng (size accepted: .cer ~1.5KB, PDF ~500KB)
 - [Phase 13]: [Plan 13-04]: Dismiss UX pattern qua localStorage per-browser + defense-in-depth check trong component — parent set visible=true + component lại check localStorage lần nữa trước render, bảo vệ race condition SSR/hydration và lỗi logic parent
 - [Phase 13]: [Plan 13-04]: Banner trigger trong handleDownload filter 3 điều kiện: provider_code==='MYSIGN_VIETTEL' AND typeof window !== 'undefined' AND localStorage.dismiss_root_ca_banner !== 'true' — chỉ Viettel (không SmartCA VNPT), chỉ client-side (SSR safe), chỉ khi chưa dismiss vĩnh viễn
+- [Phase 14]: Plan 14-01: Windows-only lock (D-01) + remove 4 Linux .sh scripts (D-02) — git history giữ nguyên để recoverable; README.md rewrite 177 lines 12 H2 sections
 
 ### Pending Todos
 
@@ -219,6 +221,6 @@ v1.0 hoàn thành với 3 quick tasks (HDSD Compliance sprint cuối):
 
 ## Session Continuity
 
-Last session: 2026-04-23T08:13:45.997Z
-Stopped at: Phase 14 context gathered — 10 decisions, scope cut DEP-03 + AC-03, Windows-only
+Last session: 2026-04-23T08:32:11.755Z
+Stopped at: Completed 14-01-cleanup-linux-rewrite-readme-PLAN.md
 Resume: `/gsd-execute-phase 11.1` để tiếp tục Plan 11.1-02 (seed required data + rich demo data)
