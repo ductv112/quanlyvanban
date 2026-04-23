@@ -478,7 +478,7 @@ export default function SignModal(props: SignModalProps) {
             type="info"
             showIcon
             style={{ borderRadius: 12 }}
-            message="Chờ xác nhận OTP trên thiết bị di động"
+            title="Chờ xác nhận OTP trên thiết bị di động"
             description={
               <div>
                 <p style={{ margin: '0 0 8px 0' }}>
@@ -505,7 +505,7 @@ export default function SignModal(props: SignModalProps) {
             type="success"
             showIcon
             style={{ borderRadius: 12 }}
-            message="Ký số thành công"
+            title="Ký số thành công"
             description={`File đã được ký bằng ${providerName}. Bấm "Đóng" để xem file đã ký trong danh sách đính kèm.`}
           />
         )}
@@ -517,7 +517,7 @@ export default function SignModal(props: SignModalProps) {
             type={status === 'cancelled' ? 'warning' : 'error'}
             showIcon
             style={{ borderRadius: 12 }}
-            message={
+            title={
               status === 'expired'
                 ? 'Hết thời gian chờ xác nhận OTP'
                 : status === 'cancelled'

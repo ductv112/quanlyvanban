@@ -53,7 +53,7 @@ export default function RootCABanner({ visible, onDismiss }: Props) {
       type="info"
       showIcon
       icon={<SafetyCertificateOutlined style={{ color: '#0891B2', fontSize: 20 }} />}
-      message={
+      title={
         <span style={{ fontWeight: 600, color: '#1B3A5C' }}>
           Cần cài Root CA Viettel để Adobe Reader hiển thị chữ ký hợp lệ
         </span>
