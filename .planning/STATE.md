@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 13-03-signmodal-countdown-polish-PLAN.md
-last_updated: "2026-04-23T06:36:10.293Z"
+stopped_at: Completed 13-02-bell-notification-frontend-PLAN.md
+last_updated: "2026-04-23T06:49:41.568Z"
 last_activity: 2026-04-23
 progress:
   total_phases: 14
   completed_phases: 12
   total_plans: 62
-  completed_plans: 58
-  percent: 94
+  completed_plans: 59
+  percent: 95
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-21 — Milestone v2.0 started)
 ## Current Position
 
 Phase: 13 (modal-ky-so-robust-root-ca-ux) — EXECUTING
-Plan: 3 of 5
+Plan: 4 of 5
 Next: Plan 11.1-03 — move 18 file migrations cũ → archive/, update deploy scripts + dev onboarding README dùng schema/ + seed/ flow
 Status: Ready to execute
 Last activity: 2026-04-23
@@ -79,6 +79,7 @@ Progress: [██████████] 98% (53/54 plans complete — 11 phas
 | Phase 12 P02 | 15min | 2 tasks | 1 files |
 | Phase 13 P01 | 9min | 3 tasks | 5 files |
 | Phase 13 P03 | 6min | 2 tasks | 3 files |
+| Phase 13 P02 | 8min | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -179,6 +180,10 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase 13]: [Plan 13-03]: expiredFired useRef guard áp dụng cả countdown tick CỘNG onFailed socket — BE emit sign_failed status=expired không setStatus lần 2 nếu FE timer đã fire
 - [Phase 13]: [Plan 13-03]: openSign functional setState guard (if prev.open return prev) — stale closure safe, 3 lớp spam-click defense (caller disabled + initiating + hook guard)
 - [Phase 13]: [Plan 13-03]: useMemo deps 2 column defs (needSignColumns, failedColumns) thêm signModalOpen — React rebuild khi modal mở/đóng để disabled prop update đúng
+- [Phase 13]: [Plan 13-02]: Reuse CSS classes .notif-bell-overlay + .notif-item từ globals.css (Phase 3) — zero duplicate CSS + theme consistency; inline style chỉ cho flex/gap inside item body
+- [Phase 13]: [Plan 13-02]: Socket staff_id filter qua useAuthStore currentStaffId trong useEffect deps (không filter payload.staff_id vì SignCompletedEvent không có field đó) — re-subscribe khi user switch login, trust BE room-scoping user_{staffId}
+- [Phase 13]: [Plan 13-02]: Coexist 2 bell channel FE — header bell consume /api/notifications (Phase 13 personal), sidebar menu '/thong-bao' badge giữ /api/thong-bao/unread-count (Phase 3 legacy unit-wide); 2 entry point logically different, user không confused
+- [Phase 13]: [Plan 13-02]: Toast copy per sign_failed sub-status — 'Ký số hết hạn' cho expired, 'Đã hủy ký số' cho cancelled, 'Ký số thất bại' cho default; user nhìn toast biết chính xác điều gì xảy ra, map 1:1 BE emitSignFailed payload
 
 ### Pending Todos
 
@@ -210,6 +215,6 @@ v1.0 hoàn thành với 3 quick tasks (HDSD Compliance sprint cuối):
 
 ## Session Continuity
 
-Last session: 2026-04-23T06:36:10.282Z
-Stopped at: Completed 13-03-signmodal-countdown-polish-PLAN.md
+Last session: 2026-04-23T06:49:41.556Z
+Stopped at: Completed 13-02-bell-notification-frontend-PLAN.md
 Resume: `/gsd-execute-phase 11.1` để tiếp tục Plan 11.1-02 (seed required data + rich demo data)
