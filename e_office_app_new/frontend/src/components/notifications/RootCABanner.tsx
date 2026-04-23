@@ -3,14 +3,8 @@
 /**
  * RootCABanner — Banner hướng dẫn cài Root CA Viettel (Phase 13 UX-11 + DEP-02).
  *
- * Trigger (D-22): Hiện khi user tải file ký bằng MYSIGN_VIETTEL lần đầu tiên AND
- * localStorage.dismiss_root_ca_banner !== 'true'. Parent decide visible=true qua
- * handleDownload. Component tự check localStorage defense-in-depth + handle dismiss.
- *
- * Position (D-23): Mount dưới page header, trước main content card — full width.
- *
- * Dismiss (D-25): Click X → localStorage.dismiss_root_ca_banner = 'true' →
- * không bao giờ hiện lại trong browser này (user sang browser/máy khác sẽ thấy lại).
+ * Luôn hiển thị ở trang Danh sách ký số để user có thể tải Root CA + HDSD bất cứ lúc nào
+ * (override D-22 → D-26: bỏ trigger conditional + bỏ dismiss localStorage per user feedback UAT).
  *
  * Static URLs (D-30): /root-ca/*.cer và /root-ca/*.pdf — Next.js tự serve từ public/.
  */
@@ -22,32 +16,7 @@ import {
   FilePdfOutlined,
 } from '@ant-design/icons';
 
-interface Props {
-  /** Parent-controlled visibility — reset sau khi user dismiss */
-  visible: boolean;
-  /** Callback khi user click X close — parent remove trigger state */
-  onDismiss: () => void;
-}
-
-const DISMISS_KEY = 'dismiss_root_ca_banner';
-
-export default function RootCABanner({ visible, onDismiss }: Props) {
-  if (!visible) return null;
-
-  // Defense-in-depth: ngay cả khi parent set visible=true, check localStorage
-  // một lần nữa trước render (tránh race condition trong SSR/hydration + bảo vệ
-  // khỏi lỗi logic trong parent không filter dismiss trước khi set visible).
-  if (typeof window !== 'undefined' && localStorage.getItem(DISMISS_KEY) === 'true') {
-    return null;
-  }
-
-  const handleClose = () => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(DISMISS_KEY, 'true');
-    }
-    onDismiss();
-  };
-
+export default function RootCABanner() {
   return (
     <Alert
       type="info"
@@ -84,8 +53,6 @@ export default function RootCABanner({ visible, onDismiss }: Props) {
           </Space>
         </div>
       }
-      closable
-      onClose={handleClose}
       style={{ marginBottom: 16, borderRadius: 8 }}
     />
   );

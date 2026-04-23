@@ -232,11 +232,6 @@ export default function DanhSachKySoPage() {
     isOpen: signModalOpen,
   } = useSigning();
 
-  // --- Phase 13 — Root CA banner (D-22): visible ephemeral state, trigger bởi
-  // handleDownload khi provider=MYSIGN_VIETTEL + chưa dismiss. Banner tự handle
-  // localStorage.dismiss_root_ca_banner khi user click X.
-  const [showRootCABanner, setShowRootCABanner] = useState(false);
-
   // ==========================================================================
   // URL sync
   // ==========================================================================
@@ -436,19 +431,6 @@ export default function DanhSachKySoPage() {
         }
         // Browser mở tab mới → trigger download từ presigned MinIO URL
         window.open(url, '_blank', 'noopener,noreferrer');
-
-        // Phase 13 D-22: Trigger Root CA banner khi MYSIGN_VIETTEL + chưa dismiss.
-        // Banner chỉ ý nghĩa với file ký bằng Viettel MySign (end user cần cài
-        // Root CA Viettel để Adobe Reader hiển thị chữ ký hợp lệ).
-        if (
-          row.provider_code === 'MYSIGN_VIETTEL' &&
-          typeof window !== 'undefined' &&
-          localStorage.getItem('dismiss_root_ca_banner') !== 'true'
-        ) {
-          setShowRootCABanner(true);
-          // D-26: Mark shown-once (informational — logic dismiss riêng qua key trên)
-          localStorage.setItem('root_ca_banner_shown_once', 'true');
-        }
       } catch (err: unknown) {
         const axiosErr = err as {
           response?: { data?: { message?: string }; status?: number };
@@ -814,13 +796,9 @@ export default function DanhSachKySoPage() {
         </Title>
       </div>
 
-      {/* Phase 13 D-23: Root CA banner vị trí dưới page header, trên card tabs,
-          full width. Chỉ mount khi user tải file MYSIGN_VIETTEL lần đầu AND
-          chưa dismiss (localStorage). */}
-      <RootCABanner
-        visible={showRootCABanner}
-        onDismiss={() => setShowRootCABanner(false)}
-      />
+      {/* Phase 13 D-23: Root CA banner — luôn hiển thị trên trang danh sách ký số
+          để user có thể tải Root CA + HDSD bất cứ lúc nào (UAT override D-22..D-26). */}
+      <RootCABanner />
 
       <Card className="page-card">
         <Tabs
