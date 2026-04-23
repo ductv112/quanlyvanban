@@ -23,17 +23,27 @@
  *
  * Security (see Plan 11-06 threat_model):
  *   - T-11-21 Info Disclosure: Socket events filtered by `payload.transaction_id !== txnId`
- *   - T-11-23 DoS: MAX_MODAL_LIFETIME_MS=4min hard-timeout + destroyOnClose cleanup
+ *   - T-11-23 DoS: COUNTDOWN_MS=3min FE-local timer + destroyOnHidden cleanup
  *
- * Phase 13 TODOs (UX polish — out of scope this plan):
- *   - countdown timer 3:00 — see MAX_MODAL_LIFETIME_MS
- *   - Root CA banner cho MYSIGN_VIETTEL (link PDF + .cer download)
- *   - Spam-click disable trên trigger button (caller hook responsibility)
- *   - maskClosable guardrail với confirm warning (currently just false)
+ * Phase 13 polish (Plan 13-03):
+ *   - Countdown circular UI 3:00 (D-13, D-14, D-15, D-16, D-17)
+ *   - Color state theo remaining: xanh > 60s, vàng 30-60s, đỏ < 30s
+ *   - Expired transition khi remainingMs=0 (idempotent với BE Socket event qua expiredFired ref)
+ *   - Spam-click disable: caller page dùng useSigning.isOpen (D-18, D-19)
+ *   - maskClosable={false} giữ AntD 6 API `mask={{ closable: false }}` (Phase 12 hotfix)
  */
 
 import { useEffect, useRef, useState } from 'react';
-import { Modal, Alert, Space, Typography, Tag, Button, App as AntApp } from 'antd';
+import {
+  Modal,
+  Alert,
+  Space,
+  Typography,
+  Tag,
+  Button,
+  App as AntApp,
+  Progress,
+} from 'antd';
 import {
   LoadingOutlined,
   CheckCircleOutlined,
@@ -55,9 +65,8 @@ const { Text, Paragraph } = Typography;
 
 // Poll REST fallback every 3s khi Socket.IO disconnected hoặc miss event
 const POLL_INTERVAL_MS = 3000;
-// Backend expires_at = 3 phút (36 attempts × 5s); FE hard-timeout 4 phút để cover clock skew
-// TODO Phase 13: countdown 3:00 timer UI (UX-03)
-const MAX_MODAL_LIFETIME_MS = 240_000;
+// Phase 13: countdown 3:00 OTP — khớp BE sign_transactions.expires_at = 180s
+const COUNTDOWN_MS = 180_000;
 
 export interface SignModalProps {
   open: boolean;
@@ -78,6 +87,27 @@ const PROVIDER_NAMES: Record<string, string> = {
   SMARTCA_VNPT: 'SmartCA VNPT',
   MYSIGN_VIETTEL: 'MySign Viettel',
 };
+
+/**
+ * Phase 13 — D-15: Color theo remaining time
+ * - > 60s: xanh navy (brand primary #1B3A5C)
+ * - 30s - 60s: vàng (warning #D97706)
+ * - < 30s: đỏ (danger #DC2626)
+ */
+function countdownColor(ms: number): string {
+  const s = Math.ceil(ms / 1000);
+  if (s > 60) return '#1B3A5C';
+  if (s >= 30) return '#D97706';
+  return '#DC2626';
+}
+
+/** Phase 13 — format ms → 'M:SS' (zero-padded seconds) */
+function formatMMSS(ms: number): string {
+  const totalSec = Math.max(0, Math.ceil(ms / 1000));
+  const mm = Math.floor(totalSec / 60);
+  const ss = totalSec % 60;
+  return `${mm}:${ss.toString().padStart(2, '0')}`;
+}
 
 function statusTag(status: TxnStatus) {
   switch (status) {
@@ -136,10 +166,16 @@ export default function SignModal(props: SignModalProps) {
   const [cancelling, setCancelling] = useState(false);
   const [signedFilePath, setSignedFilePath] = useState<string | null>(null);
 
-  // Refs để cleanup timers + prevent duplicate onSuccess
+  // --- Phase 13: countdown state (D-13, D-14)
+  const [remainingMs, setRemainingMs] = useState<number>(COUNTDOWN_MS);
+
+  // Refs để cleanup timers + prevent duplicate onSuccess / expired
   const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
-  const lifetimeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const countdownTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const successFired = useRef(false);
+  // Phase 13 — expired idempotent guard: FE timer hết hoặc BE emit expired
+  // chỉ setStatus('expired') đúng 1 lần (tương tự successFired pattern).
+  const expiredFired = useRef(false);
 
   // ==========================================================================
   // Step 1: Initiate sign on open
@@ -155,6 +191,9 @@ export default function SignModal(props: SignModalProps) {
       setTxnId(null);
       setSignedFilePath(null);
       successFired.current = false;
+      // Phase 13: reset countdown mỗi lần start — tránh giá trị cũ flash
+      setRemainingMs(COUNTDOWN_MS);
+      expiredFired.current = false;
 
       try {
         const { data: res } = await api.post('/ky-so/sign', {
@@ -202,11 +241,8 @@ export default function SignModal(props: SignModalProps) {
   useEffect(() => {
     if (!open || !txnId || status !== 'pending') return;
 
-    // Lifetime guard — backend silent cho 4 phút → declare expired
-    lifetimeTimer.current = setTimeout(() => {
-      setErrorMsg('Hết thời gian chờ từ hệ thống. Vui lòng thử lại.');
-      setStatus('expired');
-    }, MAX_MODAL_LIFETIME_MS);
+    // Phase 13: lifetime guard moved → countdown useEffect below (FE-local 3:00
+    // timer với expiredFired idempotent, không dùng setTimeout riêng nữa).
 
     // REST poll fallback
     const poll = async () => {
@@ -233,6 +269,11 @@ export default function SignModal(props: SignModalProps) {
     };
     const onFailed = (payload: SignFailedEvent) => {
       if (payload.transaction_id !== txnId) return;
+      // Phase 13: BE emit expired cùng lúc FE timer hết → idempotent guard
+      if (payload.status === 'expired') {
+        if (expiredFired.current) return;
+        expiredFired.current = true;
+      }
       setStatus(payload.status);
       setErrorMsg(payload.error_message);
     };
@@ -241,11 +282,43 @@ export default function SignModal(props: SignModalProps) {
 
     return () => {
       if (pollTimer.current) clearInterval(pollTimer.current);
-      if (lifetimeTimer.current) clearTimeout(lifetimeTimer.current);
       pollTimer.current = null;
-      lifetimeTimer.current = null;
       socket?.off(SOCKET_EVENTS.SIGN_COMPLETED, onCompleted);
       socket?.off(SOCKET_EVENTS.SIGN_FAILED, onFailed);
+    };
+  }, [open, txnId, status]);
+
+  // ==========================================================================
+  // Phase 13 Step 2.5: Countdown timer (FE-local tick 1s — D-14)
+  //
+  // Chỉ chạy khi modal open + đã có txnId + status='pending'.
+  // Khi remain <= 0: set status='expired' + Alert error, mark expiredFired
+  // để tránh double-fire nếu BE Socket event `sign_failed` status=expired đến sau.
+  // ==========================================================================
+  useEffect(() => {
+    if (!open || !txnId || status !== 'pending') return;
+
+    const startAt = Date.now();
+    countdownTimer.current = setInterval(() => {
+      const elapsed = Date.now() - startAt;
+      const remain = COUNTDOWN_MS - elapsed;
+      if (remain <= 0) {
+        setRemainingMs(0);
+        if (!expiredFired.current) {
+          expiredFired.current = true;
+          setStatus('expired');
+          setErrorMsg('Hết thời gian chờ xác nhận OTP. Vui lòng thử lại.');
+        }
+        if (countdownTimer.current) clearInterval(countdownTimer.current);
+        countdownTimer.current = null;
+      } else {
+        setRemainingMs(remain);
+      }
+    }, 1000);
+
+    return () => {
+      if (countdownTimer.current) clearInterval(countdownTimer.current);
+      countdownTimer.current = null;
     };
   }, [open, txnId, status]);
 
@@ -360,6 +433,45 @@ export default function SignModal(props: SignModalProps) {
             <Tag>Chưa xác định</Tag>
           )}
         </div>
+
+        {status === 'pending' && (
+          <div
+            style={{
+              textAlign: 'center',
+              padding: '16px 0 12px',
+            }}
+          >
+            <Progress
+              type="circle"
+              size={120}
+              percent={Math.round((remainingMs / COUNTDOWN_MS) * 100)}
+              strokeColor={countdownColor(remainingMs)}
+              format={() => (
+                <span
+                  style={{
+                    fontSize: 24,
+                    fontWeight: 600,
+                    color: countdownColor(remainingMs),
+                    fontVariantNumeric: 'tabular-nums',
+                  }}
+                >
+                  {formatMMSS(remainingMs)}
+                </span>
+              )}
+            />
+            <div
+              style={{
+                marginTop: 12,
+                fontSize: 13,
+                color: '#475569',
+                lineHeight: 1.5,
+              }}
+            >
+              Vui lòng xác nhận OTP trên ứng dụng <b>{providerName}</b> trên
+              điện thoại
+            </div>
+          </div>
+        )}
 
         {status === 'pending' && (
           <Alert
