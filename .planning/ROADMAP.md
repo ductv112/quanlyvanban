@@ -280,14 +280,13 @@ Plans:
 **UI hint**: yes
 
 ### Phase 14: Deployment + HDSD triển khai + verification
-**Goal**: Hệ thống sẵn sàng deploy cho KH — deploy scripts seed config mặc định disabled, HDSD triển khai hướng dẫn IT cấu hình sau deploy, UAT cuối confirm toàn bộ flow v2.0
+**Goal**: Hệ thống sẵn sàng deploy cho KH trên Windows Server + IIS — deploy scripts seed config mặc định disabled + dev workflow documented + REQUIREMENTS.md audit 41 REQ v2.0 với verify evidence. Cleanup Linux scripts không còn support.
 **Depends on**: Phase 13
-**Requirements**: DEP-01, DEP-03
+**Requirements**: DEP-01
 **Success Criteria** (what must be TRUE):
-  1. Deploy scripts (`deploy/*.sh`, `deploy/*.ps1`) seed `signing_provider_config` 2 rows (SmartCA + MySign) với `is_active=false` — Admin bắt buộc phải config sau deploy trước khi ký
-  2. `deploy/README.md` có section "Cấu hình ký số sau deploy" hướng dẫn đủ: (a) Admin login → menu Ký số → chọn provider → nhập credentials → test connection; (b) phân phối Root CA Viettel cho end user cài lên máy (nếu chọn MySign)
-  3. UAT cuối cover cả 2 provider: tạo test transaction SmartCA VNPT (nếu KH có cấp credentials) hoặc confirm code path qua mock; tương tự MySign; xác nhận migration `staff.sign_phone` không mất data
-  4. Checklist acceptance 42 REQ-IDs v2.0 được tick đủ, không có blocker cho production deploy
+  1. Deploy scripts (`deploy/*.ps1` — Windows-only; 4 file `.sh` Linux đã xóa khỏi repo) seed `signing_provider_config` 2 rows (SmartCA + MySign) với `is_active=false` và empty credentials — Admin bắt buộc phải config sau deploy trước khi user ký
+  2. `deploy/README.md` rewrite Windows-only + thêm section "Development setup sau reset-db" hướng dẫn admin login → menu Ký số → nhập credentials từ `.env.dev-creds` → test connection → lưu
+  3. Checklist acceptance **41 REQ-IDs v2.0** (DEP-03 defer sang v2.1) được tick đủ với column `Verify Evidence` concrete (grep/psql/test commands); không có blocker Pass/Deferred cho production deploy
 **Plans**: 3 plans
 Plans:
 - [x] 14-01-cleanup-linux-rewrite-readme-PLAN.md — Xóa 4 file Linux shell scripts + rewrite deploy/README.md Windows-only
