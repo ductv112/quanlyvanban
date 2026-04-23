@@ -35,6 +35,7 @@ import kySoTaiKhoanRoutes from './routes/ky-so-tai-khoan.js';
 import kySoSignRoutes from './routes/ky-so-sign.js';
 import kySoDanhSachRoutes from './routes/ky-so-danh-sach.js';
 import notificationRoutes from './routes/notification.js';
+import bellNotificationsRoutes from './routes/notifications.js';  // Phase 13 — personal bell
 import sendConfigRoutes from './routes/send-config.js';
 import profileRoutes from './routes/profile.js';
 import { authenticate, requireRoles } from './middleware/auth.js';
@@ -79,6 +80,7 @@ app.use('/api/ho-so-cong-viec', authenticate, handlingDocRoutes);
 app.use('/api/quan-tri/quy-trinh', authenticate, workflowRoutes);
 app.use('/api/tin-nhan', authenticate, messageRoutes);
 app.use('/api/thong-bao', authenticate, noticeRoutes);
+app.use('/api/notifications', authenticate, bellNotificationsRoutes);  // Phase 13 — personal bell
 app.use('/api/lich', authenticate, calendarRoutes);
 app.use('/api/danh-ba', authenticate, directoryRoutes);
 app.use('/api/dashboard', authenticate, dashboardRoutes);
