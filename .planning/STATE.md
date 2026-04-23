@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 14-03-requirements-roadmap-audit-PLAN.md
-last_updated: "2026-04-23T08:44:31.170Z"
+status: verifying
+stopped_at: Completed 14-02-seed-fix-dev-workflow-PLAN.md
+last_updated: "2026-04-23T08:51:01.634Z"
 last_activity: 2026-04-23
 progress:
   total_phases: 15
-  completed_phases: 13
+  completed_phases: 14
   total_plans: 65
-  completed_plans: 63
-  percent: 97
+  completed_plans: 64
+  percent: 98
 ---
 
 # Project State
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-04-21 — Milestone v2.0 started)
 Phase: 14 (deployment-hdsd-verification) — EXECUTING
 Plan: 3 of 3
 Next: Plan 11.1-03 — move 18 file migrations cũ → archive/, update deploy scripts + dev onboarding README dùng schema/ + seed/ flow
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-04-23
 
 Progress: [██████████] 98% (53/54 plans complete — 11 phases Complete + Phase 11.1 2/3)
@@ -83,6 +83,7 @@ Progress: [██████████] 98% (53/54 plans complete — 11 phas
 | Phase 13 P04 | 7min | 2 tasks | 4 files |
 | Phase 14 P01 | 2min | 2 tasks | 5 files |
 | Phase 14 P03 | 7min | 2 tasks | 2 files |
+| Phase 14 P02 | 3min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -193,6 +194,8 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase 14]: Plan 14-01: Windows-only lock (D-01) + remove 4 Linux .sh scripts (D-02) — git history giữ nguyên để recoverable; README.md rewrite 177 lines 12 H2 sections
 - [Phase 14]: Plan 14-03: Verify Evidence paths phải khớp repo thực tế — plan prescribed paths giả định bị sai với cấu trúc sub-folder (services/signing, components/signing, components/notifications); spot-check 9 REQ + sửa 20+ evidence cells (Rule 1 auto-fix)
 - [Phase 14]: Plan 14-03: REQUIREMENTS.md v2.0 = 41 REQ (DEP-03 deferred v2.1). Thêm column Verify Evidence concrete → milestone acceptance audit time 5-10h → 30min. ROADMAP.md Phase 14 SC 4→3 items (remove AC-02 HDSD cấu hình + AC-03 UAT cuối per D-09/D-10)
+- [Phase 14]: Plan 14-02: Seed 001 production-safe — SmartCA is_active=TRUE→FALSE + xóa hardcoded dev creds ('ZjA4MjE4NDg...' + '4d00-638392811079166938.apps.smartcaapi.com'); giữ pgp_sym_encrypt('', v_key) thay NULL để avoid decrypt crash
+- [Phase 14]: Plan 14-02: Dev workflow documentation trong deploy/README.md (không CLAUDE.md) — 6-bước admin config provider sau reset-db, reference .env.dev-creds (KHÔNG commit), constraint 1-provider-active + SIGNING_SECRET_KEY rotation warning
 
 ### Pending Todos
 
@@ -224,6 +227,6 @@ v1.0 hoàn thành với 3 quick tasks (HDSD Compliance sprint cuối):
 
 ## Session Continuity
 
-Last session: 2026-04-23T08:44:31.158Z
-Stopped at: Completed 14-03-requirements-roadmap-audit-PLAN.md
+Last session: 2026-04-23T08:51:01.622Z
+Stopped at: Completed 14-02-seed-fix-dev-workflow-PLAN.md
 Resume: `/gsd-execute-phase 11.1` để tiếp tục Plan 11.1-02 (seed required data + rich demo data)

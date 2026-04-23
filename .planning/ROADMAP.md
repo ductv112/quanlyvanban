@@ -33,7 +33,7 @@ Rebuild hệ thống quản lý văn bản điện tử (.NET cũ) thành stack 
 - [x] **Phase 11: Sign flow + async worker (core)** - API `/ky-so/sign` real, BullMQ worker poll 5s × 3 phút, Socket.IO `SIGN_COMPLETED`, ký lại/hủy transaction (completed 2026-04-21)
 - [x] **Phase 12: Menu Ký số + Danh sách 4 tab UI** - Sidebar menu mới, trang `/ky-so/danh-sach` 4 tab dynamic (Cần ký / Đang xử lý / Đã ký / Thất bại), re-wire detail VB pages (completed 2026-04-22)
 - [x] **Phase 13: Modal ký số robust + Root CA UX** - Modal countdown 3:00, disable spam, maskClosable=false, banner Root CA Viettel dismissible + link `.cer` + HDSD PDF (completed 2026-04-23)
-- [ ] **Phase 14: Deployment + HDSD triển khai + verification** - Deploy scripts seed provider config disabled, copy Root CA static files, HDSD cho IT triển khai, UAT cuối
+- [x] **Phase 14: Deployment + HDSD triển khai + verification** - Deploy scripts seed provider config disabled, copy Root CA static files, HDSD cho IT triển khai, UAT cuối (completed 2026-04-23)
 
 ## Phase Details
 
@@ -290,7 +290,7 @@ Plans:
 **Plans**: 3 plans
 Plans:
 - [x] 14-01-cleanup-linux-rewrite-readme-PLAN.md — Xóa 4 file Linux shell scripts + rewrite deploy/README.md Windows-only
-- [ ] 14-02-seed-fix-dev-workflow-PLAN.md — Fix seed 001_required_data.sql (cả 2 provider disabled + empty creds) + thêm section Development setup vào README
+- [x] 14-02-seed-fix-dev-workflow-PLAN.md — Fix seed 001_required_data.sql (cả 2 provider disabled + empty creds) + thêm section Development setup vào README
 - [x] 14-03-requirements-roadmap-audit-PLAN.md — Update REQUIREMENTS.md (41 REQ + 2 column Verify Evidence/Status, remove DEP-03) + đồng bộ ROADMAP.md Phase 14 section
 **UI hint**: no
 
@@ -315,4 +315,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 11.1. DB Consolidation & Seed Strategy | 2/3 | Complete    | 2026-04-22 |
 | 12. Menu Ký số + Danh sách UI | 3/3 | Complete    | 2026-04-22 |
 | 13. Modal ký số + Root CA UX | 5/5 | Complete    | 2026-04-23 |
-| 14. Deployment + HDSD + verification | 2/3 | In Progress|  |
+| 14. Deployment + HDSD + verification | 3/3 | Complete   | 2026-04-23 |
