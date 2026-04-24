@@ -1,5 +1,4 @@
-import { Router } from 'express';
-import type { Response } from 'express';
+import { Router, type Request, type Response } from 'express';
 import type { AuthRequest } from '../middleware/auth.js';
 import { handlingDocReportRepository } from '../repositories/handling-doc-report.repository.js';
 import { handleDbError } from '../lib/error-handler.js';
@@ -12,9 +11,9 @@ const router = Router();
 // ============================================================
 
 // GET /kpi — KPI tổng quan hồ sơ công việc
-router.get('/kpi', async (req: AuthRequest, res: Response) => {
+router.get('/kpi', async (req: Request, res: Response) => {
   try {
-    const ancestorUnitId = await resolveAncestorUnit(req.user!.departmentId);
+    const ancestorUnitId = await resolveAncestorUnit((req as AuthRequest).user!.departmentId);
     const fromDate = req.query.from_date ? String(req.query.from_date) : null;
     const toDate = req.query.to_date ? String(req.query.to_date) : null;
 
@@ -26,9 +25,9 @@ router.get('/kpi', async (req: AuthRequest, res: Response) => {
 });
 
 // GET /bao-cao/theo-don-vi — Báo cáo theo đơn vị/phòng ban
-router.get('/bao-cao/theo-don-vi', async (req: AuthRequest, res: Response) => {
+router.get('/bao-cao/theo-don-vi', async (req: Request, res: Response) => {
   try {
-    const ancestorUnitId = await resolveAncestorUnit(req.user!.departmentId);
+    const ancestorUnitId = await resolveAncestorUnit((req as AuthRequest).user!.departmentId);
     const fromDate = req.query.from_date ? String(req.query.from_date) : null;
     const toDate = req.query.to_date ? String(req.query.to_date) : null;
 
@@ -40,9 +39,9 @@ router.get('/bao-cao/theo-don-vi', async (req: AuthRequest, res: Response) => {
 });
 
 // GET /bao-cao/theo-can-bo — Báo cáo theo cán bộ giải quyết
-router.get('/bao-cao/theo-can-bo', async (req: AuthRequest, res: Response) => {
+router.get('/bao-cao/theo-can-bo', async (req: Request, res: Response) => {
   try {
-    const ancestorUnitId = await resolveAncestorUnit(req.user!.departmentId);
+    const ancestorUnitId = await resolveAncestorUnit((req as AuthRequest).user!.departmentId);
     const fromDate = req.query.from_date ? String(req.query.from_date) : null;
     const toDate = req.query.to_date ? String(req.query.to_date) : null;
 
@@ -54,9 +53,9 @@ router.get('/bao-cao/theo-can-bo', async (req: AuthRequest, res: Response) => {
 });
 
 // GET /bao-cao/theo-nguoi-giao — Báo cáo theo người giao việc
-router.get('/bao-cao/theo-nguoi-giao', async (req: AuthRequest, res: Response) => {
+router.get('/bao-cao/theo-nguoi-giao', async (req: Request, res: Response) => {
   try {
-    const ancestorUnitId = await resolveAncestorUnit(req.user!.departmentId);
+    const ancestorUnitId = await resolveAncestorUnit((req as AuthRequest).user!.departmentId);
     const fromDate = req.query.from_date ? String(req.query.from_date) : null;
     const toDate = req.query.to_date ? String(req.query.to_date) : null;
 

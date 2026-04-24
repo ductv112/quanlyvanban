@@ -22,7 +22,7 @@ export interface DbResultWithId extends DbResult {
 }
 
 export const docBookRepository = {
-  async getList(typeId: number, unitId: number): Promise<DocBookRow[]> {
+  async getList(typeId: number | null, unitId: number): Promise<DocBookRow[]> {
     return callFunction<DocBookRow>('edoc.fn_doc_book_get_list', [typeId, unitId]);
   },
 

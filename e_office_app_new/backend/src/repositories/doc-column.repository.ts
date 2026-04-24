@@ -13,7 +13,7 @@ export interface DocColumnRow {
 }
 
 export const docColumnRepository = {
-  async getList(typeId: number): Promise<DocColumnRow[]> {
+  async getList(typeId: number | null): Promise<DocColumnRow[]> {
     return callFunction<DocColumnRow>('edoc.fn_doc_column_get_list', [typeId]);
   },
 

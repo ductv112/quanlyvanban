@@ -14,7 +14,7 @@ export interface DocTypeRow {
 }
 
 export const docTypeRepository = {
-  async getTree(typeId: number): Promise<DocTypeRow[]> {
+  async getTree(typeId: number | null): Promise<DocTypeRow[]> {
     return callFunction<DocTypeRow>('edoc.fn_doc_type_get_tree', [typeId]);
   },
 

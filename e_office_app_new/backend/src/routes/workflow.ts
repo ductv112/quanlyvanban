@@ -1,5 +1,4 @@
-import { Router } from 'express';
-import type { Response } from 'express';
+import { Router, type Request, type Response } from 'express';
 import type { AuthRequest } from '../middleware/auth.js';
 import { workflowRepository } from '../repositories/workflow.repository.js';
 import { handleDbError } from '../lib/error-handler.js';
@@ -12,9 +11,9 @@ const router = Router();
 // ============================================================
 
 // GET / — Danh sách quy trình
-router.get('/', async (req: AuthRequest, res: Response) => {
+router.get('/', async (req: Request, res: Response) => {
   try {
-    const ancestorUnitId = await resolveAncestorUnit(req.user!.departmentId);
+    const ancestorUnitId = await resolveAncestorUnit((req as AuthRequest).user!.departmentId);
     const docFieldId = req.query.doc_field_id ? Number(req.query.doc_field_id) : null;
     const isActive = req.query.is_active !== undefined
       ? req.query.is_active === 'true'
@@ -28,10 +27,10 @@ router.get('/', async (req: AuthRequest, res: Response) => {
 });
 
 // POST / — Tạo quy trình mới
-router.post('/', async (req: AuthRequest, res: Response) => {
+router.post('/', async (req: Request, res: Response) => {
   try {
-    const ancestorUnitId = await resolveAncestorUnit(req.user!.departmentId);
-    const staffId = req.user!.staffId;
+    const ancestorUnitId = await resolveAncestorUnit((req as AuthRequest).user!.departmentId);
+    const staffId = (req as AuthRequest).user!.staffId;
     const { name, version, doc_field_id } = req.body;
 
     if (!name || String(name).trim() === '') {
@@ -59,7 +58,7 @@ router.post('/', async (req: AuthRequest, res: Response) => {
 });
 
 // GET /:id — Chi tiết quy trình
-router.get('/:id', async (req: AuthRequest, res: Response) => {
+router.get('/:id', async (req: Request, res: Response) => {
   try {
     const id = Number(req.params.id);
     const flow = await workflowRepository.getById(id);
@@ -77,7 +76,7 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
 });
 
 // PUT /:id — Cập nhật quy trình
-router.put('/:id', async (req: AuthRequest, res: Response) => {
+router.put('/:id', async (req: Request, res: Response) => {
   try {
     const id = Number(req.params.id);
     const { name, version, doc_field_id, is_active } = req.body;
@@ -107,7 +106,7 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
 });
 
 // DELETE /:id — Xóa quy trình
-router.delete('/:id', async (req: AuthRequest, res: Response) => {
+router.delete('/:id', async (req: Request, res: Response) => {
   try {
     const id = Number(req.params.id);
     const result = await workflowRepository.delete(id);
@@ -124,7 +123,7 @@ router.delete('/:id', async (req: AuthRequest, res: Response) => {
 });
 
 // GET /:id/full — Toàn bộ quy trình (designer): flow + steps + links
-router.get('/:id/full', async (req: AuthRequest, res: Response) => {
+router.get('/:id/full', async (req: Request, res: Response) => {
   try {
     const id = Number(req.params.id);
     const flow = await workflowRepository.getById(id);
@@ -149,7 +148,7 @@ router.get('/:id/full', async (req: AuthRequest, res: Response) => {
 // ============================================================
 
 // POST /:id/steps — Tạo bước mới
-router.post('/:id/steps', async (req: AuthRequest, res: Response) => {
+router.post('/:id/steps', async (req: Request, res: Response) => {
   try {
     const flowId = Number(req.params.id);
     const {
@@ -185,7 +184,7 @@ router.post('/:id/steps', async (req: AuthRequest, res: Response) => {
 });
 
 // PUT /steps/:stepId — Cập nhật bước
-router.put('/steps/:stepId', async (req: AuthRequest, res: Response) => {
+router.put('/steps/:stepId', async (req: Request, res: Response) => {
   try {
     const stepId = Number(req.params.stepId);
     const {
@@ -221,7 +220,7 @@ router.put('/steps/:stepId', async (req: AuthRequest, res: Response) => {
 });
 
 // DELETE /steps/:stepId — Xóa bước
-router.delete('/steps/:stepId', async (req: AuthRequest, res: Response) => {
+router.delete('/steps/:stepId', async (req: Request, res: Response) => {
   try {
     const stepId = Number(req.params.stepId);
     const result = await workflowRepository.deleteStep(stepId);
@@ -242,7 +241,7 @@ router.delete('/steps/:stepId', async (req: AuthRequest, res: Response) => {
 // ============================================================
 
 // POST /step-links — Tạo liên kết giữa các bước
-router.post('/step-links', async (req: AuthRequest, res: Response) => {
+router.post('/step-links', async (req: Request, res: Response) => {
   try {
     const { from_step_id, to_step_id } = req.body;
 
@@ -268,7 +267,7 @@ router.post('/step-links', async (req: AuthRequest, res: Response) => {
 });
 
 // DELETE /step-links/:linkId — Xóa liên kết
-router.delete('/step-links/:linkId', async (req: AuthRequest, res: Response) => {
+router.delete('/step-links/:linkId', async (req: Request, res: Response) => {
   try {
     const linkId = Number(req.params.linkId);
     const result = await workflowRepository.deleteStepLink(linkId);
@@ -289,7 +288,7 @@ router.delete('/step-links/:linkId', async (req: AuthRequest, res: Response) => 
 // ============================================================
 
 // GET /steps/:stepId/staff — Danh sách cán bộ thực hiện bước
-router.get('/steps/:stepId/staff', async (req: AuthRequest, res: Response) => {
+router.get('/steps/:stepId/staff', async (req: Request, res: Response) => {
   try {
     const stepId = Number(req.params.stepId);
     const rows = await workflowRepository.getStepStaff(stepId);
@@ -300,7 +299,7 @@ router.get('/steps/:stepId/staff', async (req: AuthRequest, res: Response) => {
 });
 
 // POST /steps/:stepId/staff — Gán cán bộ cho bước (thay thế toàn bộ)
-router.post('/steps/:stepId/staff', async (req: AuthRequest, res: Response) => {
+router.post('/steps/:stepId/staff', async (req: Request, res: Response) => {
   try {
     const stepId = Number(req.params.stepId);
     const { staff_ids } = req.body;
