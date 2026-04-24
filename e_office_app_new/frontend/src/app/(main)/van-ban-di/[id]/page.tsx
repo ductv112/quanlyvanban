@@ -136,6 +136,12 @@ export default function OutgoingDocDetailPage() {
   const [archiving, setArchiving] = useState(false);
   const [warehouseOptions, setWarehouseOptions] = useState<{ value: number; label: string }[]>([]);
   const [fondOptions, setFondOptions] = useState<{ value: number; label: string }[]>([]);
+  // Phase 17 v3.0: Ban hành + Gửi nội bộ
+  const [releasing, setReleasing] = useState(false);
+  const [noiBoModalOpen, setNoiBoModalOpen] = useState(false);
+  const [deptOptions, setDeptOptions] = useState<{ value: number; label: string }[]>([]);
+  const [selectedDeptIds, setSelectedDeptIds] = useState<number[]>([]);
+  const [noiBoSending, setNoiBoSending] = useState(false);
 
   const fetchDoc = useCallback(async () => { try { const { data: res } = await api.get(`/van-ban-di/${docId}`); setDoc(res.data); } catch { message.error('Không tìm thấy văn bản'); router.push('/van-ban-di'); } }, [docId, message, router]);
   const fetchBookmarkStatus = useCallback(async () => { try { const { data: res } = await api.get('/van-ban-di/danh-dau-ca-nhan'); const bookmarks: { doc_id: number | string }[] = res.data || []; setIsBookmarked(bookmarks.some((b) => Number(b.doc_id) === Number(docId))); } catch {} }, [docId]);
@@ -259,6 +265,57 @@ export default function OutgoingDocDetailPage() {
     }
   };
 
+  // Phase 17 v3.0: Ban hành (cấp số) + Gửi nội bộ (chọn đơn vị → auto-sinh incoming)
+  const handleRelease = async () => {
+    setReleasing(true);
+    try {
+      const { data: res } = await api.patch(`/van-ban-di/${docId}/ban-hanh`);
+      message.success(res?.data?.message || `Ban hành thành công, số ${res?.data?.doc_number}`);
+      fetchDoc();
+      fetchHistory();
+    } catch (e: any) {
+      message.error(e?.response?.data?.message || 'Lỗi');
+    } finally {
+      setReleasing(false);
+    }
+  };
+
+  const openNoiBoModal = async () => {
+    try {
+      const { data: res } = await api.get('/quan-tri/don-vi');
+      // Lấy departments là đơn vị (is_unit = true), exclude unit của mình
+      const opts = (res.data || [])
+        .filter((d: any) => d.id !== doc?.unit_id)
+        .map((d: any) => ({ value: d.id, label: d.name }));
+      setDeptOptions(opts);
+      setSelectedDeptIds([]);
+      setNoiBoModalOpen(true);
+    } catch (e: any) {
+      message.error(e?.response?.data?.message || 'Không tải được danh sách đơn vị');
+    }
+  };
+
+  const handleSendNoiBo = async () => {
+    if (selectedDeptIds.length === 0) { message.warning('Chọn ít nhất 1 đơn vị nhận'); return; }
+    setNoiBoSending(true);
+    try {
+      // 1. Lưu recipients
+      await api.post(`/van-ban-di/${docId}/noi-nhan`, {
+        recipients: selectedDeptIds.map((unit_id) => ({ type: 'internal_unit', unit_id })),
+      });
+      // 2. Gửi
+      const { data: res } = await api.post(`/van-ban-di/${docId}/gui-noi-bo`);
+      message.success(res?.data?.message || `Đã gửi: ${res?.data?.internal_count} đơn vị nội bộ`);
+      setNoiBoModalOpen(false);
+      fetchDoc();
+      fetchHistory();
+    } catch (e: any) {
+      message.error(e?.response?.data?.message || 'Gửi thất bại');
+    } finally {
+      setNoiBoSending(false);
+    }
+  };
+
   // Send
   const openSendModal = async () => { try { const { data: res } = await api.get(`/van-ban-di/${docId}/danh-sach-gui`); setSendableStaff(res.data || []); setSelectedStaffIds([]); setSendModalOpen(true); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } };
   const handleSend = async () => {
@@ -331,6 +388,14 @@ export default function OutgoingDocDetailPage() {
                 <Button icon={<MoreOutlined />} />
               </Dropdown>
             </>
+          )}
+          {/* Phase 17 v3.0: Ban hành (cấp số) — hiện khi approved + chưa is_released */}
+          {doc.approved && !(doc as any).is_released && (
+            <Button type="primary" icon={<CheckCircleOutlined />} loading={releasing} onClick={handleRelease} style={{ backgroundColor: '#7C3AED', borderColor: '#7C3AED' }}>Ban hành (cấp số)</Button>
+          )}
+          {/* Phase 17 v3.0: Gửi nội bộ (auto-sinh incoming cho đơn vị nhận) — hiện khi đã ban hành chưa gửi */}
+          {doc.approved && (doc as any).is_released && (doc as any).status !== 'sent' && (
+            <Button type="primary" icon={<SendOutlined />} onClick={openNoiBoModal} style={{ backgroundColor: '#0891B2', borderColor: '#0891B2' }}>Gửi nội bộ</Button>
           )}
           {doc.approved && (
             <>
@@ -658,6 +723,31 @@ export default function OutgoingDocDetailPage() {
 
       {/* Sign modal từ useSigning hook (Plan 11-06) — replace mock OTP với real async flow */}
       {renderSignModal()}
+
+      {/* Phase 17 v3.0: Modal Gửi nội bộ — chọn đơn vị nhận, auto-sinh incoming_docs */}
+      <Modal
+        title="Gửi nội bộ — chọn đơn vị nhận"
+        open={noiBoModalOpen}
+        onCancel={() => setNoiBoModalOpen(false)}
+        onOk={handleSendNoiBo}
+        confirmLoading={noiBoSending}
+        okText={`Gửi (${selectedDeptIds.length} đơn vị)`}
+        cancelText="Hủy"
+        width={600}
+      >
+        <div style={{ marginBottom: 12, color: '#595959' }}>
+          Chọn các đơn vị nhận. Hệ thống sẽ tự sinh "Văn bản đến" cho mỗi đơn vị (source_type = internal).
+        </div>
+        <Checkbox.Group
+          value={selectedDeptIds}
+          onChange={(vals) => setSelectedDeptIds(vals as number[])}
+          style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 400, overflowY: 'auto' }}
+        >
+          {deptOptions.map((opt) => (
+            <Checkbox key={opt.value} value={opt.value}>{opt.label}</Checkbox>
+          ))}
+        </Checkbox.Group>
+      </Modal>
     </div>
   );
 }
