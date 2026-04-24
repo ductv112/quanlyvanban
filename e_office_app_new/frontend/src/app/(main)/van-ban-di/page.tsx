@@ -216,21 +216,31 @@ export default function OutgoingDocPage() {
     try {
       const values = await form.validateFields();
       setSaving(true);
+      // Phase 17 v3.0 (Option C): tách recipient_unit_ids khỏi payload
+      const { recipient_unit_ids, ...rest } = values;
       const payload = {
-        ...values,
-        received_date: values.received_date?.toISOString(),
-        publish_date: values.publish_date?.toISOString() || null,
-        sign_date: values.sign_date?.toISOString() || null,
-        expired_date: values.expired_date?.toISOString() || null,
+        ...rest,
+        received_date: rest.received_date?.toISOString(),
+        publish_date: rest.publish_date?.toISOString() || null,
+        sign_date: rest.sign_date?.toISOString() || null,
+        expired_date: rest.expired_date?.toISOString() || null,
       };
+      let docId: number;
       if (editingRecord) {
         const { data: res } = await api.put(`/van-ban-di/${editingRecord.id}`, payload);
         if (!res.success) { message.error(res.message); return; }
         message.success('Cập nhật thành công');
+        docId = editingRecord.id;
       } else {
         const { data: res } = await api.post('/van-ban-di', payload);
         if (!res.success) { message.error(res.message); return; }
         message.success('Tạo văn bản đi thành công');
+        docId = res.data?.id;
+      }
+      // Lưu recipients nội bộ (overwrite mode)
+      if (docId && Array.isArray(recipient_unit_ids)) {
+        const recipients = recipient_unit_ids.map((unit_id: number) => ({ type: 'internal_unit' as const, unit_id }));
+        await api.post(`/van-ban-di/${docId}/noi-nhan`, { recipients }).catch(() => null);
       }
       closeDrawer();
       fetchData();
@@ -548,8 +558,24 @@ export default function OutgoingDocPage() {
               </Form.Item>
             </Col>
           </Row>
-          <Form.Item name="recipients" label="Nơi nhận">
-            <TextArea rows={2} placeholder="Nơi nhận văn bản" maxLength={2000} showCount />
+          <Form.Item
+            name="recipient_unit_ids"
+            label="Đơn vị nhận"
+            tooltip="Chọn các đơn vị nhận từ danh sách. Khi 'Gửi', mỗi đơn vị tự nhận được Văn bản đến."
+          >
+            <Select
+              mode="multiple"
+              showSearch
+              allowClear
+              placeholder="Chọn đơn vị nhận..."
+              filterOption={(input, opt) => (opt?.label as string)?.toLowerCase().includes(input.toLowerCase())}
+              options={departments
+                .filter((d) => d.value !== (user?.unitId || 0))
+                .map((d) => ({ value: d.value, label: d.label }))}
+            />
+          </Form.Item>
+          <Form.Item name="recipients" label="Nơi nhận (mô tả thêm — không bắt buộc)" tooltip="Text mô tả tổng quan, hiển thị trên VB. Logic gửi dùng 'Đơn vị nhận' phía trên.">
+            <TextArea rows={2} placeholder="VD: 'Các Sở, ngành liên quan; UBND các huyện, TX'" maxLength={2000} showCount />
           </Form.Item>
 
           {!PHASE1_HIDE_CUSTOM_FIELDS && extraColumns.length > 0 && (

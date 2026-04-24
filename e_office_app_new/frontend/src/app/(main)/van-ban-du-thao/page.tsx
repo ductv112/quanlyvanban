@@ -792,8 +792,8 @@ export default function DraftingDocPage() {
             <Col span={6} />
           </Row>
 
-          <Form.Item name="recipients" label="Nơi nhận">
-            <TextArea rows={2} placeholder="Nơi nhận văn bản" maxLength={2000} showCount />
+          <Form.Item name="recipients" label="Nơi nhận" tooltip="Chỉ là mô tả text. Sau khi Ban hành thành VB đi, sẽ chọn 'Đơn vị nhận' chính thức trên VB đi để Gửi.">
+            <TextArea rows={2} placeholder="VD: 'Các Sở, ngành liên quan'" maxLength={2000} showCount />
           </Form.Item>
 
           {!PHASE1_HIDE_CUSTOM_FIELDS && extraColumns.length > 0 && (

@@ -280,10 +280,45 @@ export default function OutgoingDocDetailPage() {
     }
   };
 
+  // Phase 17 v3.0 (Option C): Gửi tới recipients đã lưu trong outgoing_doc_recipients
+  // (recipients được lưu ngay khi tạo VB qua form CRUD — KHÔNG popup chọn lại)
+  const handleSendDirect = async () => {
+    setNoiBoSending(true);
+    try {
+      const { data: res } = await api.post(`/van-ban-di/${docId}/gui-noi-bo`);
+      message.success(res?.data?.message || `Đã gửi: ${res?.data?.internal_count} đơn vị nội bộ + ${res?.data?.external_count} cơ quan ngoài`);
+      fetchDoc();
+      fetchHistory();
+      fetchRecipients();
+    } catch (e: any) {
+      message.error(e?.response?.data?.message || 'Gửi thất bại');
+    } finally {
+      setNoiBoSending(false);
+    }
+  };
+
+  // Combined: Ban hành + Gửi cùng 1 click (cho user fast workflow)
+  const handleReleaseAndSend = async () => {
+    setReleasing(true);
+    try {
+      const { data: r1 } = await api.patch(`/van-ban-di/${docId}/ban-hanh`);
+      if (!r1?.success) { message.error(r1?.data?.message || 'Ban hành thất bại'); return; }
+      const { data: r2 } = await api.post(`/van-ban-di/${docId}/gui-noi-bo`);
+      message.success(`Đã ban hành (số ${r1?.data?.doc_number}) và gửi: ${r2?.data?.internal_count} nội bộ + ${r2?.data?.external_count} ngoài`);
+      fetchDoc();
+      fetchHistory();
+      fetchRecipients();
+    } catch (e: any) {
+      message.error(e?.response?.data?.message || 'Lỗi');
+    } finally {
+      setReleasing(false);
+    }
+  };
+
+  // [LEGACY — giữ tạm để backward-compat, ẩn ở UI mới]
   const openNoiBoModal = async () => {
     try {
       const { data: res } = await api.get('/quan-tri/don-vi');
-      // Lấy departments là đơn vị (is_unit = true), exclude unit của mình
       const opts = (res.data || [])
         .filter((d: any) => d.id !== doc?.unit_id)
         .map((d: any) => ({ value: d.id, label: d.name }));
@@ -389,24 +424,34 @@ export default function OutgoingDocDetailPage() {
               </Dropdown>
             </>
           )}
-          {/* Phase 17 v3.0: Ban hành (cấp số) — hiện khi approved + chưa is_released */}
+          {/* Phase 17 v3.0 (Option C): Approved nhưng chưa ban hành → 2 lựa chọn */}
           {doc.approved && !(doc as any).is_released && (
-            <Button type="primary" icon={<CheckCircleOutlined />} loading={releasing} onClick={handleRelease} style={{ backgroundColor: '#7C3AED', borderColor: '#7C3AED' }}>Ban hành (cấp số)</Button>
-          )}
-          {/* Phase 17 v3.0: Gửi nội bộ (auto-sinh incoming cho đơn vị nhận) — hiện khi đã ban hành chưa gửi */}
-          {doc.approved && (doc as any).is_released && (doc as any).status !== 'sent' && (
-            <Button type="primary" icon={<SendOutlined />} onClick={openNoiBoModal} style={{ backgroundColor: '#0891B2', borderColor: '#0891B2' }}>Gửi nội bộ</Button>
-          )}
-          {doc.approved && (
             <>
-              <Button type="primary" icon={<SendOutlined />} onClick={openSendModal}>Gửi</Button>
+              <Button type="primary" icon={<CheckCircleOutlined />} loading={releasing} onClick={handleRelease} style={{ backgroundColor: '#7C3AED', borderColor: '#7C3AED' }}>Ban hành</Button>
+              <Button type="primary" icon={<SendOutlined />} loading={releasing || noiBoSending} onClick={handleReleaseAndSend} style={{ backgroundColor: '#059669', borderColor: '#059669' }}>Ban hành & Gửi</Button>
+              <Dropdown menu={{ items: [{ key: 'unapprove', icon: <CloseCircleOutlined />, label: 'Hủy duyệt', onClick: handleUnapprove }] }}>
+                <Button icon={<MoreOutlined />} />
+              </Dropdown>
+            </>
+          )}
+          {/* Đã ban hành, chưa gửi → nút Gửi (đẩy recipients đã lưu khi tạo) */}
+          {doc.approved && (doc as any).is_released && (doc as any).status !== 'sent' && (
+            <>
+              <Button type="primary" icon={<SendOutlined />} loading={noiBoSending} onClick={handleSendDirect} style={{ backgroundColor: '#0891B2', borderColor: '#0891B2' }}>Gửi</Button>
               <Dropdown menu={{ items: [
-                { key: 'unapprove', icon: <CloseCircleOutlined />, label: 'Hủy duyệt', onClick: handleUnapprove },
                 ...(recipients.length > 0 ? [{ key: 'retract', icon: <RollbackOutlined />, label: 'Thu hồi', onClick: handleRetract }] : []),
               ] }}>
                 <Button icon={<MoreOutlined />} />
               </Dropdown>
             </>
+          )}
+          {/* Đã gửi → readonly + Thu hồi nếu cần */}
+          {doc.approved && (doc as any).status === 'sent' && (
+            <Dropdown menu={{ items: [
+              ...(recipients.length > 0 ? [{ key: 'retract', icon: <RollbackOutlined />, label: 'Thu hồi', onClick: handleRetract }] : []),
+            ] }}>
+              <Button icon={<MoreOutlined />} />
+            </Dropdown>
           )}
         </Space>
       </div>
@@ -466,6 +511,24 @@ export default function OutgoingDocDetailPage() {
                   </div>
                 </div>
                 <div><div className="info-label">Nơi nhận</div><div className="info-value">{doc.recipients || '—'}</div></div>
+              </div>
+              <div className="info-grid">
+                <div>
+                  <div className="info-label">Người duyệt</div>
+                  <div className="info-value">
+                    {doc.approver
+                      ? <>{doc.approver} {(doc as any).approved_at && <Tag color="success" style={{ marginLeft: 8 }}>{fmtDateTime((doc as any).approved_at)}</Tag>}</>
+                      : <span style={{ color: '#bfbfbf' }}>Chưa duyệt</span>}
+                  </div>
+                </div>
+                <div>
+                  <div className="info-label">Trạng thái phát hành</div>
+                  <div className="info-value">
+                    {(doc as any).is_released
+                      ? <Tag color="purple">Đã ban hành{(doc as any).released_date ? ` ${fmtDateTime((doc as any).released_date)}` : ''}</Tag>
+                      : <Tag color="default">Chưa ban hành</Tag>}
+                  </div>
+                </div>
               </div>
               <div className="info-grid">
                 <div><div className="info-label">Độ mật</div><Tag color={secretTag.color}>{secretTag.text}</Tag></div>

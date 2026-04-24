@@ -551,6 +551,26 @@ export default function IncomingDocDetailPage() {
                 <div><div className="info-label">Nơi nhận</div><div className="info-value">{doc.recipients || '—'}</div></div>
               </div>
               <div className="info-grid">
+                <div>
+                  <div className="info-label">Người duyệt</div>
+                  <div className="info-value">
+                    {doc.approver
+                      ? <>{doc.approver}{(doc as any).approved_at && <Tag color="success" style={{ marginLeft: 8 }}>{dayjs((doc as any).approved_at).format('DD/MM/YYYY HH:mm')}</Tag>}</>
+                      : <span style={{ color: '#bfbfbf' }}>Chưa duyệt</span>}
+                  </div>
+                </div>
+                <div>
+                  <div className="info-label">Nguồn</div>
+                  <div className="info-value">
+                    {(doc as any).source_type === 'internal'
+                      ? <Tag color="blue">Nội bộ {(doc as any).unit_send && `— ${(doc as any).unit_send}`}</Tag>
+                      : (doc as any).source_type === 'external_lgsp'
+                      ? <Tag color="green">LGSP{(doc as any).external_doc_id && ` — ${(doc as any).external_doc_id}`}</Tag>
+                      : <Tag>Nhập tay</Tag>}
+                  </div>
+                </div>
+              </div>
+              <div className="info-grid">
                 <div><div className="info-label">Độ mật</div><Tag color={secretTag.color}>{secretTag.text}</Tag></div>
                 <div><div className="info-label">Độ khẩn</div><Tag color={urgentTag.color}>{urgentTag.text}</Tag></div>
               </div>

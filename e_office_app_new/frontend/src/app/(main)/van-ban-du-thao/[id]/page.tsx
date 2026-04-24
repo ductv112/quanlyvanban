@@ -313,6 +313,14 @@ export default function DraftingDocDetailPage() {
                   </div>
                 </div>
                 <div><div className="info-label">Nơi nhận</div><div className="info-value">{doc.recipients || '—'}</div></div>
+                <div>
+                  <div className="info-label">Người duyệt</div>
+                  <div className="info-value">
+                    {doc.approver
+                      ? <>{doc.approver}{(doc as any).approved_at && <Tag color="success" style={{ marginLeft: 8 }}>{dayjs((doc as any).approved_at).format('DD/MM/YYYY HH:mm')}</Tag>}</>
+                      : <span style={{ color: '#bfbfbf' }}>Chưa duyệt</span>}
+                  </div>
+                </div>
                 {doc.reject_reason && (
                   <div><div className="info-label">Lý do từ chối</div><div className="info-value" style={{ color: '#DC2626' }}>{doc.reject_reason}</div></div>
                 )}
