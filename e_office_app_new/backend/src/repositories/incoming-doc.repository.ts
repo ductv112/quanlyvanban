@@ -262,8 +262,11 @@ export const incomingDocRepository = {
   },
 
   // --- 3.5 Send ---
-  async getSendableStaff(unitId: number): Promise<SendableStaffRow[]> {
-    return callFunction<SendableStaffRow>('edoc.fn_incoming_doc_get_sendable_staff', [unitId]);
+  async getSendableStaff(unitId: number, excludeStaffId?: number | null): Promise<SendableStaffRow[]> {
+    return callFunction<SendableStaffRow>(
+      'edoc.fn_incoming_doc_get_sendable_staff',
+      [unitId, null, excludeStaffId ?? null],
+    );
   },
 
   async send(docId: number, staffIds: number[], sentBy: number): Promise<DbResult> {

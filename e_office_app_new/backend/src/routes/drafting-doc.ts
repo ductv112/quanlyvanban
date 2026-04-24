@@ -9,7 +9,26 @@ import { handleDbError } from '../lib/error-handler.js';
 import { exportExcel } from '../lib/excel.js';
 import { callFunction, rawQuery } from '../lib/db/query.js';
 import { resolveDeptSubtree, resolveAncestorUnit } from '../lib/department-subtree.js';
+import { computeDraftingPermissions, computePermsWithContext, getUserPermissionContext, type DocPermissionContext } from '../lib/permissions/drafting-doc.js';
 import dayjs from 'dayjs';
+
+/**
+ * Load doc + compute permissions. Trả null nếu doc không tồn tại.
+ * Dùng cho 7 mutation endpoint.
+ */
+async function loadDocAndPerms(
+  docId: number,
+  userCtx: DocPermissionContext,
+) {
+  const doc = await draftingDocRepository.getById(docId, userCtx.staffId);
+  if (!doc) return null;
+  const perms = await computeDraftingPermissions(userCtx, {
+    id: doc.id,
+    drafting_user_id: doc.drafting_user_id ?? null,
+    unit_id: doc.unit_id,
+  });
+  return { doc, perms };
+}
 
 const router = Router();
 
@@ -53,6 +72,18 @@ router.get('/', async (req: Request, res: Response) => {
       );
       const rejMap = new Map(rejections.map(r => [r.id, r]));
       rows.forEach((r: any) => { const rej = rejMap.get(r.id); r.rejected_by = rej?.rejected_by ?? null; r.rejection_reason = rej?.rejection_reason ?? null; });
+    }
+
+    // Enrich permissions per row (batch — 1 query load user ctx, pure compute per row)
+    if (rows.length > 0) {
+      const userCtx = await getUserPermissionContext({ staffId, departmentId, isAdmin });
+      rows.forEach((r: any) => {
+        r.permissions = computePermsWithContext(userCtx, {
+          id: r.id,
+          drafting_user_id: r.drafting_user_id ?? null,
+          unit_id: r.unit_id,
+        });
+      });
     }
 
     const total = rows[0]?.total_count ?? 0;
@@ -243,7 +274,7 @@ router.post('/', async (req: Request, res: Response) => {
 // GET /:id — Chi tiết
 router.get('/:id', async (req: Request, res: Response) => {
   try {
-    const { staffId } = (req as AuthRequest).user;
+    const { staffId, departmentId, isAdmin } = (req as AuthRequest).user;
     const id = Number(req.params.id);
     const doc = await draftingDocRepository.getById(id, staffId);
     if (!doc) {
@@ -254,6 +285,14 @@ router.get('/:id', async (req: Request, res: Response) => {
       `SELECT rejected_by, rejection_reason FROM edoc.drafting_docs WHERE id = $1`, [id]
     );
     if (rej[0]) { (doc as any).rejected_by = rej[0].rejected_by; (doc as any).rejection_reason = rej[0].rejection_reason; }
+
+    // Compute permissions và gắn vào response
+    const permissions = await computeDraftingPermissions(
+      { staffId, departmentId, isAdmin },
+      { id: doc.id, drafting_user_id: doc.drafting_user_id ?? null, unit_id: doc.unit_id },
+    );
+    (doc as any).permissions = permissions;
+
     res.json({ success: true, data: doc });
   } catch (error) {
     handleDbError(error, res);
@@ -263,9 +302,20 @@ router.get('/:id', async (req: Request, res: Response) => {
 // PUT /:id — Cập nhật
 router.put('/:id', async (req: Request, res: Response) => {
   try {
-    const { staffId } = (req as AuthRequest).user;
+    const { staffId, departmentId, isAdmin } = (req as AuthRequest).user;
     const id = Number(req.params.id);
     const body = req.body;
+
+    // Permission guard
+    const loaded = await loadDocAndPerms(id, { staffId, departmentId, isAdmin });
+    if (!loaded) {
+      res.status(404).json({ success: false, message: 'Không tìm thấy văn bản dự thảo' });
+      return;
+    }
+    if (!loaded.perms.canEdit) {
+      res.status(403).json({ success: false, message: 'Không có quyền sửa văn bản này' });
+      return;
+    }
 
     if (!body.abstract?.trim()) {
       res.status(400).json({ success: false, message: 'Trích yếu nội dung là bắt buộc' });
@@ -314,7 +364,20 @@ router.put('/:id', async (req: Request, res: Response) => {
 // DELETE /:id
 router.delete('/:id', async (req: Request, res: Response) => {
   try {
+    const { staffId, departmentId, isAdmin } = (req as AuthRequest).user;
     const id = Number(req.params.id);
+
+    // Permission guard
+    const loaded = await loadDocAndPerms(id, { staffId, departmentId, isAdmin });
+    if (!loaded) {
+      res.status(404).json({ success: false, message: 'Không tìm thấy văn bản dự thảo' });
+      return;
+    }
+    if (!loaded.perms.canEdit) {
+      res.status(403).json({ success: false, message: 'Không có quyền xóa văn bản này' });
+      return;
+    }
+
     const result = await draftingDocRepository.delete(id);
     if (!result.success) {
       res.status(400).json({ success: false, message: result.message });
@@ -427,9 +490,9 @@ router.get('/:id/dinh-kem/:attachmentId/download', async (req: Request, res: Res
 
 router.get('/:id/danh-sach-gui', async (req: Request, res: Response) => {
   try {
-    const { departmentId } = (req as AuthRequest).user;
+    const { staffId, departmentId } = (req as AuthRequest).user;
     const ancestorUnitId = await resolveAncestorUnit(departmentId);
-    const rows = await draftingDocRepository.getSendableStaff(ancestorUnitId);
+    const rows = await draftingDocRepository.getSendableStaff(ancestorUnitId, staffId);
     res.json({ success: true, data: rows });
   } catch (error) {
     handleDbError(error, res);
@@ -438,8 +501,20 @@ router.get('/:id/danh-sach-gui', async (req: Request, res: Response) => {
 
 router.post('/:id/gui', async (req: Request, res: Response) => {
   try {
-    const { staffId } = (req as AuthRequest).user;
+    const { staffId, departmentId, isAdmin } = (req as AuthRequest).user;
     const docId = Number(req.params.id);
+
+    // Permission guard
+    const loaded = await loadDocAndPerms(docId, { staffId, departmentId, isAdmin });
+    if (!loaded) {
+      res.status(404).json({ success: false, message: 'Không tìm thấy văn bản dự thảo' });
+      return;
+    }
+    if (!loaded.perms.canSend) {
+      res.status(403).json({ success: false, message: 'Không có quyền gửi văn bản này' });
+      return;
+    }
+
     const { staff_ids } = req.body;
 
     if (!Array.isArray(staff_ids) || staff_ids.length === 0) {
@@ -482,11 +557,24 @@ router.post('/:id/danh-dau', async (req: Request, res: Response) => {
 
 router.patch('/:id/duyet', async (req: Request, res: Response) => {
   try {
-    const { staffId } = (req as AuthRequest).user;
+    const { staffId, departmentId, isAdmin } = (req as AuthRequest).user;
+    const docId = Number(req.params.id);
+
+    // Permission guard
+    const loaded = await loadDocAndPerms(docId, { staffId, departmentId, isAdmin });
+    if (!loaded) {
+      res.status(404).json({ success: false, message: 'Không tìm thấy văn bản dự thảo' });
+      return;
+    }
+    if (!loaded.perms.canApprove) {
+      res.status(403).json({ success: false, message: 'Không có quyền duyệt văn bản này' });
+      return;
+    }
+
     // Phase 17 v3.0: lấy fullName từ DB staff (JWT không có fullName)
     const staffRows = await rawQuery<{ full_name: string }>('SELECT full_name FROM public.staff WHERE id = $1', [staffId]);
     const approverName = staffRows[0]?.full_name || `Staff #${staffId}`;
-    const result = await draftingDocRepository.approve(Number(req.params.id), staffId, approverName);
+    const result = await draftingDocRepository.approve(docId, staffId, approverName);
     if (!result.success) {
       res.status(400).json({ success: false, message: result.message });
       return;
@@ -499,8 +587,21 @@ router.patch('/:id/duyet', async (req: Request, res: Response) => {
 
 router.patch('/:id/huy-duyet', async (req: Request, res: Response) => {
   try {
-    const { staffId } = (req as AuthRequest).user;
-    const result = await draftingDocRepository.unapprove(Number(req.params.id), staffId);
+    const { staffId, departmentId, isAdmin } = (req as AuthRequest).user;
+    const docId = Number(req.params.id);
+
+    // Permission guard
+    const loaded = await loadDocAndPerms(docId, { staffId, departmentId, isAdmin });
+    if (!loaded) {
+      res.status(404).json({ success: false, message: 'Không tìm thấy văn bản dự thảo' });
+      return;
+    }
+    if (!loaded.perms.canApprove) {
+      res.status(403).json({ success: false, message: 'Không có quyền hủy duyệt văn bản này' });
+      return;
+    }
+
+    const result = await draftingDocRepository.unapprove(docId, staffId);
     if (!result.success) {
       res.status(400).json({ success: false, message: result.message });
       return;
@@ -513,9 +614,22 @@ router.patch('/:id/huy-duyet', async (req: Request, res: Response) => {
 
 router.patch('/:id/tu-choi', async (req: Request, res: Response) => {
   try {
-    const { staffId } = (req as AuthRequest).user;
+    const { staffId, departmentId, isAdmin } = (req as AuthRequest).user;
+    const docId = Number(req.params.id);
+
+    // Permission guard
+    const loaded = await loadDocAndPerms(docId, { staffId, departmentId, isAdmin });
+    if (!loaded) {
+      res.status(404).json({ success: false, message: 'Không tìm thấy văn bản dự thảo' });
+      return;
+    }
+    if (!loaded.perms.canApprove) {
+      res.status(403).json({ success: false, message: 'Không có quyền từ chối văn bản này' });
+      return;
+    }
+
     const { reason } = req.body;
-    const result = await draftingDocRepository.reject(Number(req.params.id), staffId, reason);
+    const result = await draftingDocRepository.reject(docId, staffId, reason);
     if (!result.success) {
       res.status(400).json({ success: false, message: result.message });
       return;
@@ -529,10 +643,23 @@ router.patch('/:id/tu-choi', async (req: Request, res: Response) => {
 // POST /:id/thu-hoi — Thu hồi VB dự thảo (xóa người nhận, reset duyệt)
 router.post('/:id/thu-hoi', async (req: Request, res: Response) => {
   try {
-    const { staffId } = (req as AuthRequest).user;
+    const { staffId, departmentId, isAdmin } = (req as AuthRequest).user;
+    const docId = Number(req.params.id);
+
+    // Permission guard
+    const loaded = await loadDocAndPerms(docId, { staffId, departmentId, isAdmin });
+    if (!loaded) {
+      res.status(404).json({ success: false, message: 'Không tìm thấy văn bản dự thảo' });
+      return;
+    }
+    if (!loaded.perms.canRetract) {
+      res.status(403).json({ success: false, message: 'Không có quyền thu hồi văn bản này' });
+      return;
+    }
+
     const { staff_ids } = req.body ?? {};
     const result = await draftingDocRepository.retract(
-      Number(req.params.id), staffId,
+      docId, staffId,
       Array.isArray(staff_ids) && staff_ids.length > 0 ? staff_ids.map(Number) : undefined,
     );
     if (!result.success) {
@@ -548,8 +675,21 @@ router.post('/:id/thu-hoi', async (req: Request, res: Response) => {
 // POST /:id/phat-hanh — Phát hành → tạo VB đi
 router.post('/:id/phat-hanh', async (req: Request, res: Response) => {
   try {
-    const { staffId } = (req as AuthRequest).user;
-    const result = await draftingDocRepository.release(Number(req.params.id), staffId);
+    const { staffId, departmentId, isAdmin } = (req as AuthRequest).user;
+    const docId = Number(req.params.id);
+
+    // Permission guard
+    const loaded = await loadDocAndPerms(docId, { staffId, departmentId, isAdmin });
+    if (!loaded) {
+      res.status(404).json({ success: false, message: 'Không tìm thấy văn bản dự thảo' });
+      return;
+    }
+    if (!loaded.perms.canRelease) {
+      res.status(403).json({ success: false, message: 'Không có quyền phát hành văn bản này' });
+      return;
+    }
+
+    const result = await draftingDocRepository.release(docId, staffId);
     if (!result.success) {
       res.status(400).json({ success: false, message: result.message });
       return;

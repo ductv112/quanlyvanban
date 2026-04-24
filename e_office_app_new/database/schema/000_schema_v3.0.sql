@@ -21442,8 +21442,11 @@ DECLARE v_count INT;
 BEGIN
   SELECT COUNT(*)::INT INTO v_count
   FROM edoc.drafting_docs d
-  LEFT JOIN edoc.user_drafting_docs ud ON ud.drafting_doc_id = d.id AND ud.staff_id = p_staff_id
-  WHERE (p_dept_ids IS NULL OR d.department_id = ANY(p_dept_ids))
+  LEFT JOIN edoc.user_drafting_docs ud ON ud.drafting_doc_id = d.id AND ud.staff_id = p_staff_id AND ud.sent_by IS NOT NULL
+  WHERE (
+      (p_dept_ids IS NULL OR d.department_id = ANY(p_dept_ids))
+      OR ud.drafting_doc_id IS NOT NULL
+    )
     AND (ud.is_read IS NULL OR ud.is_read = FALSE);
   RETURN v_count;
 END; $$;
@@ -21668,6 +21671,7 @@ BEGIN
 END; $$;
 
 -- 10. fn_drafting_doc_get_list
+DROP FUNCTION IF EXISTS edoc.fn_drafting_doc_get_list(INT, INT, INT, INT, INT, SMALLINT, BOOLEAN, BOOLEAN, TIMESTAMPTZ, TIMESTAMPTZ, TEXT, INT, INT, INT[]);
 CREATE OR REPLACE FUNCTION edoc.fn_drafting_doc_get_list(
   p_unit_id INT, p_staff_id INT,
   p_doc_book_id INT DEFAULT NULL, p_doc_type_id INT DEFAULT NULL, p_doc_field_id INT DEFAULT NULL,
@@ -21687,7 +21691,8 @@ RETURNS TABLE (
   created_by INT, created_at TIMESTAMPTZ,
   doc_book_name VARCHAR, doc_type_name VARCHAR, doc_type_code VARCHAR, doc_field_name VARCHAR,
   drafting_unit_name VARCHAR, drafting_user_name VARCHAR, created_by_name VARCHAR,
-  is_read BOOLEAN, read_at TIMESTAMPTZ, attachment_count BIGINT, total_count BIGINT
+  is_read BOOLEAN, read_at TIMESTAMPTZ, attachment_count BIGINT, total_count BIGINT,
+  i_am_recipient BOOLEAN, sent_by_name VARCHAR, received_at TIMESTAMPTZ
 ) LANGUAGE plpgsql AS $$
 DECLARE v_offset INT; v_keyword TEXT;
 BEGIN
@@ -21700,13 +21705,20 @@ BEGIN
       df.name AS _doc_field_name, du.name AS _drafting_unit_name, ds.full_name AS _drafting_user_name,
       s.full_name AS _created_by_name, ud.is_read AS _is_read, ud.read_at AS _read_at,
       (SELECT COUNT(*) FROM edoc.attachment_drafting_docs a WHERE a.drafting_doc_id = d.id) AS _attachment_count,
-      COUNT(*) OVER() AS _total_count
+      COUNT(*) OVER() AS _total_count,
+      (ud.drafting_doc_id IS NOT NULL) AS _i_am_recipient,
+      sender.full_name AS _sent_by_name,
+      ud.created_at AS _received_at
     FROM edoc.drafting_docs d
     LEFT JOIN edoc.doc_books db ON db.id = d.doc_book_id LEFT JOIN edoc.doc_types dt ON dt.id = d.doc_type_id
     LEFT JOIN edoc.doc_fields df ON df.id = d.doc_field_id LEFT JOIN public.departments du ON du.id = d.drafting_unit_id
     LEFT JOIN public.staff ds ON ds.id = d.drafting_user_id LEFT JOIN public.staff s ON s.id = d.created_by
-    LEFT JOIN edoc.user_drafting_docs ud ON ud.drafting_doc_id = d.id AND ud.staff_id = p_staff_id
-    WHERE (p_dept_ids IS NULL OR d.department_id = ANY(p_dept_ids))
+    LEFT JOIN edoc.user_drafting_docs ud ON ud.drafting_doc_id = d.id AND ud.staff_id = p_staff_id AND ud.sent_by IS NOT NULL
+    LEFT JOIN public.staff sender ON sender.id = ud.sent_by
+    WHERE (
+        (p_dept_ids IS NULL OR d.department_id = ANY(p_dept_ids))
+        OR ud.drafting_doc_id IS NOT NULL
+      )
       AND (p_doc_book_id IS NULL OR d.doc_book_id = p_doc_book_id)
       AND (p_doc_type_id IS NULL OR d.doc_type_id = p_doc_type_id)
       AND (p_doc_field_id IS NULL OR d.doc_field_id = p_doc_field_id)
@@ -21724,7 +21736,8 @@ BEGIN
     f.expired_date, f.recipients, f.approver, f.approved, f.is_released, f.released_date,
     f.created_by, f.created_at, f._doc_book_name, f._doc_type_name, f._doc_type_code, f._doc_field_name,
     f._drafting_unit_name, f._drafting_user_name, f._created_by_name,
-    COALESCE(f._is_read, FALSE), f._read_at, f._attachment_count, f._total_count
+    COALESCE(f._is_read, FALSE), f._read_at, f._attachment_count, f._total_count,
+    COALESCE(f._i_am_recipient, FALSE), f._sent_by_name, f._received_at
   FROM filtered f;
 END; $$;
 
@@ -24072,9 +24085,12 @@ DO $$ BEGIN RAISE NOTICE '032-B22: fn_room_schedule_stats rewritten'; END $$;
 -- B.23 edoc.fn_incoming_doc_get_sendable_staff
 -- --------------------------------------------------------------------
 DROP FUNCTION IF EXISTS edoc.fn_incoming_doc_get_sendable_staff(INT);
+DROP FUNCTION IF EXISTS edoc.fn_incoming_doc_get_sendable_staff(INT, INT[]);
+DROP FUNCTION IF EXISTS edoc.fn_incoming_doc_get_sendable_staff(INT, INT[], INT);
 CREATE OR REPLACE FUNCTION edoc.fn_incoming_doc_get_sendable_staff(
   p_unit_id INT,
-  p_dept_ids INT[] DEFAULT NULL
+  p_dept_ids INT[] DEFAULT NULL,
+  p_exclude_staff_id INT DEFAULT NULL
 )
 RETURNS TABLE (
   staff_id INT, full_name VARCHAR, position_name VARCHAR,
@@ -24095,6 +24111,7 @@ BEGIN
     )
   )
   AND s.is_locked = FALSE AND s.is_deleted = FALSE
+  AND (p_exclude_staff_id IS NULL OR s.id != p_exclude_staff_id)
   ORDER BY d.sort_order, d.name, s.full_name;
 END;
 $$;

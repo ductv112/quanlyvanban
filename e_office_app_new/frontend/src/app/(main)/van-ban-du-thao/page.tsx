@@ -49,6 +49,7 @@ interface DraftingDoc {
   number_paper: number;
   number_copies: number;
   expired_date: string;
+  received_date: string;
   recipients: string;
   approver: string;
   approved: boolean;
@@ -62,6 +63,17 @@ interface DraftingDoc {
   created_by_name: string;
   attachment_count: number;
   total_count: number;
+  i_am_recipient: boolean;
+  sent_by_name: string | null;
+  received_at: string | null;
+  is_read: boolean;
+  permissions?: {
+    canEdit: boolean;
+    canApprove: boolean;
+    canRelease: boolean;
+    canSend: boolean;
+    canRetract: boolean;
+  };
 }
 
 interface SelectOption { value: number; label: string }
@@ -216,6 +228,7 @@ export default function DraftingDocPage() {
         publish_date: record.publish_date ? dayjs(record.publish_date) : null,
         sign_date: record.sign_date ? dayjs(record.sign_date) : null,
         expired_date: record.expired_date ? dayjs(record.expired_date) : null,
+        received_date: record.received_date ? dayjs(record.received_date) : null,
       });
       if (record.drafting_unit_id) {
         fetchStaffByUnit(record.drafting_unit_id);
@@ -404,9 +417,18 @@ export default function DraftingDocPage() {
     {
       title: 'Trích yếu', dataIndex: 'abstract', ellipsis: true,
       render: (val, r) => (
-        <Tooltip title={val}>
-          <a style={{ fontWeight: 500 }} href={`/van-ban-du-thao/${r.id}`}>{val}</a>
-        </Tooltip>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+          <Tooltip title={val}>
+            <a style={{ fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} href={`/van-ban-du-thao/${r.id}`}>{val}</a>
+          </Tooltip>
+          {r.i_am_recipient && (
+            <Tooltip title={`Do ${r.sent_by_name ?? 'đồng nghiệp'} gửi lúc ${r.received_at ? dayjs(r.received_at).format('DD/MM/YYYY HH:mm') : ''}`}>
+              <Tag style={{ margin: 0, background: '#fff7e6', color: '#d48806', border: '1px solid #ffd591', flexShrink: 0 }}>
+                📩 Gửi cho tôi
+              </Tag>
+            </Tooltip>
+          )}
+        </div>
       ),
     },
     {
@@ -425,9 +447,18 @@ export default function DraftingDocPage() {
     {
       key: 'actions', width: 50, align: 'center', fixed: 'right',
       render: (_, record) => {
-        const canEdit = !record.approved && !record.is_released;
-        const canRelease = record.approved && !record.is_released;
+        // Gate theo status + permissions (backend trả về)
+        const statusAllowEdit = !record.approved && !record.is_released;
+        const statusAllowRelease = record.approved && !record.is_released;
+        const statusAllowRetract = record.approved && !record.is_released;
         const isRejected = !!(record as any).rejected_by;
+        const perms = record.permissions;
+
+        const canEdit = statusAllowEdit && (perms?.canEdit ?? false);
+        const canApprove = statusAllowEdit && (perms?.canApprove ?? false);
+        const canRelease = statusAllowRelease && (perms?.canRelease ?? false);
+        const canUnapprove = statusAllowRelease && (perms?.canApprove ?? false);
+        const canRetract = statusAllowRetract && (perms?.canRetract ?? false);
 
         const items = [
           {
@@ -439,6 +470,8 @@ export default function DraftingDocPage() {
               key: 'edit', icon: <EditOutlined />, label: 'Sửa',
               onClick: () => openDrawer(record),
             },
+          ] : []),
+          ...(canApprove ? [
             {
               key: 'approve', icon: <CheckCircleOutlined />, label: 'Duyệt',
               onClick: () => handleApprove(record),
@@ -453,12 +486,14 @@ export default function DraftingDocPage() {
               key: 'release', icon: <SendOutlined />, label: 'Phát hành',
               onClick: () => handleRelease(record),
             },
+          ] : []),
+          ...(canUnapprove ? [
             {
               key: 'unapprove', icon: <CloseCircleOutlined />, label: 'Hủy duyệt',
               onClick: () => handleUnapprove(record),
             },
           ] : []),
-          ...(record.approved && !record.is_released ? [
+          ...(canRetract ? [
             {
               key: 'retract', icon: <RollbackOutlined />, label: 'Thu hồi',
               onClick: () => handleRetract(record),
@@ -607,6 +642,7 @@ export default function DraftingDocPage() {
         dataSource={data}
         size="small"
         scroll={{ x: 1100 }}
+        rowClassName={(record) => record.i_am_recipient && !record.is_read ? 'drafting-row-unread-recipient' : ''}
         rowSelection={{ selectedRowKeys, onChange: setSelectedRowKeys }}
         pagination={{
           current: page,

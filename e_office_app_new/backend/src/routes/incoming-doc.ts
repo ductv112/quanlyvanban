@@ -488,9 +488,9 @@ router.get('/:id/dinh-kem/:attachmentId/download', async (req: Request, res: Res
 // GET /:id/danh-sach-gui — DS cán bộ có thể gửi
 router.get('/:id/danh-sach-gui', async (req: Request, res: Response) => {
   try {
-    const { departmentId } = (req as AuthRequest).user;
+    const { staffId, departmentId } = (req as AuthRequest).user;
     const ancestorUnitId = await resolveAncestorUnit(departmentId);
-    const rows = await incomingDocRepository.getSendableStaff(ancestorUnitId);
+    const rows = await incomingDocRepository.getSendableStaff(ancestorUnitId, staffId);
     res.json({ success: true, data: rows });
   } catch (error) {
     handleDbError(error, res);

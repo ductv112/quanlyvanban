@@ -521,9 +521,9 @@ router.get('/:id/dinh-kem/:attachmentId/download', async (req: Request, res: Res
 
 router.get('/:id/danh-sach-gui', async (req: Request, res: Response) => {
   try {
-    const { departmentId } = (req as AuthRequest).user;
+    const { staffId, departmentId } = (req as AuthRequest).user;
     const ancestorUnitId = await resolveAncestorUnit(departmentId);
-    const rows = await outgoingDocRepository.getSendableStaff(ancestorUnitId);
+    const rows = await outgoingDocRepository.getSendableStaff(ancestorUnitId, staffId);
     res.json({ success: true, data: rows });
   } catch (error) {
     handleDbError(error, res);

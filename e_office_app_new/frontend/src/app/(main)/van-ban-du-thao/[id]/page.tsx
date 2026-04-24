@@ -38,6 +38,13 @@ interface DocDetail {
   created_by: number; created_at: string; updated_by: number; updated_at: string;
   doc_book_name: string; doc_type_name: string; doc_type_code: string;
   doc_field_name: string; created_by_name: string; is_read: boolean;
+  permissions?: {
+    canEdit: boolean;
+    canApprove: boolean;
+    canRelease: boolean;
+    canSend: boolean;
+    canRetract: boolean;
+  };
 }
 interface Attachment { id: number; file_name: string; file_path: string; file_size: number; content_type: string; created_by_name: string; created_at: string; is_ca?: boolean; ca_date?: string | null; signed_file_path?: string | null; }
 interface Recipient { id: number; staff_id: number; staff_name: string; position_name: string; department_name: string; is_read: boolean; read_at: string; created_at: string; }
@@ -223,32 +230,54 @@ export default function DraftingDocDetailPage() {
             icon={isBookmarked ? <StarFilled style={{ color: '#faad14' }} /> : <StarOutlined />}
             onClick={handleToggleBookmark}
           />
-          {/* Not approved: Edit, Approve, Reject, Delete */}
           {/* Chưa duyệt, chưa phát hành: Sửa, Duyệt, Từ chối, Xóa */}
           {!doc.approved && !doc.is_released && (
             <>
-              <Button icon={<EditOutlined />} onClick={() => router.push(`/van-ban-du-thao?edit=${doc.id}`)}>Sửa</Button>
-              <Button type="primary" icon={<CheckCircleOutlined />} onClick={handleApprove}>Duyệt</Button>
-              <Dropdown menu={{ items: [
-                ...( !(doc as any).rejected_by ? [{ key: 'reject', icon: <StopOutlined />, label: 'Từ chối', danger: true, onClick: () => { setRejectReason(''); setRejectModalOpen(true); } }] : []),
-                { type: 'divider' as const },
-                { key: 'delete', icon: <DeleteOutlined />, label: 'Xóa văn bản', danger: true, onClick: handleDelete },
-              ] }}>
-                <Button icon={<MoreOutlined />} />
-              </Dropdown>
+              {doc.permissions?.canEdit && (
+                <Button icon={<EditOutlined />} onClick={() => router.push(`/van-ban-du-thao?edit=${doc.id}`)}>Sửa</Button>
+              )}
+              {doc.permissions?.canApprove && (
+                <Button type="primary" icon={<CheckCircleOutlined />} onClick={handleApprove}>Duyệt</Button>
+              )}
+              {(doc.permissions?.canApprove || doc.permissions?.canEdit) && (() => {
+                const items: { key: string; icon: React.ReactNode; label: string; danger?: boolean; onClick: () => void; type?: undefined }[] = [];
+                if (doc.permissions?.canApprove && !(doc as any).rejected_by) {
+                  items.push({ key: 'reject', icon: <StopOutlined />, label: 'Từ chối', danger: true, onClick: () => { setRejectReason(''); setRejectModalOpen(true); } });
+                }
+                if (doc.permissions?.canEdit) {
+                  items.push({ key: 'delete', icon: <DeleteOutlined />, label: 'Xóa văn bản', danger: true, onClick: handleDelete });
+                }
+                return items.length > 0 ? (
+                  <Dropdown menu={{ items }}>
+                    <Button icon={<MoreOutlined />} />
+                  </Dropdown>
+                ) : null;
+              })()}
             </>
           )}
           {/* Đã duyệt, chưa phát hành: Phát hành, Gửi, Hủy duyệt, Thu hồi */}
           {doc.approved && !doc.is_released && (
             <>
-              <Button type="primary" style={{ background: '#52c41a', borderColor: '#52c41a' }} icon={<RocketOutlined />} onClick={handleRelease}>Phát hành</Button>
-              <Button type="primary" icon={<SendOutlined />} onClick={openSendModal}>Gửi</Button>
-              <Dropdown menu={{ items: [
-                { key: 'unapprove', icon: <CloseCircleOutlined />, label: 'Hủy duyệt', onClick: handleUnapprove },
-                { key: 'retract', icon: <RollbackOutlined />, label: 'Thu hồi', onClick: handleRetract },
-              ] }}>
-                <Button icon={<MoreOutlined />} />
-              </Dropdown>
+              {doc.permissions?.canRelease && (
+                <Button type="primary" style={{ background: '#52c41a', borderColor: '#52c41a' }} icon={<RocketOutlined />} onClick={handleRelease}>Phát hành</Button>
+              )}
+              {doc.permissions?.canSend && (
+                <Button type="primary" icon={<SendOutlined />} onClick={openSendModal}>Gửi</Button>
+              )}
+              {(doc.permissions?.canApprove || doc.permissions?.canRetract) && (() => {
+                const items: { key: string; icon: React.ReactNode; label: string; onClick: () => void }[] = [];
+                if (doc.permissions?.canApprove) {
+                  items.push({ key: 'unapprove', icon: <CloseCircleOutlined />, label: 'Hủy duyệt', onClick: handleUnapprove });
+                }
+                if (doc.permissions?.canRetract) {
+                  items.push({ key: 'retract', icon: <RollbackOutlined />, label: 'Thu hồi', onClick: handleRetract });
+                }
+                return items.length > 0 ? (
+                  <Dropdown menu={{ items }}>
+                    <Button icon={<MoreOutlined />} />
+                  </Dropdown>
+                ) : null;
+              })()}
             </>
           )}
           {/* Released: view only, badge already shown */}
@@ -353,7 +382,7 @@ export default function DraftingDocDetailPage() {
           }}>
             <Flex justify="space-between" align="center" style={{ marginBottom: 12 }}>
               <div className="section-title"><PaperClipOutlined /> Tài liệu đính kèm ({attachments.length})</div>
-              {!doc.is_released && (
+              {!doc.is_released && doc.permissions?.canEdit && (
                 <Upload showUploadList={false} beforeUpload={(file) => { handleUpload(file); return false; }}>
                   <Button icon={<UploadOutlined />} loading={uploading} size="small" type="primary" ghost>Thêm file</Button>
                 </Upload>
@@ -388,7 +417,7 @@ export default function DraftingDocDetailPage() {
                         </Button>
                       )}
                       <Button size="small" type="link" icon={<DownloadOutlined />} onClick={() => handleDownload(att)} />
-                      {!doc.is_released && <Popconfirm title="Xóa file?" onConfirm={() => handleDeleteAttachment(att)}><Button size="small" type="link" danger icon={<DeleteOutlined />} /></Popconfirm>}
+                      {!doc.is_released && doc.permissions?.canEdit && <Popconfirm title="Xóa file?" onConfirm={() => handleDeleteAttachment(att)}><Button size="small" type="link" danger icon={<DeleteOutlined />} /></Popconfirm>}
                     </Space>
                   </Flex>
                 ))}

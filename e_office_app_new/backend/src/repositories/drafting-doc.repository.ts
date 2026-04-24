@@ -45,6 +45,9 @@ export interface DraftingDocListRow {
   read_at: string;
   attachment_count: number;
   total_count: number;
+  i_am_recipient: boolean;
+  sent_by_name: string | null;
+  received_at: string | null;
 }
 
 export interface DraftingDocDetailRow extends Omit<DraftingDocListRow, 'attachment_count' | 'total_count'> {
@@ -197,8 +200,11 @@ export const draftingDocRepository = {
   },
 
   // --- Send ---
-  async getSendableStaff(unitId: number): Promise<SendableStaffRow[]> {
-    return callFunction<SendableStaffRow>('edoc.fn_incoming_doc_get_sendable_staff', [unitId]);
+  async getSendableStaff(unitId: number, excludeStaffId?: number | null): Promise<SendableStaffRow[]> {
+    return callFunction<SendableStaffRow>(
+      'edoc.fn_incoming_doc_get_sendable_staff',
+      [unitId, null, excludeStaffId ?? null],
+    );
   },
 
   async send(docId: number, staffIds: number[], sentBy: number, expiredDate?: string): Promise<DbResult> {

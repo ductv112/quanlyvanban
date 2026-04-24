@@ -980,3 +980,8 @@ input:-webkit-autofill:active {
   .print-area .print-footer { text-align: right; margin-top: 16px; font-size: 11px; color: #666; }
   .no-print { display: none !important; }
 }
+
+/* Fix gửi VB dự thảo — highlight unread recipient rows (2026-04-24) */
+.drafting-row-unread-recipient td:first-child {
+  border-left: 3px solid #fa8c16;
+}

@@ -38,6 +38,20 @@ INSERT INTO public.positions (id, name, code, sort_order) VALUES
 ON CONFLICT (id) DO NOTHING;
 SELECT setval('public.positions_id_seq', 10, true);
 
+-- ─── Flag quyền theo chức vụ (idempotent, production-safe) ───
+-- Lãnh đạo: được duyệt/phát hành/thu hồi/gửi VB
+UPDATE public.positions
+   SET is_leader = TRUE, is_handle_document = TRUE
+ WHERE code IN ('GD', 'PGD', 'TP', 'PTP');
+
+-- Nhân viên xử lý VB (sửa/xóa VB dự thảo cùng đơn vị)
+UPDATE public.positions
+   SET is_handle_document = TRUE
+ WHERE code = 'CV';
+
+-- Văn thư: giữ is_leader=FALSE, is_handle_document=FALSE (chỉ vào sổ + đọc)
+-- Không cần UPDATE — default FALSE
+
 -- ─── 2. Departments (UBND + 4 Sở, root tree) ────────────────────────────────
 INSERT INTO public.departments (id, parent_id, code, name, short_name, is_unit, level, sort_order, allow_doc_book, created_by) VALUES
   (1,  NULL, 'UBND',   'UBND tỉnh Lào Cai',              'UBND',   true, 0, 1, true, NULL),
@@ -157,13 +171,31 @@ INSERT INTO edoc.doc_fields (id, unit_id, code, name, sort_order, is_active) VAL
 ON CONFLICT (id) DO NOTHING;
 SELECT setval('edoc.doc_fields_id_seq', 20, true);
 
--- Doc books (3 sổ mặc định UBND tỉnh)
+-- Doc books — 3 sổ mặc định (VB đến / VB đi / Dự thảo) cho MỖI đơn vị (1-5)
+-- Nghiệp vụ: mỗi đơn vị cần đủ 3 loại sổ để tạo VB của loại tương ứng
 INSERT INTO edoc.doc_books (id, unit_id, type_id, name, sort_order, is_default, created_by) VALUES
-  (1, 1, 1, 'Sổ văn bản đến 2026', 1, true, 1),
-  (2, 1, 2, 'Sổ văn bản đi 2026',  2, true, 1),
-  (3, 1, 3, 'Sổ dự thảo 2026',     3, true, 1)
+  -- UBND tỉnh Lào Cai (unit=1)
+  (1,  1, 1, 'Sổ văn bản đến 2026',                   1, true, 1),
+  (2,  1, 2, 'Sổ văn bản đi 2026',                    2, true, 1),
+  (3,  1, 3, 'Sổ dự thảo 2026',                       3, true, 1),
+  -- Sở Nội vụ (unit=2)
+  (4,  2, 1, 'Sổ VB đến - Sở Nội vụ',                 1, true, 1),
+  (5,  2, 2, 'Sổ VB đi - Sở Nội vụ',                  2, true, 1),
+  (6,  2, 3, 'Sổ dự thảo - Sở Nội vụ',                3, true, 1),
+  -- Sở Tài chính (unit=3)
+  (7,  3, 1, 'Sổ VB đến - Sở Tài chính',              1, true, 1),
+  (8,  3, 2, 'Sổ VB đi - Sở Tài chính',               2, true, 1),
+  (9,  3, 3, 'Sổ dự thảo - Sở Tài chính',             3, true, 1),
+  -- Sở Thông tin và Truyền thông (unit=4)
+  (10, 4, 1, 'Sổ VB đến - Sở TT&TT',                  1, true, 1),
+  (11, 4, 2, 'Sổ VB đi - Sở TT&TT',                   2, true, 1),
+  (12, 4, 3, 'Sổ dự thảo - Sở TT&TT',                 3, true, 1),
+  -- Văn phòng UBND tỉnh (unit=5)
+  (13, 5, 1, 'Sổ VB đến - Văn phòng UBND tỉnh',       1, true, 1),
+  (14, 5, 2, 'Sổ VB đi - Văn phòng UBND tỉnh',        2, true, 1),
+  (15, 5, 3, 'Sổ dự thảo - Văn phòng UBND tỉnh',      3, true, 1)
 ON CONFLICT (id) DO NOTHING;
-SELECT setval('edoc.doc_books_id_seq', 20, true);
+SELECT setval('edoc.doc_books_id_seq', 50, true);
 
 COMMIT;
 
