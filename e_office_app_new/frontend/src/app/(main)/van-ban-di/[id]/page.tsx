@@ -164,6 +164,8 @@ export default function OutgoingDocDetailPage() {
   const [deptOptions, setDeptOptions] = useState<{ value: number; label: string }[]>([]);
   const [selectedDeptIds, setSelectedDeptIds] = useState<number[]>([]);
   const [noiBoSending, setNoiBoSending] = useState(false);
+  // 'send' = chỉ gửi (VB đã ban hành). 'release-and-send' = ban hành + gửi trong 1 flow.
+  const [noiBoMode, setNoiBoMode] = useState<'send' | 'release-and-send'>('send');
 
   const fetchDoc = useCallback(async () => { try { const { data: res } = await api.get(`/van-ban-di/${docId}`); setDoc(res.data); } catch { message.error('Không tìm thấy văn bản'); router.push('/van-ban-di'); } }, [docId, message, router]);
   const fetchBookmarkStatus = useCallback(async () => { try { const { data: res } = await api.get('/van-ban-di/danh-dau-ca-nhan'); const bookmarks: { doc_id: number | string }[] = res.data || []; setIsBookmarked(bookmarks.some((b) => Number(b.doc_id) === Number(docId))); } catch {} }, [docId]);
@@ -305,8 +307,14 @@ export default function OutgoingDocDetailPage() {
   };
 
   // Phase 17 v3.0 (Option C): Gửi tới recipients đã lưu trong outgoing_doc_recipients
-  // (recipients được lưu ngay khi tạo VB qua form CRUD — KHÔNG popup chọn lại)
+  // Nếu chưa có recipients → mở modal chọn đơn vị nhận inline (tránh blocking user
+  // khi VB đi tạo từ VB dự thảo chưa có structured recipients).
   const handleSendDirect = async () => {
+    if (noiNhan.length === 0) {
+      setNoiBoMode('send');
+      openNoiBoModal();
+      return;
+    }
     setNoiBoSending(true);
     try {
       const { data: res } = await api.post(`/van-ban-di/${docId}/gui-noi-bo`);
@@ -314,6 +322,7 @@ export default function OutgoingDocDetailPage() {
       fetchDoc();
       fetchHistory();
       fetchRecipients();
+      fetchNoiNhan();
     } catch (e: any) {
       message.error(e?.response?.data?.message || 'Gửi thất bại');
     } finally {
@@ -322,7 +331,13 @@ export default function OutgoingDocDetailPage() {
   };
 
   // Combined: Ban hành + Gửi cùng 1 click (cho user fast workflow)
+  // Nếu chưa có recipients → mở modal chọn trước, submit sẽ ban-hanh + send.
   const handleReleaseAndSend = async () => {
+    if (noiNhan.length === 0) {
+      setNoiBoMode('release-and-send');
+      openNoiBoModal();
+      return;
+    }
     setReleasing(true);
     try {
       const { data: r1 } = await api.patch(`/van-ban-di/${docId}/ban-hanh`);
@@ -332,6 +347,7 @@ export default function OutgoingDocDetailPage() {
       fetchDoc();
       fetchHistory();
       fetchRecipients();
+      fetchNoiNhan();
     } catch (e: any) {
       message.error(e?.response?.data?.message || 'Lỗi');
     } finally {
@@ -339,10 +355,11 @@ export default function OutgoingDocDetailPage() {
     }
   };
 
-  // [LEGACY — giữ tạm để backward-compat, ẩn ở UI mới]
   const openNoiBoModal = async () => {
     try {
       const { data: res } = await api.get('/quan-tri/don-vi');
+      // Loại trừ đơn vị phát hành VB (không gửi về chính mình) — mọi user khác đều được chọn.
+      // Nghiệp vụ: nhân viên có thể gửi VB đi lên cấp trên, ngang cấp, hoặc phòng ban bất kỳ.
       const opts = (res.data || [])
         .filter((d: any) => d.id !== doc?.unit_id)
         .map((d: any) => ({ value: d.id, label: d.name }));
@@ -362,12 +379,19 @@ export default function OutgoingDocDetailPage() {
       await api.post(`/van-ban-di/${docId}/noi-nhan`, {
         recipients: selectedDeptIds.map((unit_id) => ({ type: 'internal_unit', unit_id })),
       });
-      // 2. Gửi
+      // 2. Nếu mode release-and-send: ban-hành trước khi gửi
+      if (noiBoMode === 'release-and-send') {
+        const { data: r1 } = await api.patch(`/van-ban-di/${docId}/ban-hanh`);
+        if (!r1?.success) { message.error(r1?.data?.message || 'Ban hành thất bại'); return; }
+      }
+      // 3. Gửi
       const { data: res } = await api.post(`/van-ban-di/${docId}/gui-noi-bo`);
-      message.success(res?.data?.message || `Đã gửi: ${res?.data?.internal_count} đơn vị nội bộ`);
+      const prefix = noiBoMode === 'release-and-send' ? 'Đã ban hành và gửi' : 'Đã gửi';
+      message.success(res?.data?.message || `${prefix}: ${res?.data?.internal_count} đơn vị nội bộ`);
       setNoiBoModalOpen(false);
       fetchDoc();
       fetchHistory();
+      fetchNoiNhan();
     } catch (e: any) {
       message.error(e?.response?.data?.message || 'Gửi thất bại');
     } finally {
@@ -554,7 +578,13 @@ export default function OutgoingDocDetailPage() {
                     {isOverdue && <Tag color="error" style={{ marginLeft: 8 }}>Quá hạn</Tag>}
                   </div>
                 </div>
-                <div><div className="info-label">Nơi nhận</div><div className="info-value">{doc.recipients || '—'}</div></div>
+                <div>
+                  <div className="info-label">Nơi nhận</div>
+                  <div className="info-value">{doc.recipients || '—'}</div>
+                  {!doc.is_released && noiNhan.length === 0 && (
+                    <Tag color="warning" style={{ marginTop: 4 }}>Chưa chọn đơn vị nhận chính thức — sẽ yêu cầu chọn khi Gửi</Tag>
+                  )}
+                </div>
               </div>
               <div className="info-grid">
                 <div>
@@ -882,17 +912,17 @@ export default function OutgoingDocDetailPage() {
 
       {/* Phase 17 v3.0: Modal Gửi nội bộ — chọn đơn vị nhận, auto-sinh incoming_docs */}
       <Modal
-        title="Gửi nội bộ — chọn đơn vị nhận"
+        title={noiBoMode === 'release-and-send' ? 'Ban hành & Gửi — chọn đơn vị nhận' : 'Gửi nội bộ — chọn đơn vị nhận'}
         open={noiBoModalOpen}
         onCancel={() => setNoiBoModalOpen(false)}
         onOk={handleSendNoiBo}
         confirmLoading={noiBoSending}
-        okText={`Gửi (${selectedDeptIds.length} đơn vị)`}
+        okText={noiBoMode === 'release-and-send' ? `Ban hành & Gửi (${selectedDeptIds.length})` : `Gửi (${selectedDeptIds.length} đơn vị)`}
         cancelText="Hủy"
         width={600}
       >
         <div style={{ marginBottom: 12, color: '#595959' }}>
-          Chọn các đơn vị nhận. Hệ thống sẽ tự sinh "Văn bản đến" cho mỗi đơn vị (source_type = internal).
+          Văn bản này chưa chọn đơn vị nhận chính thức. Vui lòng chọn bên dưới để {noiBoMode === 'release-and-send' ? 'ban hành và gửi' : 'gửi'}. Hệ thống sẽ tự sinh &ldquo;Văn bản đến&rdquo; cho mỗi đơn vị.
         </div>
         <Checkbox.Group
           value={selectedDeptIds}
