@@ -26141,3 +26141,252 @@ DROP FUNCTION IF EXISTS edoc.fn_incoming_doc_create(integer, timestamp with time
 DO $$ BEGIN
   RAISE NOTICE 'v3.0 Schema READY — SPs: 342, overload: 0, idempotent: verified';
 END $$;
+
+-- DROP SP em viết với signature SAI
+DROP FUNCTION IF EXISTS edoc.fn_incoming_doc_create(integer, timestamp with time zone, integer, character varying, character varying, text, character varying, timestamp with time zone, character varying, timestamp with time zone, integer, integer, smallint, smallint, integer, integer, timestamp with time zone, text, text, boolean, integer, edoc.doc_source_type, boolean, character varying, bigint, character varying);
+
+-- CREATE lại với signature ĐÚNG (match repository call positional 22 args)
+CREATE OR REPLACE FUNCTION edoc.fn_incoming_doc_create(
+  p_unit_id              integer,
+  p_received_date        timestamp with time zone,
+  p_number               integer,
+  p_notation             character varying,
+  p_document_code        character varying,
+  p_abstract             text,
+  p_publish_unit         character varying,
+  p_publish_date         timestamp with time zone,
+  p_signer               character varying,
+  p_sign_date            timestamp with time zone,
+  p_doc_book_id          integer,
+  p_doc_type_id          integer,
+  p_doc_field_id         integer,
+  p_secret_id            smallint DEFAULT 1,
+  p_urgent_id            smallint DEFAULT 1,
+  p_number_paper         integer DEFAULT 1,
+  p_number_copies        integer DEFAULT 1,
+  p_expired_date         timestamp with time zone DEFAULT NULL,
+  p_recipients           text DEFAULT NULL,
+  p_is_received_paper    boolean DEFAULT FALSE,
+  p_created_by           integer DEFAULT NULL,
+  p_department_id        integer DEFAULT NULL,
+  p_source_type          edoc.doc_source_type DEFAULT 'manual',
+  p_is_unit_send         boolean DEFAULT FALSE,
+  p_unit_send            character varying DEFAULT NULL,
+  p_previous_outgoing_doc_id bigint DEFAULT NULL,
+  p_external_doc_id      character varying DEFAULT NULL
+) RETURNS TABLE(success boolean, message text, id bigint)
+LANGUAGE plpgsql AS $$
+DECLARE
+  v_id bigint;
+  v_number integer;
+BEGIN
+  IF p_number IS NULL THEN
+    SELECT COALESCE(max(d.number), 0) + 1 INTO v_number
+    FROM edoc.incoming_docs d
+    WHERE d.unit_id = p_unit_id
+      AND (p_doc_book_id IS NULL OR d.doc_book_id = p_doc_book_id);
+  ELSE
+    v_number := p_number;
+  END IF;
+
+  INSERT INTO edoc.incoming_docs (
+    unit_id, received_date, "number", notation, document_code, abstract,
+    publish_unit, publish_date, signer, sign_date,
+    doc_book_id, doc_type_id, doc_field_id,
+    secret_id, urgent_id, number_paper, number_copies,
+    expired_date, recipients,
+    is_received_paper, archive_status,
+    source_type, is_unit_send, unit_send,
+    previous_outgoing_doc_id, external_doc_id,
+    department_id, created_by, created_at, updated_at
+  ) VALUES (
+    p_unit_id, p_received_date, v_number, p_notation, p_document_code, p_abstract,
+    p_publish_unit, p_publish_date, p_signer, p_sign_date,
+    p_doc_book_id, p_doc_type_id, p_doc_field_id,
+    p_secret_id, p_urgent_id, p_number_paper, p_number_copies,
+    p_expired_date, p_recipients,
+    p_is_received_paper, FALSE,
+    p_source_type, p_is_unit_send, p_unit_send,
+    p_previous_outgoing_doc_id, p_external_doc_id,
+    p_department_id, p_created_by, NOW(), NOW()
+  ) RETURNING incoming_docs.id INTO v_id;
+
+  RETURN QUERY SELECT TRUE, 'Tao van ban den thanh cong'::text, v_id;
+EXCEPTION WHEN others THEN
+  RETURN QUERY SELECT FALSE, SQLERRM::text, NULL::bigint;
+END;
+$$;
+-- DROP SPs em viết với signature SAI
+DROP FUNCTION IF EXISTS edoc.fn_incoming_doc_get_list(integer, integer, integer, integer, integer, smallint, boolean, boolean, timestamp with time zone, timestamp with time zone, text, text, integer, integer, integer, integer, edoc.doc_source_type);
+DROP FUNCTION IF EXISTS edoc.fn_outgoing_doc_get_list(integer, integer, integer, integer, integer, smallint, boolean, timestamp with time zone, timestamp with time zone, text, integer, integer, character varying, boolean);
+
+-- CREATE lại với signature ĐÚNG (match repo positional, last arg = dept_ids integer[])
+CREATE OR REPLACE FUNCTION edoc.fn_incoming_doc_get_list(
+  p_unit_id integer, p_staff_id integer,
+  p_doc_book_id integer DEFAULT NULL, p_doc_type_id integer DEFAULT NULL, p_doc_field_id integer DEFAULT NULL,
+  p_urgent_id smallint DEFAULT NULL, p_is_read boolean DEFAULT NULL, p_approved boolean DEFAULT NULL,
+  p_from_date timestamptz DEFAULT NULL, p_to_date timestamptz DEFAULT NULL,
+  p_keyword text DEFAULT NULL, p_signer text DEFAULT NULL,
+  p_from_number integer DEFAULT NULL, p_to_number integer DEFAULT NULL,
+  p_page integer DEFAULT 1, p_page_size integer DEFAULT 20,
+  p_dept_ids integer[] DEFAULT NULL
+) RETURNS TABLE(
+  id bigint, unit_id integer, received_date timestamptz, "number" integer,
+  notation varchar, document_code varchar, abstract text,
+  publish_unit varchar, publish_date timestamptz, signer varchar, sign_date timestamptz,
+  doc_book_id integer, doc_type_id integer, doc_field_id integer,
+  secret_id smallint, urgent_id smallint,
+  number_paper integer, number_copies integer, expired_date timestamptz,
+  recipients text, sents text,
+  approver varchar, approved boolean,
+  is_received_paper boolean, archive_status boolean,
+  source_type edoc.doc_source_type, is_unit_send boolean, unit_send varchar, external_doc_id varchar,
+  created_by integer, created_at timestamptz,
+  doc_book_name varchar, doc_type_name varchar, doc_type_code varchar, doc_field_name varchar,
+  created_by_name varchar,
+  is_read boolean, read_at timestamptz, attachment_count bigint, total_count bigint
+)
+LANGUAGE plpgsql AS $$
+DECLARE
+  v_offset INTEGER := (p_page - 1) * p_page_size;
+  v_total  BIGINT;
+BEGIN
+  SELECT count(*) INTO v_total FROM edoc.incoming_docs f
+  WHERE f.unit_id = p_unit_id
+    AND (p_doc_book_id IS NULL OR f.doc_book_id = p_doc_book_id)
+    AND (p_doc_type_id IS NULL OR f.doc_type_id = p_doc_type_id)
+    AND (p_doc_field_id IS NULL OR f.doc_field_id = p_doc_field_id)
+    AND (p_urgent_id IS NULL OR f.urgent_id = p_urgent_id)
+    AND (p_approved IS NULL OR f.approved = p_approved)
+    AND (p_from_date IS NULL OR f.received_date >= p_from_date)
+    AND (p_to_date IS NULL OR f.received_date <= p_to_date)
+    AND (p_keyword IS NULL OR f.abstract ILIKE '%' || p_keyword || '%' OR f.notation ILIKE '%' || p_keyword || '%' OR f.document_code ILIKE '%' || p_keyword || '%')
+    AND (p_signer IS NULL OR f.signer ILIKE '%' || p_signer || '%')
+    AND (p_from_number IS NULL OR f.number >= p_from_number)
+    AND (p_to_number IS NULL OR f.number <= p_to_number)
+    AND (p_dept_ids IS NULL OR f.department_id = ANY(p_dept_ids));
+
+  RETURN QUERY
+  SELECT
+    f.id, f.unit_id, f.received_date, f.number, f.notation, f.document_code, f.abstract,
+    f.publish_unit, f.publish_date, f.signer, f.sign_date,
+    f.doc_book_id, f.doc_type_id, f.doc_field_id, f.secret_id, f.urgent_id,
+    f.number_paper, f.number_copies, f.expired_date,
+    f.recipients, f.sents, f.approver, f.approved,
+    f.is_received_paper, f.archive_status,
+    f.source_type, f.is_unit_send, f.unit_send, f.external_doc_id,
+    f.created_by, f.created_at,
+    db.name::varchar AS doc_book_name,
+    dt.name::varchar AS doc_type_name,
+    dt.code::varchar AS doc_type_code,
+    df.name::varchar AS doc_field_name,
+    s.full_name::varchar AS created_by_name,
+    EXISTS(SELECT 1 FROM edoc.user_incoming_docs uid WHERE uid.incoming_doc_id = f.id AND uid.staff_id = p_staff_id AND uid.read_at IS NOT NULL) AS is_read,
+    (SELECT max(uid2.read_at) FROM edoc.user_incoming_docs uid2 WHERE uid2.incoming_doc_id = f.id AND uid2.staff_id = p_staff_id) AS read_at,
+    (SELECT count(*) FROM edoc.attachment_incoming_docs a WHERE a.incoming_doc_id = f.id) AS attachment_count,
+    v_total AS total_count
+  FROM edoc.incoming_docs f
+  LEFT JOIN edoc.doc_books db ON f.doc_book_id = db.id
+  LEFT JOIN edoc.doc_types dt ON f.doc_type_id = dt.id
+  LEFT JOIN edoc.doc_fields df ON f.doc_field_id = df.id
+  LEFT JOIN public.staff s ON f.created_by = s.id
+  WHERE f.unit_id = p_unit_id
+    AND (p_doc_book_id IS NULL OR f.doc_book_id = p_doc_book_id)
+    AND (p_doc_type_id IS NULL OR f.doc_type_id = p_doc_type_id)
+    AND (p_doc_field_id IS NULL OR f.doc_field_id = p_doc_field_id)
+    AND (p_urgent_id IS NULL OR f.urgent_id = p_urgent_id)
+    AND (p_approved IS NULL OR f.approved = p_approved)
+    AND (p_from_date IS NULL OR f.received_date >= p_from_date)
+    AND (p_to_date IS NULL OR f.received_date <= p_to_date)
+    AND (p_keyword IS NULL OR f.abstract ILIKE '%' || p_keyword || '%' OR f.notation ILIKE '%' || p_keyword || '%' OR f.document_code ILIKE '%' || p_keyword || '%')
+    AND (p_signer IS NULL OR f.signer ILIKE '%' || p_signer || '%')
+    AND (p_from_number IS NULL OR f.number >= p_from_number)
+    AND (p_to_number IS NULL OR f.number <= p_to_number)
+    AND (p_dept_ids IS NULL OR f.department_id = ANY(p_dept_ids))
+  ORDER BY f.received_date DESC NULLS LAST, f.id DESC
+  LIMIT p_page_size OFFSET v_offset;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION edoc.fn_outgoing_doc_get_list(
+  p_unit_id integer, p_staff_id integer,
+  p_doc_book_id integer DEFAULT NULL, p_doc_type_id integer DEFAULT NULL, p_doc_field_id integer DEFAULT NULL,
+  p_urgent_id smallint DEFAULT NULL, p_approved boolean DEFAULT NULL,
+  p_from_date timestamptz DEFAULT NULL, p_to_date timestamptz DEFAULT NULL,
+  p_keyword text DEFAULT NULL, p_page integer DEFAULT 1, p_page_size integer DEFAULT 20,
+  p_dept_ids integer[] DEFAULT NULL
+) RETURNS TABLE(
+  id bigint, unit_id integer, received_date timestamptz, "number" integer,
+  sub_number varchar, notation varchar, document_code varchar, abstract text,
+  drafting_unit_id integer, drafting_user_id integer, publish_unit_id integer, publish_date timestamptz,
+  signer varchar, sign_date timestamptz, expired_date timestamptz,
+  doc_book_id integer, doc_type_id integer, doc_field_id integer,
+  secret_id smallint, urgent_id smallint, number_paper integer, number_copies integer,
+  recipients text, approver varchar, approved boolean,
+  status varchar, is_released boolean, released_date timestamptz,
+  archive_status boolean,
+  created_by integer, created_at timestamptz,
+  doc_book_name varchar, doc_type_name varchar, doc_type_code varchar, doc_field_name varchar,
+  drafting_unit_name varchar, drafting_user_name varchar,
+  created_by_name varchar,
+  is_read boolean, read_at timestamptz, attachment_count bigint, total_count bigint
+)
+LANGUAGE plpgsql AS $$
+DECLARE
+  v_offset INTEGER := (p_page - 1) * p_page_size;
+  v_total  BIGINT;
+BEGIN
+  SELECT count(*) INTO v_total FROM edoc.outgoing_docs f
+  WHERE f.unit_id = p_unit_id
+    AND (p_doc_book_id IS NULL OR f.doc_book_id = p_doc_book_id)
+    AND (p_doc_type_id IS NULL OR f.doc_type_id = p_doc_type_id)
+    AND (p_doc_field_id IS NULL OR f.doc_field_id = p_doc_field_id)
+    AND (p_urgent_id IS NULL OR f.urgent_id = p_urgent_id)
+    AND (p_approved IS NULL OR f.approved = p_approved)
+    AND (p_from_date IS NULL OR f.received_date >= p_from_date)
+    AND (p_to_date IS NULL OR f.received_date <= p_to_date)
+    AND (p_keyword IS NULL OR f.abstract ILIKE '%' || p_keyword || '%' OR f.notation ILIKE '%' || p_keyword || '%' OR f.document_code ILIKE '%' || p_keyword || '%')
+    AND (p_dept_ids IS NULL OR f.department_id = ANY(p_dept_ids));
+
+  RETURN QUERY
+  SELECT
+    f.id, f.unit_id, f.received_date, f.number, f.sub_number, f.notation, f.document_code, f.abstract,
+    f.drafting_unit_id, f.drafting_user_id, f.publish_unit_id, f.publish_date,
+    f.signer, f.sign_date, f.expired_date,
+    f.doc_book_id, f.doc_type_id, f.doc_field_id, f.secret_id, f.urgent_id,
+    f.number_paper, f.number_copies, f.recipients, f.approver, f.approved,
+    f.status, f.is_released, f.released_date,
+    f.archive_status,
+    f.created_by, f.created_at,
+    db.name::varchar AS doc_book_name,
+    dt.name::varchar AS doc_type_name,
+    dt.code::varchar AS doc_type_code,
+    df.name::varchar AS doc_field_name,
+    du.name::varchar AS drafting_unit_name,
+    duser.full_name::varchar AS drafting_user_name,
+    s.full_name::varchar AS created_by_name,
+    EXISTS(SELECT 1 FROM edoc.user_outgoing_docs uod WHERE uod.outgoing_doc_id = f.id AND uod.staff_id = p_staff_id AND uod.read_at IS NOT NULL) AS is_read,
+    (SELECT max(uod2.read_at) FROM edoc.user_outgoing_docs uod2 WHERE uod2.outgoing_doc_id = f.id AND uod2.staff_id = p_staff_id) AS read_at,
+    (SELECT count(*) FROM edoc.attachment_outgoing_docs a WHERE a.outgoing_doc_id = f.id) AS attachment_count,
+    v_total AS total_count
+  FROM edoc.outgoing_docs f
+  LEFT JOIN edoc.doc_books db ON f.doc_book_id = db.id
+  LEFT JOIN edoc.doc_types dt ON f.doc_type_id = dt.id
+  LEFT JOIN edoc.doc_fields df ON f.doc_field_id = df.id
+  LEFT JOIN public.departments du ON f.drafting_unit_id = du.id
+  LEFT JOIN public.staff duser ON f.drafting_user_id = duser.id
+  LEFT JOIN public.staff s ON f.created_by = s.id
+  WHERE f.unit_id = p_unit_id
+    AND (p_doc_book_id IS NULL OR f.doc_book_id = p_doc_book_id)
+    AND (p_doc_type_id IS NULL OR f.doc_type_id = p_doc_type_id)
+    AND (p_doc_field_id IS NULL OR f.doc_field_id = p_doc_field_id)
+    AND (p_urgent_id IS NULL OR f.urgent_id = p_urgent_id)
+    AND (p_approved IS NULL OR f.approved = p_approved)
+    AND (p_from_date IS NULL OR f.received_date >= p_from_date)
+    AND (p_to_date IS NULL OR f.received_date <= p_to_date)
+    AND (p_keyword IS NULL OR f.abstract ILIKE '%' || p_keyword || '%' OR f.notation ILIKE '%' || p_keyword || '%' OR f.document_code ILIKE '%' || p_keyword || '%')
+    AND (p_dept_ids IS NULL OR f.department_id = ANY(p_dept_ids))
+  ORDER BY f.received_date DESC NULLS LAST, f.id DESC
+  LIMIT p_page_size OFFSET v_offset;
+END;
+$$;
