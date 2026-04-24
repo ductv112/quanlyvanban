@@ -59,6 +59,60 @@ router.get('/don-vi/tree', async (_req: Request, res: Response) => {
   }
 });
 
+// Phase 19 v3.0 fix: catalog read endpoints cho non-admin (form CRUD VB cần)
+// Logic copy từ admin-catalog.ts nhưng KHÔNG yêu cầu admin role.
+import type { AuthRequest } from '../middleware/auth.js';
+import { resolveAncestorUnit } from '../lib/department-subtree.js';
+
+// GET /so-van-ban — list sổ văn bản
+router.get('/so-van-ban', async (req: Request, res: Response) => {
+  try {
+    const { departmentId } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
+    const typeId = req.query.type_id ? Number(req.query.type_id) : null;
+    const uId = req.query.unit_id ? Number(req.query.unit_id) : ancestorUnitId;
+    const rows = await rawQuery<{ id: number; name: string; type_id: number; unit_id: number }>(
+      `SELECT id, name, type_id, unit_id FROM edoc.doc_books
+       WHERE COALESCE(is_deleted, false) = false
+         AND ($1::int IS NULL OR type_id = $1)
+         AND unit_id = $2
+       ORDER BY sort_order NULLS LAST, name`,
+      [typeId, uId],
+    );
+    res.json({ success: true, data: rows });
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
+
+// GET /loai-van-ban/tree — tree loại VB
+router.get('/loai-van-ban/tree', async (_req: Request, res: Response) => {
+  try {
+    const rows = await rawQuery<{ id: number; parent_id: number | null; code: string; name: string }>(
+      `SELECT id, parent_id, code, name FROM edoc.doc_types
+       WHERE COALESCE(is_deleted, false) = false
+       ORDER BY sort_order NULLS LAST, name`,
+    );
+    res.json({ success: true, data: rows });
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
+
+// GET /linh-vuc — list lĩnh vực
+router.get('/linh-vuc', async (_req: Request, res: Response) => {
+  try {
+    const rows = await rawQuery<{ id: number; code: string; name: string }>(
+      `SELECT id, code, name FROM edoc.doc_fields
+       WHERE COALESCE(is_active, true) = true
+       ORDER BY sort_order NULLS LAST, name`,
+    );
+    res.json({ success: true, data: rows });
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
+
 // GET /co-quan-lien-thong — danh sách cơ quan ngoài LGSP cho recipient picker
 // Phase 18 v3.0
 router.get('/co-quan-lien-thong', async (_req: Request, res: Response) => {
