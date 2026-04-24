@@ -113,6 +113,28 @@ router.get('/linh-vuc', async (_req: Request, res: Response) => {
   }
 });
 
+// GET /nguoi-dung — list staff (read-only) cho dropdown 'Người soạn thảo'
+// Phase 19 v3.0 fix: non-admin user mở form CRUD VB cần load staff dropdown
+router.get('/nguoi-dung', async (req: Request, res: Response) => {
+  try {
+    const unitId = req.query.unit_id ? Number(req.query.unit_id) : null;
+    const departmentId = req.query.department_id ? Number(req.query.department_id) : null;
+    const keyword = ((req.query.keyword as string) || '').trim();
+    const rows = await rawQuery<{ id: number; full_name: string; unit_id: number; department_id: number | null }>(
+      `SELECT id, full_name, unit_id, department_id FROM public.staff
+       WHERE COALESCE(is_locked, false) = false
+         AND ($1::int IS NULL OR unit_id = $1)
+         AND ($2::int IS NULL OR department_id = $2)
+         AND ($3 = '' OR full_name ILIKE '%' || $3 || '%')
+       ORDER BY full_name`,
+      [unitId, departmentId, keyword],
+    );
+    res.json({ success: true, data: rows, total: rows.length });
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
+
 // GET /co-quan-lien-thong — danh sách cơ quan ngoài LGSP cho recipient picker
 // Phase 18 v3.0
 router.get('/co-quan-lien-thong', async (_req: Request, res: Response) => {
