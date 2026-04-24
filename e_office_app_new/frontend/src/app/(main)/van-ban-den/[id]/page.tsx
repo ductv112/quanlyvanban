@@ -688,27 +688,7 @@ export default function IncomingDocDetailPage() {
         {/* ====== RIGHT COLUMN ====== */}
         <Col xs={24} lg={8}>
 
-          {/* --- Phase 19 v3.0: Văn bản gốc (link về outgoing nếu source_type=internal) --- */}
-          {(doc as any).source_type === 'internal' && (doc as any).previous_outgoing_doc_id && (
-            <div style={{ background: '#fff', borderRadius: 10, padding: '20px 24px', marginBottom: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
-              <div className="section-title" style={{ marginBottom: 12 }}><SendOutlined /> Văn bản gốc</div>
-              <div style={{ fontSize: 13 }}>
-                Văn bản này được gửi tự động từ <strong>{(doc as any).unit_send || 'đơn vị khác'}</strong> qua hệ thống.
-              </div>
-              <Button type="link" size="small" style={{ paddingLeft: 0 }} onClick={() => router.push(`/van-ban-di/${(doc as any).previous_outgoing_doc_id}`)}>
-                Xem văn bản đi gốc →
-              </Button>
-            </div>
-          )}
-          {(doc as any).source_type === 'external_lgsp' && (
-            <div style={{ background: '#fff', borderRadius: 10, padding: '20px 24px', marginBottom: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
-              <div className="section-title" style={{ marginBottom: 12 }}><SendOutlined /> Nguồn LGSP</div>
-              <div style={{ fontSize: 13 }}>
-                Văn bản nhận từ <strong>{(doc as any).unit_send || 'cơ quan ngoài'}</strong> qua trục liên thông LGSP.
-                {(doc as any).external_doc_id && <div style={{ color: '#8c8c8c', fontSize: 12, marginTop: 4 }}>Mã LGSP: {(doc as any).external_doc_id}</div>}
-              </div>
-            </div>
-          )}
+          {/* Phase 19 v3.0: bỏ section 'Văn bản gốc' theo user feedback — gây lẫn lộn. Field 'Cơ quan ban hành' + 'Nguồn' tag đã đủ thông tin trong info section. */}
 
           {/* --- Phân công xử lý nội bộ (legacy v2.0 — staff array) — Phase 19: rename label cho rõ concept --- */}
           <div style={{
