@@ -55,7 +55,7 @@ import {
   removePlaceholder,
   PLACEHOLDER_PREFIX,
 } from '../lib/signing/placeholder-store.js';
-import { getFileUrl } from '../lib/minio/client.js';
+import { streamFileToResponse } from '../lib/minio/client.js';
 import {
   enqueuePollSignStatus,
   cancelPollJobsForTransaction,
@@ -434,10 +434,7 @@ router.get('/:id/download', async (req: Request, res: Response) => {
       return;
     }
 
-    // Presigned URL TTL 600s (10 phút)
-    const url = await getFileUrl(txn.signed_file_path, 600);
-
-    // T-12-06: Ngăn browser/proxy cache URL có HMAC signature
+    // T-12-06: Ngăn browser/proxy cache
     res.setHeader('Cache-Control', 'no-store');
 
     // file_name: prefix 'signed_' vào segment cuối của signed_file_path
@@ -445,14 +442,8 @@ router.get('/:id/download', async (req: Request, res: Response) => {
     const lastSegment = segments[segments.length - 1] || 'signed.pdf';
     const fileName = lastSegment.startsWith('signed_') ? lastSegment : `signed_${lastSegment}`;
 
-    res.json({
-      success: true,
-      data: {
-        url,
-        file_name: fileName,
-        expires_in: 600,
-      },
-    });
+    // Stream file đã ký qua backend proxy (MinIO nội bộ, browser không truy cập trực tiếp)
+    await streamFileToResponse(res, txn.signed_file_path, fileName, 'application/pdf');
   } catch (error) {
     handleDbError(error, res);
   }

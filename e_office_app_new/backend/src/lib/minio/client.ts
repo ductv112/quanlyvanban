@@ -41,14 +41,16 @@ export async function streamFileToResponse(
   path: string,
   fileName: string,
   contentType?: string,
+  inline = false,
 ): Promise<void> {
   const stream: Readable = await minioClient.getObject(BUCKET, path);
   if (contentType) res.setHeader('Content-Type', contentType);
   // RFC 5987: filename* voi UTF-8 encoding + fallback filename= voi ASCII
   const asciiFallback = fileName.replace(/[^\x20-\x7E]/g, '_');
+  const disposition = inline ? 'inline' : 'attachment';
   res.setHeader(
     'Content-Disposition',
-    `attachment; filename="${asciiFallback}"; filename*=UTF-8''${encodeURIComponent(fileName)}`,
+    `${disposition}; filename="${asciiFallback}"; filename*=UTF-8''${encodeURIComponent(fileName)}`,
   );
   stream.pipe(res);
 }

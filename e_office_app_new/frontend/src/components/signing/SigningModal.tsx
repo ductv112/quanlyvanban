@@ -125,13 +125,15 @@ export default function SigningModal({
     }
   }, [docId, docType, open]);
 
-  // Fetch presigned URL for PDF preview
+  // Fetch file as blob qua backend proxy (MinIO nội bộ) + tạo blob URL cho <iframe>/Viewer
   const fetchPreviewUrl = useCallback(async () => {
     if (!filePath || !open) return;
     setPreviewLoading(true);
     try {
-      const { data: res } = await api.get('/ky-so/preview', { params: { file_path: filePath } });
-      setPreviewUrl(res.data?.url || null);
+      const res = await api.get('/ky-so/preview', { params: { file_path: filePath }, responseType: 'blob' });
+      const contentType = (res.headers?.['content-type'] as string) || 'application/pdf';
+      const blobUrl = URL.createObjectURL(new Blob([res.data], { type: contentType }));
+      setPreviewUrl(blobUrl);
     } catch {
       setPreviewUrl(null);
     } finally {

@@ -3,7 +3,7 @@ import type { AuthRequest } from '../middleware/auth.js';
 import { digitalSignatureRepository } from '../repositories/digital-signature.repository.js';
 import { getSigningService } from '../services/signing.service.js';
 import { handleDbError } from '../lib/error-handler.js';
-import { getFileUrl } from '../lib/minio/client.js';
+import { streamFileToResponse } from '../lib/minio/client.js';
 
 const router = Router();
 
@@ -18,8 +18,11 @@ router.get('/preview', async (req: Request, res: Response) => {
       res.status(400).json({ success: false, message: 'file_path la bat buoc' });
       return;
     }
-    const url = await getFileUrl(filePath, 3600);
-    res.json({ success: true, data: { url } });
+    // Stream inline qua backend proxy de browser preview (MinIO noi bo, browser khong truy cap duoc)
+    const fileName = filePath.split('/').pop() || 'preview.pdf';
+    const ext = (fileName.split('.').pop() || '').toLowerCase();
+    const mime = ext === 'pdf' ? 'application/pdf' : ext === 'docx' ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' : 'application/octet-stream';
+    await streamFileToResponse(res, filePath, fileName, mime, true);
   } catch (error) {
     handleDbError(error, res);
   }

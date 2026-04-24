@@ -53,6 +53,7 @@ import {
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { api } from '@/lib/api';
+import { downloadAttachment } from '@/lib/download';
 import { useSigning } from '@/hooks/use-signing';
 import RootCABanner from '@/components/notifications/RootCABanner';
 import { getSocket, SOCKET_EVENTS } from '@/lib/socket';
@@ -414,23 +415,14 @@ export default function DanhSachKySoPage() {
     [modal, message, fetchCounts, fetchList, activeTab, page, pageSize],
   );
 
-  /** Tải file đã ký — GET /ky-so/sign/:id/download → window.open */
+  /** Tải file đã ký — GET /ky-so/sign/:id/download → stream qua backend proxy */
   const handleDownload = useCallback(
     async (row: TxnRow) => {
       try {
-        const { data: res } = await api.get<{
-          success: boolean;
-          message?: string;
-          data?: { url: string; file_name: string; expires_in: number };
-        }>(`/ky-so/sign/${row.transaction_id}/download`);
-
-        const url = res?.data?.url;
-        if (!url) {
-          message.error(res?.message || 'Không lấy được link tải file');
-          return;
-        }
-        // Browser mở tab mới → trigger download từ presigned MinIO URL
-        window.open(url, '_blank', 'noopener,noreferrer');
+        await downloadAttachment(
+          `/ky-so/sign/${row.transaction_id}/download`,
+          `signed_${row.transaction_id}.pdf`,
+        );
       } catch (err: unknown) {
         const axiosErr = err as {
           response?: { data?: { message?: string }; status?: number };
