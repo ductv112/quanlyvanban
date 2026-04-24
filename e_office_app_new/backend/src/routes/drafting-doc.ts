@@ -483,7 +483,10 @@ router.post('/:id/danh-dau', async (req: Request, res: Response) => {
 router.patch('/:id/duyet', async (req: Request, res: Response) => {
   try {
     const { staffId } = (req as AuthRequest).user;
-    const result = await draftingDocRepository.approve(Number(req.params.id), staffId);
+    // Phase 17 v3.0: lấy fullName từ DB staff (JWT không có fullName)
+    const staffRows = await rawQuery<{ full_name: string }>('SELECT full_name FROM public.staff WHERE id = $1', [staffId]);
+    const approverName = staffRows[0]?.full_name || `Staff #${staffId}`;
+    const result = await draftingDocRepository.approve(Number(req.params.id), staffId, approverName);
     if (!result.success) {
       res.status(400).json({ success: false, message: result.message });
       return;

@@ -207,8 +207,9 @@ export const draftingDocRepository = {
   },
 
   // --- Approve / Release ---
-  async approve(id: number, staffId: number): Promise<DbResult> {
-    const row = await callFunctionOne<DbResult>('edoc.fn_drafting_doc_approve', [id, staffId]);
+  // Phase 17 v3.0: SP nhận thêm p_approver_name (text từ JWT user.fullName)
+  async approve(id: number, staffId: number, approverName: string): Promise<DbResult> {
+    const row = await callFunctionOne<DbResult>('edoc.fn_drafting_doc_approve', [id, staffId, approverName]);
     return row ?? { success: false, message: 'Không tìm thấy văn bản' };
   },
 

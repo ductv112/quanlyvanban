@@ -203,6 +203,24 @@ export const outgoingDocRepository = {
     return row ?? { success: false, message: 'Không thể gửi văn bản' };
   },
 
+  // --- Phase 17 v3.0: Ban hành / Gửi nội bộ + LGSP ---
+  async release(id: number, userId: number): Promise<DbResult & { doc_number?: number }> {
+    const row = await callFunctionOne<DbResult & { doc_number?: number }>('edoc.fn_outgoing_doc_release', [id, userId]);
+    return row ?? { success: false, message: 'Không thể ban hành' };
+  },
+
+  async setRecipients(docId: number, recipients: Array<{ type: 'internal_unit'; unit_id: number } | { type: 'external_org'; org_id: number }>): Promise<DbResult & { inserted_count?: number }> {
+    const row = await callFunctionOne<DbResult & { inserted_count?: number }>(
+      'edoc.fn_outgoing_doc_recipients_create', [docId, JSON.stringify(recipients)]);
+    return row ?? { success: false, message: 'Không thể lưu nơi nhận' };
+  },
+
+  async sendToRecipients(docId: number, userId: number): Promise<DbResult & { internal_count?: number; external_count?: number }> {
+    const row = await callFunctionOne<DbResult & { internal_count?: number; external_count?: number }>(
+      'edoc.fn_outgoing_doc_send_to_recipients', [docId, userId]);
+    return row ?? { success: false, message: 'Không thể gửi văn bản' };
+  },
+
   // --- Approve ---
   async approve(id: number, staffId: number): Promise<DbResult> {
     const row = await callFunctionOne<DbResult>('edoc.fn_outgoing_doc_approve', [id, staffId]);

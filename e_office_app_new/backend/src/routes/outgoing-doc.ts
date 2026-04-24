@@ -478,6 +478,70 @@ router.post('/:id/gui', async (req: Request, res: Response) => {
 });
 
 // ============================================================
+// PHASE 17 v3.0: Ban hành / Gửi nội bộ + LGSP recipients
+// ============================================================
+
+// PATCH /:id/ban-hanh — Ban hành: cấp số + set is_released (yêu cầu approved=true)
+router.patch('/:id/ban-hanh', async (req: Request, res: Response) => {
+  try {
+    const { staffId } = (req as AuthRequest).user;
+    const docId = Number(req.params.id);
+    const result = await outgoingDocRepository.release(docId, staffId);
+    if (!result.success) {
+      res.status(400).json({ success: false, message: result.message });
+      return;
+    }
+    res.json({ success: true, data: { message: result.message, doc_number: result.doc_number } });
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
+
+// POST /:id/noi-nhan — Lưu danh sách recipients (overwrite mode)
+// Body: { recipients: [{type:'internal_unit', unit_id:N} | {type:'external_org', org_id:N}, ...] }
+router.post('/:id/noi-nhan', async (req: Request, res: Response) => {
+  try {
+    const docId = Number(req.params.id);
+    const { recipients } = req.body;
+    if (!Array.isArray(recipients)) {
+      res.status(400).json({ success: false, message: 'recipients phải là mảng' });
+      return;
+    }
+    const result = await outgoingDocRepository.setRecipients(docId, recipients);
+    if (!result.success) {
+      res.status(400).json({ success: false, message: result.message });
+      return;
+    }
+    res.json({ success: true, data: { message: result.message, inserted_count: result.inserted_count } });
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
+
+// POST /:id/gui-noi-bo — Gửi tới recipients (auto-sinh incoming + lgsp_tracking)
+router.post('/:id/gui-noi-bo', async (req: Request, res: Response) => {
+  try {
+    const { staffId } = (req as AuthRequest).user;
+    const docId = Number(req.params.id);
+    const result = await outgoingDocRepository.sendToRecipients(docId, staffId);
+    if (!result.success) {
+      res.status(400).json({ success: false, message: result.message });
+      return;
+    }
+    res.json({
+      success: true,
+      data: {
+        message: result.message,
+        internal_count: result.internal_count,
+        external_count: result.external_count,
+      },
+    });
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
+
+// ============================================================
 // BOOKMARKS
 // ============================================================
 
