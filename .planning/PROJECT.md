@@ -8,21 +8,23 @@ Hệ thống quản lý văn bản điện tử (e-Office) dành cho cơ quan nh
 
 Luồng văn bản đến → xử lý → văn bản đi phải hoạt động đúng nghiệp vụ cơ quan nhà nước — đây là flow cốt lõi mà mọi công chức sử dụng hàng ngày.
 
-## Current Milestone: v2.0 Production features — Tích hợp ký số 2 kênh
+## Current Milestone: v3.0 Chuẩn hoá quy trình văn bản
 
-**Goal:** Hoàn thiện hệ thống từ demo MVP → sản phẩm triển khai cho khách hàng thật, với khả năng chọn 1 trong 2 nền tảng ký số (SmartCA VNPT hoặc MySign Viettel) và quản lý ký số tập trung qua menu riêng.
+**Goal:** Chuẩn hoá data model 3 bảng văn bản (incoming/outgoing/drafting) đúng nghiệp vụ source .NET cũ — tách rõ "Cơ quan ban hành" vs "Nơi gửi" vs "Nơi nhận", auto-sinh văn bản đến khi gửi nội bộ, real LGSP HTTP client thay mock, gộp menu Liên thông vào VB đến với source_type filter.
 
-**Target features:**
-- Menu "Ký số" riêng ở sidebar: Cấu hình hệ thống (Admin) / Tài khoản cá nhân (User) / Danh sách ký số (4 tab: Cần ký / Đang xử lý / Đã ký / Thất bại)
-- 2 cấp cấu hình: Admin chọn active provider + credentials hệ thống → User cấu hình user_id (+ chọn cert với MySign)
-- Tích hợp thật SmartCA VNPT (`https://gwsca.vnpt.vn/sca/sp769/v1/*`) theo spec source cũ
-- Tích hợp thật MySign Viettel (`{url}/vtss/service/ras/v1/*`) theo tài liệu chính hãng
-- PDF signing Pure JS: `node-signpdf` + `node-forge` (PKCS7 detached), 1 codebase cho cả 2 provider
-- Async decoupled worker (BullMQ poll 5s × max 3 phút) + Socket.IO SIGN_COMPLETED + bell notification offline
-- Modal ký robust: disable spam click, countdown 3:00, "Đóng" (giữ transaction) vs "Hủy ký số" (mark cancelled)
-- Root CA UX: banner dismissible + link `.cer` + PDF HDSD khi file ký bằng MySign
-- Migration `staff.sign_phone` → table mới `staff_signing_config(staff_id, provider_code, config_json)`
-- Lưu `sign_provider_code` vào attachments + transactions để đổi provider không mất lịch sử
+**Target features (6 phases):**
+- Phase 15: Audit & design data model — phân tích gap 3 bảng + design schema mới (recipients table, source_type flag, gộp inter_incoming_docs vào incoming_docs)
+- Phase 16: Schema rebuild v3.0 — bump master schema → `000_schema_v3.0.sql`, drop bảng inter riêng, reset DB clean
+- Phase 17: Tách bước Ban hành/Gửi + Auto-sinh Incoming nội bộ + Approver/Approved 1 cấp
+- Phase 18: Real LGSP HTTP client (OAuth2 + REST tới `apiltvb.langson.gov.vn`) + worker BullMQ polling thật
+- Phase 19: UI rewrite 3 màn (soạn thảo/đi/đến) + gộp menu Liên thông vào VB đến với badge source_type
+- Phase 20: Regression + UAT toàn bộ — verify HSCV, ký số, báo cáo không vỡ
+
+**Quyết định v3.0 (chốt 2026-04-23):**
+- Reset DB clean (không cần migration script preserve data cũ)
+- Gộp `inter_incoming_docs` vào `incoming_docs` với `source_type ENUM('internal','external_lgsp','manual')`
+- Bỏ menu `/van-ban-lien-thong` riêng — gộp vào `/van-ban-den` với filter
+- Approver/Approved 1 cấp boolean (như source .NET cũ), không multi-level workflow
 
 ## Requirements
 
@@ -47,13 +49,26 @@ Luồng văn bản đến → xử lý → văn bản đi phải hoạt động 
 - ✓ Tích hợp hệ thống ngoài (Sprint 14-16): LGSP + Ký số MOCK + Trục CP mock — v1.0 Phase 6
 - ✓ Polish & Redirect (Sprint 17): HDSD Compliance 97.8% — v1.0 Phase 7
 
-### Active (v2.0)
+### Validated (v2.0 — Shipped 2026-04-23)
 
-- [ ] SIGN-*: Tích hợp ký số 2 kênh SmartCA VNPT + MySign Viettel
-- [ ] CFG-*: 2 cấp cấu hình (Admin + User) với test connection
-- [ ] UX-*: Menu Ký số + modal robust + Root CA banner
-- [ ] ASYNC-*: BullMQ worker + Socket.IO decoupled flow
-- [ ] MIG-*: Migration schema `staff.sign_phone` → multi-provider
+- ✓ SIGN-* (8): Tích hợp ký số thật SmartCA VNPT + MySign Viettel — v2.0 Phase 8-11
+- ✓ CFG-* (7): 2 cấp cấu hình Admin + User với test connection — v2.0 Phase 9-10
+- ✓ UX-* (13): Menu Ký số 4 tab + Modal robust countdown 3:00 + Root CA banner — v2.0 Phase 12-13
+- ✓ ASYNC-* (6): BullMQ worker poll 5s × 3' + Socket.IO SIGN_COMPLETED — v2.0 Phase 11
+- ✓ MIG-* (5): Migration `staff.sign_phone` → `staff_signing_config` multi-provider — v2.0 Phase 8
+- ✓ DEP-* (2): Deploy scripts Windows-only + Root CA static files — v2.0 Phase 13-14
+- ✓ Master schema consolidation (`000_schema_v2.0.sql` idempotent) — v2.0 Phase 11.1
+
+### Active (v3.0)
+
+- [ ] DM-*: Chuẩn hoá data model 3 bảng văn bản (Phase 15-16)
+  - Thêm `is_unit_send`, `unit_send`, `previous_outgoing_doc_id` vào `incoming_docs`
+  - Bảng mới `outgoing_doc_recipients` (multi-recipient nội bộ + ngoài)
+  - Cờ `source_type ENUM('internal','external_lgsp','manual')` thay bảng `inter_incoming_docs` riêng
+- [ ] WF-*: Tách bước Ban hành / Gửi trên outgoing_docs + auto-sinh incoming nội bộ + Approver/Approved 1 cấp (Phase 17)
+- [ ] LGSP-*: Real LGSP HTTP client (OAuth2 + REST `apiltvb.langson.gov.vn`) thay mock service + worker BullMQ polling thật (Phase 18)
+- [ ] UI-*: Rewrite 3 màn (soạn thảo/đi/đến) đồng bộ field mới + recipient picker + gộp menu Liên thông vào VB đến (Phase 19)
+- [ ] QA-*: Regression + UAT 3 luồng chính (nội bộ A→B / gửi LGSP / nhận LGSP) (Phase 20)
 
 ### Out of Scope
 
@@ -89,11 +104,17 @@ Luồng văn bản đến → xử lý → văn bản đi phải hoạt động 
 | Rebuild giữ nguyên nghiệp vụ cũ | Khách hàng quen flow cũ, chỉ cần tech mới + UI đẹp hơn | ✓ Good (97.8% HDSD coverage) |
 | Ant Design 6 + custom theme | Consistent UI, không dùng default — Deep Navy palette | ✓ Good |
 | CSS classes, không inline styles | Chống FOUC, maintainability | ✓ Good |
-| **v2.0: 1 provider active cho toàn hệ thống** | Đơn giản support/billing, KH chọn 1 nhà cung cấp khi triển khai | — Pending |
-| **v2.0: Pure JS PDF signing (`node-signpdf`)** | Không phải cài Java/DotNet runtime; PKCS7 detached format chuẩn chung cho cả 2 provider | — Pending |
-| **v2.0: Async decoupled worker (BullMQ)** | User tắt UI vẫn nhận kết quả ký; resilient với backend restart (Redis persistent) | — Pending |
-| **v2.0: Menu Ký số riêng** | Ký số tập trung 1 chỗ, không rải rác trong detail VB | — Pending |
-| **v2.0: Credentials encrypted pgcrypto** | Tránh leak client_secret nếu backup DB rò rỉ | — Pending |
+| **v2.0: 1 provider active cho toàn hệ thống** | Đơn giản support/billing, KH chọn 1 nhà cung cấp khi triển khai | ✓ Good (v2.0 shipped) |
+| **v2.0: Pure JS PDF signing (`node-signpdf`)** | Không phải cài Java/DotNet runtime; PKCS7 detached format chuẩn chung cho cả 2 provider | ✓ Good (v2.0 shipped, 10 unit tests pass) |
+| **v2.0: Async decoupled worker (BullMQ)** | User tắt UI vẫn nhận kết quả ký; resilient với backend restart (Redis persistent) | ✓ Good (v2.0 shipped) |
+| **v2.0: Menu Ký số riêng** | Ký số tập trung 1 chỗ, không rải rác trong detail VB | ✓ Good (v2.0 shipped, 4 tab UI) |
+| **v2.0: Credentials encrypted pgcrypto** | Tránh leak client_secret nếu backup DB rò rỉ | ✓ Good (v2.0 shipped) |
+| **v2.0: Master schema consolidation** | 16 migration files → 1 file idempotent — drop+rebuild dev DB nhanh, zero SP overload | ✓ Good (v2.0 Phase 11.1) |
+| **v3.0: Reset DB clean, không migration script preserve data** | v2.0 → v3.0 schema thay đổi sâu (3 bảng core), data dev/test có thể seed lại | — Pending (chốt 2026-04-23) |
+| **v3.0: Gộp `inter_incoming_docs` vào `incoming_docs`** | Source .NET cũ dùng `IsUnitSend` flag chứ không tách bảng — gộp đơn giản hoá UI + giảm join | — Pending |
+| **v3.0: Bỏ menu Liên thông riêng** | VB liên thông bản chất là VB đến (chỉ khác nguồn), gộp giảm điều hướng + 1 chỗ xử lý | — Pending |
+| **v3.0: Tách 2 bước Ban hành / Gửi** | Đúng nghiệp vụ source .NET cũ (`Prc_DraftingDocReleased` vs `Prc_UserOutgoingDocSend`) | — Pending |
+| **v3.0: Approver/Approved 1 cấp boolean** | Source cũ chỉ làm 1 cấp duyệt đơn giản, không cần multi-level workflow | — Pending |
 
 ## Evolution
 
@@ -113,4 +134,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-21 — Milestone v2.0 started (Tích hợp ký số 2 kênh)*
+*Last updated: 2026-04-23 — Milestone v2.0 shipped, v3.0 (Chuẩn hoá quy trình văn bản) started*
