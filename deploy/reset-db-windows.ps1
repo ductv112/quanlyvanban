@@ -1,4 +1,4 @@
-# ============================================================
+﻿# ============================================================
 # e-Office - Reset DB Windows Server (CHI DUNG CHO TEST)
 # Flow v2.0 consolidated: schema master + 2 file seed (KHONG loop migrations/)
 #

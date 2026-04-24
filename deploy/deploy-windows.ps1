@@ -1,4 +1,4 @@
-# ============================================================
+﻿# ============================================================
 # e-Office - Deploy Production tren Windows Server 2022
 # Chay: PowerShell (Run as Administrator)
 #   Set-ExecutionPolicy Bypass -Scope Process -Force
