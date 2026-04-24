@@ -9,7 +9,8 @@
 # ============================================================
 
 param(
-    [switch]$NoDemo
+    [switch]$NoDemo,
+    [switch]$Force   # Skip confirm prompt — dùng khi script khác gọi tự động
 )
 
 # Continue thay vì Stop — PS 5.1 bug: 'Stop' trip khi native command (psql) output NOTICE ra stderr
@@ -52,11 +53,15 @@ if ($NoDemo) {
 Write-Host '================================================================' -ForegroundColor Red
 Write-Host ''
 
-# Xac nhan - yeu cau go chinh xac 'yes'
-$confirm = Read-Host "Xac nhan xoa sach DB? Go 'yes' de tiep tuc"
-if ($confirm -ne 'yes') {
-    Write-Host 'Da huy.'
-    exit 0
+# Xac nhan - yeu cau go chinh xac 'yes' (skip khi -Force)
+if (-not $Force) {
+    $confirm = Read-Host "Xac nhan xoa sach DB? Go 'yes' de tiep tuc"
+    if ($confirm -ne 'yes') {
+        Write-Host 'Da huy.'
+        exit 0
+    }
+} else {
+    Warn '-Force enabled - skip confirm, chay tu dong'
 }
 Write-Host ''
 
