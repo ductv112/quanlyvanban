@@ -59,16 +59,22 @@ Luồng văn bản đến → xử lý → văn bản đi phải hoạt động 
 - ✓ DEP-* (2): Deploy scripts Windows-only + Root CA static files — v2.0 Phase 13-14
 - ✓ Master schema consolidation (`000_schema_v2.0.sql` idempotent) — v2.0 Phase 11.1
 
-### Active (v3.0)
+### Validated (v3.0 — Shipped 2026-04-24)
 
-- [ ] DM-*: Chuẩn hoá data model 3 bảng văn bản (Phase 15-16)
-  - Thêm `is_unit_send`, `unit_send`, `previous_outgoing_doc_id` vào `incoming_docs`
-  - Bảng mới `outgoing_doc_recipients` (multi-recipient nội bộ + ngoài)
-  - Cờ `source_type ENUM('internal','external_lgsp','manual')` thay bảng `inter_incoming_docs` riêng
-- [ ] WF-*: Tách bước Ban hành / Gửi trên outgoing_docs + auto-sinh incoming nội bộ + Approver/Approved 1 cấp (Phase 17)
-- [ ] LGSP-*: Real LGSP HTTP client (OAuth2 + REST `apiltvb.langson.gov.vn`) thay mock service + worker BullMQ polling thật (Phase 18)
-- [ ] UI-*: Rewrite 3 màn (soạn thảo/đi/đến) đồng bộ field mới + recipient picker + gộp menu Liên thông vào VB đến (Phase 19)
-- [ ] QA-*: Regression + UAT 3 luồng chính (nội bộ A→B / gửi LGSP / nhận LGSP) (Phase 20)
+- ✓ DM-* (8): Chuẩn hoá data model — source_type/is_unit_send/unit_send/previous_outgoing_doc_id + outgoing_doc_recipients + inter_organizations — v3.0 Phase 15-16
+- ✓ WF-* (5): Tách Ban hành/Gửi + Auto-sinh Incoming nội bộ + Approver 1 cấp — v3.0 Phase 17
+- ✓ LGSP-* (5): LGSPRealService OAuth2 + REST `apiltvb.langson.gov.vn` + worker BullMQ thật — v3.0 Phase 18
+- ✓ UI-* (8): Form 3 màn đồng bộ + recipient picker + bỏ menu Liên thông + tracking inline — v3.0 Phase 19
+- ✓ QA-* (3): Regression 27/27 endpoints + 17 bugs UAT fixed — v3.0 Phase 20
+
+### Active (v3.1+ backlog)
+
+- [ ] Drafting recipients structured + carry-over Outgoing khi Release
+- [ ] Trang admin CRUD `inter_organizations` + button "Sync from LGSP"
+- [ ] Multi-level approval workflow (Trưởng phòng → Phó GĐ → Giám đốc)
+- [ ] Cleanup 2 modal legacy v1.0 (Gửi liên thông + Gửi trục CP)
+- [ ] Default expired_date theo config sổ văn bản
+- [ ] Worker LGSP startup script + monitoring production
 
 ### Out of Scope
 
