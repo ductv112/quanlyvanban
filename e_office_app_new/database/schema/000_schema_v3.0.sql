@@ -27063,3 +27063,111 @@ $$;
 
 -- Phase 17 cleanup: drop legacy fn_drafting_doc_approve(bigint, integer) overload
 DROP FUNCTION IF EXISTS edoc.fn_drafting_doc_approve(bigint, integer);
+-- Fix: SP fn_outgoing_doc_send_to_recipients SET department_id = recipient_unit_id
+-- Lý do: non-admin user filter incoming theo dept_subtree → cần department_id NOT NULL
+
+DROP FUNCTION IF EXISTS edoc.fn_outgoing_doc_send_to_recipients(bigint, integer);
+
+CREATE OR REPLACE FUNCTION edoc.fn_outgoing_doc_send_to_recipients(
+  p_id      bigint,
+  p_user_id integer
+) RETURNS TABLE(success boolean, message text, internal_count integer, external_count integer)
+LANGUAGE plpgsql AS $$
+DECLARE
+  v_doc            edoc.outgoing_docs%ROWTYPE;
+  v_sender_unit    varchar(500);
+  v_publish_unit   varchar(500);
+  v_recipient      RECORD;
+  v_new_inc_id     bigint;
+  v_new_lgsp_id    bigint;
+  v_internal       integer := 0;
+  v_external       integer := 0;
+  v_recip_count    integer;
+BEGIN
+  SELECT * INTO v_doc FROM edoc.outgoing_docs WHERE id = p_id;
+
+  IF NOT FOUND THEN
+    RETURN QUERY SELECT FALSE, 'Khong tim thay van ban di'::text, 0, 0;
+    RETURN;
+  END IF;
+
+  IF NOT COALESCE(v_doc.is_released, false) THEN
+    RETURN QUERY SELECT FALSE, 'Van ban chua ban hanh, khong the gui'::text, 0, 0;
+    RETURN;
+  END IF;
+
+  SELECT count(*) INTO v_recip_count FROM edoc.outgoing_doc_recipients WHERE outgoing_doc_id = p_id;
+
+  IF v_recip_count = 0 THEN
+    RETURN QUERY SELECT FALSE, 'Chua co noi nhan'::text, 0, 0;
+    RETURN;
+  END IF;
+
+  SELECT name INTO v_sender_unit FROM public.departments WHERE id = v_doc.unit_id;
+  IF v_doc.publish_unit_id IS NOT NULL THEN
+    SELECT name INTO v_publish_unit FROM public.departments WHERE id = v_doc.publish_unit_id;
+  ELSE
+    v_publish_unit := v_sender_unit;
+  END IF;
+
+  FOR v_recipient IN
+    SELECT id, recipient_type, recipient_unit_id, recipient_org_id, sent_status
+    FROM edoc.outgoing_doc_recipients
+    WHERE outgoing_doc_id = p_id AND sent_status = 'pending'
+  LOOP
+    IF v_recipient.recipient_type = 'internal_unit' THEN
+      INSERT INTO edoc.incoming_docs (
+        unit_id, department_id, received_date, "number", notation, document_code, abstract,
+        publish_unit, publish_date, signer, sign_date,
+        doc_book_id, doc_type_id, doc_field_id,
+        secret_id, urgent_id, number_paper, number_copies,
+        recipients, created_by, created_at, updated_at,
+        source_type, is_unit_send, unit_send,
+        previous_outgoing_doc_id
+      ) VALUES (
+        v_recipient.recipient_unit_id,
+        v_recipient.recipient_unit_id,  -- v3.0 fix: department_id = unit_id để non-admin filter subtree thấy được
+        NOW(),
+        (SELECT COALESCE(max("number"),0) + 1 FROM edoc.incoming_docs WHERE unit_id = v_recipient.recipient_unit_id),
+        v_doc.notation, v_doc.document_code, v_doc.abstract,
+        v_publish_unit, v_doc.publish_date, v_doc.signer, v_doc.sign_date,
+        v_doc.doc_book_id, v_doc.doc_type_id, v_doc.doc_field_id,
+        v_doc.secret_id, v_doc.urgent_id, v_doc.number_paper, v_doc.number_copies,
+        v_doc.recipients, p_user_id, NOW(), NOW(),
+        'internal'::edoc.doc_source_type, TRUE, v_sender_unit,
+        v_doc.id
+      ) RETURNING id INTO v_new_inc_id;
+
+      UPDATE edoc.outgoing_doc_recipients
+      SET sent_at = NOW(), sent_status = 'sent', generated_incoming_doc_id = v_new_inc_id
+      WHERE id = v_recipient.id;
+
+      v_internal := v_internal + 1;
+
+    ELSIF v_recipient.recipient_type = 'external_org' THEN
+      INSERT INTO edoc.lgsp_tracking (
+        outgoing_doc_id, direction, status, dest_org_code, dest_org_name, sent_at, created_by, created_at
+      ) VALUES (
+        v_doc.id, 'send', 'pending',
+        (SELECT code FROM edoc.inter_organizations WHERE id = v_recipient.recipient_org_id),
+        (SELECT name FROM edoc.inter_organizations WHERE id = v_recipient.recipient_org_id),
+        NOW(), p_user_id, NOW()
+      ) RETURNING id INTO v_new_lgsp_id;
+
+      UPDATE edoc.outgoing_doc_recipients
+      SET sent_at = NOW(), sent_status = 'pending', generated_lgsp_tracking_id = v_new_lgsp_id
+      WHERE id = v_recipient.id;
+
+      v_external := v_external + 1;
+    END IF;
+  END LOOP;
+
+  UPDATE edoc.outgoing_docs SET status = 'sent', updated_by = p_user_id, updated_at = NOW() WHERE id = p_id;
+
+  RETURN QUERY SELECT TRUE,
+    ('Da gui: ' || v_internal || ' don vi noi bo, ' || v_external || ' co quan ngoai LGSP')::text,
+    v_internal, v_external;
+EXCEPTION WHEN others THEN
+  RETURN QUERY SELECT FALSE, SQLERRM::text, v_internal, v_external;
+END;
+$$;

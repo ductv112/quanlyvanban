@@ -574,9 +574,6 @@ export default function OutgoingDocPage() {
                 .map((d) => ({ value: d.value, label: d.label }))}
             />
           </Form.Item>
-          <Form.Item name="recipients" label="Nơi nhận (mô tả thêm — không bắt buộc)" tooltip="Text mô tả tổng quan, hiển thị trên VB. Logic gửi dùng 'Đơn vị nhận' phía trên.">
-            <TextArea rows={2} placeholder="VD: 'Các Sở, ngành liên quan; UBND các huyện, TX'" maxLength={2000} showCount />
-          </Form.Item>
 
           {!PHASE1_HIDE_CUSTOM_FIELDS && extraColumns.length > 0 && (
             <>
