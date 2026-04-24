@@ -16,6 +16,7 @@ import {
   RollbackOutlined,
 } from '@ant-design/icons';
 import { api } from '@/lib/api';
+import { downloadAttachment } from '@/lib/download';
 import { useAuthStore } from '@/stores/auth.store';
 import { useParams, useRouter } from 'next/navigation';
 import dayjs from 'dayjs';
@@ -319,7 +320,7 @@ export default function IncomingDocDetailPage() {
 
   // Attachments
   const handleUpload = async (file: File) => { setUploading(true); try { const fd = new FormData(); fd.append('file', file); await api.post(`/van-ban-den/${docId}/dinh-kem`, fd, { headers: { 'Content-Type': 'multipart/form-data' } }); message.success('Tải lên thành công'); fetchAttachments(); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } finally { setUploading(false); } return false; };
-  const handleDownload = async (att: Attachment) => { try { const { data: res } = await api.get(`/van-ban-den/${docId}/dinh-kem/${att.id}/download`); window.open(res.data?.url, '_blank'); } catch { message.error('Lỗi tải file'); } };
+  const handleDownload = async (att: Attachment) => { try { await downloadAttachment(`/van-ban-den/${docId}/dinh-kem/${att.id}/download`, att.file_name); } catch { message.error('Lỗi tải file'); } };
   const handleDeleteAttachment = async (att: Attachment) => { try { await api.delete(`/van-ban-den/${docId}/dinh-kem/${att.id}`); message.success('Đã xóa'); fetchAttachments(); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } };
   const handleSignAttachment = async (att: Attachment) => {
     try {

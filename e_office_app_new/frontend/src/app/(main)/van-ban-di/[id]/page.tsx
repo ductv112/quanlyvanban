@@ -18,6 +18,7 @@ import {
   CloudUploadOutlined,
 } from '@ant-design/icons';
 import { api } from '@/lib/api';
+import { downloadAttachment } from '@/lib/download';
 import { useAuthStore } from '@/stores/auth.store';
 import { useSigning } from '@/hooks/use-signing';
 import { useParams, useRouter } from 'next/navigation';
@@ -238,7 +239,7 @@ export default function OutgoingDocDetailPage() {
 
   // Attachments
   const handleUpload = async (file: File) => { setUploading(true); try { const fd = new FormData(); fd.append('file', file); await api.post(`/van-ban-di/${docId}/dinh-kem`, fd, { headers: { 'Content-Type': 'multipart/form-data' } }); message.success('Tải lên thành công'); fetchAttachments(); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } finally { setUploading(false); } return false; };
-  const handleDownload = async (att: Attachment) => { try { const { data: res } = await api.get(`/van-ban-di/${docId}/dinh-kem/${att.id}/download`); window.open(res.data?.url, '_blank'); } catch { message.error('Lỗi tải file'); } };
+  const handleDownload = async (att: Attachment) => { try { await downloadAttachment(`/van-ban-di/${docId}/dinh-kem/${att.id}/download`, att.file_name); } catch { message.error('Lỗi tải file'); } };
   const handleDeleteAttachment = async (att: Attachment) => { try { await api.delete(`/van-ban-di/${docId}/dinh-kem/${att.id}`); message.success('Đã xóa'); fetchAttachments(); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } };
 
   // Chuyển lưu trữ VB đi (HDSD II.3.9)
@@ -581,7 +582,7 @@ export default function OutgoingDocDetailPage() {
                 <div>
                   <div className="info-label">Nơi nhận</div>
                   <div className="info-value">{doc.recipients || '—'}</div>
-                  {!doc.is_released && noiNhan.length === 0 && (
+                  {!(doc as any).is_released && noiNhan.length === 0 && (
                     <Tag color="warning" style={{ marginTop: 4 }}>Chưa chọn đơn vị nhận chính thức — sẽ yêu cầu chọn khi Gửi</Tag>
                   )}
                 </div>

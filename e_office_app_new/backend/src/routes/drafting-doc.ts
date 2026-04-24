@@ -3,7 +3,7 @@ import type { AuthRequest } from '../middleware/auth.js';
 import { upload } from '../middleware/upload.js';
 import { draftingDocRepository } from '../repositories/drafting-doc.repository.js';
 import { incomingDocRepository } from '../repositories/incoming-doc.repository.js';
-import { uploadFile, deleteFile, getFileUrl } from '../lib/minio/client.js';
+import { uploadFile, deleteFile, getFileUrl, streamFileToResponse } from '../lib/minio/client.js';
 import { v4 as uuidv4 } from 'uuid';
 import { handleDbError } from '../lib/error-handler.js';
 import { exportExcel } from '../lib/excel.js';
@@ -477,8 +477,8 @@ router.get('/:id/dinh-kem/:attachmentId/download', async (req: Request, res: Res
       res.status(404).json({ success: false, message: 'Không tìm thấy file' });
       return;
     }
-    const url = await getFileUrl(att.file_path, 3600);
-    res.json({ success: true, data: { url, file_name: att.file_name } });
+    // Stream file qua backend proxy — MinIO nội bộ, browser không truy cập trực tiếp
+    await streamFileToResponse(res, att.file_path, att.file_name, (att as any).mime_type);
   } catch (error) {
     handleDbError(error, res);
   }
