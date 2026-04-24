@@ -21415,7 +21415,10 @@ BEGIN
   SELECT COUNT(*)::INT INTO v_count
   FROM edoc.incoming_docs d
   LEFT JOIN edoc.user_incoming_docs uid ON uid.incoming_doc_id = d.id AND uid.staff_id = p_staff_id
-  WHERE (p_dept_ids IS NULL OR d.department_id = ANY(p_dept_ids))
+  WHERE (
+      (p_dept_ids IS NULL OR d.department_id = ANY(p_dept_ids))
+      OR uid.incoming_doc_id IS NOT NULL
+    )
     AND (uid.is_read IS NULL OR uid.is_read = FALSE);
   RETURN v_count;
 END; $$;
@@ -21429,7 +21432,10 @@ BEGIN
   SELECT COUNT(*)::INT INTO v_count
   FROM edoc.outgoing_docs d
   LEFT JOIN edoc.user_outgoing_docs uo ON uo.outgoing_doc_id = d.id AND uo.staff_id = p_staff_id
-  WHERE (p_dept_ids IS NULL OR d.department_id = ANY(p_dept_ids))
+  WHERE (
+      (p_dept_ids IS NULL OR d.department_id = ANY(p_dept_ids))
+      OR uo.outgoing_doc_id IS NOT NULL
+    )
     AND (uo.is_read IS NULL OR uo.is_read = FALSE);
   RETURN v_count;
 END; $$;
@@ -26453,7 +26459,10 @@ BEGIN
     AND (p_signer IS NULL OR f.signer ILIKE '%' || p_signer || '%')
     AND (p_from_number IS NULL OR f.number >= p_from_number)
     AND (p_to_number IS NULL OR f.number <= p_to_number)
-    AND (p_dept_ids IS NULL OR f.department_id = ANY(p_dept_ids));
+    AND (
+      p_dept_ids IS NULL OR f.department_id = ANY(p_dept_ids)
+      OR EXISTS (SELECT 1 FROM edoc.user_incoming_docs uid WHERE uid.incoming_doc_id = f.id AND uid.staff_id = p_staff_id)
+    );
 
   RETURN QUERY
   SELECT
@@ -26491,7 +26500,10 @@ BEGIN
     AND (p_signer IS NULL OR f.signer ILIKE '%' || p_signer || '%')
     AND (p_from_number IS NULL OR f.number >= p_from_number)
     AND (p_to_number IS NULL OR f.number <= p_to_number)
-    AND (p_dept_ids IS NULL OR f.department_id = ANY(p_dept_ids))
+    AND (
+      p_dept_ids IS NULL OR f.department_id = ANY(p_dept_ids)
+      OR EXISTS (SELECT 1 FROM edoc.user_incoming_docs uid WHERE uid.incoming_doc_id = f.id AND uid.staff_id = p_staff_id)
+    )
   ORDER BY f.received_date DESC NULLS LAST, f.id DESC
   LIMIT p_page_size OFFSET v_offset;
 END;
@@ -26535,7 +26547,10 @@ BEGIN
     AND (p_from_date IS NULL OR f.received_date >= p_from_date)
     AND (p_to_date IS NULL OR f.received_date <= p_to_date)
     AND (p_keyword IS NULL OR f.abstract ILIKE '%' || p_keyword || '%' OR f.notation ILIKE '%' || p_keyword || '%' OR f.document_code ILIKE '%' || p_keyword || '%')
-    AND (p_dept_ids IS NULL OR f.department_id = ANY(p_dept_ids));
+    AND (
+      p_dept_ids IS NULL OR f.department_id = ANY(p_dept_ids)
+      OR EXISTS (SELECT 1 FROM edoc.user_outgoing_docs uod WHERE uod.outgoing_doc_id = f.id AND uod.staff_id = p_staff_id)
+    );
 
   RETURN QUERY
   SELECT
@@ -26574,7 +26589,10 @@ BEGIN
     AND (p_from_date IS NULL OR f.received_date >= p_from_date)
     AND (p_to_date IS NULL OR f.received_date <= p_to_date)
     AND (p_keyword IS NULL OR f.abstract ILIKE '%' || p_keyword || '%' OR f.notation ILIKE '%' || p_keyword || '%' OR f.document_code ILIKE '%' || p_keyword || '%')
-    AND (p_dept_ids IS NULL OR f.department_id = ANY(p_dept_ids))
+    AND (
+      p_dept_ids IS NULL OR f.department_id = ANY(p_dept_ids)
+      OR EXISTS (SELECT 1 FROM edoc.user_outgoing_docs uod WHERE uod.outgoing_doc_id = f.id AND uod.staff_id = p_staff_id)
+    )
   ORDER BY f.received_date DESC NULLS LAST, f.id DESC
   LIMIT p_page_size OFFSET v_offset;
 END;

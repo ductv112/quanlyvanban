@@ -366,6 +366,9 @@ SELECT
 FROM generate_series(1, 10) AS n
 WHERE NOT EXISTS (SELECT 1 FROM edoc.incoming_docs WHERE id = (1000 + n));
 
+-- Setval lại sequence sau khi insert explicit id 1001..1010 — tránh duplicate key khi user tạo VB mới
+SELECT setval('edoc.incoming_docs_id_seq', (SELECT COALESCE(MAX(id), 0) + 1 FROM edoc.incoming_docs));
+
 -- ─── 16. Attachments VB đến (20 records — file giả không upload MinIO) ─────
 INSERT INTO edoc.attachment_incoming_docs (
   id, incoming_doc_id, file_name, file_path, file_size, content_type,

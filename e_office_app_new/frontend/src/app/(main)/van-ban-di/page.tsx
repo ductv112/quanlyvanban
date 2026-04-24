@@ -40,6 +40,13 @@ interface OutgoingDoc {
   doc_book_name: string; doc_type_name: string; doc_type_code: string;
   doc_field_name: string; created_by_name: string;
   is_read: boolean; read_at: string; attachment_count: number; total_count: number;
+  permissions?: {
+    canEdit: boolean;
+    canApprove: boolean;
+    canRelease: boolean;
+    canSend: boolean;
+    canRetract: boolean;
+  };
 }
 
 interface SelectOption { value: number; label: string }
@@ -388,19 +395,29 @@ export default function OutgoingDocPage() {
     {
       key: 'actions', width: 50, align: 'center', fixed: 'right',
       render: (_, record: any) => {
+        const perms = record.permissions;
+        const statusAllowEdit = !record.approved;
+        const statusAllowRetract = !!record.approved;
         const isRejected = !!record.rejected_by;
+
+        const canEdit = statusAllowEdit && (perms?.canEdit ?? false);
+        const canApprove = statusAllowEdit && (perms?.canApprove ?? false);
+        const canReject = statusAllowEdit && !isRejected && (perms?.canApprove ?? false);
+        const canUnapprove = !statusAllowEdit && (perms?.canApprove ?? false);
+        const canRetract = statusAllowRetract && (perms?.canRetract ?? false);
+        const canDelete = statusAllowEdit && (perms?.canEdit ?? false);
+
         const items = [
           { key: 'view', icon: <EyeOutlined />, label: 'Xem chi tiết', onClick: () => { window.location.href = `/van-ban-di/${record.id}`; } },
-          ...(!record.approved ? [
-            { key: 'edit', icon: <EditOutlined />, label: 'Sửa', onClick: () => openDrawer(record) },
-            { key: 'approve', icon: <CheckCircleOutlined />, label: 'Duyệt', onClick: () => handleApprove(record) },
-            ...(!isRejected ? [{ key: 'reject', icon: <StopOutlined />, label: 'Từ chối', danger: true, onClick: () => handleReject(record) }] : []),
+          ...(canEdit ? [{ key: 'edit', icon: <EditOutlined />, label: 'Sửa', onClick: () => openDrawer(record) }] : []),
+          ...(canApprove ? [{ key: 'approve', icon: <CheckCircleOutlined />, label: 'Duyệt', onClick: () => handleApprove(record) }] : []),
+          ...(canReject ? [{ key: 'reject', icon: <StopOutlined />, label: 'Từ chối', danger: true, onClick: () => handleReject(record) }] : []),
+          ...(canUnapprove ? [{ key: 'unapprove', icon: <CloseCircleOutlined />, label: 'Hủy duyệt', onClick: () => handleUnapprove(record) }] : []),
+          ...(canRetract ? [{ key: 'retract', icon: <RollbackOutlined />, label: 'Thu hồi', onClick: () => handleRetract(record) }] : []),
+          ...(canDelete ? [
             { type: 'divider' as const },
             { key: 'delete', icon: <DeleteOutlined />, label: 'Xóa', danger: true, onClick: () => handleDelete(record) },
-          ] : [
-            { key: 'unapprove', icon: <CloseCircleOutlined />, label: 'Hủy duyệt', onClick: () => handleUnapprove(record) },
-            { key: 'retract', icon: <RollbackOutlined />, label: 'Thu hồi', onClick: () => handleRetract(record) },
-          ]),
+          ] : []),
         ];
         return (
           <Dropdown trigger={['click']} menu={{ items }}>

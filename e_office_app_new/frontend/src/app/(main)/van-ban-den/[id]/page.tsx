@@ -34,6 +34,13 @@ interface DocDetail {
   created_by: number; created_at: string; updated_by: number; updated_at: string;
   doc_book_name: string; doc_type_name: string; doc_type_code: string;
   doc_field_name: string; created_by_name: string; is_read: boolean;
+  permissions?: {
+    canEdit: boolean;
+    canApprove: boolean;
+    canRelease: boolean;
+    canSend: boolean;
+    canRetract: boolean;
+  };
 }
 interface Attachment { id: number; file_name: string; file_path: string; file_size: number; content_type: string; created_by_name: string; created_at: string; is_ca?: boolean; ca_date?: string; }
 interface Recipient { id: number; staff_id: number; staff_name: string; position_name: string; department_name: string; is_read: boolean; read_at: string; created_at: string; }
@@ -439,7 +446,7 @@ export default function IncomingDocDetailPage() {
           {doc.archive_status && <Tag color="purple">Đã lưu trữ</Tag>}
 
           {/* Nhận bàn giao / Chuyển lại — chỉ VB liên thông */}
-          {doc.is_inter_doc && (
+          {(doc as any).is_inter_doc && (
             <>
               <Popconfirm
                 title="Nhận bàn giao văn bản?"
@@ -457,12 +464,14 @@ export default function IncomingDocDetailPage() {
                   Nhận bàn giao
                 </Button>
               </Popconfirm>
-              <Button
-                icon={<RollbackOutlined />}
-                onClick={() => { chuyenLaiForm.resetFields(); setChuyenLaiOpen(true); }}
-              >
-                Chuyển lại
-              </Button>
+              {(doc.permissions?.canRetract ?? false) && (
+                <Button
+                  icon={<RollbackOutlined />}
+                  onClick={() => { chuyenLaiForm.resetFields(); setChuyenLaiOpen(true); }}
+                >
+                  Chuyển lại
+                </Button>
+              )}
             </>
           )}
 
@@ -470,14 +479,18 @@ export default function IncomingDocDetailPage() {
           {!doc.approved && (
             <>
               {/* Phase 20 v3.0: Chỉ source_type='manual' mới được sửa nội dung gốc */}
-              {((doc as any).source_type || 'manual') === 'manual' && (
+              {((doc as any).source_type || 'manual') === 'manual' && (doc.permissions?.canEdit ?? false) && (
                 <Button icon={<EditOutlined />} onClick={() => router.push(`/van-ban-den?edit=${doc.id}`)}>Sửa</Button>
               )}
-              <Button type="primary" icon={<CheckCircleOutlined />} onClick={handleApprove}>Duyệt</Button>
+              {(doc.permissions?.canApprove ?? false) && (
+                <Button type="primary" icon={<CheckCircleOutlined />} onClick={handleApprove}>Duyệt</Button>
+              )}
               <Dropdown menu={{ items: [
-                ...(recipients.length > 0 ? [{ key: 'retract', icon: <RollbackOutlined />, label: 'Thu hồi', onClick: handleRetract }] : []),
-                { type: 'divider' as const },
-                { key: 'delete', icon: <DeleteOutlined />, label: 'Xóa văn bản', danger: true, onClick: handleDelete },
+                ...(recipients.length > 0 && (doc.permissions?.canRetract ?? false) ? [{ key: 'retract', icon: <RollbackOutlined />, label: 'Thu hồi', onClick: handleRetract }] : []),
+                ...((doc.permissions?.canEdit ?? false) ? [
+                  { type: 'divider' as const },
+                  { key: 'delete', icon: <DeleteOutlined />, label: 'Xóa văn bản', danger: true, onClick: handleDelete },
+                ] : []),
               ] }}>
                 <Button icon={<MoreOutlined />} />
               </Dropdown>
@@ -487,12 +500,14 @@ export default function IncomingDocDetailPage() {
           {/* Đã duyệt: Gửi, Bút phê, Hủy duyệt, Thu hồi */}
           {doc.approved && (
             <>
-              <Button type="primary" icon={<SendOutlined />} onClick={openSendModal}>Gửi</Button>
+              {(doc.permissions?.canSend ?? false) && (
+                <Button type="primary" icon={<SendOutlined />} onClick={openSendModal}>Gửi</Button>
+              )}
               <Button icon={<CommentOutlined />} onClick={() => document.getElementById('note-input')?.focus()}>Bút phê</Button>
               <Dropdown menu={{ items: [
-                ...(!doc.is_received_paper ? [{ key: 'paper', icon: <InboxOutlined />, label: 'Nhận bản giấy', onClick: handleReceivePaper }] : []),
-                { key: 'unapprove', icon: <CloseCircleOutlined />, label: 'Hủy duyệt', danger: true, onClick: handleHuyDuyet },
-                { key: 'retract', icon: <RollbackOutlined />, label: 'Thu hồi', onClick: handleRetract },
+                ...(!doc.is_received_paper && (doc.permissions?.canApprove ?? false) ? [{ key: 'paper', icon: <InboxOutlined />, label: 'Nhận bản giấy', onClick: handleReceivePaper }] : []),
+                ...((doc.permissions?.canApprove ?? false) ? [{ key: 'unapprove', icon: <CloseCircleOutlined />, label: 'Hủy duyệt', danger: true, onClick: handleHuyDuyet }] : []),
+                ...((doc.permissions?.canRetract ?? false) ? [{ key: 'retract', icon: <RollbackOutlined />, label: 'Thu hồi', onClick: handleRetract }] : []),
               ] }}>
                 <Button icon={<MoreOutlined />} />
               </Dropdown>
@@ -770,7 +785,7 @@ export default function IncomingDocDetailPage() {
       </Modal>
 
       {/* ====== DRAWER GIAO VIỆC ====== */}
-      <Drawer forceRender
+      <Drawer
         title="Giao việc"
         size={720}
         open={giaoViecOpen}
@@ -897,7 +912,7 @@ export default function IncomingDocDetailPage() {
       </Modal>
 
       {/* Drawer: Chuyển lưu trữ */}
-      <Drawer forceRender
+      <Drawer
         title="Chuyển lưu trữ" open={archiveModalOpen} onClose={() => setArchiveModalOpen(false)}
         size={640} rootClassName="drawer-gradient" forceRender
         extra={<Space><Button onClick={() => setArchiveModalOpen(false)}>Hủy</Button><Button type="primary" onClick={handleArchive} loading={archiveSaving}>Chuyển lưu trữ</Button></Space>}

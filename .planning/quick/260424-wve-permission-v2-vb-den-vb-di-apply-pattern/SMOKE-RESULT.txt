@@ -1,0 +1,18 @@
+Smoke test matrix — permission v2 VB đến + VB đi
+Run date: 2026-04-25
+Backend: http://localhost:4000 (Express 5, qlvb_dev DB)
+Test users: admin (unit 1), tranthib (unit 3 — Sở Tài chính, khác unit với doc 1001)
+Doc IDs tested: incoming_id=1001, outgoing_id=1001
+
+Test 1: [PASS] — Admin GET /api/van-ban-den list → row 0 permissions = {canEdit:true,canApprove:true,canRelease:true,canSend:true,canRetract:true}
+Test 2: [PASS] — tranthib (khác unit) GET /api/van-ban-den/1001 → permissions = {canEdit:false,canApprove:false,canRelease:false,canSend:false,canRetract:false}
+Test 3: [PASS] — tranthib PATCH /api/van-ban-den/1001/duyet → HTTP 403 + "Không có quyền duyệt văn bản đến này"
+Test 4: [PASS] — tranthib POST /api/van-ban-den/1001/gui → HTTP 403
+Test 5: [PASS] — tranthib POST /api/van-ban-den/1001/thu-hoi → HTTP 403 + "Không có quyền thu hồi văn bản đến này"
+Test 6: [PASS] — Admin GET /api/van-ban-di list → row 0 permissions = {canEdit:true,canApprove:true,canRelease:true,canSend:true,canRetract:true}
+Test 7: [PASS] — tranthib PATCH /api/van-ban-di/1001/ban-hanh → HTTP 403 + "Không có quyền ban hành văn bản đi này"
+Test 8: [PASS] — tranthib PATCH /api/van-ban-di/1001/duyet → HTTP 403 + "Không có quyền duyệt văn bản đi này"
+Test 9: [PASS] — tranthib POST /api/van-ban-di/1001/gui → HTTP 403
+Test 10: [PASS] — tranthib POST /api/van-ban-di/1001/noi-nhan → HTTP 403 + "Không có quyền cập nhật nơi nhận văn bản đi này"
+
+RESULT: 10/10 PASS

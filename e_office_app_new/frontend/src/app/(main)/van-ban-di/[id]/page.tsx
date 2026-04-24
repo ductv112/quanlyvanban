@@ -39,6 +39,13 @@ interface DocDetail {
   created_by: number; created_at: string; updated_by: number; updated_at: string;
   doc_book_name: string; doc_type_name: string; doc_type_code: string;
   doc_field_name: string; created_by_name: string;
+  permissions?: {
+    canEdit: boolean;
+    canApprove: boolean;
+    canRelease: boolean;
+    canSend: boolean;
+    canRetract: boolean;
+  };
 }
 interface Attachment { id: number; file_name: string; file_path: string; file_size: number; content_type: string; created_by_name: string; created_at: string; is_ca?: boolean; ca_date?: string | null; signed_file_path?: string | null; }
 interface Recipient { id: number; staff_id: number; staff_name: string; position_name: string; department_name: string; is_read: boolean; read_at: string; created_at: string; }
@@ -423,18 +430,30 @@ export default function OutgoingDocDetailPage() {
             icon={isBookmarked ? <StarFilled style={{ color: '#faad14' }} /> : <StarOutlined />}
             onClick={handleToggleBookmark}
           />
-          <Button icon={<ThunderboltOutlined />} type="primary" style={{ backgroundColor: '#0891B2', borderColor: '#0891B2' }} onClick={openGiaoViec}>Giao việc</Button>
-          <Button icon={<InboxOutlined />} onClick={openHscvModal}>Thêm vào HSCV</Button>
+          {(doc.permissions?.canApprove ?? false) && (
+            <Button icon={<ThunderboltOutlined />} type="primary" style={{ backgroundColor: '#0891B2', borderColor: '#0891B2' }} onClick={openGiaoViec}>Giao việc</Button>
+          )}
+          {(doc.permissions?.canApprove ?? false) && (
+            <Button icon={<InboxOutlined />} onClick={openHscvModal}>Thêm vào HSCV</Button>
+          )}
           {/* Phase 19 v3.0: ẨN 2 nút legacy v1.0 — recipient ngoài LGSP đã có trong form 'Cơ quan nhận ngoài' khi soạn. Trục CP defer Phase 2 KH. */}
-          {doc.approved && !doc.archive_status && <Button icon={<InboxOutlined />} onClick={openArchive}>Chuyển lưu trữ</Button>}
+          {doc.approved && !doc.archive_status && (doc.permissions?.canApprove ?? false) && (
+            <Button icon={<InboxOutlined />} onClick={openArchive}>Chuyển lưu trữ</Button>
+          )}
           {!doc.approved && (
             <>
-              <Button icon={<EditOutlined />} onClick={() => router.push(`/van-ban-di?edit=${doc.id}`)}>Sửa</Button>
-              <Button type="primary" icon={<CheckCircleOutlined />} onClick={handleApprove}>Duyệt</Button>
+              {(doc.permissions?.canEdit ?? false) && (
+                <Button icon={<EditOutlined />} onClick={() => router.push(`/van-ban-di?edit=${doc.id}`)}>Sửa</Button>
+              )}
+              {(doc.permissions?.canApprove ?? false) && (
+                <Button type="primary" icon={<CheckCircleOutlined />} onClick={handleApprove}>Duyệt</Button>
+              )}
               <Dropdown menu={{ items: [
-                ...( !(doc as any).rejected_by ? [{ key: 'reject', icon: <StopOutlined />, label: 'Từ chối', danger: true, onClick: handleReject }] : []),
-                { type: 'divider' as const },
-                { key: 'delete', icon: <DeleteOutlined />, label: 'Xóa văn bản', danger: true, onClick: handleDelete },
+                ...( !(doc as any).rejected_by && (doc.permissions?.canApprove ?? false) ? [{ key: 'reject', icon: <StopOutlined />, label: 'Từ chối', danger: true, onClick: handleReject }] : []),
+                ...((doc.permissions?.canEdit ?? false) ? [
+                  { type: 'divider' as const },
+                  { key: 'delete', icon: <DeleteOutlined />, label: 'Xóa văn bản', danger: true, onClick: handleDelete },
+                ] : []),
               ] }}>
                 <Button icon={<MoreOutlined />} />
               </Dropdown>
@@ -443,9 +462,15 @@ export default function OutgoingDocDetailPage() {
           {/* Phase 17 v3.0 (Option C): Approved nhưng chưa ban hành → 2 lựa chọn */}
           {doc.approved && !(doc as any).is_released && (
             <>
-              <Button type="primary" icon={<CheckCircleOutlined />} loading={releasing} onClick={handleRelease} style={{ backgroundColor: '#7C3AED', borderColor: '#7C3AED' }}>Ban hành</Button>
-              <Button type="primary" icon={<SendOutlined />} loading={releasing || noiBoSending} onClick={handleReleaseAndSend} style={{ backgroundColor: '#059669', borderColor: '#059669' }}>Ban hành & Gửi</Button>
-              <Dropdown menu={{ items: [{ key: 'unapprove', icon: <CloseCircleOutlined />, label: 'Hủy duyệt', onClick: handleUnapprove }] }}>
+              {(doc.permissions?.canRelease ?? false) && (
+                <Button type="primary" icon={<CheckCircleOutlined />} loading={releasing} onClick={handleRelease} style={{ backgroundColor: '#7C3AED', borderColor: '#7C3AED' }}>Ban hành</Button>
+              )}
+              {(doc.permissions?.canRelease ?? false) && (doc.permissions?.canSend ?? false) && (
+                <Button type="primary" icon={<SendOutlined />} loading={releasing || noiBoSending} onClick={handleReleaseAndSend} style={{ backgroundColor: '#059669', borderColor: '#059669' }}>Ban hành & Gửi</Button>
+              )}
+              <Dropdown menu={{ items: [
+                ...((doc.permissions?.canApprove ?? false) ? [{ key: 'unapprove', icon: <CloseCircleOutlined />, label: 'Hủy duyệt', onClick: handleUnapprove }] : []),
+              ] }}>
                 <Button icon={<MoreOutlined />} />
               </Dropdown>
             </>
@@ -453,9 +478,11 @@ export default function OutgoingDocDetailPage() {
           {/* Đã ban hành, chưa gửi → nút Gửi (đẩy recipients đã lưu khi tạo) */}
           {doc.approved && (doc as any).is_released && (doc as any).status !== 'sent' && (
             <>
-              <Button type="primary" icon={<SendOutlined />} loading={noiBoSending} onClick={handleSendDirect} style={{ backgroundColor: '#0891B2', borderColor: '#0891B2' }}>Gửi</Button>
+              {(doc.permissions?.canSend ?? false) && (
+                <Button type="primary" icon={<SendOutlined />} loading={noiBoSending} onClick={handleSendDirect} style={{ backgroundColor: '#0891B2', borderColor: '#0891B2' }}>Gửi</Button>
+              )}
               <Dropdown menu={{ items: [
-                ...(recipients.length > 0 ? [{ key: 'retract', icon: <RollbackOutlined />, label: 'Thu hồi', onClick: handleRetract }] : []),
+                ...(recipients.length > 0 && (doc.permissions?.canRetract ?? false) ? [{ key: 'retract', icon: <RollbackOutlined />, label: 'Thu hồi', onClick: handleRetract }] : []),
               ] }}>
                 <Button icon={<MoreOutlined />} />
               </Dropdown>
@@ -464,7 +491,7 @@ export default function OutgoingDocDetailPage() {
           {/* Đã gửi → readonly + Thu hồi nếu cần */}
           {doc.approved && (doc as any).status === 'sent' && (
             <Dropdown menu={{ items: [
-              ...(recipients.length > 0 ? [{ key: 'retract', icon: <RollbackOutlined />, label: 'Thu hồi', onClick: handleRetract }] : []),
+              ...(recipients.length > 0 && (doc.permissions?.canRetract ?? false) ? [{ key: 'retract', icon: <RollbackOutlined />, label: 'Thu hồi', onClick: handleRetract }] : []),
             ] }}>
               <Button icon={<MoreOutlined />} />
             </Dropdown>
@@ -767,7 +794,7 @@ export default function OutgoingDocDetailPage() {
       </Modal>
 
       {/* Drawer: Giao việc */}
-      <Drawer forceRender
+      <Drawer
         title="Giao việc" size={600} open={giaoViecOpen} forceRender
         onClose={() => { setGiaoViecOpen(false); giaoViecForm.resetFields(); }}
         rootClassName="drawer-gradient"
