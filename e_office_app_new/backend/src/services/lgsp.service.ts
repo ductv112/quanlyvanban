@@ -36,14 +36,15 @@ export interface ILgspService {
 }
 
 /**
- * Factory: returns mock service when MOCK_EXTERNAL=true or LGSP_ENDPOINT not set.
- * Returns real service (throws for now) otherwise.
+ * Factory: switch giữa mock và real LGSP.
+ * - MOCK_EXTERNAL=true HOẶC thiếu LGSP_ENDPOINT → mock service
+ * - else → real service (Phase 18 v3.0): OAuth2 + REST tới apiltvb.langson.gov.vn
  */
 export async function getLgspService(): Promise<ILgspService> {
   if (process.env.MOCK_EXTERNAL === 'true' || !process.env.LGSP_ENDPOINT) {
     const mod = await import('./lgsp-mock.service.js');
     return mod.lgspMockService;
   }
-  // TODO: real LGSP implementation with actual OAuth2 + REST calls
-  throw new Error('Real LGSP service not implemented yet — set MOCK_EXTERNAL=true');
+  const mod = await import('./lgsp-real.service.js');
+  return mod.lgspRealService;
 }
