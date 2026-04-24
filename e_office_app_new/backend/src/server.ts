@@ -12,6 +12,7 @@ import healthRoutes from './routes/health.js';
 import authRoutes from './routes/auth.js';
 import adminRoutes from './routes/admin.js';
 import adminCatalogRoutes from './routes/admin-catalog.js';
+import publicCatalogRoutes from './routes/public-catalog.js';
 import incomingDocRoutes from './routes/incoming-doc.js';
 import draftingDocRoutes from './routes/drafting-doc.js';
 import outgoingDocRoutes from './routes/outgoing-doc.js';
@@ -66,6 +67,9 @@ app.use(pinoHttp({ logger }));
 app.use('/api/health', healthRoutes);
 app.use('/api/auth', authRoutes);
 
+// Phase 17 v3.0: 2 endpoints GET don-vi public cho non-admin (recipient picker)
+// Mount TRƯỚC /api/quan-tri admin guard — longer-prefix-wins
+app.use('/api/quan-tri', authenticate, publicCatalogRoutes);
 app.use('/api/quan-tri', authenticate, requireRoles('Quản trị hệ thống'), adminRoutes);
 app.use('/api/quan-tri', authenticate, requireRoles('Quản trị hệ thống'), adminCatalogRoutes);
 
