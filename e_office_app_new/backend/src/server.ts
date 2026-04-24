@@ -19,7 +19,7 @@ import outgoingDocRoutes from './routes/outgoing-doc.js';
 import handlingDocRoutes from './routes/handling-doc.js';
 import workflowRoutes from './routes/workflow.js';
 import handlingDocReportRoutes from './routes/handling-doc-report.js';
-import interIncomingRoutes from './routes/inter-incoming.js';
+// Phase 19 v3.0: removed import interIncomingRoutes — VB liên thông gộp vào VB đến (source_type)
 import messageRoutes from './routes/message.js';
 import noticeRoutes from './routes/notice.js';
 import calendarRoutes from './routes/calendar.js';
@@ -76,7 +76,7 @@ app.use('/api/quan-tri', authenticate, requireRoles('Quản trị hệ thống')
 // --- Module routes ---
 app.use('/api/van-ban-den', authenticate, incomingDocRoutes);
 app.use('/api/van-ban-du-thao', authenticate, draftingDocRoutes);
-app.use('/api/van-ban-lien-thong', authenticate, interIncomingRoutes);
+// Phase 19 v3.0: removed /api/van-ban-lien-thong — gộp vào /api/van-ban-den với source_type
 app.use('/api/van-ban-di', authenticate, outgoingDocRoutes);
 // NOTE: /thong-ke must be mounted BEFORE /ho-so-cong-viec to prevent /:id param from catching 'thong-ke'
 app.use('/api/ho-so-cong-viec/thong-ke', authenticate, handlingDocReportRoutes);

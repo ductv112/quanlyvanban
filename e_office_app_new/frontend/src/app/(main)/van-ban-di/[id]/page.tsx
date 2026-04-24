@@ -98,6 +98,21 @@ export default function OutgoingDocDetailPage() {
   const [doc, setDoc] = useState<DocDetail | null>(null);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [recipients, setRecipients] = useState<Recipient[]>([]);
+  // Phase 19 v3.0: outgoing_doc_recipients (department + inter_org) với tracking inline
+  const [noiNhan, setNoiNhan] = useState<Array<{
+    id: number;
+    recipient_type: 'internal_unit' | 'external_org';
+    recipient_unit_name: string | null;
+    recipient_org_name: string | null;
+    recipient_org_code: string | null;
+    sent_at: string | null;
+    sent_status: string;
+    error_message: string | null;
+    generated_incoming_doc_id: number | null;
+    lgsp_doc_id: string | null;
+    lgsp_status: string | null;
+    lgsp_error_message: string | null;
+  }>>([]);
   const [history, setHistory] = useState<HistoryEvent[]>([]);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [sendModalOpen, setSendModalOpen] = useState(false);
@@ -147,14 +162,16 @@ export default function OutgoingDocDetailPage() {
   const fetchBookmarkStatus = useCallback(async () => { try { const { data: res } = await api.get('/van-ban-di/danh-dau-ca-nhan'); const bookmarks: { doc_id: number | string }[] = res.data || []; setIsBookmarked(bookmarks.some((b) => Number(b.doc_id) === Number(docId))); } catch {} }, [docId]);
   const fetchAttachments = useCallback(async () => { try { const { data: res } = await api.get(`/van-ban-di/${docId}/dinh-kem`); setAttachments(res.data || []); } catch {} }, [docId]);
   const fetchRecipients = useCallback(async () => { try { const { data: res } = await api.get(`/van-ban-di/${docId}/nguoi-nhan`); setRecipients(res.data || []); } catch {} }, [docId]);
+  // Phase 19 v3.0: load outgoing_doc_recipients (departments + inter_orgs) với tracking
+  const fetchNoiNhan = useCallback(async () => { try { const { data: res } = await api.get(`/van-ban-di/${docId}/noi-nhan`); setNoiNhan(res.data || []); } catch {} }, [docId]);
   const fetchHistory = useCallback(async () => { try { const { data: res } = await api.get(`/van-ban-di/${docId}/lich-su`); setHistory(res.data || []); } catch {} }, [docId]);
   const fetchLeaderNotes = useCallback(async () => { try { const { data: res } = await api.get(`/van-ban-di/${docId}/y-kien`); setLeaderNotes(res.data || []); } catch {} }, [docId]);
 
   useEffect(() => {
     setLoading(true);
-    Promise.all([fetchDoc(), fetchAttachments(), fetchRecipients(), fetchHistory(), fetchLeaderNotes(), fetchBookmarkStatus()]).finally(() => setLoading(false));
+    Promise.all([fetchDoc(), fetchAttachments(), fetchRecipients(), fetchNoiNhan(), fetchHistory(), fetchLeaderNotes(), fetchBookmarkStatus()]).finally(() => setLoading(false));
     fetchStaffOptions();
-  }, [fetchDoc, fetchAttachments, fetchRecipients, fetchHistory, fetchLeaderNotes, fetchBookmarkStatus]);
+  }, [fetchDoc, fetchAttachments, fetchRecipients, fetchNoiNhan, fetchHistory, fetchLeaderNotes, fetchBookmarkStatus]);
 
   // Actions
   const handleApprove = async () => { try { await api.patch(`/van-ban-di/${docId}/duyet`); message.success('Duyệt thành công'); fetchDoc(); fetchHistory(); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } };
@@ -603,7 +620,51 @@ export default function OutgoingDocDetailPage() {
         {/* ====== RIGHT COLUMN ====== */}
         <Col xs={24} lg={8}>
 
-          {/* --- Người nhận --- */}
+          {/* --- Phase 19 v3.0: Đơn vị / Cơ quan nhận (recipient_type + tracking inline) --- */}
+          {noiNhan.length > 0 && (
+            <div style={{
+              background: '#fff', borderRadius: 10, padding: '20px 24px', marginBottom: 16,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+            }}>
+              <div className="section-title" style={{ marginBottom: 12 }}>
+                <SendOutlined /> Đơn vị / Cơ quan nhận ({noiNhan.length})
+              </div>
+              <div>
+                {noiNhan.map((r) => (
+                  <Flex key={r.id} align="center" gap={10} style={{ padding: '10px 0', borderBottom: '1px solid #f5f5f5' }}>
+                    <Tag color={r.recipient_type === 'internal_unit' ? 'blue' : 'green'} style={{ minWidth: 64, textAlign: 'center', margin: 0 }}>
+                      {r.recipient_type === 'internal_unit' ? 'Nội bộ' : 'LGSP'}
+                    </Tag>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 500, fontSize: 13 }}>
+                        {r.recipient_unit_name || r.recipient_org_name || '—'}
+                        {r.recipient_org_code && <span style={{ color: '#8c8c8c', marginLeft: 6 }}>({r.recipient_org_code})</span>}
+                      </div>
+                      <div style={{ fontSize: 11, color: '#8c8c8c', marginTop: 2 }}>
+                        {r.recipient_type === 'internal_unit' && r.sent_status === 'sent' && r.generated_incoming_doc_id ? (
+                          <span style={{ color: '#52c41a' }}>✓ Đã nhận{r.sent_at ? ` lúc ${dayjs(r.sent_at).format('HH:mm DD/MM')}` : ''}</span>
+                        ) : r.recipient_type === 'external_org' ? (
+                          r.lgsp_status === 'success' ? (
+                            <span style={{ color: '#52c41a' }}>✓ LGSP đã gửi{r.lgsp_doc_id ? ` (#${r.lgsp_doc_id.slice(0, 12)}...)` : ''}</span>
+                          ) : r.lgsp_status === 'error' ? (
+                            <span style={{ color: '#ff4d4f' }}>✗ Lỗi: {r.lgsp_error_message || 'unknown'}</span>
+                          ) : (
+                            <span style={{ color: '#faad14' }}>⏳ Đang chờ worker đẩy LGSP</span>
+                          )
+                        ) : r.sent_status === 'pending' ? (
+                          <span style={{ color: '#faad14' }}>⏳ Chưa gửi</span>
+                        ) : (
+                          <span>{r.sent_status}</span>
+                        )}
+                      </div>
+                    </div>
+                  </Flex>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* --- Người nhận (legacy v2.0 — staff array) --- */}
           <div style={{
             background: '#fff', borderRadius: 10, padding: '20px 24px', marginBottom: 16,
             boxShadow: '0 1px 3px rgba(0,0,0,0.06)',

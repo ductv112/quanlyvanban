@@ -357,6 +357,47 @@ router.get('/:id/nguoi-nhan', async (req: Request, res: Response) => {
   }
 });
 
+// Phase 19 v3.0: List outgoing_doc_recipients (đơn vị + cơ quan ngoài) + tracking inline
+// Replace need cho menu Liên thông riêng — tracking transport hiển thị ngay đây
+router.get('/:id/noi-nhan', async (req: Request, res: Response) => {
+  try {
+    const rows = await rawQuery<{
+      id: number;
+      recipient_type: 'internal_unit' | 'external_org';
+      recipient_unit_id: number | null;
+      recipient_unit_name: string | null;
+      recipient_org_id: number | null;
+      recipient_org_name: string | null;
+      recipient_org_code: string | null;
+      sent_at: string | null;
+      sent_status: string;
+      error_message: string | null;
+      generated_incoming_doc_id: number | null;
+      generated_lgsp_tracking_id: number | null;
+      lgsp_doc_id: string | null;
+      lgsp_status: string | null;
+      lgsp_error_message: string | null;
+    }>(
+      `SELECT r.id, r.recipient_type, r.recipient_unit_id,
+              d.name AS recipient_unit_name,
+              r.recipient_org_id, o.name AS recipient_org_name, o.code AS recipient_org_code,
+              r.sent_at, r.sent_status, r.error_message,
+              r.generated_incoming_doc_id, r.generated_lgsp_tracking_id,
+              t.lgsp_doc_id, t.status AS lgsp_status, t.error_message AS lgsp_error_message
+       FROM edoc.outgoing_doc_recipients r
+       LEFT JOIN public.departments d ON r.recipient_unit_id = d.id
+       LEFT JOIN edoc.inter_organizations o ON r.recipient_org_id = o.id
+       LEFT JOIN edoc.lgsp_tracking t ON r.generated_lgsp_tracking_id = t.id
+       WHERE r.outgoing_doc_id = $1
+       ORDER BY r.recipient_type, r.id`,
+      [Number(req.params.id)],
+    );
+    res.json({ success: true, data: rows });
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
+
 router.get('/:id/lich-su', async (req: Request, res: Response) => {
   try {
     const rows = await outgoingDocRepository.getHistory(Number(req.params.id));

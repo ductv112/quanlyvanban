@@ -192,7 +192,8 @@ function buildMenuItems({ badgeCounts, isAdmin, roles }: MenuBuildParams): MenuI
         },
         { key: '/van-ban-di', icon: <SendOutlined />, label: 'Văn bản đi' },
         { key: '/van-ban-du-thao', icon: <EditOutlined />, label: 'Văn bản dự thảo' },
-        { key: '/van-ban-lien-thong', icon: <SwapOutlined />, label: 'Liên thông' },
+        // Phase 19 v3.0: BỎ menu 'Liên thông' — VB liên thông gộp vào 'Văn bản đến' với source_type='external_lgsp'
+        // Tracking gửi LGSP hiển thị inline trong trang chi tiết VB đi (tab Người nhận)
         { key: '/van-ban-danh-dau', icon: <StarOutlined />, label: 'Đánh dấu cá nhân' },
         { key: '/cau-hinh-gui-nhanh', icon: <SettingOutlined />, label: 'Cấu hình gửi nhanh' },
       ],
