@@ -1,26 +1,26 @@
 # ============================================================
-# e-Office v2 — Deploy fresh cho KH Test
-# Mục đích: Pull code v2 mới nhất + rebuild PRODUCTION + reset DB sạch
-#           + clear Redis/MinIO + seed đầy đủ (001 + 002 demo) + verify.
+# e-Office v2 - Deploy fresh cho KH Test
+# Muc dich: Pull code v2 moi nhat + rebuild PRODUCTION + reset DB sach
+#           + clear Redis/MinIO + seed day du (001 + 002 demo) + verify.
 #
-# [!!] CẢNH BÁO: Xoá TOÀN BỘ data trong qlvb_prod + toàn bộ Redis cache
-#                + toàn bộ MinIO uploads. KHÔNG dùng cho production thật.
+# [!!] CANH BAO: Xoa TOAN BO data trong qlvb_prod + toan bo Redis cache
+#                + toan bo MinIO uploads. KHONG dung cho production that.
 #
-# Chạy: PowerShell Administrator:
+# Chay: PowerShell Administrator:
 #   .\deploy-v2-kh-test.ps1
 #
-# Hoặc tự động (skip confirm):
+# Hoac tu dong (skip confirm):
 #   .\deploy-v2-kh-test.ps1 -Force
 # ============================================================
 
 param(
-    [switch]$Force   # Skip mọi confirm prompt
+    [switch]$Force   # Skip moi confirm prompt
 )
 
 $ErrorActionPreference = 'Continue'
 $ScriptStart = Get-Date
 
-# ── Config ──────────────────────────────────────────────────
+# -- Config ---------------------------------------------------
 $APP_DIR    = 'C:\qlvb\quanlyvanban'
 $WORK_DIR   = Join-Path $APP_DIR 'e_office_app_new'
 $DEPLOY_DIR = Join-Path $APP_DIR 'deploy'
@@ -29,17 +29,17 @@ $PG_DB      = 'qlvb_prod'
 $PG_USER    = 'qlvb_admin'
 $PG_PASS    = 'QlvbProd2026'
 
-$PROD_URL   = 'http://103.97.134.87'
-$BACKEND_HEALTH = "${PROD_URL}:4000/api/health"   # local backend qua pm2
-$FRONTEND_URL   = $PROD_URL                         # IIS reverse proxy → Next
+$PROD_URL       = 'http://103.97.134.87'
+$BACKEND_HEALTH = 'http://localhost:4000/api/health'
+$FRONTEND_URL   = $PROD_URL
 
-# ── Helpers ─────────────────────────────────────────────────
+# -- Helpers --------------------------------------------------
 function Log  ($m) { Write-Host "[OK] $m" -ForegroundColor Green }
-function Step ($m) { Write-Host "`n[$([int]((Get-Date) - $ScriptStart).TotalSeconds)s] $m" -ForegroundColor Cyan }
+function Step ($m) { $sec = [int]((Get-Date) - $ScriptStart).TotalSeconds; Write-Host "`n[${sec}s] $m" -ForegroundColor Cyan }
 function Warn ($m) { Write-Host "[!!] $m" -ForegroundColor Yellow }
 function Err  ($m) { Write-Host "[XX] $m" -ForegroundColor Red; exit 1 }
 
-# ── Precheck ────────────────────────────────────────────────
+# -- Precheck -------------------------------------------------
 Step 'Precheck'
 
 $principal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
@@ -48,18 +48,18 @@ if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administra
 }
 Log 'Administrator'
 
-if (-not (Test-Path $APP_DIR)) { Err "Khong tim thay APP_DIR: $APP_DIR" }
+if (-not (Test-Path $APP_DIR))  { Err "Khong tim thay APP_DIR: $APP_DIR" }
 if (-not (Test-Path $WORK_DIR)) { Err "Khong tim thay WORK_DIR: $WORK_DIR" }
-if (-not (Test-Path $psqlExe)) { Err "Khong tim thay psql.exe: $psqlExe" }
+if (-not (Test-Path $psqlExe))  { Err "Khong tim thay psql.exe: $psqlExe" }
 Log 'Paths OK'
 
-# ── Confirm ─────────────────────────────────────────────────
+# -- Confirm --------------------------------------------------
 if (-not $Force) {
     Write-Host ''
     Write-Host '================================================================' -ForegroundColor Red
-    Write-Host '  [!!] DEPLOY V2 — KH TEST' -ForegroundColor Red
+    Write-Host '  [!!] DEPLOY V2 - KH TEST' -ForegroundColor Red
     Write-Host '       - Pull code v2 + rebuild PRODUCTION' -ForegroundColor Red
-    Write-Host '       - Xoa SACH qlvb_prod DB + seed lai (001 + 002 demo)' -ForegroundColor Red
+    Write-Host '       - Xoa sach qlvb_prod DB + seed lai (001 + 002 demo)' -ForegroundColor Red
     Write-Host '       - Clear Redis (FLUSHALL) + MinIO (all objects trong bucket)' -ForegroundColor Red
     Write-Host '       - Restart pm2' -ForegroundColor Red
     Write-Host '================================================================' -ForegroundColor Red
@@ -68,12 +68,12 @@ if (-not $Force) {
     if ($c -ne 'yes') { Write-Host 'Da huy.'; exit 0 }
 }
 
-# ── 1. Stop pm2 services ────────────────────────────────────
-Step '1. Stop pm2 services (tranh kết nối DB khi reset)'
+# -- 1. Stop pm2 services ------------------------------------
+Step '1. Stop pm2 services (tranh ket noi DB khi reset)'
 pm2 stop all 2>$null | Out-Null
 Log 'pm2 stopped'
 
-# ── 2. Pull code v2 ─────────────────────────────────────────
+# -- 2. Pull code v2 -----------------------------------------
 Step '2. Pull code v2 tu git'
 Set-Location $APP_DIR
 git fetch --all -q
@@ -84,7 +84,7 @@ $headSha = (git rev-parse --short HEAD).Trim()
 $headMsg = (git log -1 --pretty=format:"%s").Trim()
 Log "HEAD: $headSha $headMsg"
 
-# ── 3. Build Backend PRODUCTION ─────────────────────────────
+# -- 3. Build Backend PRODUCTION -----------------------------
 Step '3. Build Backend PRODUCTION (npm ci + build)'
 Set-Location "$WORK_DIR\backend"
 $env:NODE_ENV = 'production'
@@ -92,7 +92,7 @@ $env:NODE_ENV = 'production'
 Log '  -> npm ci (clean install)...'
 npm ci 2>$null | Out-Null
 if ($LASTEXITCODE -ne 0) {
-    Warn '  npm ci fail, fallback sang npm install --omit=dev'
+    Warn '  npm ci fail, fallback npm install --omit=dev'
     npm install --omit=dev 2>$null | Out-Null
     if ($LASTEXITCODE -ne 0) { Err 'Backend npm install that bai' }
 }
@@ -103,7 +103,7 @@ if ($LASTEXITCODE -ne 0) { Err 'Backend build that bai' }
 if (-not (Test-Path "$WORK_DIR\backend\dist\server.js")) { Err 'Backend dist/server.js khong ton tai sau build' }
 Log 'Backend built'
 
-# ── 4. Build Frontend PRODUCTION ────────────────────────────
+# -- 4. Build Frontend PRODUCTION ----------------------------
 Step '4. Build Frontend PRODUCTION (Next.js build 3-5 phut)'
 Set-Location "$WORK_DIR\frontend"
 $env:NODE_ENV = 'production'
@@ -122,29 +122,35 @@ if ($LASTEXITCODE -ne 0) { Err 'Frontend build that bai' }
 if (-not (Test-Path "$WORK_DIR\frontend\.next\BUILD_ID")) { Err 'Frontend .next/BUILD_ID khong ton tai sau build' }
 Log 'Frontend built'
 
-# ── 5. Load .env backend de doc config Redis/MinIO ──────────
+# -- 5. Load .env backend de doc config Redis/MinIO ----------
 Step '5. Load backend/.env'
 $envFile = "$WORK_DIR\backend\.env"
 if (-not (Test-Path $envFile)) { Err "Khong tim thay $envFile" }
 
 $envMap = @{}
 Get-Content $envFile | ForEach-Object {
-    if ($_ -match '^\s*([A-Z_]+)\s*=\s*(.*?)\s*$') {
+    $line = $_
+    if ($line -match '^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*?)\s*$') {
         $key = $matches[1]
-        $val = $matches[2].Trim('"').Trim("'")
+        $val = $matches[2]
+        if ($val.StartsWith('"') -and $val.EndsWith('"')) { $val = $val.Substring(1, $val.Length - 2) }
+        elseif ($val.StartsWith("'") -and $val.EndsWith("'")) { $val = $val.Substring(1, $val.Length - 2) }
         $envMap[$key] = $val
     }
 }
 Log "Loaded $($envMap.Count) env vars"
 
-# ── 6. Clear Redis (FLUSHALL) ───────────────────────────────
+# -- 6. Clear Redis (FLUSHALL) -------------------------------
 Step '6. Clear Redis (FLUSHALL)'
 $redisUrl = $envMap['REDIS_URL']
-if (-not $redisUrl) { Warn 'REDIS_URL khong co trong .env - skip Redis clear' }
-else {
+if (-not $redisUrl) {
+    Warn 'REDIS_URL khong co trong .env - skip Redis clear'
+} else {
     Set-Location "$WORK_DIR\backend"
     $env:REDIS_URL = $redisUrl
-    $script = @'
+
+    $redisScript = Join-Path $env:TEMP 'qlvb_redis_flush.js'
+    @'
 const { Redis } = require('ioredis');
 const r = new Redis(process.env.REDIS_URL, { maxRetriesPerRequest: 3, lazyConnect: true });
 (async () => {
@@ -159,13 +165,16 @@ const r = new Redis(process.env.REDIS_URL, { maxRetriesPerRequest: 3, lazyConnec
     process.exit(1);
   }
 })();
-'@
-    $script | node
-    if ($LASTEXITCODE -ne 0) { Warn 'Redis clear fail - kiem tra thu cong sau deploy' }
+'@ | Out-File -FilePath $redisScript -Encoding ASCII
+
+    node $redisScript
+    $redisRc = $LASTEXITCODE
+    Remove-Item $redisScript -ErrorAction SilentlyContinue
+    if ($redisRc -ne 0) { Warn 'Redis clear fail - kiem tra thu cong sau deploy' }
     else { Log 'Redis cleared' }
 }
 
-# ── 7. Clear MinIO (xoa all objects trong bucket) ───────────
+# -- 7. Clear MinIO ------------------------------------------
 Step '7. Clear MinIO (all objects trong bucket documents)'
 $minioEndpoint = $envMap['MINIO_ENDPOINT']
 $minioAK = $envMap['MINIO_ACCESS_KEY']
@@ -182,7 +191,8 @@ if (-not $minioEndpoint -or -not $minioAK -or -not $minioSK) {
     $env:MINIO_SECRET_KEY = $minioSK
     $env:MINIO_BUCKET     = $minioBucket
 
-    $script = @'
+    $minioScript = Join-Path $env:TEMP 'qlvb_minio_clear.js'
+    @'
 const Minio = require('minio');
 const u = new URL(process.env.MINIO_ENDPOINT);
 const mc = new Minio.Client({
@@ -213,23 +223,25 @@ const bucket = process.env.MINIO_BUCKET;
     process.exit(1);
   }
 })();
-'@
-    $script | node
-    if ($LASTEXITCODE -ne 0) { Warn 'MinIO clear fail - kiem tra thu cong sau deploy' }
+'@ | Out-File -FilePath $minioScript -Encoding ASCII
+
+    node $minioScript
+    $minioRc = $LASTEXITCODE
+    Remove-Item $minioScript -ErrorAction SilentlyContinue
+    if ($minioRc -ne 0) { Warn 'MinIO clear fail - kiem tra thu cong sau deploy' }
     else { Log 'MinIO cleared' }
 }
 
-# ── 8. Reset DB + seed 001 + 002 (goi script co san -Force) ─
+# -- 8. Reset DB + seed 001 + 002 ----------------------------
 Step '8. Reset DB + seed 001 + 002 (full demo data)'
 $resetScript = Join-Path $DEPLOY_DIR 'reset-db-windows.ps1'
 if (-not (Test-Path $resetScript)) { Err "Khong tim thay $resetScript" }
 
-# Call reset-db-windows.ps1 -Force (skip internal confirm)
 & powershell -ExecutionPolicy Bypass -File $resetScript -Force
 if ($LASTEXITCODE -ne 0) { Err 'reset-db-windows.ps1 that bai' }
 Log 'DB reset + seed OK'
 
-# ── 9. Start pm2 services ───────────────────────────────────
+# -- 9. Start pm2 services -----------------------------------
 Step '9. Start pm2 services'
 Set-Location $WORK_DIR
 pm2 restart all 2>$null | Out-Null
@@ -237,7 +249,7 @@ Start-Sleep -Seconds 5
 pm2 status
 Log 'pm2 restarted'
 
-# ── 10. Verify ──────────────────────────────────────────────
+# -- 10. Verify ----------------------------------------------
 Step '10. Verify deployment'
 
 Log "  -> Check backend health: $BACKEND_HEALTH"
@@ -256,26 +268,26 @@ try {
 
 Log '  -> Test login admin (qua backend local)'
 try {
-    $body = @{ username = 'admin'; password = 'Admin@123' } | ConvertTo-Json
+    $body = @{ username = 'admin'; password = 'Admin@123' } | ConvertTo-Json -Compress
     $login = Invoke-WebRequest -Uri 'http://localhost:4000/api/auth/login' -Method POST -ContentType 'application/json' -Body $body -TimeoutSec 10 -UseBasicParsing
     $loginData = $login.Content | ConvertFrom-Json
     if ($loginData.data.accessToken) { Log '    Login admin OK (accessToken received)' }
     else { Warn "    Login response khong co accessToken: $($login.Content)" }
 } catch { Warn "    Login that bai: $($_.Exception.Message)" }
 
-# ── Summary ─────────────────────────────────────────────────
+# -- Summary -------------------------------------------------
 $duration = [int]((Get-Date) - $ScriptStart).TotalSeconds
 Write-Host ''
 Write-Host '================================================================' -ForegroundColor Green
-Write-Host "  DEPLOY V2 HOAN THANH sau $duration s" -ForegroundColor Green
+Write-Host "  DEPLOY V2 HOAN THANH sau $duration giay" -ForegroundColor Green
 Write-Host '================================================================' -ForegroundColor Green
 Write-Host ''
 Write-Host "  URL:     $PROD_URL" -ForegroundColor Cyan
 Write-Host '  Admin:   admin / Admin@123' -ForegroundColor Cyan
-Write-Host '  Demo:    nguyenvana / Admin@123 (Sở Nội vụ)' -ForegroundColor Cyan
-Write-Host '           tranthib   / Admin@123 (Sở Tài chính)' -ForegroundColor Cyan
-Write-Host '           levand     / Admin@123 (Sở TT&TT)' -ForegroundColor Cyan
-Write-Host '           phamvane   / Admin@123 (VP UBND)' -ForegroundColor Cyan
+Write-Host '  Demo:    nguyenvana / Admin@123  (So Noi vu)' -ForegroundColor Cyan
+Write-Host '           tranthib   / Admin@123  (So Tai chinh)' -ForegroundColor Cyan
+Write-Host '           levand     / Admin@123  (So TT-TT)' -ForegroundColor Cyan
+Write-Host '           phamvane   / Admin@123  (VP UBND)' -ForegroundColor Cyan
 Write-Host ''
 Write-Host "  Git HEAD: $headSha $headMsg" -ForegroundColor DarkGray
 Write-Host ''
