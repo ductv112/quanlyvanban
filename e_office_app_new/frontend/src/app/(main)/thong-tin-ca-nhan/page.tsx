@@ -348,17 +348,8 @@ export default function ProfilePage() {
                   children: passwordPanel,
                   forceRender: true,
                 },
-                {
-                  key: 'signature',
-                  label: (
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                      <EditOutlined />
-                      Ảnh chữ ký
-                    </span>
-                  ),
-                  children: signaturePanel,
-                  forceRender: true,
-                },
+                // Tab "Ảnh chữ ký" đã chuyển sang trang riêng "Tài khoản ký số cá nhân"
+                // (menu KÝ SỐ → Tài khoản ký số cá nhân). Xoá tab trùng ở đây.
               ]}
             />
           </Card>
