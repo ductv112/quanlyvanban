@@ -472,7 +472,7 @@ router.delete('/:id/dinh-kem/:attachmentId', async (req: Request, res: Response)
 router.get('/:id/dinh-kem/:attachmentId/download', async (req: Request, res: Response) => {
   try {
     const attachments = await draftingDocRepository.getAttachments(Number(req.params.id));
-    const att = attachments.find(a => a.id === Number(req.params.attachmentId));
+    const att = attachments.find(a => Number(a.id) === Number(req.params.attachmentId));
     if (!att) {
       res.status(404).json({ success: false, message: 'Không tìm thấy file' });
       return;
