@@ -13908,10 +13908,9 @@ CREATE TABLE IF NOT EXISTS edoc.user_incoming_docs (
 -- Badge "Gửi bởi ..." cần sent_by + expired_date (tương đương user_outgoing_docs / user_drafting_docs)
 ALTER TABLE edoc.user_incoming_docs ADD COLUMN IF NOT EXISTS sent_by integer;
 ALTER TABLE edoc.user_incoming_docs ADD COLUMN IF NOT EXISTS expired_date timestamp with time zone;
-DO $$ BEGIN
-  ALTER TABLE edoc.user_incoming_docs ADD CONSTRAINT user_incoming_docs_sent_by_fkey
-    FOREIGN KEY (sent_by) REFERENCES public.staff(id);
-EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+-- FK constraint bị defer xuống cuối file vì public.staff chưa được CREATE tại đây
+-- (staff ở line ~14927, sau edoc.user_incoming_docs). Xem section 'Deferred FK constraints'
+-- ở cuối file.
 
 
 --
@@ -27324,3 +27323,13 @@ $func$;
 
 -- Phase 20 v3.0 Audit: incoming_docs đối xứng outgoing/drafting
 ALTER TABLE edoc.incoming_docs ADD COLUMN IF NOT EXISTS sub_number VARCHAR(20);
+
+-- ============================================================================
+-- Deferred FK constraints (apply sau khi tất cả tables đã CREATE)
+-- ============================================================================
+-- FK edoc.user_incoming_docs.sent_by -> public.staff(id) phải defer vì
+-- edoc.user_incoming_docs CREATE trước public.staff trong file master.
+DO $$ BEGIN
+  ALTER TABLE edoc.user_incoming_docs ADD CONSTRAINT user_incoming_docs_sent_by_fkey
+    FOREIGN KEY (sent_by) REFERENCES public.staff(id);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
