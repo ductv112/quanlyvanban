@@ -267,15 +267,6 @@ function buildMenuItems({ badgeCounts, isAdmin, roles }: MenuBuildParams): MenuI
     );
   }
 
-  // ── ĐỐI TÁC ── (flat list, everyone can see)
-  items.push(
-    { key: 'grp-doitac', type: 'group', label: 'ĐỐI TÁC' },
-    { key: 'ext-vnpt', icon: <LinkOutlined />, label: <a href="https://vinvoice.vn" target="_blank" rel="noopener noreferrer">Hóa đơn VNPT</a> },
-    { key: 'ext-viettel', icon: <LinkOutlined />, label: <a href="https://sinvoice.viettel.vn" target="_blank" rel="noopener noreferrer">Hóa đơn Viettel</a> },
-    { key: 'ext-bhxh', icon: <LinkOutlined />, label: <a href="https://dichvucong.baohiemxahoi.gov.vn" target="_blank" rel="noopener noreferrer">Bảo hiểm XH</a> },
-    { key: 'ext-thue', icon: <LinkOutlined />, label: <a href="https://thuedientu.gdt.gov.vn" target="_blank" rel="noopener noreferrer">Thuế điện tử</a> },
-  );
-
   // ── KÝ SỐ ── (Group hiển thị cho MỌI user; submenu admin-only được guard riêng)
   items.push({ key: 'grp-kyso', type: 'group', label: 'KÝ SỐ' });
   // Submenu admin: Cấu hình ký số hệ thống (admin-only)
@@ -298,6 +289,15 @@ function buildMenuItems({ badgeCounts, isAdmin, roles }: MenuBuildParams): MenuI
     icon: <SafetyCertificateOutlined />,
     label: 'Danh sách ký số',
   });
+
+  // ── ĐỐI TÁC ── (flat list, everyone can see)
+  items.push(
+    { key: 'grp-doitac', type: 'group', label: 'ĐỐI TÁC' },
+    { key: 'ext-vnpt', icon: <LinkOutlined />, label: <a href="https://vinvoice.vn" target="_blank" rel="noopener noreferrer">Hóa đơn VNPT</a> },
+    { key: 'ext-viettel', icon: <LinkOutlined />, label: <a href="https://sinvoice.viettel.vn" target="_blank" rel="noopener noreferrer">Hóa đơn Viettel</a> },
+    { key: 'ext-bhxh', icon: <LinkOutlined />, label: <a href="https://dichvucong.baohiemxahoi.gov.vn" target="_blank" rel="noopener noreferrer">Bảo hiểm XH</a> },
+    { key: 'ext-thue', icon: <LinkOutlined />, label: <a href="https://thuedientu.gdt.gov.vn" target="_blank" rel="noopener noreferrer">Thuế điện tử</a> },
+  );
 
   // ── HỆ THỐNG ── (Admin only)
   if (isAdmin) {
@@ -423,16 +423,18 @@ function buildBreadcrumbs(pathname: string) {
 
 // Find open keys for current path
 function getOpenKeys(pathname: string, items: MenuItem[]): string[] {
+  // Mặc định mở sẵn menu "Văn bản" (submenu nghiệp vụ chính)
+  const openKeys = new Set<string>(['van-ban']);
   for (const item of items) {
     if (item && 'children' in item && item.children) {
       for (const child of item.children) {
         if (child && 'key' in child && pathname.startsWith(child.key as string)) {
-          return [item.key as string];
+          openKeys.add(item.key as string);
         }
       }
     }
   }
-  return [];
+  return Array.from(openKeys);
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────

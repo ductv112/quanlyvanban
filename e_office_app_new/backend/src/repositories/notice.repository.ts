@@ -76,8 +76,8 @@ export const noticeRepository = {
     return row ?? { success: true, message: 'Đã đánh dấu đã đọc', count: 0 };
   },
 
-  async countUnread(staffId: number): Promise<number> {
-    const row = await callFunctionOne<{ count: bigint }>('edoc.fn_notice_count_unread', [staffId]);
+  async countUnread(staffId: number, unitId: number | null = null): Promise<number> {
+    const row = await callFunctionOne<{ count: bigint }>('edoc.fn_notice_count_unread', [staffId, unitId]);
     return row ? Number(row.count) : 0;
   },
 

@@ -159,12 +159,6 @@ export default function DashboardPage() {
   const [taskStatusLoading, setTaskStatusLoading] = useState(true);
   const [taskStatusData, setTaskStatusData] = useState<TaskByStatusItem[]>([]);
 
-  // Utility
-  const [calendarLoading, setCalendarLoading] = useState(true);
-  const [calendarData, setCalendarData] = useState<CalendarTodayItem[]>([]);
-  const [noticesLoading, setNoticesLoading] = useState(true);
-  const [noticesData, setNoticesData] = useState<RecentNoticeItem[]>([]);
-
   useEffect(() => {
     const safe = (p: Promise<any>) => p.catch(() => null);
     const arr = (res: any) => { const d = res?.data?.data ?? res?.data ?? []; return Array.isArray(d) ? d : []; };
@@ -177,8 +171,6 @@ export default function DashboardPage() {
     safe(api.get('/dashboard/recent-outgoing?limit=5')).then((r) => setOutgoingData(arr(r))).finally(() => setOutgoingLoading(false));
     safe(api.get('/dashboard/doc-by-month')).then((r) => setDocMonthData(arr(r))).finally(() => setDocMonthLoading(false));
     safe(api.get('/dashboard/task-by-status')).then((r) => setTaskStatusData(arr(r))).finally(() => setTaskStatusLoading(false));
-    safe(api.get('/dashboard/calendar-today?days=7')).then((r) => setCalendarData(arr(r))).finally(() => setCalendarLoading(false));
-    safe(api.get('/dashboard/recent-notices?limit=5')).then((r) => setNoticesData(arr(r))).finally(() => setNoticesLoading(false));
   }, []);
 
   // ---- Chart data transforms ----
@@ -220,8 +212,8 @@ export default function DashboardPage() {
   const incomingColumns = [
     { title: 'Số/Ký hiệu', dataIndex: 'doc_code', key: 'doc_code', width: 130, render: (v: string) => <span style={{ fontWeight: 600, color: '#1B3A5C' }}>{v || '—'}</span> },
     { title: 'Trích yếu', dataIndex: 'abstract', key: 'abstract', ellipsis: true },
-    { title: 'Ngày nhận', dataIndex: 'received_date', key: 'received_date', width: 95, render: (v: string) => v ? dayjs(v).format('DD/MM/YYYY') : '—' },
-    { title: 'Độ khẩn', dataIndex: 'urgency_name', key: 'urgency_name', width: 80, render: (v: string) => {
+    { title: 'Ngày nhận', dataIndex: 'received_date', key: 'received_date', width: 115, onHeaderCell: () => ({ style: { whiteSpace: 'nowrap' as const } }), onCell: () => ({ style: { whiteSpace: 'nowrap' as const } }), render: (v: string) => v ? dayjs(v).format('DD/MM/YYYY') : '—' },
+    { title: 'Độ khẩn', dataIndex: 'urgency_name', key: 'urgency_name', width: 90, onHeaderCell: () => ({ style: { whiteSpace: 'nowrap' as const } }), render: (v: string) => {
       if (!v) return null;
       const c = v.includes('Hỏa') ? 'red' : v.includes('Khẩn') ? 'orange' : 'blue';
       return <Tag color={c}>{v}</Tag>;
@@ -231,7 +223,7 @@ export default function DashboardPage() {
   const outgoingColumns = [
     { title: 'Số/Ký hiệu', dataIndex: 'doc_code', key: 'doc_code', width: 130, render: (v: string) => <span style={{ fontWeight: 600, color: '#1B3A5C' }}>{v || '—'}</span> },
     { title: 'Trích yếu', dataIndex: 'abstract', key: 'abstract', ellipsis: true },
-    { title: 'Ngày ban hành', dataIndex: 'sent_date', key: 'sent_date', width: 105, render: (v: string) => v ? dayjs(v).format('DD/MM/YYYY') : '—' },
+    { title: 'Ngày ban hành', dataIndex: 'sent_date', key: 'sent_date', width: 125, onHeaderCell: () => ({ style: { whiteSpace: 'nowrap' as const } }), onCell: () => ({ style: { whiteSpace: 'nowrap' as const } }), render: (v: string) => v ? dayjs(v).format('DD/MM/YYYY') : '—' },
     { title: 'Loại VB', dataIndex: 'doc_type_name', key: 'doc_type_name', width: 110, render: (v: string) => v ? <Tag color="geekblue">{v}</Tag> : null },
   ];
 
@@ -291,7 +283,8 @@ export default function DashboardPage() {
           <Card
             className="page-card" variant="borderless"
             title={<SectionHeader icon={<BarChartOutlined style={{ color: '#fff', fontSize: 14 }} />} iconBg="linear-gradient(135deg, #1B3A5C, #2d5a8e)" title="Văn bản đến/đi theo tháng" />}
-            styles={{ body: { padding: '12px 16px' } }}
+            styles={{ body: { padding: '12px 16px', minHeight: 300 } }}
+            style={{ height: '100%' }}
           >
             {docMonthLoading ? <Skeleton active paragraph={{ rows: 4 }} /> : (
               <Column
@@ -312,10 +305,11 @@ export default function DashboardPage() {
           <Card
             className="page-card" variant="borderless"
             title={<SectionHeader icon={<FolderOpenOutlined style={{ color: '#fff', fontSize: 14 }} />} iconBg="linear-gradient(135deg, #059669, #10b981)" title="HSCV theo trạng thái" />}
-            styles={{ body: { padding: '12px 16px' } }}
+            styles={{ body: { padding: '12px 16px', minHeight: 300, display: 'flex', flexDirection: 'column' } }}
+            style={{ height: '100%' }}
           >
             {taskStatusLoading ? <Skeleton active paragraph={{ rows: 4 }} /> : taskStatusChartData.length === 0 ? (
-              <div style={{ textAlign: 'center', color: '#94a3b8', padding: '40px 0' }}>Chưa có dữ liệu</div>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: 13 }}>Chưa có dữ liệu</div>
             ) : (
               <Pie
                 data={taskStatusChartData}
@@ -338,7 +332,8 @@ export default function DashboardPage() {
             className="page-card" variant="borderless"
             title={<SectionHeader icon={<FileTextOutlined style={{ color: '#fff', fontSize: 14 }} />} iconBg="linear-gradient(135deg, #1B3A5C, #0891B2)" title="Văn bản mới nhận" />}
             extra={<Button type="link" size="small" onClick={() => router.push('/van-ban-den')}>Xem thêm</Button>}
-            styles={{ body: { padding: '8px 16px' } }}
+            styles={{ body: { padding: '8px 16px', minHeight: 320 } }}
+            style={{ height: '100%' }}
           >
             {incomingLoading ? <Skeleton active paragraph={{ rows: 4 }} /> : (
               <Table dataSource={incomingData} columns={incomingColumns} rowKey="id" size="small" pagination={false} locale={{ emptyText: 'Chưa có văn bản mới' }} />
@@ -351,10 +346,11 @@ export default function DashboardPage() {
             className="page-card" variant="borderless"
             title={<SectionHeader icon={<ClockCircleOutlined style={{ color: '#fff', fontSize: 14 }} />} iconBg="linear-gradient(135deg, #D97706, #f59e0b)" title="Việc sắp tới hạn" />}
             extra={<Button type="link" size="small" onClick={() => router.push('/ho-so-cong-viec')}>Xem thêm</Button>}
-            styles={{ body: { padding: '8px 16px' } }}
+            styles={{ body: { padding: '8px 16px', minHeight: 320, display: 'flex', flexDirection: 'column' } }}
+            style={{ height: '100%' }}
           >
             {tasksLoading ? <Skeleton active paragraph={{ rows: 4 }} /> : tasksData.length === 0 ? (
-              <div style={{ textAlign: 'center', color: '#94a3b8', padding: '32px 0', fontSize: 13 }}>Không có việc sắp tới hạn</div>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: 13 }}>Không có việc sắp tới hạn</div>
             ) : (
               <div>
                 {tasksData.map((item) => (
@@ -382,7 +378,8 @@ export default function DashboardPage() {
             className="page-card" variant="borderless"
             title={<SectionHeader icon={<SendOutlined style={{ color: '#fff', fontSize: 14 }} />} iconBg="linear-gradient(135deg, #059669, #10b981)" title="Văn bản đi mới" />}
             extra={<Button type="link" size="small" onClick={() => router.push('/van-ban-di')}>Xem thêm</Button>}
-            styles={{ body: { padding: '8px 16px' } }}
+            styles={{ body: { padding: '8px 16px', minHeight: 320 } }}
+            style={{ height: '100%' }}
           >
             {outgoingLoading ? <Skeleton active paragraph={{ rows: 4 }} /> : (
               <Table dataSource={outgoingData} columns={outgoingColumns} rowKey="id" size="small" pagination={false} locale={{ emptyText: 'Chưa có văn bản đi mới' }} />
@@ -394,15 +391,16 @@ export default function DashboardPage() {
           <Card
             className="page-card" variant="borderless"
             title={<SectionHeader icon={<PlusOutlined style={{ color: '#fff', fontSize: 14 }} />} iconBg="linear-gradient(135deg, #6366f1, #818cf8)" title="Thao tác nhanh" />}
-            styles={{ body: { padding: '12px 16px' } }}
+            styles={{ body: { padding: '12px 16px', display: 'flex', flexDirection: 'column' } }}
+            style={{ height: '100%' }}
           >
-            <Row gutter={[8, 8]}>
+            <Row gutter={[8, 8]} style={{ flex: 1, alignContent: 'stretch' }}>
               {quickActions.map((a) => (
-                <Col span={8} key={a.path}>
+                <Col span={8} key={a.path} style={{ display: 'flex' }}>
                   <Button
                     type="text" block
                     onClick={() => router.push(a.path)}
-                    style={{ height: 'auto', padding: '12px 4px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, borderRadius: 8, border: '1px solid #f0f0f0' }}
+                    style={{ height: '100%', minHeight: 72, padding: '12px 4px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, borderRadius: 8, border: '1px solid #f0f0f0' }}
                   >
                     <span style={{ fontSize: 20, color: a.color }}>{a.icon}</span>
                     <span style={{ fontSize: 11, color: '#595959' }}>{a.label}</span>
@@ -414,79 +412,6 @@ export default function DashboardPage() {
         </Col>
       </Row>
 
-      {/* ===== SECTION 5: Lịch + Thông báo ===== */}
-      <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
-        {/* Lịch sắp tới */}
-        <Col xs={24} lg={12}>
-          <Card
-            className="page-card" variant="borderless"
-            title={<SectionHeader icon={<CalendarOutlined style={{ color: '#fff', fontSize: 14 }} />} iconBg="linear-gradient(135deg, #dc2626, #f87171)" title="Lịch sắp tới" />}
-            extra={<Button type="link" size="small" onClick={() => router.push('/lich/ca-nhan')}>Xem thêm</Button>}
-            styles={{ body: { padding: '12px 16px' } }}
-          >
-            {calendarLoading ? <Skeleton active paragraph={{ rows: 3 }} /> : calendarData.length === 0 ? (
-              <div style={{ textAlign: 'center', color: '#94a3b8', padding: '24px 0', fontSize: 13 }}>Không có sự kiện</div>
-            ) : (
-              <Timeline
-                items={calendarData.map((ev) => ({
-                  color: ev.color || '#1B3A5C',
-                  content: (
-                    <div>
-                      <div style={{ fontWeight: 600, fontSize: 13, color: '#1B3A5C' }}>{ev.title}</div>
-                      <div style={{ fontSize: 11, color: '#94a3b8' }}>
-                        {ev.all_day
-                          ? dayjs(ev.start_time).format('DD/MM') + ' — Cả ngày'
-                          : dayjs(ev.start_time).format('DD/MM HH:mm') + ' – ' + dayjs(ev.end_time).format('HH:mm')
-                        }
-                        {ev.scope !== 'personal' && (
-                          <Tag color={ev.scope === 'leader' ? 'red' : 'blue'} style={{ marginLeft: 6, fontSize: 10 }}>
-                            {ev.scope === 'leader' ? 'Lãnh đạo' : 'Cơ quan'}
-                          </Tag>
-                        )}
-                      </div>
-                    </div>
-                  ),
-                }))}
-              />
-            )}
-          </Card>
-        </Col>
-
-        {/* Thông báo mới nhất */}
-        <Col xs={24} lg={12}>
-          <Card
-            className="page-card" variant="borderless"
-            title={<SectionHeader icon={<BellOutlined style={{ color: '#fff', fontSize: 14 }} />} iconBg="linear-gradient(135deg, #ea580c, #fb923c)" title="Thông báo mới nhất" />}
-            extra={<Button type="link" size="small" onClick={() => router.push('/thong-bao')}>Xem thêm</Button>}
-            styles={{ body: { padding: '8px 16px' } }}
-          >
-            {noticesLoading ? <Skeleton active paragraph={{ rows: 3 }} /> : noticesData.length === 0 ? (
-              <div style={{ textAlign: 'center', color: '#94a3b8', padding: '24px 0', fontSize: 13 }}>Không có thông báo</div>
-            ) : (
-              <div>
-                {noticesData.map((n) => {
-                  const t = noticeTypeTag[n.notice_type] || { color: 'default', label: n.notice_type };
-                  return (
-                    <div key={n.id} style={{ padding: '8px 0', borderBottom: '1px solid #f0f0f0', display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                      <Badge dot={!n.is_read} offset={[-2, 2]}>
-                        <BellOutlined style={{ fontSize: 16, color: '#94a3b8', marginTop: 2 }} />
-                      </Badge>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontWeight: n.is_read ? 400 : 600, fontSize: 13, color: '#1B3A5C' }}>{n.title}</div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
-                          <Tag color={t.color} style={{ fontSize: 10, lineHeight: '16px', padding: '0 4px' }}>{t.label}</Tag>
-                          <span style={{ fontSize: 11, color: '#94a3b8' }}>{dayjs(n.created_at).format('DD/MM HH:mm')}</span>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </Card>
-        </Col>
-
-      </Row>
     </div>
   );
 }

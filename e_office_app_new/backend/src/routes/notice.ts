@@ -47,8 +47,9 @@ router.get('/', async (req: Request, res: Response) => {
 // ============================================================
 router.get('/unread-count', async (req: Request, res: Response) => {
   try {
-    const { staffId } = (req as AuthRequest).user;
-    const count = await noticeRepository.countUnread(staffId);
+    const { staffId, departmentId } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
+    const count = await noticeRepository.countUnread(staffId, ancestorUnitId);
     res.json({ success: true, data: { count } });
   } catch (error) {
     handleDbError(error, res);

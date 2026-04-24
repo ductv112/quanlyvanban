@@ -5214,6 +5214,9 @@ $$;
 -- Name: fn_lgsp_org_get_list(text, integer, integer); Type: FUNCTION; Schema: edoc; Owner: -
 --
 
+-- Phase 260424-wve follow-up: unify về inter_organizations (bảng duy nhất quản lý cơ quan
+-- liên thông). lgsp_organizations giữ để không phá schema nhưng không dùng trong workflow.
+-- Phase 2 sẽ làm sync từ LGSP API vào inter_organizations trực tiếp.
 CREATE OR REPLACE FUNCTION edoc.fn_lgsp_org_get_list(p_search text DEFAULT NULL::text, p_page integer DEFAULT 1, p_page_size integer DEFAULT 20) RETURNS TABLE(id bigint, org_code character varying, org_name character varying, parent_code character varying, address character varying, email character varying, phone character varying, is_active boolean, synced_at timestamp with time zone, total_count bigint)
     LANGUAGE plpgsql
     AS $$
@@ -5222,28 +5225,30 @@ DECLARE
   v_total  BIGINT;
 BEGIN
   SELECT COUNT(*) INTO v_total
-  FROM edoc.lgsp_organizations o
-  WHERE (p_search IS NULL OR p_search = ''
-    OR o.org_code ILIKE '%' || p_search || '%'
-    OR o.org_name ILIKE '%' || p_search || '%');
+  FROM edoc.inter_organizations o
+  WHERE COALESCE(o.is_active, true) = true
+    AND (p_search IS NULL OR p_search = ''
+      OR o.code ILIKE '%' || p_search || '%'
+      OR o.name ILIKE '%' || p_search || '%');
 
   RETURN QUERY
   SELECT
-    o.id,
-    o.org_code,
-    o.org_name,
-    o.parent_code,
-    o.address,
-    o.email,
-    o.phone,
-    o.is_active,
-    o.synced_at,
+    o.id::bigint,
+    o.code AS org_code,
+    o.name AS org_name,
+    NULL::varchar AS parent_code,
+    NULL::varchar AS address,
+    NULL::varchar AS email,
+    NULL::varchar AS phone,
+    COALESCE(o.is_active, true) AS is_active,
+    o.created_at AS synced_at,
     v_total
-  FROM edoc.lgsp_organizations o
-  WHERE (p_search IS NULL OR p_search = ''
-    OR o.org_code ILIKE '%' || p_search || '%'
-    OR o.org_name ILIKE '%' || p_search || '%')
-  ORDER BY o.org_name
+  FROM edoc.inter_organizations o
+  WHERE COALESCE(o.is_active, true) = true
+    AND (p_search IS NULL OR p_search = ''
+      OR o.code ILIKE '%' || p_search || '%'
+      OR o.name ILIKE '%' || p_search || '%')
+  ORDER BY o.name
   LIMIT p_page_size OFFSET v_offset;
 END;
 $$;
@@ -5829,17 +5834,21 @@ $$;
 -- Name: fn_notice_count_unread(integer); Type: FUNCTION; Schema: edoc; Owner: -
 --
 
-CREATE OR REPLACE FUNCTION edoc.fn_notice_count_unread(p_staff_id integer) RETURNS TABLE(count bigint)
+-- Phase 260424-wve follow-up: thêm p_unit_id để sync filter với fn_notice_get_list
+-- (bug: badge sidebar count 30 nhưng list trống vì notice thuộc unit khác)
+DROP FUNCTION IF EXISTS edoc.fn_notice_count_unread(integer);
+CREATE OR REPLACE FUNCTION edoc.fn_notice_count_unread(p_staff_id integer, p_unit_id integer DEFAULT NULL) RETURNS TABLE(count bigint)
     LANGUAGE plpgsql SECURITY DEFINER
     AS $$
 BEGIN
   RETURN QUERY
   SELECT COUNT(*)::BIGINT
   FROM edoc.notices n
-  WHERE NOT EXISTS (
-    SELECT 1 FROM edoc.notice_reads nr
-    WHERE nr.notice_id = n.id AND nr.staff_id = p_staff_id
-  );
+  WHERE (p_unit_id IS NULL OR n.unit_id = p_unit_id OR n.unit_id IS NULL)
+    AND NOT EXISTS (
+      SELECT 1 FROM edoc.notice_reads nr
+      WHERE nr.notice_id = n.id AND nr.staff_id = p_staff_id
+    );
 END;
 $$;
 
