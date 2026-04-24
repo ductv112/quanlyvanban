@@ -469,7 +469,10 @@ export default function IncomingDocDetailPage() {
           {/* Chưa duyệt: Sửa, Duyệt, Xóa */}
           {!doc.approved && (
             <>
-              <Button icon={<EditOutlined />} onClick={() => router.push(`/van-ban-den?edit=${doc.id}`)}>Sửa</Button>
+              {/* Phase 20 v3.0: Chỉ source_type='manual' mới được sửa nội dung gốc */}
+              {((doc as any).source_type || 'manual') === 'manual' && (
+                <Button icon={<EditOutlined />} onClick={() => router.push(`/van-ban-den?edit=${doc.id}`)}>Sửa</Button>
+              )}
               <Button type="primary" icon={<CheckCircleOutlined />} onClick={handleApprove}>Duyệt</Button>
               <Dropdown menu={{ items: [
                 ...(recipients.length > 0 ? [{ key: 'retract', icon: <RollbackOutlined />, label: 'Thu hồi', onClick: handleRetract }] : []),

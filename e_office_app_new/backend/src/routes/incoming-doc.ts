@@ -297,6 +297,15 @@ router.put('/:id', async (req: Request, res: Response) => {
     const id = Number(req.params.id);
     const body = req.body;
 
+    // Phase 20 v3.0: chỉ cho sửa VB đến source_type='manual' (do văn thư tự nhập)
+    // VB đến internal (auto-sinh từ Sở khác) hoặc external_lgsp KHÔNG được sửa nội dung gốc
+    const srcRows = await rawQuery<{ source_type: string }>('SELECT source_type FROM edoc.incoming_docs WHERE id = $1', [id]);
+    if (srcRows.length === 0) { res.status(404).json({ success: false, message: 'Không tìm thấy văn bản đến' }); return; }
+    if (srcRows[0].source_type !== 'manual') {
+      res.status(403).json({ success: false, message: 'Văn bản đến từ ' + (srcRows[0].source_type === 'internal' ? 'đơn vị nội bộ' : 'LGSP') + ' không được sửa nội dung gốc. Chỉ có thể tiếp nhận / phân công xử lý / từ chối.' });
+      return;
+    }
+
     if (!body.abstract?.trim()) {
       res.status(400).json({ success: false, message: 'Trích yếu nội dung là bắt buộc' });
       return;

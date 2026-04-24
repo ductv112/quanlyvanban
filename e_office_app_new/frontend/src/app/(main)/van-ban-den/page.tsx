@@ -437,10 +437,10 @@ export default function IncomingDocPage() {
             <Col span={6}><Form.Item name="is_received_paper" label="Bản giấy"><Select options={[{ value: false, label: 'Chưa nhận' }, { value: true, label: 'Đã nhận' }]} /></Form.Item></Col>
           </Row>
           <Row gutter={16}>
-            <Col span={12}><Form.Item name="document_code" label="Mã văn bản"><Input placeholder="Mã định danh văn bản" maxLength={100} /></Form.Item></Col>
-            <Col span={12}><Form.Item name="sents" label="Nơi gửi"><Input placeholder="Nơi gửi văn bản" maxLength={500} /></Form.Item></Col>
+            <Col span={12}><Form.Item name="document_code" label="Mã văn bản (số CV gốc bên gửi)"><Input placeholder="VD: 123/CV-BNV" maxLength={100} /></Form.Item></Col>
+            <Col span={12}><Form.Item name="sents" label="Nơi gửi (cơ quan/đơn vị đã gửi VB này đến)" rules={[{ required: true, message: 'Bắt buộc khi tự nhập VB đến' }]}><Input placeholder="VD: Bộ Nội vụ, Sở X tỉnh Y" maxLength={500} /></Form.Item></Col>
           </Row>
-          <Form.Item name="recipients" label="Nơi nhận"><TextArea rows={2} placeholder="Nơi nhận văn bản" maxLength={2000} showCount /></Form.Item>
+          {/* Phase 20 v3.0: bỏ field 'Nơi nhận' — VÔ LÝ cho VB đến (văn thư là người NHẬN, không phải người gửi nên không nhập 'nơi nhận') */}
 
           {/* Dynamic extra fields */}
           {!PHASE1_HIDE_CUSTOM_FIELDS && extraColumns.length > 0 && (
