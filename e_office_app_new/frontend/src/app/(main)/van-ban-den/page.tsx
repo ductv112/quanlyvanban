@@ -342,7 +342,10 @@ export default function IncomingDocPage() {
         const items = [
           { key: 'view', icon: <EyeOutlined />, label: 'Xem chi tiết', onClick: () => { window.location.href = `/van-ban-den/${record.id}`; } },
           ...(!record.approved ? [
-            { key: 'edit', icon: <EditOutlined />, label: 'Sửa', onClick: () => openDrawer(record) },
+            // Phase 20 v3.0: chỉ source_type='manual' mới được sửa nội dung gốc
+            ...(((record as any).source_type || 'manual') === 'manual' ? [
+              { key: 'edit', icon: <EditOutlined />, label: 'Sửa', onClick: () => openDrawer(record) },
+            ] : []),
             { key: 'approve', icon: <CheckCircleOutlined />, label: 'Duyệt', onClick: () => handleApprove(record) },
             { type: 'divider' as const },
             { key: 'delete', icon: <DeleteOutlined />, label: 'Xóa', danger: true, onClick: () => handleDelete(record) },
