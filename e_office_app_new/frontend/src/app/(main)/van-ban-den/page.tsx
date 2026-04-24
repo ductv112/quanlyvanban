@@ -88,6 +88,8 @@ export default function IncomingDocPage() {
   const [docTypes, setDocTypes] = useState<SelectOption[]>([]);
   const [docFields, setDocFields] = useState<SelectOption[]>([]);
   const [departments, setDepartments] = useState<SelectOption[]>([]);
+  // Phase 20: cơ quan ngoài LGSP cho field "Nơi gửi" tự nhập VB đến
+  const [interOrgs, setInterOrgs] = useState<SelectOption[]>([]);
   const [filterDeptId, setFilterDeptId] = useState<number | undefined>();
   const [deptTreeData, setDeptTreeData] = useState<{ value: number; title: string; children?: any[] }[]>([]);
   const [extraColumns, setExtraColumns] = useState<{ column_name: string; label: string; data_type: string; max_length: number | null; is_mandatory: boolean }[]>([]);
@@ -120,11 +122,12 @@ export default function IncomingDocPage() {
 
   const fetchDropdowns = useCallback(async () => {
     try {
-      const [bookRes, typeRes, fieldRes, deptRes] = await Promise.all([
+      const [bookRes, typeRes, fieldRes, deptRes, orgRes] = await Promise.all([
         api.get('/quan-tri/so-van-ban', { params: { type_id: 1 } }),
         api.get('/quan-tri/loai-van-ban/tree'),
         api.get('/quan-tri/linh-vuc'),
         api.get('/quan-tri/don-vi/tree'),
+        api.get('/quan-tri/co-quan-lien-thong').catch(() => ({ data: { data: [] } })),
       ]);
       setDocBooks((bookRes.data.data || []).map((b: { id: number; name: string }) => ({ value: b.id, label: b.name })));
       setDocTypes((typeRes.data.data || []).map((t: { id: number; name: string }) => ({ value: t.id, label: t.name })));
@@ -132,6 +135,7 @@ export default function IncomingDocPage() {
       // Cây đơn vị — phẳng hóa cho Select "Cơ quan ban hành" (mọi user dùng được)
       const deptTree: DepartmentNode[] = deptRes.data.data || [];
       setDepartments(flattenDepartments(deptTree));
+      setInterOrgs((orgRes.data.data || []).map((o: { id: number | string; name: string; code: string }) => ({ value: o.name, label: `${o.name} (${o.code})` })));
       // TreeSelect cho admin filter (dùng chung response, không gọi API lần 2)
       if (user?.isAdmin) {
         const tree = buildTree(deptTree.map((d: any) => ({ id: d.id, parent_id: d.parent_id, name: d.name })));
@@ -183,8 +187,9 @@ export default function IncomingDocPage() {
         publish_date: record.publish_date ? dayjs(record.publish_date) : null,
         sign_date: record.sign_date ? dayjs(record.sign_date) : null,
         expired_date: record.expired_date ? dayjs(record.expired_date) : null,
-        // publish_unit lưu DB là string, Select mode="tags" cần array → wrap
+        // publish_unit + sents lưu DB là string, Select mode="tags" cần array → wrap
         publish_unit: record.publish_unit ? [record.publish_unit] : [],
+        sents: (record as any).sents ? [(record as any).sents] : [],
       });
     } else {
       setEditingRecord(null);
@@ -212,9 +217,15 @@ export default function IncomingDocPage() {
       const publishUnit = Array.isArray(publishUnitRaw)
         ? (publishUnitRaw[0] || '')
         : (publishUnitRaw || '');
+      // Phase 20: 'sents' (Nơi gửi) cũng dùng Select mode="tags" → cần convert array→string
+      const sentsRaw = mainValues.sents;
+      const sentsValue = Array.isArray(sentsRaw)
+        ? (sentsRaw[0] || '')
+        : (sentsRaw || '');
       const payload = {
         ...mainValues,
         publish_unit: publishUnit,
+        sents: sentsValue,
         received_date: mainValues.received_date?.toISOString(),
         publish_date: mainValues.publish_date?.toISOString() || null,
         sign_date: mainValues.sign_date?.toISOString() || null,
@@ -441,7 +452,28 @@ export default function IncomingDocPage() {
           </Row>
           <Row gutter={16}>
             <Col span={12}><Form.Item name="document_code" label="Mã văn bản (số CV gốc bên gửi)"><Input placeholder="VD: 123/CV-BNV" maxLength={100} /></Form.Item></Col>
-            <Col span={12}><Form.Item name="sents" label="Nơi gửi (cơ quan/đơn vị đã gửi VB này đến)" rules={[{ required: true, message: 'Bắt buộc khi tự nhập VB đến' }]}><Input placeholder="VD: Bộ Nội vụ, Sở X tỉnh Y" maxLength={500} /></Form.Item></Col>
+            <Col span={12}>
+              <Form.Item
+                name="sents"
+                label="Nơi gửi (cơ quan/đơn vị đã gửi VB này đến)"
+                rules={[{ required: true, message: 'Bắt buộc khi tự nhập VB đến' }]}
+                tooltip="Chọn từ danh sách (đơn vị nội bộ + cơ quan LGSP) hoặc gõ tên tự do nếu chưa có trong DB"
+              >
+                <Select
+                  showSearch
+                  allowClear
+                  placeholder="Chọn hoặc gõ tên cơ quan gửi..."
+                  filterOption={(input, opt) => (opt?.label as string)?.toLowerCase().includes(input.toLowerCase())}
+                  options={[
+                    { label: 'Đơn vị nội bộ (trong tỉnh)', options: departments.map((d) => ({ value: d.label as string, label: d.label as string })) },
+                    { label: 'Cơ quan ngoài LGSP', options: interOrgs },
+                  ]}
+                  // Cho phép gõ tag mới (cơ quan ngoài cả 2 list)
+                  mode="tags"
+                  maxCount={1}
+                />
+              </Form.Item>
+            </Col>
           </Row>
           {/* Phase 20 v3.0: bỏ field 'Nơi nhận' — VÔ LÝ cho VB đến (văn thư là người NHẬN, không phải người gửi nên không nhập 'nơi nhận') */}
 
