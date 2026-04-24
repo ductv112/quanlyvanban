@@ -226,7 +226,7 @@ $WORK_DIR = Join-Path $repoDir 'e_office_app_new'
 
 # Apply DB schema + seed (v2.0 consolidated)
 #   - init/01_create_schemas.sql  -> schemas + extensions
-#   - schema/000_schema_v2.0.sql  -> MASTER idempotent (tables + SPs + triggers)
+#   - schema/000_schema_v3.0.sql  -> MASTER idempotent (tables + SPs + triggers)
 #   - seed/001_required_data.sql  -> admin + roles + rights + 2 provider config
 #   KHONG chay seed/002_demo_data.sql (production deploy - khong demo data)
 Log 'Apply DB schema + seed...'
@@ -246,8 +246,8 @@ if ([string]::IsNullOrEmpty($staffCount) -or $staffCount -eq '0') {
     if ($LASTEXITCODE -ne 0) { Write-Host '[XX] Init schemas that bai' -ForegroundColor Red; exit 1 }
 
     # 2. Apply master schema (idempotent)
-    $schemaFile = Join-Path $WORK_DIR 'database\schema\000_schema_v2.0.sql'
-    Log "  -> schema/000_schema_v2.0.sql (master - tables + SPs + triggers)"
+    $schemaFile = Join-Path $WORK_DIR 'database\schema\000_schema_v3.0.sql'
+    Log "  -> schema/000_schema_v3.0.sql (master - tables + SPs + triggers)"
     & $psqlExe -U $PG_USER -d $PG_DB -p 5432 -h 127.0.0.1 -v ON_ERROR_STOP=1 -f $schemaFile 2>$null
     if ($LASTEXITCODE -ne 0) { Write-Host '[XX] Schema master that bai' -ForegroundColor Red; exit 1 }
 
@@ -264,7 +264,7 @@ if ([string]::IsNullOrEmpty($staffCount) -or $staffCount -eq '0') {
 } else {
     # Update deploy - re-apply master schema de dong bo SP moi, KHONG seed
     Log '  -> Update deploy - re-apply master schema (idempotent)...'
-    $schemaFile = Join-Path $WORK_DIR 'database\schema\000_schema_v2.0.sql'
+    $schemaFile = Join-Path $WORK_DIR 'database\schema\000_schema_v3.0.sql'
     & $psqlExe -U $PG_USER -d $PG_DB -p 5432 -h 127.0.0.1 -v ON_ERROR_STOP=1 -f $schemaFile 2>$null
     if ($LASTEXITCODE -ne 0) { Write-Host '[XX] Schema master re-apply that bai' -ForegroundColor Red; exit 1 }
     Log "  -> Da co $staffCount staff - bo qua seed, giu nguyen data"

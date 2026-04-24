@@ -466,14 +466,14 @@ Do not make direct repo edits outside a GSD workflow unless the user explicitly 
 
 Từ Phase 11.1 (2026-04-22), toàn bộ schema + SPs + triggers nằm trong **1 file MASTER duy nhất**:
 
-**`e_office_app_new/database/schema/000_schema_v2.0.sql`** (20,168 dòng, idempotent)
+**`e_office_app_new/database/schema/000_schema_v3.0.sql`** (26,143 dòng, idempotent — v3.0 với data model chuẩn hoá)
 
 ### Flow reset DB
 
 ```
 1. drop schemas (edoc, esto, cont, iso, public)
 2. apply init/01_create_schemas.sql       (schemas + extensions)
-3. apply schema/000_schema_v2.0.sql       (MASTER — tables + SPs + triggers)
+3. apply schema/000_schema_v3.0.sql       (MASTER — tables + SPs + triggers)
 4. apply seed/001_required_data.sql       (admin + roles + rights + 2 providers)
 5. apply seed/002_demo_data.sql           (optional — rich demo 312 records)
 ```
@@ -486,7 +486,7 @@ Script: `deploy/reset-db.sh` (Linux) / `deploy/reset-db-windows.ps1` (Windows).
 
 Thay vào đó:
 
-1. **Edit trực tiếp `database/schema/000_schema_v2.0.sql`:**
+1. **Edit trực tiếp `database/schema/000_schema_v3.0.sql`:**
    - Thêm `CREATE TABLE IF NOT EXISTS` ở phần Tables
    - Thêm `CREATE OR REPLACE FUNCTION` ở phần Functions
    - Nếu ALTER cột hiện có → inline `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` (tránh ALTER rời)
@@ -501,7 +501,7 @@ Thay vào đó:
    bash deploy/reset-db.sh   # drop + apply từ đầu — lần 1
    # Sau đó apply lại master schema LẦN 2:
    docker exec -i qlvb_postgres psql -U qlvb_admin -d qlvb_dev -v ON_ERROR_STOP=1 \
-     -f - < e_office_app_new/database/schema/000_schema_v2.0.sql
+     -f - < e_office_app_new/database/schema/000_schema_v3.0.sql
    # Lần 2 PHẢI zero error (idempotent)
    ```
 
@@ -549,7 +549,7 @@ Thay vào đó:
 
 Khi kết thúc 1 milestone lớn (ví dụ: v2.0 ký số xong → v2.1 báo cáo thống kê mới):
 
-1. Rename `000_schema_v2.0.sql` → `000_schema_v2.1.sql` (giữ file tại `schema/`)
+1. Rename `000_schema_v3.0.sql` → `000_schema_v2.1.sql` (giữ file tại `schema/`)
 2. Move migrations v2.0 của milestone cũ sang `archive/v2.0-finalized/`
 3. Update paths trong 6 deploy scripts + `deploy/README.md`
 4. Update reference trong section này của CLAUDE.md
@@ -563,7 +563,7 @@ Khi kết thúc 1 milestone lớn (ví dụ: v2.0 ký số xong → v2.1 báo c�
 - Update deploy (DB đã có data) → re-apply schema master (idempotent), KHÔNG seed
 
 **Update code** (`deploy/update.sh` / `deploy/update-windows.ps1`):
-- Pull code + rebuild + re-apply `schema/000_schema_v2.0.sql`
+- Pull code + rebuild + re-apply `schema/000_schema_v3.0.sql`
 - File master idempotent → apply lại an toàn, không mất data
 
 ### Seed data

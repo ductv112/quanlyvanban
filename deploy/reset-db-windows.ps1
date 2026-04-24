@@ -116,9 +116,9 @@ Remove-Item $initLog -ErrorAction SilentlyContinue
 # ============================================================
 # 4. Apply master schema v2.0
 # ============================================================
-Log 'Apply schema/000_schema_v2.0.sql (MASTER - tables + SPs + triggers)...'
+Log 'Apply schema/000_schema_v3.0.sql (MASTER - tables + SPs + triggers)...'
 
-$schemaFile = Join-Path $WORK_DIR 'database\schema\000_schema_v2.0.sql'
+$schemaFile = Join-Path $WORK_DIR 'database\schema\000_schema_v3.0.sql'
 if (-not (Test-Path $schemaFile)) { Err "Khong tim thay $schemaFile" }
 
 $schemaLog = Join-Path $env:TEMP 'schema_master.log'

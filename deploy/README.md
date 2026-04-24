@@ -28,7 +28,7 @@ e_office_app_new/database/
 ├── init/
 │   └── 01_create_schemas.sql         # Bootstrap — schemas + extensions
 ├── schema/
-│   └── 000_schema_v2.0.sql           # MASTER idempotent schema (tables + SPs + triggers)
+│   └── 000_schema_v3.0.sql           # MASTER idempotent schema (tables + SPs + triggers)
 ├── seed/
 │   ├── 001_required_data.sql         # BẮT BUỘC: admin + roles + rights + 2 providers
 │   └── 002_demo_data.sql             # OPTIONAL: 312 records demo (skip cho production)
@@ -39,7 +39,7 @@ e_office_app_new/database/
     └── v2.0-incrementals/            # Lịch sử Phase 8-11 (KHÔNG chạy)
 ```
 
-**Luật:** KHÔNG thêm file migrations rời. Edit trực tiếp `schema/000_schema_v2.0.sql`. Xem `CLAUDE.md` section "DB Migration Strategy (v2.0+)" để biết rules.
+**Luật:** KHÔNG thêm file migrations rời. Edit trực tiếp `schema/000_schema_v3.0.sql`. Xem `CLAUDE.md` section "DB Migration Strategy (v2.0+)" để biết rules.
 
 ## Environment variable BẮT BUỘC
 
@@ -72,7 +72,7 @@ Script tự động:
 3. Tạo database `qlvb_prod` + user `qlvb_admin`
 4. Apply DB v2.0:
    - `init/01_create_schemas.sql` (schemas + extensions)
-   - `schema/000_schema_v2.0.sql` (master — tables + SPs + triggers)
+   - `schema/000_schema_v3.0.sql` (master — tables + SPs + triggers)
    - `seed/001_required_data.sql` (admin + roles + rights + 2 provider config)
    - **KHÔNG** chạy `seed/002_demo_data.sql` (production không có demo data)
 5. Build backend + frontend
@@ -94,7 +94,7 @@ Script tự động:
 
 - Pull code mới từ GitHub (`git reset --hard origin/main`)
 - `npm install` + `npm run build` backend + frontend
-- **Re-apply `schema/000_schema_v2.0.sql`** (idempotent — đồng bộ SPs mới nếu có thay đổi, giữ nguyên data)
+- **Re-apply `schema/000_schema_v3.0.sql`** (idempotent — đồng bộ SPs mới nếu có thay đổi, giữ nguyên data)
 - Restart PM2
 - **KHÔNG** re-run seed (giữ nguyên data đang có)
 
@@ -118,7 +118,7 @@ Script tự động:
 2. Pull code mới (nếu là git repo)
 3. DROP tất cả schemas (`edoc`, `esto`, `cont`, `iso`, `public`)
 4. Apply `init/01_create_schemas.sql` (schemas + extensions)
-5. Apply `schema/000_schema_v2.0.sql` (master)
+5. Apply `schema/000_schema_v3.0.sql` (master)
 6. Apply `seed/001_required_data.sql` — dùng env var `SIGNING_SECRET_KEY` set vào session `app.signing_secret_key`
 7. Apply `seed/002_demo_data.sql` (skip nếu `-NoDemo`)
 8. Hỏi có rebuild + restart PM2 không
