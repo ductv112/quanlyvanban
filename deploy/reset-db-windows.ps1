@@ -192,7 +192,12 @@ if ($adminCheck -eq '1') {
 # ============================================================
 # 7. Rebuild + restart (optional)
 # ============================================================
-$rebuild = Read-Host 'Rebuild backend + frontend? [y/N]'
+if ($Force) {
+    Warn '-Force enabled - skip rebuild prompt (wrapper script se handle rebuild/restart)'
+    $rebuild = 'n'
+} else {
+    $rebuild = Read-Host 'Rebuild backend + frontend? [y/N]'
+}
 if ($rebuild -eq 'y' -or $rebuild -eq 'Y') {
     Log 'Build Backend...'
     Set-Location (Join-Path $WORK_DIR 'backend')

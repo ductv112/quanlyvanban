@@ -177,13 +177,26 @@ Log "Loaded $($envMap.Count) env vars"
 # -- 6. Clear Redis (FLUSHALL) -------------------------------
 Step '6. Clear Redis (FLUSHALL)'
 $redisUrl = $envMap['REDIS_URL']
+$redisHost = $envMap['REDIS_HOST']
+$redisPort = $envMap['REDIS_PORT']
+$redisPass = $envMap['REDIS_PASSWORD']
+if (-not $redisUrl -and $redisHost) {
+    # Build REDIS_URL tu host/port/password (fallback legacy config)
+    $pw = ''
+    if ($redisPass) { $pw = ":$redisPass@" }
+    $pt = '6379'
+    if ($redisPort) { $pt = $redisPort }
+    $redisUrl = "redis://$pw$redisHost`:$pt"
+    Log "  Built REDIS_URL tu REDIS_HOST/PORT"
+}
 if (-not $redisUrl) {
-    Warn 'REDIS_URL khong co trong .env - skip Redis clear'
+    Warn 'REDIS config khong co trong .env (REDIS_URL / REDIS_HOST) - skip Redis clear'
 } else {
     Set-Location "$WORK_DIR\backend"
     $env:REDIS_URL = $redisUrl
 
-    $redisScript = Join-Path $env:TEMP 'qlvb_redis_flush.js'
+    # QUAN TRONG: script file PHAI nam trong backend dir de Node resolve node_modules
+    $redisScript = Join-Path "$WORK_DIR\backend" '_qlvb_redis_flush.js'
     @'
 const { Redis } = require('ioredis');
 const r = new Redis(process.env.REDIS_URL, { maxRetriesPerRequest: 3, lazyConnect: true });
@@ -225,7 +238,8 @@ if (-not $minioEndpoint -or -not $minioAK -or -not $minioSK) {
     $env:MINIO_SECRET_KEY = $minioSK
     $env:MINIO_BUCKET     = $minioBucket
 
-    $minioScript = Join-Path $env:TEMP 'qlvb_minio_clear.js'
+    # QUAN TRONG: script file PHAI nam trong backend dir de Node resolve node_modules
+    $minioScript = Join-Path "$WORK_DIR\backend" '_qlvb_minio_clear.js'
     @'
 const Minio = require('minio');
 const u = new URL(process.env.MINIO_ENDPOINT);
