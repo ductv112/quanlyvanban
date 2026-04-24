@@ -269,7 +269,22 @@ router.get('/:id', async (req: Request, res: Response) => {
     const extraRows = await rawQuery<{ extra_fields: Record<string, unknown>; rejected_by: number | null; rejection_reason: string | null }>(
       'SELECT extra_fields, rejected_by, rejection_reason FROM edoc.incoming_docs WHERE id = $1', [id],
     ).catch(() => []);
-    res.json({ success: true, data: { ...doc, extra_fields: extraRows[0]?.extra_fields || {}, rejected_by: extraRows[0]?.rejected_by ?? null, rejection_reason: extraRows[0]?.rejection_reason ?? null } });
+    // Phase 19 v3.0 fix Bug 8: nếu VB đến là internal (auto-sinh từ outgoing) → fill recipients text từ outgoing recipients (tên các đơn vị nhận trong outgoing gốc)
+    let recipientsSummary = (doc as any).recipients;
+    if ((doc as any).source_type === 'internal' && (doc as any).previous_outgoing_doc_id) {
+      const recipNames = await rawQuery<{ name: string }>(
+        `SELECT COALESCE(d.name, o.name) AS name
+         FROM edoc.outgoing_doc_recipients r
+         LEFT JOIN public.departments d ON r.recipient_unit_id = d.id
+         LEFT JOIN edoc.inter_organizations o ON r.recipient_org_id = o.id
+         WHERE r.outgoing_doc_id = $1
+         ORDER BY r.id`, [(doc as any).previous_outgoing_doc_id]
+      );
+      if (recipNames.length > 0) {
+        recipientsSummary = recipNames.map(r => r.name).filter(Boolean).join('; ');
+      }
+    }
+    res.json({ success: true, data: { ...doc, recipients: recipientsSummary, extra_fields: extraRows[0]?.extra_fields || {}, rejected_by: extraRows[0]?.rejected_by ?? null, rejection_reason: extraRows[0]?.rejection_reason ?? null } });
   } catch (error) {
     handleDbError(error, res);
   }

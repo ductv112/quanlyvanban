@@ -189,12 +189,24 @@ export default function OutgoingDocPage() {
   const openDrawer = async (record?: OutgoingDoc) => {
     if (record) {
       setEditingRecord(record);
+      // Phase 19 v3.0 fix: load existing recipients (internal + external) để preserve selection khi edit
+      let loadedUnitIds: number[] = [];
+      let loadedOrgIds: number[] = [];
+      try {
+        const { data: rResp } = await api.get(`/van-ban-di/${record.id}/noi-nhan`);
+        const noiNhan: Array<{ recipient_type: string; recipient_unit_id: number | null; recipient_org_id: number | null }> = rResp?.data || [];
+        loadedUnitIds = noiNhan.filter((r) => r.recipient_type === 'internal_unit' && r.recipient_unit_id != null).map((r) => Number(r.recipient_unit_id));
+        loadedOrgIds = noiNhan.filter((r) => r.recipient_type === 'external_org' && r.recipient_org_id != null).map((r) => Number(r.recipient_org_id));
+      } catch { /* ignore */ }
+
       form.setFieldsValue({
         ...record,
         received_date: record.received_date ? dayjs(record.received_date) : dayjs(),
         publish_date: record.publish_date ? dayjs(record.publish_date) : null,
         sign_date: record.sign_date ? dayjs(record.sign_date) : null,
         expired_date: record.expired_date ? dayjs(record.expired_date) : null,
+        recipient_unit_ids: loadedUnitIds,
+        recipient_org_ids: loadedOrgIds,
       });
       if (record.drafting_unit_id) {
         fetchStaff(record.drafting_unit_id);

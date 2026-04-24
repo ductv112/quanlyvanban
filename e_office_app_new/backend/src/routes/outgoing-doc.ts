@@ -43,14 +43,37 @@ router.get('/', async (req: Request, res: Response) => {
       deptIds,
     });
 
-    // Enrich rejected_by info
+    // Enrich rejected_by info + recipients_summary (Phase 19 v3.0)
     if (rows.length > 0) {
       const ids = rows.map(r => r.id);
       const rejections = await rawQuery<{ id: number; rejected_by: number | null; rejection_reason: string | null }>(
         `SELECT id, rejected_by, rejection_reason FROM edoc.outgoing_docs WHERE id = ANY($1)`, [ids]
       );
       const rejMap = new Map(rejections.map(r => [r.id, r]));
-      rows.forEach((r: any) => { const rej = rejMap.get(r.id); r.rejected_by = rej?.rejected_by ?? null; r.rejection_reason = rej?.rejection_reason ?? null; });
+      // Compute recipients_summary từ outgoing_doc_recipients (text "Sở Nội vụ; Sở Tài chính; ...")
+      const recipientRows = await rawQuery<{ outgoing_doc_id: number; name: string }>(
+        `SELECT r.outgoing_doc_id,
+                COALESCE(d.name, o.name) AS name
+         FROM edoc.outgoing_doc_recipients r
+         LEFT JOIN public.departments d ON r.recipient_unit_id = d.id
+         LEFT JOIN edoc.inter_organizations o ON r.recipient_org_id = o.id
+         WHERE r.outgoing_doc_id = ANY($1)
+         ORDER BY r.id`,
+        [ids]
+      );
+      const recipMap = new Map<number, string[]>();
+      recipientRows.forEach(r => {
+        const list = recipMap.get(Number(r.outgoing_doc_id)) || [];
+        if (r.name) list.push(r.name);
+        recipMap.set(Number(r.outgoing_doc_id), list);
+      });
+      rows.forEach((r: any) => {
+        const rej = rejMap.get(r.id);
+        r.rejected_by = rej?.rejected_by ?? null;
+        r.rejection_reason = rej?.rejection_reason ?? null;
+        const names = recipMap.get(Number(r.id)) || [];
+        if (names.length > 0) r.recipients = names.join('; ');
+      });
     }
 
     const total = rows[0]?.total_count ?? 0;
@@ -274,6 +297,18 @@ router.get('/:id', async (req: Request, res: Response) => {
       `SELECT rejected_by, rejection_reason FROM edoc.outgoing_docs WHERE id = $1`, [id]
     );
     if (rej[0]) { (doc as any).rejected_by = rej[0].rejected_by; (doc as any).rejection_reason = rej[0].rejection_reason; }
+    // Phase 19 v3.0: enrich recipients summary từ outgoing_doc_recipients
+    const recipNames = await rawQuery<{ name: string }>(
+      `SELECT COALESCE(d.name, o.name) AS name
+       FROM edoc.outgoing_doc_recipients r
+       LEFT JOIN public.departments d ON r.recipient_unit_id = d.id
+       LEFT JOIN edoc.inter_organizations o ON r.recipient_org_id = o.id
+       WHERE r.outgoing_doc_id = $1
+       ORDER BY r.id`, [id]
+    );
+    if (recipNames.length > 0) {
+      (doc as any).recipients = recipNames.map(r => r.name).filter(Boolean).join('; ');
+    }
     res.json({ success: true, data: doc });
   } catch (error) {
     handleDbError(error, res);

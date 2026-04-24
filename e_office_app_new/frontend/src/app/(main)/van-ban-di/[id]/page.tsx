@@ -425,8 +425,7 @@ export default function OutgoingDocDetailPage() {
           />
           <Button icon={<ThunderboltOutlined />} type="primary" style={{ backgroundColor: '#0891B2', borderColor: '#0891B2' }} onClick={openGiaoViec}>Giao việc</Button>
           <Button icon={<InboxOutlined />} onClick={openHscvModal}>Thêm vào HSCV</Button>
-          {doc.approved && <Button icon={<SendOutlined />} style={{ backgroundColor: '#059669', borderColor: '#059669', color: '#fff' }} onClick={openLgspModal}>Gửi liên thông</Button>}
-          {doc.approved && <Button icon={<CloudUploadOutlined />} style={{ backgroundColor: '#16A34A', borderColor: '#16A34A', color: '#fff' }} onClick={() => { setCpSelected([]); setCpModalOpen(true); }}>Gửi trục CP</Button>}
+          {/* Phase 19 v3.0: ẨN 2 nút legacy v1.0 — recipient ngoài LGSP đã có trong form 'Cơ quan nhận ngoài' khi soạn. Trục CP defer Phase 2 KH. */}
           {doc.approved && !doc.archive_status && <Button icon={<InboxOutlined />} onClick={openArchive}>Chuyển lưu trữ</Button>}
           {!doc.approved && (
             <>
@@ -664,7 +663,8 @@ export default function OutgoingDocDetailPage() {
             </div>
           )}
 
-          {/* --- Người nhận (legacy v2.0 — staff array) --- */}
+          {/* --- Người nhận (legacy v2.0 — staff array) — Phase 19: chỉ hiện khi có data v2.0 --- */}
+          {recipients.length > 0 && (
           <div style={{
             background: '#fff', borderRadius: 10, padding: '20px 24px', marginBottom: 16,
             boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
@@ -693,6 +693,7 @@ export default function OutgoingDocDetailPage() {
               </div>
             )}
           </div>
+          )}
 
           {/* --- Ý kiến lãnh đạo --- */}
           <div style={{ background: '#fff', borderRadius: 10, padding: '20px 24px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', marginBottom: 16 }}>
