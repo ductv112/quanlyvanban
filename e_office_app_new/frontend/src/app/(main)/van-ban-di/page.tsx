@@ -94,6 +94,8 @@ export default function OutgoingDocPage() {
   const [docFields, setDocFields] = useState<SelectOption[]>([]);
   const [departments, setDepartments] = useState<SelectOption[]>([]);
   const [staffList, setStaffList] = useState<SelectOption[]>([]);
+  // Phase 18 v3.0: cơ quan ngoài LGSP cho recipient picker
+  const [interOrgs, setInterOrgs] = useState<SelectOption[]>([]);
   const [extraColumns, setExtraColumns] = useState<{ column_name: string; label: string; data_type: string; max_length: number | null; is_mandatory: boolean }[]>([]);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<OutgoingDoc | null>(null);
@@ -123,17 +125,19 @@ export default function OutgoingDocPage() {
 
   const fetchDropdowns = useCallback(async () => {
     try {
-      const [bookRes, typeRes, fieldRes, deptRes] = await Promise.all([
+      const [bookRes, typeRes, fieldRes, deptRes, orgRes] = await Promise.all([
         api.get('/quan-tri/so-van-ban', { params: { type_id: 2 } }),
         api.get('/quan-tri/loai-van-ban/tree'),
         api.get('/quan-tri/linh-vuc'),
         api.get('/quan-tri/don-vi/tree'),
+        api.get('/quan-tri/co-quan-lien-thong').catch(() => ({ data: { data: [] } })),
       ]);
       setDocBooks((bookRes.data.data || []).map((b: { id: number; name: string }) => ({ value: b.id, label: b.name })));
       setDocTypes((typeRes.data.data || []).map((t: { id: number; name: string }) => ({ value: t.id, label: t.name })));
       setDocFields((fieldRes.data.data || []).map((f: { id: number; name: string }) => ({ value: f.id, label: f.name })));
       const deptTree: DepartmentNode[] = deptRes.data.data || [];
       setDepartments(flattenDepartments(deptTree));
+      setInterOrgs((orgRes.data.data || []).map((o: { id: number; name: string; code: string }) => ({ value: o.id, label: `${o.name} (${o.code})` })));
       // Build tree data for admin filter
       if (user?.isAdmin) {
         const tree = buildTree(deptTree.map((d: any) => ({ id: d.id, parent_id: d.parent_id, name: d.name })));
@@ -216,8 +220,8 @@ export default function OutgoingDocPage() {
     try {
       const values = await form.validateFields();
       setSaving(true);
-      // Phase 17 v3.0 (Option C): tách recipient_unit_ids khỏi payload
-      const { recipient_unit_ids, ...rest } = values;
+      // Phase 17 v3.0 (Option C) + Phase 18: tách recipient_unit_ids + recipient_org_ids
+      const { recipient_unit_ids, recipient_org_ids, ...rest } = values;
       const payload = {
         ...rest,
         received_date: rest.received_date?.toISOString(),
@@ -237,10 +241,15 @@ export default function OutgoingDocPage() {
         message.success('Tạo văn bản đi thành công');
         docId = res.data?.id;
       }
-      // Lưu recipients nội bộ (overwrite mode)
-      if (docId && Array.isArray(recipient_unit_ids)) {
-        const recipients = recipient_unit_ids.map((unit_id: number) => ({ type: 'internal_unit' as const, unit_id }));
-        await api.post(`/van-ban-di/${docId}/noi-nhan`, { recipients }).catch(() => null);
+      // Lưu recipients (overwrite mode) — gộp internal_unit + external_org
+      if (docId) {
+        const recipients: Array<{ type: 'internal_unit'; unit_id: number } | { type: 'external_org'; org_id: number }> = [
+          ...(Array.isArray(recipient_unit_ids) ? recipient_unit_ids.map((unit_id: number) => ({ type: 'internal_unit' as const, unit_id })) : []),
+          ...(Array.isArray(recipient_org_ids) ? recipient_org_ids.map((org_id: number) => ({ type: 'external_org' as const, org_id })) : []),
+        ];
+        if (recipients.length > 0) {
+          await api.post(`/van-ban-di/${docId}/noi-nhan`, { recipients }).catch(() => null);
+        }
       }
       closeDrawer();
       fetchData();
@@ -560,18 +569,32 @@ export default function OutgoingDocPage() {
           </Row>
           <Form.Item
             name="recipient_unit_ids"
-            label="Đơn vị nhận"
-            tooltip="Chọn các đơn vị nhận từ danh sách. Khi 'Gửi', mỗi đơn vị tự nhận được Văn bản đến."
+            label="Đơn vị nhận (nội bộ — trong hệ thống)"
+            tooltip="Chọn từ danh sách đơn vị trong hệ thống. Khi 'Gửi', mỗi đơn vị tự nhận được Văn bản đến."
           >
             <Select
               mode="multiple"
               showSearch
               allowClear
-              placeholder="Chọn đơn vị nhận..."
+              placeholder="Chọn đơn vị nhận trong hệ thống..."
               filterOption={(input, opt) => (opt?.label as string)?.toLowerCase().includes(input.toLowerCase())}
               options={departments
                 .filter((d) => d.value !== (user?.unitId || 0))
                 .map((d) => ({ value: d.value, label: d.label }))}
+            />
+          </Form.Item>
+          <Form.Item
+            name="recipient_org_ids"
+            label="Cơ quan nhận (ngoài — qua LGSP)"
+            tooltip="Chọn cơ quan ngoài tỉnh. Khi 'Gửi', văn bản được đẩy lên LGSP để gửi đến các cơ quan này."
+          >
+            <Select
+              mode="multiple"
+              showSearch
+              allowClear
+              placeholder="Chọn cơ quan ngoài LGSP..."
+              filterOption={(input, opt) => (opt?.label as string)?.toLowerCase().includes(input.toLowerCase())}
+              options={interOrgs}
             />
           </Form.Item>
 

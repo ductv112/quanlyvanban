@@ -59,4 +59,20 @@ router.get('/don-vi/tree', async (_req: Request, res: Response) => {
   }
 });
 
+// GET /co-quan-lien-thong — danh sách cơ quan ngoài LGSP cho recipient picker
+// Phase 18 v3.0
+router.get('/co-quan-lien-thong', async (_req: Request, res: Response) => {
+  try {
+    const rows = await rawQuery<{ id: number; code: string; name: string; lgsp_organ_id: string | null }>(
+      `SELECT id, code, name, lgsp_organ_id
+       FROM edoc.inter_organizations
+       WHERE COALESCE(is_active, true) = true
+       ORDER BY name`,
+    );
+    res.json({ success: true, data: rows });
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
+
 export default router;
