@@ -179,8 +179,10 @@ WHERE NOT EXISTS (SELECT 1 FROM edoc.incoming_docs WHERE id = n);
 
 SELECT setval('edoc.incoming_docs_id_seq', 1000, true);
 
--- Mark ~ 1/3 VB đến đang xử lý
-UPDATE edoc.incoming_docs SET is_handling = true WHERE id % 3 = 0 AND is_handling IS NOT TRUE;
+-- v3.0: Mark some VB đến nguồn external (LGSP) thay cho is_handling đã DROP
+-- Dùng prefix LGSP-EXT- để tránh conflict với 10 VB liên thông INSERT bên dưới (LGSP-10001..10010)
+UPDATE edoc.incoming_docs SET source_type = 'external_lgsp', is_unit_send = false, unit_send = 'Bộ Nội vụ', external_doc_id = 'LGSP-EXT-' || (20000 + id)
+  WHERE id % 5 = 0 AND source_type = 'manual';
 
 -- ─── 11. User_incoming_docs (phân công xử lý — 50 records) ─────────────────
 -- Mỗi VB đến phân cho 1 staff (rotate 2-10 theo mod để đa dạng)
@@ -313,42 +315,56 @@ WHERE NOT EXISTS (SELECT 1 FROM edoc.handling_docs WHERE id = n);
 
 SELECT setval('edoc.handling_docs_id_seq', 1000, true);
 
--- ─── 15. VB LIÊN THÔNG (10 records, mix status pending/accepted/rejected/recalled) ──
--- inter_incoming_docs schema: external_doc_id (NOT lgsp_doc_id), source_system,
---                             no "number" column — use notation only
-INSERT INTO edoc.inter_incoming_docs (
-  id, unit_id, received_date, notation, document_code, abstract,
-  publish_unit, publish_date, signer, status, source_system, external_doc_id,
-  number_paper, number_copies, secret_id, urgent_id, recipients, created_by
+-- ─── 15. VB LIÊN THÔNG v3.0 — gộp vào incoming_docs với source_type='external_lgsp' ──
+-- v3.0: bảng inter_incoming_docs đã DROP, dùng incoming_docs với cờ source_type
+-- Seed 8 cơ quan ngoài tỉnh trước (inter_organizations, rename từ lgsp_organizations)
+INSERT INTO edoc.inter_organizations (id, code, name, lgsp_organ_id, is_active) VALUES
+  (1, 'BNV', 'Bộ Nội vụ', '000.00.00.H43', TRUE),
+  (2, 'BTC', 'Bộ Tài chính', '000.00.00.H44', TRUE),
+  (3, 'BTTTT', 'Bộ Thông tin và Truyền thông', '000.00.00.H45', TRUE),
+  (4, 'VPCP', 'Văn phòng Chính phủ', '000.00.00.H01', TRUE),
+  (5, 'BCT', 'Bộ Công Thương', '000.00.00.H46', TRUE),
+  (6, 'BGTVT', 'Bộ Giao thông Vận tải', '000.00.00.H47', TRUE),
+  (7, 'BYT', 'Bộ Y tế', '000.00.00.H48', TRUE),
+  (8, 'UBND_HN', 'UBND TP Hà Nội', '000.00.00.H02', TRUE)
+ON CONFLICT (code) DO NOTHING;
+
+-- Sequence name có thể là lgsp_organizations_id_seq (rename từ v2.0) hoặc inter_organizations_id_seq (fresh)
+SELECT setval(pg_get_serial_sequence('edoc.inter_organizations', 'id'), 1000, true);
+
+-- 10 VB liên thông (gộp vào incoming_docs với source_type='external_lgsp')
+INSERT INTO edoc.incoming_docs (
+  id, unit_id, received_date, number, notation, document_code, abstract,
+  publish_unit, publish_date, signer, doc_book_id, doc_type_id, doc_field_id,
+  urgent_id, secret_id, number_paper, number_copies, recipients, created_by,
+  source_type, is_unit_send, unit_send, external_doc_id
 )
 SELECT
-  n AS id,
+  (1000 + n) AS id,
   1 AS unit_id,
-  (NOW() - (n || ' hours')::INTERVAL)::timestamp AS received_date,
+  NOW() - (n || ' hours')::INTERVAL AS received_date,
+  300 + n AS number,
   'LT-' || (300+n) || '/BNV' AS notation,
   'LT' || (300+n) AS document_code,
   'VB liên thông demo ' || n || ' — từ Bộ Nội vụ qua LGSP' AS abstract,
   'Bộ Nội vụ' AS publish_unit,
-  (NOW() - ((n+1) || ' hours')::INTERVAL)::date AS publish_date,
+  NOW() - ((n+1) || ' hours')::INTERVAL AS publish_date,
   'Phạm Thị Thanh Trà' AS signer,
-  CASE
-    WHEN n <= 4 THEN 'pending'
-    WHEN n <= 7 THEN 'accepted'
-    WHEN n = 8  THEN 'rejected'
-    ELSE 'recalled'
-  END AS status,
-  'LGSP' AS source_system,
-  'LGSP-' || (10000 + n) AS external_doc_id,
+  1 AS doc_book_id,
+  ((n % 8) + 1) AS doc_type_id,
+  ((n % 5) + 1) AS doc_field_id,
+  ((n % 3) + 1)::smallint AS urgent_id,
+  1::smallint AS secret_id,
   (n % 5) + 1 AS number_paper,
   1 AS number_copies,
-  1::smallint AS secret_id,
-  ((n % 3) + 1)::smallint AS urgent_id,
   'UBND tỉnh Lào Cai' AS recipients,
-  1 AS created_by
+  1 AS created_by,
+  'external_lgsp'::edoc.doc_source_type AS source_type,
+  FALSE AS is_unit_send,
+  'Bộ Nội vụ' AS unit_send,
+  'LGSP-' || (10000 + n) AS external_doc_id
 FROM generate_series(1, 10) AS n
-WHERE NOT EXISTS (SELECT 1 FROM edoc.inter_incoming_docs WHERE id = n);
-
-SELECT setval('edoc.inter_incoming_docs_id_seq', 1000, true);
+WHERE NOT EXISTS (SELECT 1 FROM edoc.incoming_docs WHERE id = (1000 + n));
 
 -- ─── 16. Attachments VB đến (20 records — file giả không upload MinIO) ─────
 INSERT INTO edoc.attachment_incoming_docs (
@@ -456,7 +472,7 @@ BEGIN
     v_outgoing +
     v_drafting +
     v_handling +
-    (SELECT count(*) FROM edoc.inter_incoming_docs) +
+    (SELECT count(*) FROM edoc.inter_organizations) +
     (SELECT count(*) FROM edoc.attachment_incoming_docs) +
     (SELECT count(*) FROM edoc.attachment_outgoing_docs) +
     (SELECT count(*) FROM edoc.notices) +
