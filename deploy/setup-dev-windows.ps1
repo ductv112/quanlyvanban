@@ -139,9 +139,17 @@ foreach ($mod in @('backend', 'frontend', 'workers')) {
         Log "WARN: $mod khong ton tai — skip" 'Yellow'
         continue
     }
-    if (Test-Path (Join-Path $modPath 'node_modules')) {
-        Log "OK $mod/node_modules da co — skip install" 'Gray'
+    # Check .bin folder (sign of COMPLETE install) + npm's internal lockfile.
+    # Prior bug: chi check folder node_modules → stale install tu v1.0 thieu .bin
+    # → 'npm run dev' fail voi 'tsx is not recognized'.
+    $nmBin  = Join-Path $modPath 'node_modules\.bin'
+    $nmLock = Join-Path $modPath 'node_modules\.package-lock.json'
+    if ((Test-Path $nmBin) -and (Test-Path $nmLock)) {
+        Log "OK $mod/node_modules day du (.bin + .package-lock.json) — skip install" 'Gray'
         continue
+    }
+    if (Test-Path (Join-Path $modPath 'node_modules')) {
+        Log "WARN: $mod/node_modules co nhung thieu .bin hoac .package-lock.json — reinstall" 'Yellow'
     }
     Log "Installing $mod..." 'Cyan'
     Push-Location $modPath
