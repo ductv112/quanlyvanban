@@ -87,14 +87,22 @@ Log "HEAD: $headSha $headMsg"
 # -- 3. Build Backend PRODUCTION -----------------------------
 Step '3. Build Backend PRODUCTION (npm ci + build)'
 Set-Location "$WORK_DIR\backend"
-$env:NODE_ENV = 'production'
+# QUAN TRONG: npm install/ci KHONG dung --omit=dev vi can 'typescript' (devDep)
+# de compile tsc -> dist/. NODE_ENV=production chi set khi CHAY app, khong set
+# khi install (NODE_ENV=production + npm install = skip devDependencies).
+$env:NODE_ENV = 'development'
 
-Log '  -> npm ci (clean install)...'
+Log '  -> npm ci (clean install, full deps including dev)...'
 npm ci 2>$null | Out-Null
 if ($LASTEXITCODE -ne 0) {
-    Warn '  npm ci fail, fallback npm install --omit=dev'
-    npm install --omit=dev 2>$null | Out-Null
+    Warn '  npm ci fail, fallback npm install (full)'
+    npm install 2>$null | Out-Null
     if ($LASTEXITCODE -ne 0) { Err 'Backend npm install that bai' }
+}
+
+# Verify tsc present
+if (-not (Test-Path "$WORK_DIR\backend\node_modules\.bin\tsc.cmd") -and -not (Test-Path "$WORK_DIR\backend\node_modules\typescript\bin\tsc")) {
+    Err 'typescript khong co trong node_modules - npm install chua install devDependencies. Kiem tra .npmrc / NODE_ENV.'
 }
 
 Log '  -> npm run build (tsc -> dist/)...'
@@ -114,15 +122,25 @@ Log 'Backend built'
 # -- 4. Build Frontend PRODUCTION ----------------------------
 Step '4. Build Frontend PRODUCTION (Next.js build 3-5 phut)'
 Set-Location "$WORK_DIR\frontend"
-$env:NODE_ENV = 'production'
+# Next.js build can devDeps (next CLI chi co neu full install). NODE_ENV=production
+# KHONG duoc set luc install.
+$env:NODE_ENV = 'development'
 
-Log '  -> npm ci...'
+Log '  -> npm ci (full deps)...'
 npm ci 2>$null | Out-Null
 if ($LASTEXITCODE -ne 0) {
-    Warn '  npm ci fail, fallback npm install'
+    Warn '  npm ci fail, fallback npm install (full)'
     npm install 2>$null | Out-Null
     if ($LASTEXITCODE -ne 0) { Err 'Frontend npm install that bai' }
 }
+
+# Verify next CLI present
+if (-not (Test-Path "$WORK_DIR\frontend\node_modules\.bin\next.cmd") -and -not (Test-Path "$WORK_DIR\frontend\node_modules\next\dist\bin\next")) {
+    Err 'next CLI khong co trong node_modules - npm install chua install day du.'
+}
+
+# Switch sang production cho qua trinh build (Next.js read NODE_ENV)
+$env:NODE_ENV = 'production'
 
 Log '  -> npm run build (Next.js production)...'
 $feBuildLog = Join-Path $env:TEMP 'qlvb_frontend_build.log'
