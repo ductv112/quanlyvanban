@@ -27252,3 +27252,6 @@ EXCEPTION WHEN others THEN
   RETURN QUERY SELECT FALSE, SQLERRM::text, v_internal, v_external;
 END;
 $func$;
+
+-- Phase 20 v3.0 Audit: incoming_docs đối xứng outgoing/drafting
+ALTER TABLE edoc.incoming_docs ADD COLUMN IF NOT EXISTS sub_number VARCHAR(20);

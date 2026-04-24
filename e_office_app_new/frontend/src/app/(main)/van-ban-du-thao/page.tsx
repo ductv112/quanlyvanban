@@ -711,9 +711,9 @@ export default function DraftingDocPage() {
               </Form.Item>
             </Col>
             <Col span={8}>
-              <Form.Item name="publish_unit_id" label="Đơn vị phát hành">
+              <Form.Item name="publish_unit_id" label="Đơn vị ban hành">
                 <Select
-                  placeholder="Chọn đơn vị phát hành"
+                  placeholder="Chọn đơn vị ban hành"
                   allowClear
                   showSearch
                   optionFilterProp="label"

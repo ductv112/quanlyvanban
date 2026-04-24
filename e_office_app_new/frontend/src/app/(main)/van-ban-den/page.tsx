@@ -416,12 +416,13 @@ export default function IncomingDocPage() {
       >
         <Form form={form} layout="vertical" autoComplete="off">
           <Row gutter={16}>
-            <Col span={12}><Form.Item name="doc_book_id" label="Sổ văn bản" rules={[{ required: true, message: 'Bắt buộc' }]}><Select placeholder="Chọn sổ văn bản" options={docBooks} onChange={(val) => { if (val && !editingRecord) fetchNextNumber(val); }} /></Form.Item></Col>
-            <Col span={6}><Form.Item name="number" label="Số đến"><InputNumber style={{ width: '100%' }} min={1} /></Form.Item></Col>
+            <Col span={9}><Form.Item name="doc_book_id" label="Sổ văn bản" rules={[{ required: true, message: 'Bắt buộc' }]}><Select placeholder="Chọn sổ văn bản" options={docBooks} onChange={(val) => { if (val && !editingRecord) fetchNextNumber(val); }} /></Form.Item></Col>
+            <Col span={5}><Form.Item name="number" label="Số đến"><InputNumber style={{ width: '100%' }} min={1} /></Form.Item></Col>
+            <Col span={4}><Form.Item name="sub_number" label="Số phụ"><Input placeholder="VD: a, b, c" maxLength={20} /></Form.Item></Col>
             <Col span={6}><Form.Item name="received_date" label="Ngày đến" rules={[{ required: true, message: 'Ngày đến là bắt buộc' }]}><DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" /></Form.Item></Col>
           </Row>
           <Row gutter={16}>
-            <Col span={12}><Form.Item name="notation" label="Số ký hiệu"><Input placeholder="VD: 123/UBND-VP" maxLength={100} /></Form.Item></Col>
+            <Col span={12}><Form.Item name="notation" label="Ký hiệu"><Input placeholder="VD: 123/UBND-VP" maxLength={100} /></Form.Item></Col>
             <Col span={12}><Form.Item name="publish_unit" label="Cơ quan ban hành"><Select
               mode="tags"
               maxCount={1}

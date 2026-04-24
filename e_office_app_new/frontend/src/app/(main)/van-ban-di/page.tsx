@@ -473,9 +473,14 @@ export default function OutgoingDocPage() {
                 <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
               </Form.Item>
             </Col>
-            <Col span={16}>
+            <Col span={8}>
               <Form.Item name="notation" label="Ký hiệu">
                 <Input placeholder="VD: 123/UBND-VP" maxLength={100} />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="document_code" label="Mã văn bản">
+                <Input placeholder="Mã định danh văn bản" maxLength={100} />
               </Form.Item>
             </Col>
           </Row>

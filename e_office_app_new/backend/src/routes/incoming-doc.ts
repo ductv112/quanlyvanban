@@ -239,6 +239,7 @@ router.post('/', async (req: Request, res: Response) => {
       sents: body.sents || null,
       isReceivedPaper: body.is_received_paper ?? false,
       createdBy: staffId,
+      departmentId, // Phase 20 v3.0 fix: gắn với phòng/đơn vị của user → resolveDeptSubtree filter list match được
     });
 
     if (!result.success) {
@@ -248,6 +249,10 @@ router.post('/', async (req: Request, res: Response) => {
     // Lưu extra_fields nếu có
     if (body.extra_fields && Object.keys(body.extra_fields).length > 0) {
       await callFunctionOne('edoc.fn_doc_save_extra_fields', ['incoming', result.id, JSON.stringify(body.extra_fields)]);
+    }
+    // Phase 20 v3.0: Lưu sub_number nếu có (SP cũ không nhận param này → UPDATE riêng)
+    if (body.sub_number) {
+      await rawQuery('UPDATE edoc.incoming_docs SET sub_number = $1 WHERE id = $2', [String(body.sub_number).slice(0, 20), result.id]);
     }
     res.status(201).json({ success: true, data: { id: result.id } });
   } catch (error) {
@@ -265,9 +270,9 @@ router.get('/:id', async (req: Request, res: Response) => {
       res.status(404).json({ success: false, message: 'Không tìm thấy văn bản đến' });
       return;
     }
-    // Lấy extra_fields + rejection info
-    const extraRows = await rawQuery<{ extra_fields: Record<string, unknown>; rejected_by: number | null; rejection_reason: string | null }>(
-      'SELECT extra_fields, rejected_by, rejection_reason FROM edoc.incoming_docs WHERE id = $1', [id],
+    // Lấy extra_fields + rejection info + sub_number (Phase 20 v3.0)
+    const extraRows = await rawQuery<{ extra_fields: Record<string, unknown>; rejected_by: number | null; rejection_reason: string | null; sub_number: string | null }>(
+      'SELECT extra_fields, rejected_by, rejection_reason, sub_number FROM edoc.incoming_docs WHERE id = $1', [id],
     ).catch(() => []);
     // Phase 19 v3.0 fix Bug 8: nếu VB đến là internal (auto-sinh từ outgoing) → fill recipients text từ outgoing recipients (tên các đơn vị nhận trong outgoing gốc)
     let recipientsSummary = (doc as any).recipients;
@@ -284,7 +289,7 @@ router.get('/:id', async (req: Request, res: Response) => {
         recipientsSummary = recipNames.map(r => r.name).filter(Boolean).join('; ');
       }
     }
-    res.json({ success: true, data: { ...doc, recipients: recipientsSummary, extra_fields: extraRows[0]?.extra_fields || {}, rejected_by: extraRows[0]?.rejected_by ?? null, rejection_reason: extraRows[0]?.rejection_reason ?? null } });
+    res.json({ success: true, data: { ...doc, recipients: recipientsSummary, sub_number: extraRows[0]?.sub_number ?? null, extra_fields: extraRows[0]?.extra_fields || {}, rejected_by: extraRows[0]?.rejected_by ?? null, rejection_reason: extraRows[0]?.rejection_reason ?? null } });
   } catch (error) {
     handleDbError(error, res);
   }
@@ -346,6 +351,10 @@ router.put('/:id', async (req: Request, res: Response) => {
     // Lưu extra_fields nếu có
     if (body.extra_fields !== undefined) {
       await callFunctionOne('edoc.fn_doc_save_extra_fields', ['incoming', id, JSON.stringify(body.extra_fields || {})]);
+    }
+    // Phase 20 v3.0: Update sub_number (SP cũ không support)
+    if (body.sub_number !== undefined) {
+      await rawQuery('UPDATE edoc.incoming_docs SET sub_number = $1 WHERE id = $2', [body.sub_number ? String(body.sub_number).slice(0, 20) : null, id]);
     }
     res.json({ success: true, data: { updated: true } });
   } catch (error) {
