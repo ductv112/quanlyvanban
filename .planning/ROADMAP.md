@@ -16,12 +16,71 @@ Rebuild hệ thống quản lý văn bản điện tử (.NET cũ) thành stack 
 
 ### v3.0 (Active — Milestone: Chuẩn hoá data model + workflow nghiệp vụ văn bản)
 
-- [ ] **Phase 15: Audit & design data model** — Phân tích gap 3 bảng văn bản (incoming/outgoing/drafting), design schema mới với recipients table + source_type flag + gộp inter_incoming_docs vào incoming_docs
-- [ ] **Phase 16: Schema rebuild v3.0** — Bump master schema → `000_schema_v3.0.sql`. Drop bảng inter_incoming_docs riêng, gộp vào incoming_docs với source_type ENUM. Thêm bảng outgoing_doc_recipients. Thêm is_released cho drafting_docs. Reset DB clean.
-- [ ] **Phase 17: Tách bước Ban hành/Gửi + Auto-sinh Incoming nội bộ** — Outgoing có 2 action: Ban hành (cấp số, IsReleased=true) và Gửi. Khi gửi recipient nội bộ → SP tự INSERT incoming_docs với source_type='internal'. Bao gồm Approver/Approved (1 cấp như source cũ).
-- [ ] **Phase 18: Real LGSP HTTP client + worker polling thật** — Thay lgsp-mock.service.ts bằng real OAuth2 + REST client tới apiltvb.langson.gov.vn. Worker BullMQ polling thật, nhận VB từ LGSP → INSERT incoming_docs với source_type='external_lgsp'.
-- [ ] **Phase 19: UI rewrite 3 màn + gộp menu Liên thông vào VB đến** — Bỏ route /van-ban-lien-thong + menu sidebar "Liên thông". Workflow recall (thu hồi LGSP, chuyển lại, hoàn thành) chuyển vào /van-ban-den với badge/filter source_type. Form 3 màn đồng bộ field mới + recipient picker phân loại nội bộ/ngoài.
-- [ ] **Phase 20: Regression + UAT toàn bộ** — Verify HSCV, ký số, báo cáo, dashboard không vỡ. UAT 3 luồng chính: nội bộ A→B, gửi LGSP outgoing, nhận LGSP incoming.
+- [ ] **Phase 15: Audit & design data model** (0 plans)
+- [ ] **Phase 16: Schema rebuild v3.0** (0 plans)
+- [ ] **Phase 17: Tách bước Ban hành/Gửi + Auto-sinh Incoming nội bộ + Approver** (0 plans)
+- [ ] **Phase 18: Real LGSP HTTP client + worker polling thật** (0 plans)
+- [ ] **Phase 19: UI rewrite 3 màn + gộp menu Liên thông vào VB đến** (0 plans)
+- [ ] **Phase 20: Regression + UAT toàn bộ** (0 plans)
+
+## Phase Details
+
+### Phase 15: Audit & design data model
+
+**Goal:** Phân tích gap toàn diện giữa data model hiện tại của 3 bảng văn bản (incoming_docs/outgoing_docs/drafting_docs) so với source .NET cũ + nghiệp vụ thực tế. Sản phẩm là **DESIGN.md** chốt cụ thể: cột nào thêm/sửa/xóa, ENUM values, FK relationships, recipient table schema, lifecycle workflow, migration strategy. Không code, không reset DB — chỉ design doc để Phase 16 implement.
+
+**Depends on:** —
+
+**Requirements:** DM-01, DM-02, DM-03, DM-04, DM-05, DM-06, DM-07
+
+**Success Criteria** (what must be TRUE):
+  1. DESIGN.md liệt kê đầy đủ cột mới cho `incoming_docs` (`source_type`, `is_unit_send`, `unit_send`, `previous_outgoing_doc_id`, `external_doc_id`, `approver`, `approved`, `approved_at`) với data type, NULL/NOT NULL, default value, foreign key, comment giải thích nghiệp vụ
+  2. DESIGN.md có schema bảng mới `outgoing_doc_recipients` (multi-recipient, phân loại internal/external) + bảng `inter_organizations` (danh mục cơ quan LGSP) với đầy đủ columns + indexes
+  3. DESIGN.md có schema mới cho `drafting_docs` + `outgoing_docs`: `drafting_unit_id`, `publish_unit_id` (tách riêng), `is_released`, `released_date`, `previous_outgoing_doc_id`, `approver`, `approved`, `approved_at`
+  4. DESIGN.md mô tả lifecycle 3 trạng thái: Drafting → Ban hành → Gửi với SP signatures dự kiến (`fn_outgoing_doc_release`, `fn_outgoing_doc_send`, `fn_drafting_doc_approve`)
+  5. DESIGN.md có sơ đồ ERD/relationships diagram (mermaid hoặc text) thể hiện mối liên kết: drafting → outgoing (PreviousOutgoingDocId), outgoing → incoming (PreviousOutgoingDocId), outgoing → recipients → unit/inter_organization
+  6. DESIGN.md document migration strategy: reset DB clean (user approved D-2026-04-23), bump master schema `000_schema_v2.0.sql` → `000_schema_v3.0.sql`, list các bảng/cột bị drop (inter_incoming_docs, attachment_inter_incoming_docs)
+  7. DESIGN.md identify breaking changes ảnh hưởng module xuống dòng (HSCV, ký số, dashboard, báo cáo) + plan mitigation cho mỗi cái
+
+### Phase 16: Schema rebuild v3.0
+
+**Goal:** Implement schema mới theo Phase 15 DESIGN.md. Bump master schema file `database/schema/000_schema_v2.0.sql` → `000_schema_v3.0.sql`. Drop bảng `inter_incoming_docs` riêng, gộp vào `incoming_docs` với cột `source_type`. Thêm bảng `outgoing_doc_recipients` + `inter_organizations`. Thêm cột `is_released`/`released_date`/`approver`/`approved` cho drafting/outgoing/incoming. Reset DB clean + apply schema mới + seed.
+
+**Depends on:** Phase 15
+
+**Requirements:** DM-01, DM-02, DM-03, DM-04, DM-05, DM-06, DM-07, DM-08
+
+### Phase 17: Tách bước Ban hành/Gửi + Auto-sinh Incoming nội bộ + Approver
+
+**Goal:** Implement 3 SP chính (`fn_outgoing_doc_release`, `fn_outgoing_doc_send`, `fn_drafting_doc_approve`) + repository + routes + UI 2 button "Ban hành"/"Gửi" trên outgoing detail + nút "Duyệt"/"Bỏ duyệt" trên drafting detail. Khi gửi recipient nội bộ → SP tự INSERT `incoming_docs` với `source_type='internal'` + đầy đủ field cross-reference.
+
+**Depends on:** Phase 16
+
+**Requirements:** WF-01, WF-02, WF-03, WF-04, WF-05
+
+### Phase 18: Real LGSP HTTP client + worker polling thật
+
+**Goal:** Thay `lgsp-mock.service.ts` bằng real `LGSPRealService` với OAuth2 + REST client tới `apiltvb.langson.gov.vn` (token cache 29 phút). Worker BullMQ `lgsp-send` đẩy outgoing pending lên LGSP. Worker `lgsp-receive` polling 60s nhận VB từ LGSP → INSERT `incoming_docs` với `source_type='external_lgsp'`.
+
+**Depends on:** Phase 16
+
+**Requirements:** LGSP-01, LGSP-02, LGSP-03, LGSP-04, LGSP-05
+
+### Phase 19: UI rewrite 3 màn + gộp menu Liên thông vào VB đến
+
+**Goal:** Form drafting/outgoing thêm field "Đơn vị soạn thảo" + "Cơ quan ban hành" tách riêng + recipient picker (tab nội bộ tree multi-select / tab ngoài search). Form incoming hiển thị 3 field "Cơ quan ban hành" + "Nơi gửi" + "Nơi nhận" rõ ràng. Bỏ menu sidebar "Văn bản liên thông" + route `/van-ban-lien-thong`. Trang `/van-ban-den` thêm filter `source_type` + badge tag màu khác nhau. Workflow recall (thu hồi LGSP) chuyển vào trang chi tiết `/van-ban-den/[id]`.
+
+**Depends on:** Phase 17, Phase 18
+
+**Requirements:** UI-01, UI-02, UI-03, UI-04, UI-05, UI-06, UI-07, UI-08
+
+### Phase 20: Regression + UAT toàn bộ
+
+**Goal:** Regression test E2E các module xuống dòng (HSCV, ký số 4 tab, báo cáo, dashboard, lịch) đảm bảo không vỡ sau schema rebuild. UAT 3 luồng chính: (1) Sở A soạn → ban hành → gửi Sở B nội bộ; (2) gửi LGSP outgoing → worker đẩy + tracking status; (3) nhận LGSP incoming → worker pull về INSERT incoming_docs. Reset DB + seed demo + verify khả năng ship cho KH.
+
+**Depends on:** Phase 15, Phase 16, Phase 17, Phase 18, Phase 19
+
+**Requirements:** QA-01, QA-02, QA-03
 
 <details>
 <summary>✅ v1.0 MVP (Phases 1-7) — SHIPPED 2026-04-18</summary>
