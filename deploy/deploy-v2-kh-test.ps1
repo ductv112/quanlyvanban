@@ -98,8 +98,16 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Log '  -> npm run build (tsc -> dist/)...'
-npm run build 2>$null | Out-Null
-if ($LASTEXITCODE -ne 0) { Err 'Backend build that bai' }
+$buildLog = Join-Path $env:TEMP 'qlvb_backend_build.log'
+npm run build > $buildLog 2>&1
+if ($LASTEXITCODE -ne 0) {
+    Write-Host ''
+    Write-Host '---- Backend build output (cuoi file) ----' -ForegroundColor Yellow
+    Get-Content $buildLog -Tail 50
+    Write-Host "---- Full log: $buildLog ----" -ForegroundColor Yellow
+    Err 'Backend build that bai - xem log phia tren'
+}
+Remove-Item $buildLog -ErrorAction SilentlyContinue
 if (-not (Test-Path "$WORK_DIR\backend\dist\server.js")) { Err 'Backend dist/server.js khong ton tai sau build' }
 Log 'Backend built'
 
@@ -117,8 +125,16 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Log '  -> npm run build (Next.js production)...'
-npm run build 2>$null | Out-Null
-if ($LASTEXITCODE -ne 0) { Err 'Frontend build that bai' }
+$feBuildLog = Join-Path $env:TEMP 'qlvb_frontend_build.log'
+npm run build > $feBuildLog 2>&1
+if ($LASTEXITCODE -ne 0) {
+    Write-Host ''
+    Write-Host '---- Frontend build output (cuoi file) ----' -ForegroundColor Yellow
+    Get-Content $feBuildLog -Tail 60
+    Write-Host "---- Full log: $feBuildLog ----" -ForegroundColor Yellow
+    Err 'Frontend build that bai - xem log phia tren'
+}
+Remove-Item $feBuildLog -ErrorAction SilentlyContinue
 if (-not (Test-Path "$WORK_DIR\frontend\.next\BUILD_ID")) { Err 'Frontend .next/BUILD_ID khong ton tai sau build' }
 Log 'Frontend built'
 
