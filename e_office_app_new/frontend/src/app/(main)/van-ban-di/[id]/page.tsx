@@ -437,7 +437,8 @@ export default function OutgoingDocDetailPage() {
             <Button icon={<InboxOutlined />} onClick={openHscvModal}>Thêm vào HSCV</Button>
           )}
           {/* Phase 19 v3.0: ẨN 2 nút legacy v1.0 — recipient ngoài LGSP đã có trong form 'Cơ quan nhận ngoài' khi soạn. Trục CP defer Phase 2 KH. */}
-          {doc.approved && !doc.archive_status && (doc.permissions?.canApprove ?? false) && (
+          {/* Chuyển lưu trữ — tạm ẩn chờ Phase 2 (module Kho lưu trữ đang ẩn với KH) */}
+          {false && doc?.approved && !doc?.archive_status && (doc?.permissions?.canApprove ?? false) && (
             <Button icon={<InboxOutlined />} onClick={openArchive}>Chuyển lưu trữ</Button>
           )}
           {!doc.approved && (
@@ -583,7 +584,10 @@ export default function OutgoingDocDetailPage() {
               </div>
               <div className="info-grid">
                 <div><div className="info-label">Liên thông</div>{doc.is_inter_doc ? <Tag color="processing">Liên thông</Tag> : <Tag>Nội bộ</Tag>}</div>
-                <div><div className="info-label">Lưu trữ</div>{doc.archive_status ? <Tag color="success">Đã lưu trữ</Tag> : <Tag>Chưa lưu trữ</Tag>}</div>
+                {/* Lưu trữ — tạm ẩn chờ Phase 2 (module Kho lưu trữ đang ẩn với KH) */}
+                {false && (
+                  <div><div className="info-label">Lưu trữ</div>{doc?.archive_status ? <Tag color="success">Đã lưu trữ</Tag> : <Tag>Chưa lưu trữ</Tag>}</div>
+                )}
               </div>
               <div className="info-grid" style={{ borderTop: '1px solid #f0f0f0', paddingTop: 12, marginTop: 12 }}>
                 <div><div className="info-label">Người nhập</div><div style={{ fontSize: 13, color: '#595959' }}>{doc.created_by_name}</div></div>

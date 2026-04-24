@@ -439,11 +439,11 @@ export default function IncomingDocDetailPage() {
             <Button onClick={openLgspModal} icon={<SendOutlined />} style={{ backgroundColor: '#059669', borderColor: '#059669', color: '#fff' }}>Gửi liên thông</Button>
           )}
 
-          {/* Chuyển lưu trữ — chỉ khi đã duyệt và chưa lưu trữ */}
-          {doc.approved && !doc.archive_status && (
+          {/* Chuyển lưu trữ — tạm ẩn chờ Phase 2 (module Kho lưu trữ đang ẩn với KH) */}
+          {false && doc?.approved && !doc?.archive_status && (
             <Button onClick={openArchiveModal} icon={<InboxOutlined />} style={{ backgroundColor: '#7c3aed', borderColor: '#7c3aed', color: '#fff' }}>Chuyển lưu trữ</Button>
           )}
-          {doc.archive_status && <Tag color="purple">Đã lưu trữ</Tag>}
+          {false && doc?.archive_status && <Tag color="purple">Đã lưu trữ</Tag>}
 
           {/* Nhận bàn giao / Chuyển lại — chỉ VB liên thông */}
           {(doc as any).is_inter_doc && (

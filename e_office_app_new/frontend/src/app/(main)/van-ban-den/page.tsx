@@ -38,6 +38,9 @@ interface IncomingDoc {
   doc_book_name: string; doc_type_name: string; doc_type_code: string;
   doc_field_name: string; created_by_name: string;
   is_read: boolean; read_at: string; attachment_count: number; total_count: number;
+  i_am_recipient?: boolean;
+  sent_by_name?: string | null;
+  received_at?: string | null;
   permissions?: {
     canEdit: boolean;
     canApprove: boolean;
@@ -341,6 +344,11 @@ export default function IncomingDocPage() {
       render: (val, r) => (
         <Tooltip title={val}>
           <a className="cell-abstract" href={`/van-ban-den/${r.id}`}>{val}</a>
+          {r.i_am_recipient && (
+            <Tooltip title={`Do ${r.sent_by_name ?? 'đồng nghiệp'} gửi lúc ${r.received_at ? dayjs(r.received_at).format('DD/MM/YYYY HH:mm') : ''}`}>
+              <Tag style={{ marginLeft: 8, background: '#fff7e6', color: '#d48806', border: '1px solid #ffd591' }}>📩 Gửi cho tôi</Tag>
+            </Tooltip>
+          )}
         </Tooltip>
       ),
     },

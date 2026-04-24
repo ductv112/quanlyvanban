@@ -4629,9 +4629,9 @@ BEGIN
     RETURN;
   END IF;
 
-  -- Insert, skip duplicates
-  INSERT INTO edoc.user_incoming_docs (incoming_doc_id, staff_id, is_read, created_at)
-  SELECT p_doc_id, unnest(p_staff_ids), FALSE, NOW()
+  -- Insert, skip duplicates — lưu sent_by để render badge "Gửi bởi ..." ở list
+  INSERT INTO edoc.user_incoming_docs (incoming_doc_id, staff_id, sent_by, is_read, created_at)
+  SELECT p_doc_id, unnest(p_staff_ids), p_sent_by, FALSE, NOW()
   ON CONFLICT (incoming_doc_id, staff_id) DO NOTHING;
 
   GET DIAGNOSTICS v_count = ROW_COUNT;
@@ -13896,6 +13896,13 @@ CREATE TABLE IF NOT EXISTS edoc.user_incoming_docs (
     read_at timestamp with time zone,
     created_at timestamp with time zone DEFAULT now()
 );
+-- Badge "Gửi bởi ..." cần sent_by + expired_date (tương đương user_outgoing_docs / user_drafting_docs)
+ALTER TABLE edoc.user_incoming_docs ADD COLUMN IF NOT EXISTS sent_by integer;
+ALTER TABLE edoc.user_incoming_docs ADD COLUMN IF NOT EXISTS expired_date timestamp with time zone;
+DO $$ BEGIN
+  ALTER TABLE edoc.user_incoming_docs ADD CONSTRAINT user_incoming_docs_sent_by_fkey
+    FOREIGN KEY (sent_by) REFERENCES public.staff(id);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 
 --
@@ -26415,6 +26422,9 @@ END;
 $$;
 -- Fix SP filter: route truyền unit_id=0 cho admin all-units
 -- → SP cần bỏ filter unit_id khi p_unit_id <= 0
+-- Phase 260424-wve follow-up: thêm output i_am_recipient + sent_by_name + received_at cho badge "Gửi bởi ..."
+
+DROP FUNCTION IF EXISTS edoc.fn_incoming_doc_get_list(integer, integer, integer, integer, integer, smallint, boolean, boolean, timestamptz, timestamptz, text, text, integer, integer, integer, integer, integer[]);
 
 CREATE OR REPLACE FUNCTION edoc.fn_incoming_doc_get_list(
   p_unit_id integer, p_staff_id integer,
@@ -26439,7 +26449,8 @@ CREATE OR REPLACE FUNCTION edoc.fn_incoming_doc_get_list(
   created_by integer, created_at timestamptz,
   doc_book_name varchar, doc_type_name varchar, doc_type_code varchar, doc_field_name varchar,
   created_by_name varchar,
-  is_read boolean, read_at timestamptz, attachment_count bigint, total_count bigint
+  is_read boolean, read_at timestamptz, attachment_count bigint, total_count bigint,
+  i_am_recipient boolean, sent_by_name varchar, received_at timestamptz
 )
 LANGUAGE plpgsql AS $$
 DECLARE
@@ -26479,15 +26490,20 @@ BEGIN
     dt.code::varchar AS doc_type_code,
     df.name::varchar AS doc_field_name,
     s.full_name::varchar AS created_by_name,
-    EXISTS(SELECT 1 FROM edoc.user_incoming_docs uid WHERE uid.incoming_doc_id = f.id AND uid.staff_id = p_staff_id AND uid.read_at IS NOT NULL) AS is_read,
-    (SELECT max(uid2.read_at) FROM edoc.user_incoming_docs uid2 WHERE uid2.incoming_doc_id = f.id AND uid2.staff_id = p_staff_id) AS read_at,
+    COALESCE(uidr.is_read, FALSE) AS is_read,
+    uidr.read_at AS read_at,
     (SELECT count(*) FROM edoc.attachment_incoming_docs a WHERE a.incoming_doc_id = f.id) AS attachment_count,
-    v_total AS total_count
+    v_total AS total_count,
+    (uidr.incoming_doc_id IS NOT NULL AND uidr.sent_by IS NOT NULL) AS i_am_recipient,
+    sender.full_name::varchar AS sent_by_name,
+    uidr.created_at AS received_at
   FROM edoc.incoming_docs f
   LEFT JOIN edoc.doc_books db ON f.doc_book_id = db.id
   LEFT JOIN edoc.doc_types dt ON f.doc_type_id = dt.id
   LEFT JOIN edoc.doc_fields df ON f.doc_field_id = df.id
   LEFT JOIN public.staff s ON f.created_by = s.id
+  LEFT JOIN edoc.user_incoming_docs uidr ON uidr.incoming_doc_id = f.id AND uidr.staff_id = p_staff_id
+  LEFT JOIN public.staff sender ON sender.id = uidr.sent_by
   WHERE (p_unit_id <= 0 OR f.unit_id = p_unit_id)
     AND (p_doc_book_id IS NULL OR f.doc_book_id = p_doc_book_id)
     AND (p_doc_type_id IS NULL OR f.doc_type_id = p_doc_type_id)
@@ -26508,6 +26524,9 @@ BEGIN
   LIMIT p_page_size OFFSET v_offset;
 END;
 $$;
+
+-- Phase 260424-wve follow-up: thêm output i_am_recipient + sent_by_name + received_at cho badge "Gửi bởi ..."
+DROP FUNCTION IF EXISTS edoc.fn_outgoing_doc_get_list(integer, integer, integer, integer, integer, smallint, boolean, timestamptz, timestamptz, text, integer, integer, integer[]);
 
 CREATE OR REPLACE FUNCTION edoc.fn_outgoing_doc_get_list(
   p_unit_id integer, p_staff_id integer,
@@ -26530,7 +26549,8 @@ CREATE OR REPLACE FUNCTION edoc.fn_outgoing_doc_get_list(
   doc_book_name varchar, doc_type_name varchar, doc_type_code varchar, doc_field_name varchar,
   drafting_unit_name varchar, drafting_user_name varchar,
   created_by_name varchar,
-  is_read boolean, read_at timestamptz, attachment_count bigint, total_count bigint
+  is_read boolean, read_at timestamptz, attachment_count bigint, total_count bigint,
+  i_am_recipient boolean, sent_by_name varchar, received_at timestamptz
 )
 LANGUAGE plpgsql AS $$
 DECLARE
@@ -26569,10 +26589,13 @@ BEGIN
     du.name::varchar AS drafting_unit_name,
     duser.full_name::varchar AS drafting_user_name,
     s.full_name::varchar AS created_by_name,
-    EXISTS(SELECT 1 FROM edoc.user_outgoing_docs uod WHERE uod.outgoing_doc_id = f.id AND uod.staff_id = p_staff_id AND uod.read_at IS NOT NULL) AS is_read,
-    (SELECT max(uod2.read_at) FROM edoc.user_outgoing_docs uod2 WHERE uod2.outgoing_doc_id = f.id AND uod2.staff_id = p_staff_id) AS read_at,
+    COALESCE(uodr.is_read, FALSE) AS is_read,
+    uodr.read_at AS read_at,
     (SELECT count(*) FROM edoc.attachment_outgoing_docs a WHERE a.outgoing_doc_id = f.id) AS attachment_count,
-    v_total AS total_count
+    v_total AS total_count,
+    (uodr.outgoing_doc_id IS NOT NULL AND uodr.sent_by IS NOT NULL) AS i_am_recipient,
+    sender.full_name::varchar AS sent_by_name,
+    uodr.created_at AS received_at
   FROM edoc.outgoing_docs f
   LEFT JOIN edoc.doc_books db ON f.doc_book_id = db.id
   LEFT JOIN edoc.doc_types dt ON f.doc_type_id = dt.id
@@ -26580,6 +26603,8 @@ BEGIN
   LEFT JOIN public.departments du ON f.drafting_unit_id = du.id
   LEFT JOIN public.staff duser ON f.drafting_user_id = duser.id
   LEFT JOIN public.staff s ON f.created_by = s.id
+  LEFT JOIN edoc.user_outgoing_docs uodr ON uodr.outgoing_doc_id = f.id AND uodr.staff_id = p_staff_id
+  LEFT JOIN public.staff sender ON sender.id = uodr.sent_by
   WHERE (p_unit_id <= 0 OR f.unit_id = p_unit_id)
     AND (p_doc_book_id IS NULL OR f.doc_book_id = p_doc_book_id)
     AND (p_doc_type_id IS NULL OR f.doc_type_id = p_doc_type_id)
