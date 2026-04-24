@@ -14,6 +14,31 @@ Hệ thống quản lý văn bản điện tử (e-Office) dành cho cơ quan nh
 - **Business logic**: PHẢI đối chiếu source code cũ (.NET) trước khi implement — đọc Controllers, Services, SPs cũ
 - **UI/UX**: Ant Design 6 + custom theme (Deep Navy #1B3A5C), Drawer cho add/edit, Popconfirm cho xóa, tiếng Việt có dấu
 - **Architecture**: Repository pattern, no service layer (trừ auth), all data access qua Stored Functions
+
+### 🚀 Setup máy mới (sau khi clone/pull)
+
+**Khi user yêu cầu "setup máy mới" / "setup local" / "fresh setup" / "clone về máy" / tương tự:**
+
+→ Chạy 1 lệnh duy nhất (Windows):
+```powershell
+powershell -File deploy/setup-dev-windows.ps1
+```
+
+Script này tự động làm 6 bước:
+1. Copy `backend/.env.example` → `backend/.env` + `frontend/.env.example` → `frontend/.env.local` (nếu chưa có)
+2. `docker compose -f e_office_app_new/docker-compose.yml up -d` (postgres + mongo + redis + minio)
+3. `npm install` cho 3 modules: backend + frontend + workers
+4. Reset DB clean → apply schema v3.0 → seed 001 + 002
+5. TS check
+6. Print test accounts + URL
+
+Sau khi script done, user mở 2 terminal:
+- `cd e_office_app_new/backend && npm run dev` (port 4000)
+- `cd e_office_app_new/frontend && npm run dev` (port 3000)
+
+Login: `admin / Admin@123`. Test accounts khác (cùng password): `nguyenvana` (Sở Nội vụ), `tranthib` (Sở Tài chính), `levand` (Sở TT&TT).
+
+**Lưu ý cho AI:** KHÔNG cần hỏi user về env vars/passwords — `.env.example` đã có dev defaults match docker-compose.yml. Chỉ cần chạy script + verify backend start OK + admin login OK qua curl.
 <!-- GSD:project-end -->
 
 <!-- GSD:stack-start source:codebase/STACK.md -->
