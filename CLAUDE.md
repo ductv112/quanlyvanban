@@ -38,6 +38,70 @@ Sau khi script done, user mở 2 terminal:
 
 Login: `admin / Admin@123`. Test accounts khác (cùng password): `nguyenvana` (Sở Nội vụ), `tranthib` (Sở Tài chính), `levand` (Sở TT&TT).
 
+### 🚀 Deploy lên server KH test / production
+
+**Khi user yêu cầu "deploy server" / "deploy KH test" / "deploy product" / tương tự:**
+
+→ Hướng dẫn user SSH/RDP vào server Windows, rồi chạy 1 lệnh:
+```powershell
+cd C:\qlvb\quanlyvanban
+git pull origin main
+.\deploy\deploy-v2-kh-test.ps1 -Force
+```
+
+Script `deploy-v2-kh-test.ps1` tự động 10 bước: stop pm2 → pull code → build production → clear Redis/MinIO → reset DB + seed → restart → verify.
+
+**TRƯỚC KHI user bảo deploy, YÊU CẦU user chạy pre-push check local:**
+```powershell
+.\deploy\pre-push-check.ps1
+```
+Script check `tsc --noEmit` + `npm run build` backend + frontend. Nếu PASS → an toàn push lên GitHub + deploy server. Nếu FAIL → fix TS error trước.
+
+### ⚠️ Deploy Pitfalls — Đã gặp, đã fix, KHÔNG lặp lại
+
+**Khi user báo deploy fail bất kỳ, check checklist này trước:**
+
+1. **PowerShell 5.1 + UTF-8 no BOM** — PS 5.1 default đọc UTF-8 no BOM sai → tiếng Việt corrupt → parser gãy.
+   - **Rule:** script `.ps1` chỉ dùng tiếng Việt KHÔNG DẤU (pattern của `reset-db-windows.ps1`, `setup-dev-windows.ps1`, `deploy-v2-kh-test.ps1`).
+
+2. **`npm install --omit=dev` / `NODE_ENV=production`** trước khi install → thiếu `typescript`/`next` CLI → build fail.
+   - **Rule:** Set `NODE_ENV=development` TRƯỚC `npm ci` / `npm install` (full deps). Chỉ set `NODE_ENV=production` khi chạy `next build` hoặc start app.
+
+3. **`2>$null | Out-Null`** hide stderr → không debug được khi fail.
+   - **Rule:** Script redirect output ra file log (`$env:TEMP\*.log`), print 30-50 dòng cuối + full log path khi fail.
+
+4. **TS strict errors ở production build** (dev pass, prod fail).
+   - **Common causes:** `async (req: AuthRequest, res: Response)` — Express 5 strict reject, phải dùng `(req: Request, res: Response)` + cast `(req as AuthRequest).user`. Repo param `number` nhưng route truyền `null` → type `number | null`.
+   - **Rule:** Chạy `.\deploy\pre-push-check.ps1` TRƯỚC khi push. GitHub Actions CI (`.github/workflows/build-check.yml`) fail → không deploy.
+
+5. **Schema FK forward reference** — `ALTER TABLE A ADD CONSTRAINT FK REFERENCES B` fail nếu `B` CREATE sau `A` trong file master.
+   - **Rule:** FK constraints đặt ở CUỐI file `000_schema_v3.0.sql`, sau khi tất cả tables đã CREATE. Wrap trong `DO $$ ... EXCEPTION WHEN duplicate_object THEN NULL; END $$;` để idempotent.
+
+6. **MinIO service stopped / credential sai** — NSSM install V1 nhưng credential không khớp .env V2.
+   - **Rule:** Script `deploy-v2-kh-test.ps1` check `Get-Service minio` trước khi test connect. Nếu fail → hướng dẫn NSSM reinstall với `MINIO_ROOT_USER` + `MINIO_ROOT_PASSWORD` khớp backend `.env`.
+
+7. **Multer `originalname` latin1 default** → tên file tiếng Việt upload corrupt.
+   - **Rule:** `middleware/upload.ts` có `fileFilter` convert `Buffer.from(originalname, 'latin1').toString('utf8')`. Centralized — mọi upload endpoint hưởng lợi.
+
+8. **Presigned MinIO URL chứa internal host** (127.0.0.1:9000) → browser external không access.
+   - **Rule:** Download/preview dùng `streamFileToResponse()` từ `lib/minio/client.ts` — stream file qua backend proxy. Frontend dùng `downloadAttachment()` helper trong `lib/download.ts` (blob response).
+   - **KHÔNG** return presigned URL trong JSON response cho client tải về.
+
+9. **PostgreSQL BIGINT → pg driver trả STRING** → `find(a => a.id === Number(x))` strict fail.
+   - **Rule:** Khi compare id từ BIGINT column, wrap bằng `Number()`: `find(a => Number(a.id) === Number(x))`.
+
+10. **Multer `pg` lib `Cannot find module`** khi chạy Node inline script từ `$env:TEMP`.
+    - **Rule:** Node script file PHẢI nằm trong dir có `node_modules` (VD `backend/_qlvb_*.js`) để Node resolve được package.
+
+11. **Interactive prompts block auto-deploy** — `reset-db-windows.ps1` hỏi "Rebuild backend + frontend? [y/N]".
+    - **Rule:** Mọi script có `Read-Host` phải support `-Force` switch để skip prompt khi được script khác gọi.
+
+12. **Seed sequence lệch sau bulk insert explicit id** — `INSERT ... id=1000+n ON CONFLICT` không update sequence → `nextval()` sau cấp id đã tồn tại → duplicate key.
+    - **Rule:** Sau block `INSERT ... explicit id`, luôn thêm `SELECT setval(pg_get_serial_sequence('schema.table', 'id'), (SELECT MAX(id) FROM schema.table));`.
+
+13. **pm2 restart không `--update-env`** → không pick up `.env` thay đổi.
+    - **Rule:** Khi `.env` thay đổi, phải `pm2 restart all --update-env`.
+
 **Lưu ý cho AI:** KHÔNG cần hỏi user về env vars/passwords — `.env.example` đã có dev defaults match docker-compose.yml. Chỉ cần chạy script + verify backend start OK + admin login OK qua curl.
 <!-- GSD:project-end -->
 

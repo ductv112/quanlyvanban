@@ -1,0 +1,68 @@
+name: Build Check
+
+# Trigger: mọi push lên main + PR tới main
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend-build:
+    name: Backend TS + Build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: e_office_app_new/backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: e_office_app_new/backend/package-lock.json
+
+      - name: Install deps (full, incl devDependencies)
+        run: npm ci
+        env:
+          NODE_ENV: development
+
+      - name: TS strict check
+        run: npx tsc --noEmit
+
+      - name: Build
+        run: npm run build
+
+      - name: Verify dist/server.js
+        run: test -f dist/server.js
+
+  frontend-build:
+    name: Frontend Next.js Build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: e_office_app_new/frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: e_office_app_new/frontend/package-lock.json
+
+      - name: Install deps (full)
+        run: npm ci
+        env:
+          NODE_ENV: development
+
+      - name: Next.js production build
+        run: npm run build
+        env:
+          NODE_ENV: production
+
+      - name: Verify .next/BUILD_ID
+        run: test -f .next/BUILD_ID
