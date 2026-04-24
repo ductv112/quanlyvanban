@@ -349,7 +349,7 @@ export default function LichCaNhanPage() {
               { title: 'Cả ngày', dataIndex: 'all_day', key: 'all_day', width: 80, render: (v: boolean) => v ? <Tag color="blue">Cả ngày</Tag> : '---' },
               { title: 'Màu', dataIndex: 'color', key: 'color', width: 60, render: (v: string) => v ? <div style={{ width: 16, height: 16, borderRadius: 4, background: v }} /> : '---' },
             ]}
-            onRow={(record) => ({ onClick: () => { setEditingEvent(record); setDrawerOpen(true); form.setFieldsValue({ ...record, start_date: record.start_date ? dayjs(record.start_date) : null, end_date: record.end_date ? dayjs(record.end_date) : null }); }, style: { cursor: 'pointer' } })}
+            onRow={(record) => ({ onClick: () => { setEditingEvent(record); setDrawerOpen(true); form.setFieldsValue({ ...record, start_time: record.start_time ? dayjs(record.start_time) : null, end_time: record.end_time ? dayjs(record.end_time) : null }); }, style: { cursor: 'pointer' } })}
           />
         )}
       </div>

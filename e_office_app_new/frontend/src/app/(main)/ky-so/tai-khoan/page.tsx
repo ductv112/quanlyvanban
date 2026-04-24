@@ -397,7 +397,7 @@ export default function KySoTaiKhoanPage() {
             style={{ borderRadius: 12 }}
             title="Hệ thống chưa kích hoạt provider ký số"
             description={
-              <Space direction="vertical" size={8}>
+              <Space orientation="vertical" size={8}>
                 <span>
                   {activeMessage ??
                     'Vui lòng liên hệ Quản trị viên để cấu hình và kích hoạt nhà cung cấp dịch vụ ký số.'}

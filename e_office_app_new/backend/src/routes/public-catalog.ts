@@ -113,20 +113,33 @@ router.get('/linh-vuc', async (_req: Request, res: Response) => {
   }
 });
 
-// GET /nguoi-dung — list staff (read-only) cho dropdown 'Người soạn thảo'
+// GET /nguoi-dung — list staff (read-only) cho dropdown 'Người soạn thảo' / recipient picker / cấu hình gửi nhanh
 // Phase 19 v3.0 fix: non-admin user mở form CRUD VB cần load staff dropdown
+// Shadow admin route /quan-tri/nguoi-dung (mount trước) — phải trả đủ position_name + department_name để form admin render đúng.
 router.get('/nguoi-dung', async (req: Request, res: Response) => {
   try {
     const unitId = req.query.unit_id ? Number(req.query.unit_id) : null;
     const departmentId = req.query.department_id ? Number(req.query.department_id) : null;
     const keyword = ((req.query.keyword as string) || '').trim();
-    const rows = await rawQuery<{ id: number; full_name: string; unit_id: number; department_id: number | null }>(
-      `SELECT id, full_name, unit_id, department_id FROM public.staff
-       WHERE COALESCE(is_locked, false) = false
-         AND ($1::int IS NULL OR unit_id = $1)
-         AND ($2::int IS NULL OR department_id = $2)
-         AND ($3 = '' OR full_name ILIKE '%' || $3 || '%')
-       ORDER BY full_name`,
+    const rows = await rawQuery<{
+      id: number;
+      full_name: string;
+      unit_id: number;
+      department_id: number | null;
+      position_id: number | null;
+      position_name: string | null;
+      department_name: string | null;
+    }>(
+      `SELECT s.id, s.full_name, s.unit_id, s.department_id, s.position_id,
+              p.name AS position_name, d.name AS department_name
+       FROM public.staff s
+       LEFT JOIN public.positions p ON p.id = s.position_id
+       LEFT JOIN public.departments d ON d.id = s.department_id
+       WHERE COALESCE(s.is_locked, false) = false
+         AND ($1::int IS NULL OR s.unit_id = $1)
+         AND ($2::int IS NULL OR s.department_id = $2)
+         AND ($3 = '' OR s.full_name ILIKE '%' || $3 || '%')
+       ORDER BY s.full_name`,
       [unitId, departmentId, keyword],
     );
     res.json({ success: true, data: rows, total: rows.length });
