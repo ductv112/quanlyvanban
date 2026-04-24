@@ -137,7 +137,8 @@ export default function OutgoingDocPage() {
       setDocFields((fieldRes.data.data || []).map((f: { id: number; name: string }) => ({ value: f.id, label: f.name })));
       const deptTree: DepartmentNode[] = deptRes.data.data || [];
       setDepartments(flattenDepartments(deptTree));
-      setInterOrgs((orgRes.data.data || []).map((o: { id: number; name: string; code: string }) => ({ value: o.id, label: `${o.name} (${o.code})` })));
+      // Phase 20 fix: Number(o.id) — pg driver trả BIGINT dạng string, setFieldsValue dùng number → cần convert để Select match đúng option
+      setInterOrgs((orgRes.data.data || []).map((o: { id: number | string; name: string; code: string }) => ({ value: Number(o.id), label: `${o.name} (${o.code})` })));
       // Build tree data for admin filter
       if (user?.isAdmin) {
         const tree = buildTree(deptTree.map((d: any) => ({ id: d.id, parent_id: d.parent_id, name: d.name })));
