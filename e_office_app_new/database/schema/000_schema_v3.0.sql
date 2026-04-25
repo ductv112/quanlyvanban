@@ -3176,6 +3176,9 @@ BEGIN
     updated_at       = NOW()
   WHERE id = p_id;
 
+  INSERT INTO edoc.handling_doc_history (handling_doc_id, action_type, from_staff_id, created_by)
+  VALUES (p_id, 'approve', p_approved_by, p_approved_by);
+
   RETURN QUERY SELECT TRUE, 'Duyệt hồ sơ công việc thành công'::TEXT;
 END;
 $$;
@@ -3233,6 +3236,9 @@ BEGIN
     updated_at = NOW()
   WHERE id = p_id;
 
+  INSERT INTO edoc.handling_doc_history (handling_doc_id, action_type, from_staff_id, note, created_by)
+  VALUES (p_id, 'change_status:' || p_new_status, p_changed_by, p_reason, p_changed_by);
+
   RETURN QUERY SELECT TRUE, 'Cập nhật trạng thái thành công'::TEXT;
 END;
 $$;
@@ -3267,6 +3273,9 @@ BEGIN
     updated_by       = p_completed_by,
     updated_at       = NOW()
   WHERE id = p_id;
+
+  INSERT INTO edoc.handling_doc_history (handling_doc_id, action_type, from_staff_id, created_by)
+  VALUES (p_id, 'complete', p_completed_by, p_completed_by);
 
   RETURN QUERY SELECT TRUE, 'Hoàn thành hồ sơ công việc thành công'::TEXT;
 END;
@@ -3344,6 +3353,9 @@ BEGIN
     p_created_by, p_created_by
   )
   RETURNING edoc.handling_docs.id INTO v_id;
+
+  INSERT INTO edoc.handling_doc_history (handling_doc_id, action_type, from_staff_id, created_by)
+  VALUES (v_id, 'create', p_created_by, p_created_by);
 
   RETURN QUERY SELECT TRUE, 'Tạo hồ sơ công việc thành công'::TEXT, v_id;
 END;
@@ -3910,6 +3922,9 @@ BEGIN
     updated_at = NOW()
   WHERE id = p_id;
 
+  INSERT INTO edoc.handling_doc_history (handling_doc_id, action_type, from_staff_id, note, created_by)
+  VALUES (p_id, 'reject', p_rejected_by, TRIM(p_reason), p_rejected_by);
+
   RETURN QUERY SELECT TRUE, 'Từ chối hồ sơ công việc thành công'::TEXT;
 END;
 $$;
@@ -3969,6 +3984,9 @@ BEGIN
     updated_at = NOW()
   WHERE id = p_id;
 
+  INSERT INTO edoc.handling_doc_history (handling_doc_id, action_type, from_staff_id, note, created_by)
+  VALUES (p_id, 'return', p_returned_by, TRIM(p_reason), p_returned_by);
+
   RETURN QUERY SELECT TRUE, 'Trả về hồ sơ công việc thành công'::TEXT;
 END;
 $$;
@@ -4000,6 +4018,9 @@ BEGIN
     updated_by = p_submitted_by,
     updated_at = NOW()
   WHERE id = p_id;
+
+  INSERT INTO edoc.handling_doc_history (handling_doc_id, action_type, from_staff_id, created_by)
+  VALUES (p_id, 'submit', p_submitted_by, p_submitted_by);
 
   RETURN QUERY SELECT TRUE, 'Trình ký thành công'::TEXT;
 END;
@@ -4155,6 +4176,9 @@ BEGIN
         updated_at       = NOW()
     WHERE id = p_id;
 
+    INSERT INTO edoc.handling_doc_history (handling_doc_id, action_type, from_staff_id, created_by)
+    VALUES (p_id, 'reopen', p_user_id, p_user_id);
+
     RETURN QUERY SELECT TRUE, 'Đã mở lại hồ sơ công việc'::TEXT;
 END;
 $$;
@@ -4241,6 +4265,9 @@ BEGIN
         updated_by  = p_user_id,
         updated_at  = NOW()
     WHERE id = p_id;
+
+    INSERT INTO edoc.handling_doc_history (handling_doc_id, action_type, from_staff_id, note, created_by)
+    VALUES (p_id, 'assign_number', p_user_id, ('Số: ' || v_next)::TEXT, p_user_id);
 
     RETURN QUERY SELECT TRUE, ('Đã lấy số ' || v_next)::TEXT, v_next;
 END;

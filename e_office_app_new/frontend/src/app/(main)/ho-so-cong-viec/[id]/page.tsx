@@ -29,6 +29,7 @@ import {
   FileExcelOutlined, FileImageOutlined, FileOutlined, LinkOutlined,
   SendOutlined, SwapOutlined, HistoryOutlined,
   SafetyOutlined, SafetyCertificateOutlined, CheckCircleOutlined,
+  CheckOutlined, CloseOutlined, RollbackOutlined, FieldNumberOutlined,
 } from '@ant-design/icons';
 import { useRouter, useParams } from 'next/navigation';
 import dayjs from 'dayjs';
@@ -1947,9 +1948,21 @@ export default function HscvDetailPage() {
             {historyList.map((h) => (
               <div key={h.id} style={{ padding: 12, border: '1px solid #E5E7EB', borderRadius: 8 }}>
                 <div style={{ fontWeight: 600, color: '#1B3A5C' }}>
+                  {h.action_type === 'create' && (<><PlusOutlined /> Tạo HSCV</>)}
+                  {h.action_type === 'submit' && (<><SendOutlined /> Trình ký</>)}
+                  {h.action_type === 'approve' && (<><CheckOutlined style={{ color: '#059669' }} /> Duyệt hồ sơ</>)}
+                  {h.action_type === 'reject' && (<><CloseOutlined style={{ color: '#DC2626' }} /> Từ chối</>)}
+                  {h.action_type === 'return' && (<><RollbackOutlined style={{ color: '#D97706' }} /> Trả về bổ sung</>)}
+                  {h.action_type === 'complete' && (<><CheckOutlined style={{ color: '#059669' }} /> Hoàn thành</>)}
+                  {h.action_type === 'assign_number' && (<><FieldNumberOutlined /> Lấy số văn bản</>)}
                   {h.action_type === 'transfer' && (<><SwapOutlined /> Chuyển tiếp: {h.from_staff_name || '—'} → {h.to_staff_name || '—'}</>)}
                   {h.action_type === 'cancel' && (<><ExclamationCircleOutlined /> Hủy HSCV</>)}
                   {h.action_type === 'reopen' && (<><HistoryOutlined /> Mở lại</>)}
+                  {h.action_type?.startsWith('change_status:') && (() => {
+                    const ns = h.action_type!.split(':')[1];
+                    const labelMap: Record<string, string> = { '0': 'Mới tạo', '1': 'Đang xử lý', '2': 'Chờ trình ký', '3': 'Đã trình ký', '4': 'Hoàn thành', '5': 'Tạm dừng', '-1': 'Từ chối', '-2': 'Trả về', '-3': 'Đã hủy' };
+                    return <><HistoryOutlined /> Đổi trạng thái → {labelMap[ns] || ns}</>;
+                  })()}
                 </div>
                 {h.note && <div style={{ marginTop: 6, color: '#4B5563' }}>Ghi chú: {h.note}</div>}
                 <div style={{ marginTop: 6, fontSize: 12, color: '#6B7280' }}>
