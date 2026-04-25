@@ -365,28 +365,36 @@ export default function HoSoCongViecPage() {
       align: 'center',
       fixed: 'right',
       render: (_: unknown, record: HscvRecord) => {
-        const items = [
+        // Sửa + Xóa chỉ cho phép ở status = 0 (Mới tạo) — đồng bộ với detail
+        // page (getToolbarButtons case 0). HSCV đã chuyển xử lý / trình ký /
+        // hoàn thành / hủy thì menu chỉ còn "Xem chi tiết".
+        const isEditable = record.status === 0;
+        const items: Array<{ key: string; icon?: React.ReactNode; label: string; danger?: boolean; onClick?: () => void } | { type: 'divider' }> = [
           {
             key: 'view',
             icon: <EyeOutlined />,
             label: 'Xem chi tiết',
             onClick: () => router.push(`/ho-so-cong-viec/${record.id}`),
           },
-          {
-            key: 'edit',
-            icon: <EditOutlined />,
-            label: 'Sửa',
-            onClick: () => openDrawer(record),
-          },
-          { type: 'divider' as const },
-          {
-            key: 'delete',
-            icon: <DeleteOutlined />,
-            label: 'Xóa',
-            danger: true,
-            onClick: () => handleDelete(record),
-          },
         ];
+        if (isEditable) {
+          items.push(
+            {
+              key: 'edit',
+              icon: <EditOutlined />,
+              label: 'Sửa',
+              onClick: () => openDrawer(record),
+            },
+            { type: 'divider' as const },
+            {
+              key: 'delete',
+              icon: <DeleteOutlined />,
+              label: 'Xóa',
+              danger: true,
+              onClick: () => handleDelete(record),
+            },
+          );
+        }
         return (
           <Dropdown trigger={['click']} menu={{ items }}>
             <Button
