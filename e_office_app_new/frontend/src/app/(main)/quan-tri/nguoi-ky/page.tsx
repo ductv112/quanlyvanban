@@ -5,6 +5,8 @@ import {
   Card, Row, Col, Table, Button, Input, Tree, Space, Modal, Select,
   Skeleton, Tooltip, App,
 } from 'antd';
+// Note: do NOT use `Modal.confirm` static — it cannot read dynamic theme.
+// Always use `const { modal } = App.useApp(); modal.confirm({...})` instead.
 import type { ColumnsType } from 'antd/es/table';
 import {
   PlusOutlined, DeleteOutlined, SearchOutlined, ApartmentOutlined,
@@ -31,7 +33,7 @@ interface StaffOption {
 }
 
 export default function SignerPage() {
-  const { message } = App.useApp();
+  const { message, modal } = App.useApp();
   const user = useAuthStore((s) => s.user);
   const [loading, setLoading] = useState(false);
   const [treeData, setTreeData] = useState<TreeNode[]>([]);
@@ -182,7 +184,7 @@ export default function SignerPage() {
           danger
           icon={<DeleteOutlined />}
           onClick={() => {
-            Modal.confirm({
+            modal.confirm({
               title: 'Xác nhận xóa',
               content: `Bạn có chắc chắn muốn xóa người ký "${record.staff_name}"?`,
               okText: 'Xóa',
