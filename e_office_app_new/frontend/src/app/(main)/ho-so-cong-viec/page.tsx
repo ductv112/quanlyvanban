@@ -164,8 +164,9 @@ export default function HoSoCongViecPage() {
         // Curator dropdown: tat ca staff cung don vi
         api.get('/ho-so-cong-viec/nhan-vien-cung-don-vi').catch(() => ({ data: { data: [] } })),
         // Signer dropdown: chi nhung nguoi admin da dang ky lam "Nguoi ky" cho don vi
-        // (theo pattern .NET cu Prc_StaffGetSignerByUnitId — bang edoc.signers)
-        api.get('/quan-tri/nguoi-ky').catch(() => ({ data: { data: [] } })),
+        // (theo pattern .NET cu Prc_StaffGetSignerByUnitId — bang edoc.signers).
+        // Endpoint moi /lanh-dao-cung-don-vi khong yeu cau admin role — non-admin van load duoc.
+        api.get('/ho-so-cong-viec/lanh-dao-cung-don-vi').catch(() => ({ data: { data: [] } })),
         api.get('/quan-tri/quy-trinh').catch(() => ({ data: { data: [] } })),
         api.get('/ho-so-cong-viec', { params: { page: 1, page_size: 200, filter_type: 'all' } }).catch(() => ({ data: { data: [] } })),
         api.get('/quan-tri/don-vi').catch(() => ({ data: { data: [] } })),

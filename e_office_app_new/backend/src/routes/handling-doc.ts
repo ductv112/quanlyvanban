@@ -2,6 +2,7 @@ import { Router, type Request, type Response } from 'express';
 import type { AuthRequest } from '../middleware/auth.js';
 import { upload } from '../middleware/upload.js';
 import { handlingDocRepository } from '../repositories/handling-doc.repository.js';
+import { signerRepository } from '../repositories/signer.repository.js';
 import { uploadFile, deleteFile, getFileUrl } from '../lib/minio/client.js';
 import { rawQuery } from '../lib/db/query.js';
 import { v4 as uuidv4 } from 'uuid';
@@ -24,6 +25,25 @@ router.get('/nhan-vien-cung-don-vi', async (req: Request, res: Response) => {
       return;
     }
     const list = await handlingDocRepository.listStaffSameUnit(ancestorUnitId);
+    res.json({ success: true, data: list });
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
+
+// GET /lanh-dao-cung-don-vi — Lay danh sach Nguoi ky cua don vi user.
+// Endpoint NAY khong require admin (mount duoi authenticate only) — non-admin
+// nhu nguyenvanb tao HSCV van load duoc dropdown "Lanh dao ky" tu bang
+// edoc.signers. Tuong tu /nhan-vien-cung-don-vi nhung chi tra signer.
+router.get('/lanh-dao-cung-don-vi', async (req: Request, res: Response) => {
+  try {
+    const { departmentId } = (req as AuthRequest).user;
+    const ancestorUnitId = await resolveAncestorUnit(departmentId);
+    if (!Number.isInteger(ancestorUnitId) || ancestorUnitId <= 0) {
+      res.status(400).json({ success: false, message: 'Không xác định được đơn vị' });
+      return;
+    }
+    const list = await signerRepository.getList(ancestorUnitId, null);
     res.json({ success: true, data: list });
   } catch (error) {
     handleDbError(error, res);

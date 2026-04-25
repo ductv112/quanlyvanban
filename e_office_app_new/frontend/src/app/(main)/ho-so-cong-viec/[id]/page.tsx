@@ -911,7 +911,7 @@ export default function HscvDetailPage() {
       }).catch(() => {});
       // Signer: chi nhung nguoi admin da dang ky lam "Nguoi ky" cho don vi
       // (theo pattern .NET cu Prc_StaffGetSignerByUnitId — bang edoc.signers)
-      api.get('/quan-tri/nguoi-ky').then(({ data: r }) => {
+      api.get('/ho-so-cong-viec/lanh-dao-cung-don-vi').then(({ data: r }) => {
         const items: { staff_id: number; staff_name: string }[] = r.data || [];
         setLeaderOptions(items.map((x) => ({ value: x.staff_id, label: x.staff_name })));
       }).catch(() => {});
@@ -1148,7 +1148,7 @@ export default function HscvDetailPage() {
       }).catch(() => {});
       // Signer: chi nhung nguoi admin da dang ky lam "Nguoi ky" cho don vi
       // (theo pattern .NET cu Prc_StaffGetSignerByUnitId — bang edoc.signers)
-      api.get('/quan-tri/nguoi-ky').then(({ data: r }) => {
+      api.get('/ho-so-cong-viec/lanh-dao-cung-don-vi').then(({ data: r }) => {
         const items: { staff_id: number; staff_name: string }[] = r.data || [];
         setLeaderOptions(items.map((x) => ({ value: x.staff_id, label: x.staff_name })));
       }).catch(() => {});
