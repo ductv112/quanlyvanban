@@ -25,6 +25,32 @@ async function loadDocAndPerms(docId: number, userCtx: DocPermissionContext) {
   if (rows.length === 0) return null;
   const doc = rows[0];
   const perms = await computeIncomingPermissions(userCtx, doc);
+  // VB đến có thể được REGISTER bởi unit A nhưng SEND tới recipient ở unit B.
+  // Recipient leader (trong user_incoming_docs) phải có quyền giao việc / nhận
+  // bản giấy / chuyển lại trong don vi mình. Mở rộng canApprove + canSend +
+  // canRetract nếu user là recipient + is_leader, regardless doc.unit_id.
+  if (!perms.canApprove && !userCtx.isAdmin) {
+    const recipientRows = await rawQuery<{ exists: boolean }>(
+      `SELECT EXISTS(
+         SELECT 1 FROM edoc.user_incoming_docs
+         WHERE incoming_doc_id = $1 AND staff_id = $2
+       ) AS exists`,
+      [docId, userCtx.staffId],
+    );
+    if (recipientRows[0]?.exists) {
+      const ctxRows = await rawQuery<{ is_leader: boolean }>(
+        `SELECT COALESCE(p.is_leader, FALSE) AS is_leader
+         FROM public.staff s LEFT JOIN public.positions p ON p.id = s.position_id
+         WHERE s.id = $1`,
+        [userCtx.staffId],
+      );
+      if (ctxRows[0]?.is_leader) {
+        perms.canApprove = true;
+        perms.canSend = true;
+        perms.canRetract = true;
+      }
+    }
+  }
   return { doc, perms };
 }
 
