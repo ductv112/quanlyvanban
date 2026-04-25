@@ -98,6 +98,7 @@ export interface StaffSameUnitRow {
   full_name: string;
   username: string;
   department_id: number;
+  is_leader: boolean;
 }
 
 // Gap F (HDSD III.2.7) — lịch sử HSCV
@@ -404,12 +405,14 @@ export const handlingDocRepository = {
   // --- Gap E + F (HDSD III.2.6/2.7) — Staff picker cùng đơn vị (bypass RBAC admin) ---
   async listStaffSameUnit(unitId: number): Promise<StaffSameUnitRow[]> {
     return rawQuery<StaffSameUnitRow>(
-      `SELECT id, full_name, username, department_id
-       FROM public.staff
-       WHERE unit_id = $1
-         AND COALESCE(is_locked, FALSE) = FALSE
-         AND COALESCE(is_deleted, FALSE) = FALSE
-       ORDER BY full_name ASC`,
+      `SELECT s.id, s.full_name, s.username, s.department_id,
+              COALESCE(p.is_leader, FALSE) AS is_leader
+       FROM public.staff s
+       LEFT JOIN public.positions p ON p.id = s.position_id
+       WHERE s.unit_id = $1
+         AND COALESCE(s.is_locked, FALSE) = FALSE
+         AND COALESCE(s.is_deleted, FALSE) = FALSE
+       ORDER BY s.full_name ASC`,
       [unitId],
     );
   },

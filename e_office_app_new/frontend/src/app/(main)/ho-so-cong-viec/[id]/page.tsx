@@ -268,8 +268,11 @@ function getToolbarButtons(status: number, hasNumber: boolean = true): ToolbarBu
       return buttons;
     }
     case 2:
+      // Status 2 đã deprecated (gộp Trình ký + Gửi trình ký thành 1 step trong commit
+      // 260425-h7q). Giữ lại case này phòng dữ liệu cũ chưa migrate — cho phép đẩy
+      // tiếp lên status=3 hoặc trả về.
       return [
-        { label: 'Gửi trình ký', type: 'primary', action: 'change', newStatus: 3 },
+        { label: 'Đẩy lên duyệt', type: 'primary', action: 'change', newStatus: 3 },
         { label: 'Trả về', type: 'default', action: 'return' },
         transferBtn,
         historyBtn,
@@ -411,6 +414,7 @@ export default function HscvDetailPage() {
   const [docTypes, setDocTypes] = useState<{ value: number; label: string }[]>([]);
   const [fields, setFields] = useState<{ value: number; label: string }[]>([]);
   const [staffOptions, setStaffOptions] = useState<{ value: number; label: string }[]>([]);
+  const [leaderOptions, setLeaderOptions] = useState<{ value: number; label: string }[]>([]);
 
   const tabsLoaded = useRef<Set<string>>(new Set(['info']));
 
@@ -900,8 +904,11 @@ export default function HscvDetailPage() {
       }).catch(() => {});
     }
     if (staffOptions.length === 0) {
-      api.get('/quan-tri/nguoi-dung', { params: { page: 1, pageSize: 500 } }).then(({ data: r }) => {
-        setStaffOptions((r.data || []).map((x: any) => ({ value: x.id, label: x.full_name })));
+      // Bug fix: filter staff cùng đơn vị + tách leader cho dropdown "Lãnh đạo ký"
+      api.get('/ho-so-cong-viec/nhan-vien-cung-don-vi').then(({ data: r }) => {
+        const items: { id: number; full_name: string; is_leader?: boolean }[] = r.data || [];
+        setStaffOptions(items.map((x) => ({ value: x.id, label: x.full_name })));
+        setLeaderOptions(items.filter((x) => x.is_leader).map((x) => ({ value: x.id, label: x.full_name })));
       }).catch(() => {});
     }
   };
@@ -1129,8 +1136,11 @@ export default function HscvDetailPage() {
     childForm.setFieldsValue({ parent_id: detail?.id, parent_name: detail?.name });
     setChildDrawerOpen(true);
     if (staffOptions.length === 0) {
-      api.get('/quan-tri/nguoi-dung', { params: { page: 1, pageSize: 500 } }).then(({ data: r }) => {
-        setStaffOptions((r.data || []).map((x: any) => ({ value: x.id, label: x.full_name })));
+      // Bug fix: filter staff cùng đơn vị + tách leader cho dropdown "Lãnh đạo ký"
+      api.get('/ho-so-cong-viec/nhan-vien-cung-don-vi').then(({ data: r }) => {
+        const items: { id: number; full_name: string; is_leader?: boolean }[] = r.data || [];
+        setStaffOptions(items.map((x) => ({ value: x.id, label: x.full_name })));
+        setLeaderOptions(items.filter((x) => x.is_leader).map((x) => ({ value: x.id, label: x.full_name })));
       }).catch(() => {});
     }
   };
@@ -2082,7 +2092,7 @@ export default function HscvDetailPage() {
                   <Select options={staffOptions} placeholder="Chọn người phụ trách" showSearch optionFilterProp="label" allowClear />
                 </Form.Item>
                 <Form.Item name="signer_id" label="Lãnh đạo ký">
-                  <Select options={staffOptions} placeholder="Chọn lãnh đạo ký" showSearch optionFilterProp="label" allowClear />
+                  <Select options={leaderOptions} placeholder="Chọn lãnh đạo ký" showSearch optionFilterProp="label" allowClear notFoundContent={leaderOptions.length === 0 ? 'Đơn vị chưa có lãnh đạo' : 'Không tìm thấy'} />
                 </Form.Item>
               </div>
               <Form.Item name="comments" label="Ghi chú">
@@ -2195,7 +2205,7 @@ export default function HscvDetailPage() {
                   <Select options={staffOptions} placeholder="Chọn người phụ trách" showSearch optionFilterProp="label" allowClear />
                 </Form.Item>
                 <Form.Item name="signer_id" label="Lãnh đạo ký">
-                  <Select options={staffOptions} placeholder="Chọn lãnh đạo ký" showSearch optionFilterProp="label" allowClear />
+                  <Select options={leaderOptions} placeholder="Chọn lãnh đạo ký" showSearch optionFilterProp="label" allowClear notFoundContent={leaderOptions.length === 0 ? 'Đơn vị chưa có lãnh đạo' : 'Không tìm thấy'} />
                 </Form.Item>
               </div>
               <Form.Item name="comments" label="Ghi chú">

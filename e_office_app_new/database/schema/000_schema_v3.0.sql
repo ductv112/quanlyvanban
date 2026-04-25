@@ -3300,7 +3300,7 @@ BEGIN
     WHERE h.unit_id = p_unit_id AND h.status IN (0, 1)
       AND EXISTS (SELECT 1 FROM edoc.staff_handling_docs shd WHERE shd.handling_doc_id = h.id AND shd.staff_id = p_staff_id AND shd.role = 2)
   UNION ALL
-  SELECT 'submitting'::TEXT,        COUNT(*)::BIGINT FROM edoc.handling_docs WHERE unit_id = p_unit_id AND status = 2
+  SELECT 'submitting'::TEXT,        COUNT(*)::BIGINT FROM edoc.handling_docs WHERE unit_id = p_unit_id AND status = 3
   UNION ALL
   SELECT 'in_progress'::TEXT,       COUNT(*)::BIGINT FROM edoc.handling_docs WHERE unit_id = p_unit_id AND status = 1
   UNION ALL
@@ -3710,7 +3710,7 @@ BEGIN
         (p_filter_type = 'pending_coord'    AND h.status IN (0, 1) AND EXISTS (
           SELECT 1 FROM edoc.staff_handling_docs shd WHERE shd.handling_doc_id = h.id AND shd.staff_id = p_staff_id AND shd.role = 2
         )) OR
-        (p_filter_type = 'submitting'       AND h.status = 2) OR
+        (p_filter_type = 'submitting'       AND h.status = 3) OR
         (p_filter_type = 'in_progress'      AND h.status = 1) OR
         (p_filter_type = 'proposed_complete' AND h.status = 3) OR
         (p_filter_type = 'completed'        AND h.status = 4)
@@ -3957,8 +3957,8 @@ BEGIN
     RETURN;
   END IF;
 
-  IF v_status NOT IN (1, 2) THEN
-    RETURN QUERY SELECT FALSE, 'Chỉ được trả về khi hồ sơ ở trạng thái Đang xử lý hoặc Chờ duyệt'::TEXT;
+  IF v_status NOT IN (1, 3) THEN
+    RETURN QUERY SELECT FALSE, 'Chỉ được trả về khi hồ sơ ở trạng thái Đang xử lý hoặc Đã trình ký'::TEXT;
     RETURN;
   END IF;
 
@@ -3996,7 +3996,7 @@ BEGIN
   END IF;
 
   UPDATE edoc.handling_docs SET
-    status     = 2,  -- Chờ duyệt
+    status     = 3,  -- Đã trình ký (gộp 2 bước: status 2 intermediate đã loại bỏ — bấm "Trình ký" 1 lần đẩy thẳng lên lãnh đạo)
     updated_by = p_submitted_by,
     updated_at = NOW()
   WHERE id = p_id;
@@ -21782,7 +21782,7 @@ BEGIN
         (p_filter_type = 'pending_coord'    AND h.status IN (0, 1) AND EXISTS (
           SELECT 1 FROM edoc.staff_handling_docs shd WHERE shd.handling_doc_id = h.id AND shd.staff_id = p_staff_id AND shd.role = 2
         )) OR
-        (p_filter_type = 'submitting'       AND h.status = 2) OR
+        (p_filter_type = 'submitting'       AND h.status = 3) OR
         (p_filter_type = 'in_progress'      AND h.status = 1) OR
         (p_filter_type = 'proposed_complete' AND h.status = 3) OR
         (p_filter_type = 'completed'        AND h.status = 4)
@@ -21835,7 +21835,7 @@ BEGIN
     WHERE (CASE WHEN p_dept_ids IS NOT NULL THEN h.department_id = ANY(p_dept_ids) ELSE h.unit_id = p_unit_id END) AND h.status IN (0, 1)
       AND EXISTS (SELECT 1 FROM edoc.staff_handling_docs shd WHERE shd.handling_doc_id = h.id AND shd.staff_id = p_staff_id AND shd.role = 2)
   UNION ALL
-  SELECT 'submitting'::TEXT,        COUNT(*)::BIGINT FROM edoc.handling_docs WHERE (CASE WHEN p_dept_ids IS NOT NULL THEN department_id = ANY(p_dept_ids) ELSE unit_id = p_unit_id END) AND status = 2
+  SELECT 'submitting'::TEXT,        COUNT(*)::BIGINT FROM edoc.handling_docs WHERE (CASE WHEN p_dept_ids IS NOT NULL THEN department_id = ANY(p_dept_ids) ELSE unit_id = p_unit_id END) AND status = 3
   UNION ALL
   SELECT 'in_progress'::TEXT,       COUNT(*)::BIGINT FROM edoc.handling_docs WHERE (CASE WHEN p_dept_ids IS NOT NULL THEN department_id = ANY(p_dept_ids) ELSE unit_id = p_unit_id END) AND status = 1
   UNION ALL
@@ -22068,7 +22068,7 @@ BEGIN
     WHERE (p_dept_ids IS NULL OR h.department_id = ANY(p_dept_ids)) AND h.status IN (0, 1)
       AND EXISTS (SELECT 1 FROM edoc.staff_handling_docs shd WHERE shd.handling_doc_id = h.id AND shd.staff_id = p_staff_id AND shd.role = 2)
   UNION ALL
-  SELECT 'submitting'::TEXT,        COUNT(*)::BIGINT FROM edoc.handling_docs WHERE (p_dept_ids IS NULL OR department_id = ANY(p_dept_ids)) AND status = 2
+  SELECT 'submitting'::TEXT,        COUNT(*)::BIGINT FROM edoc.handling_docs WHERE (p_dept_ids IS NULL OR department_id = ANY(p_dept_ids)) AND status = 3
   UNION ALL
   SELECT 'in_progress'::TEXT,       COUNT(*)::BIGINT FROM edoc.handling_docs WHERE (p_dept_ids IS NULL OR department_id = ANY(p_dept_ids)) AND status = 1
   UNION ALL
@@ -22366,7 +22366,7 @@ BEGIN
         (p_filter_type = 'returned' AND h.status = -2) OR
         (p_filter_type = 'pending_primary' AND h.status = 0 AND EXISTS (SELECT 1 FROM edoc.staff_handling_docs shd WHERE shd.handling_doc_id = h.id AND shd.staff_id = p_staff_id AND shd.role = 1)) OR
         (p_filter_type = 'pending_coord' AND h.status IN (0, 1) AND EXISTS (SELECT 1 FROM edoc.staff_handling_docs shd WHERE shd.handling_doc_id = h.id AND shd.staff_id = p_staff_id AND shd.role = 2)) OR
-        (p_filter_type = 'submitting' AND h.status = 2) OR (p_filter_type = 'in_progress' AND h.status = 1) OR
+        (p_filter_type = 'submitting' AND h.status = 3) OR (p_filter_type = 'in_progress' AND h.status = 1) OR
         (p_filter_type = 'proposed_complete' AND h.status = 3) OR (p_filter_type = 'completed' AND h.status = 4))
       AND (p_keyword IS NULL OR TRIM(p_keyword) = '' OR h.name ILIKE '%' || p_keyword || '%')
       AND (p_from_date IS NULL OR h.start_date >= p_from_date)
@@ -27905,3 +27905,12 @@ DO $$ BEGIN
   ALTER TABLE edoc.user_incoming_docs ADD CONSTRAINT user_incoming_docs_sent_by_fkey
     FOREIGN KEY (sent_by) REFERENCES public.staff(id);
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- ============================================================================
+-- Data migration: HSCV status=2 (Chờ trình ký intermediate) -> status=3
+-- Lý do: Gộp 2 nút "Trình ký" + "Gửi trình ký" thành 1 nút duy nhất.
+-- Sau khi gộp, fn_handling_doc_submit set status=3 trực tiếp (1->3).
+-- HSCV cũ đang ở status=2 phải migrate sang status=3 để tiếp tục flow.
+-- Idempotent: nếu không còn record status=2 thì UPDATE 0 rows, không lỗi.
+-- ============================================================================
+UPDATE edoc.handling_docs SET status = 3, updated_at = NOW() WHERE status = 2;

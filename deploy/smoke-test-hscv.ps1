@@ -188,25 +188,26 @@ Test-TC 'TC6' 'POST /lay-so (assign number)' {
 }
 
 # ============================================================
-# TC7: Submit 1->2
+# TC7: Submit 1->3 (gop "Trinh ky" + "Gui trinh ky" thanh 1 step)
 # ============================================================
-Test-TC 'TC7' 'PATCH /trang-thai action=submit (1->2)' {
+Test-TC 'TC7' 'PATCH /trang-thai action=submit (1->3 truc tiep)' {
     if (-not $script:hscvId) { throw 'Skip' }
     $r = Invoke-Api -Method PATCH -Path "/api/ho-so-cong-viec/$script:hscvId/trang-thai" `
         -Headers $script:headers -Body @{ action = 'submit' }
     if (-not $r.success) { throw "Submit fail: $($r.message)" }
-    'ok 1->2'
+    'ok 1->3'
 }
 
 # ============================================================
-# TC8: Change 2->3
+# TC8: Verify status=3 sau submit (khong phai 2 nua)
 # ============================================================
-Test-TC 'TC8' 'PATCH /trang-thai action=change new_status=3 (2->3)' {
+Test-TC 'TC8' 'GET detail xac nhan status=3 sau submit (khong qua status 2)' {
     if (-not $script:hscvId) { throw 'Skip' }
-    $r = Invoke-Api -Method PATCH -Path "/api/ho-so-cong-viec/$script:hscvId/trang-thai" `
-        -Headers $script:headers -Body @{ action = 'change'; new_status = 3 }
-    if (-not $r.success) { throw "Change 2->3 fail: $($r.message)" }
-    'ok 2->3'
+    $r = Invoke-Api -Method GET -Path "/api/ho-so-cong-viec/$script:hscvId" `
+        -Headers $script:headers
+    if (-not $r.success) { throw 'Get detail fail' }
+    if ($r.data.status -ne 3) { throw "Expected status=3 sau submit, got $($r.data.status)" }
+    'status=3 (gop 1->3)'
 }
 
 # ============================================================
@@ -342,15 +343,10 @@ Test-TC 'TC16' 'reject 3->-1 + huy -1->-3 + huy reject status=4 (Bug B)' {
         -Headers $script:headers -Body @{ action = 'change'; new_status = 1 }
     if (-not $r1.success) { throw "Change 0->1 fail: $($r1.message)" }
 
-    # 1 -> 2 (submit)
+    # 1 -> 3 (submit gop, khong qua status 2)
     $r2 = Invoke-Api -Method PATCH -Path "/api/ho-so-cong-viec/$script:hscvId3/trang-thai" `
         -Headers $script:headers -Body @{ action = 'submit' }
     if (-not $r2.success) { throw "Submit fail: $($r2.message)" }
-
-    # 2 -> 3
-    $r3 = Invoke-Api -Method PATCH -Path "/api/ho-so-cong-viec/$script:hscvId3/trang-thai" `
-        -Headers $script:headers -Body @{ action = 'change'; new_status = 3 }
-    if (-not $r3.success) { throw "Change 2->3 fail: $($r3.message)" }
 
     # Reject 3 -> -1 (Bug A: yeu cau reason)
     $rr = Invoke-Api -Method PATCH -Path "/api/ho-so-cong-viec/$script:hscvId3/trang-thai" `

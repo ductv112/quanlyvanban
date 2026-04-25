@@ -112,7 +112,8 @@ export default function HoSoCongViecPage() {
   // Select options
   const [docTypes, setDocTypes] = useState<SelectOption[]>([]);
   const [docFields, setDocFields] = useState<SelectOption[]>([]);
-  const [staffList, setStaffList] = useState<SelectOption[]>([]);
+  const [staffList, setStaffList] = useState<SelectOption[]>([]);   // Người phụ trách: all staff cùng đơn vị
+  const [leaderList, setLeaderList] = useState<SelectOption[]>([]); // Lãnh đạo ký: chỉ is_leader=true cùng đơn vị
   const [workflows, setWorkflows] = useState<SelectOption[]>([]);
   const [parentHscvs, setParentHscvs] = useState<SelectOption[]>([]);
   const [units, setUnits] = useState<SelectOption[]>([]);
@@ -160,14 +161,17 @@ export default function HoSoCongViecPage() {
       const [typeRes, fieldRes, staffRes, workflowRes, hscvRes, unitRes] = await Promise.all([
         api.get('/quan-tri/loai-van-ban/tree').catch(() => ({ data: { data: [] } })),
         api.get('/quan-tri/linh-vuc').catch(() => ({ data: { data: [] } })),
-        api.get('/quan-tri/nguoi-dung', { params: { page: 1, pageSize: 500 } }).catch(() => ({ data: { data: [] } })),
+        // Bug fix: filter staff cùng đơn vị (Người phụ trách) + lọc thêm is_leader cho Lãnh đạo ký
+        api.get('/ho-so-cong-viec/nhan-vien-cung-don-vi').catch(() => ({ data: { data: [] } })),
         api.get('/quan-tri/quy-trinh').catch(() => ({ data: { data: [] } })),
         api.get('/ho-so-cong-viec', { params: { page: 1, page_size: 200, filter_type: 'all' } }).catch(() => ({ data: { data: [] } })),
         api.get('/quan-tri/don-vi').catch(() => ({ data: { data: [] } })),
       ]);
       setDocTypes((typeRes.data.data || []).map((t: { id: number; name: string }) => ({ value: t.id, label: t.name })));
       setDocFields((fieldRes.data.data || []).map((f: { id: number; name: string }) => ({ value: f.id, label: f.name })));
-      setStaffList((staffRes.data.data || []).map((s: { id: number; full_name: string }) => ({ value: s.id, label: s.full_name })));
+      const staffItems: { id: number; full_name: string; is_leader?: boolean }[] = staffRes.data.data || [];
+      setStaffList(staffItems.map((s) => ({ value: s.id, label: s.full_name })));
+      setLeaderList(staffItems.filter((s) => s.is_leader).map((s) => ({ value: s.id, label: s.full_name })));
       setWorkflows((workflowRes.data.data || []).map((w: { id: number; name: string }) => ({ value: w.id, label: w.name })));
       setParentHscvs((hscvRes.data.data || []).map((h: { id: number; name: string }) => ({ value: h.id, label: h.name })));
       const unitItems = unitRes.data.data || [];
@@ -689,7 +693,8 @@ export default function HoSoCongViecPage() {
                   placeholder="Tìm và chọn lãnh đạo ký"
                   showSearch
                   optionFilterProp="label"
-                  options={staffList}
+                  options={leaderList}
+                  notFoundContent={leaderList.length === 0 ? 'Đơn vị chưa có lãnh đạo' : 'Không tìm thấy'}
                 />
               </Form.Item>
             </Col>
