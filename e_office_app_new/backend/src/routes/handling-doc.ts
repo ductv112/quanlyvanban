@@ -134,18 +134,20 @@ router.post('/', async (req: Request, res: Response) => {
 router.get('/:id', async (req: Request, res: Response) => {
   try {
     // T-02-07: filter by ancestor unit to prevent cross-tenant access
-    const { departmentId } = (req as AuthRequest).user;
-    const ancestorUnitId = await resolveAncestorUnit(departmentId);
+    const { departmentId, isAdmin } = (req as AuthRequest).user;
     const id = Number(req.params.id);
     const doc = await handlingDocRepository.getById(id);
     if (!doc) {
       res.status(404).json({ success: false, message: 'Không tìm thấy hồ sơ công việc' });
       return;
     }
-    // Cross-tenant check
-    if (doc.unit_id !== ancestorUnitId) {
-      res.status(403).json({ success: false, message: 'Không có quyền truy cập hồ sơ này' });
-      return;
+    // Cross-tenant check — admin bypass de quan tri toan he thong
+    if (!isAdmin) {
+      const ancestorUnitId = await resolveAncestorUnit(departmentId);
+      if (doc.unit_id !== ancestorUnitId) {
+        res.status(403).json({ success: false, message: 'Không có quyền truy cập hồ sơ này' });
+        return;
+      }
     }
     res.json({ success: true, data: doc });
   } catch (error) {
