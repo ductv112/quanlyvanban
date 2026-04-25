@@ -1853,6 +1853,7 @@ export default function HscvDetailPage() {
           onChange={(e) => setRejectReason(e.target.value)}
           autoFocus
         />
+        <div style={{ height: 24 }} />
       </Modal>
 
       {/* Tra ve modal — required reason */}
@@ -1875,6 +1876,7 @@ export default function HscvDetailPage() {
           onChange={(e) => setReturnReason(e.target.value)}
           autoFocus
         />
+        <div style={{ height: 24 }} />
       </Modal>
 
       {/* Progress update modal */}
