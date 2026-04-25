@@ -13,7 +13,35 @@ import {
   computeIncomingPermsWithContext,
 } from '../lib/permissions/incoming-doc.js';
 import { getUserPermissionContext, type DocPermissionContext } from '../lib/permissions/_shared.js';
+import { notifyBell } from '../lib/notifications/bell-emit.js';
 import dayjs from 'dayjs';
+
+/**
+ * Helper: lấy thông tin gọn cho bell notification (tên người gửi + thông tin VB đến).
+ * Lookup 1 query — best-effort, fail silent (bell vẫn hoạt động với fallback "Cán bộ").
+ */
+async function getBellContext(senderStaffId: number, docId: number): Promise<{
+  senderName: string;
+  docLabel: string;
+}> {
+  try {
+    const senderRows = await rawQuery<{ full_name: string }>(
+      'SELECT full_name FROM public.staff WHERE id = $1', [senderStaffId],
+    );
+    const docRows = await rawQuery<{ document_code: string | null; abstract: string | null }>(
+      'SELECT document_code, abstract FROM edoc.incoming_docs WHERE id = $1', [docId],
+    );
+    const senderName = senderRows[0]?.full_name?.trim() || 'Cán bộ';
+    const code = docRows[0]?.document_code?.trim();
+    const abstract = docRows[0]?.abstract?.trim();
+    const docLabel = code
+      ? `${code}${abstract ? ` - ${abstract}` : ''}`
+      : abstract || `VB đến #${docId}`;
+    return { senderName, docLabel };
+  } catch {
+    return { senderName: 'Cán bộ', docLabel: `VB đến #${docId}` };
+  }
+}
 
 const router = Router();
 
@@ -588,6 +616,23 @@ router.post('/:id/gui', async (req: Request, res: Response) => {
       res.status(400).json({ success: false, message: result.message });
       return;
     }
+
+    // Bell notification — best-effort, không rollback main op nếu fail
+    try {
+      const { senderName, docLabel } = await getBellContext(staffId, docId);
+      await notifyBell({
+        targetStaffIds: staff_ids.map(Number),
+        senderStaffId: staffId,
+        type: 'incoming_doc_assigned',
+        title: 'Bạn nhận được văn bản đến mới',
+        message: `${senderName} đã chuyển bạn xử lý văn bản "${docLabel}"`,
+        link: `/van-ban-den/${docId}`,
+        metadata: { doc_id: docId, sender_id: staffId },
+      });
+    } catch (err) {
+      req.log?.warn({ err, docId }, 'Bell notification (incoming_doc_assigned) failed');
+    }
+
     res.json({ success: true, data: { message: result.message } });
   } catch (error) {
     handleDbError(error, res);
@@ -630,6 +675,25 @@ router.post('/:id/but-phe', async (req: Request, res: Response) => {
         res.status(400).json({ success: false, message: result.message });
         return;
       }
+
+      // Bell notification — best-effort. Bút phê chỉ định cán bộ → notify
+      // type=leader_note_received cho từng người được nhắc.
+      try {
+        const { senderName, docLabel } = await getBellContext(staffId, docId);
+        const snippet = content.trim().slice(0, 80);
+        await notifyBell({
+          targetStaffIds: staff_ids.map(Number),
+          senderStaffId: staffId,
+          type: 'leader_note_received',
+          title: 'Bạn được lãnh đạo bút phê',
+          message: `${senderName} đã bút phê "${docLabel}": ${snippet}`,
+          link: `/van-ban-den/${docId}`,
+          metadata: { doc_id: docId, leader_note_id: result.id, sender_id: staffId },
+        });
+      } catch (err) {
+        req.log?.warn({ err, docId }, 'Bell notification (leader_note_received) failed');
+      }
+
       res.status(201).json({ success: true, data: { id: result.id, message: result.message } });
     } else {
       const result = await incomingDocRepository.createLeaderNote(docId, staffId, content.trim());
@@ -796,6 +860,28 @@ router.post('/:id/giao-viec', async (req: Request, res: Response) => {
       res.status(400).json({ success: false, message: result.message });
       return;
     }
+
+    // Bell notification — best-effort. Curator của HSCV mới được giao việc.
+    try {
+      const senderRows = await rawQuery<{ full_name: string }>(
+        'SELECT full_name FROM public.staff WHERE id = $1', [staffId],
+      );
+      const senderName = senderRows[0]?.full_name?.trim() || 'Cán bộ';
+      const hscvName = name.trim();
+      const hscvId = result.id;
+      await notifyBell({
+        targetStaffIds: curator_ids.map(Number),
+        senderStaffId: staffId,
+        type: 'task_assigned',
+        title: 'Bạn được giao xử lý hồ sơ công việc',
+        message: `${senderName} đã giao bạn xử lý "${hscvName}"`,
+        link: `/ho-so-cong-viec/${hscvId}`,
+        metadata: { hscv_id: hscvId, source_doc_id: docId, source_doc_type: 'incoming', sender_id: staffId },
+      });
+    } catch (err) {
+      req.log?.warn({ err, hscvId: result.id }, 'Bell notification (task_assigned) failed');
+    }
+
     res.status(201).json({ success: true, data: result, message: 'Giao việc thành công' });
   } catch (error) {
     handleDbError(error, res);

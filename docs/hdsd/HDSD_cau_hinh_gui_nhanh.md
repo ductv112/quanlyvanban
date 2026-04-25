@@ -131,14 +131,11 @@ Mỗi lần bấm **Lưu cấu hình**, hệ thống xóa toàn bộ danh sách 
 - Nếu mở màn hình rồi bỏ tick nhầm và bấm **Lưu cấu hình**, các cán bộ bị bỏ tick sẽ thực sự bị loại khỏi cấu hình.
 - Nếu chưa muốn lưu, có thể chuyển sang menu khác — các thay đổi tạm thời sẽ bị bỏ qua, cấu hình cũ vẫn còn nguyên.
 
-### 7.5. Giới hạn 200 cán bộ trong danh sách
+### 7.5. Tìm kiếm và phân trang phía máy chủ
 
-Bảng cột trái chỉ tải về **200 cán bộ** ở trang đầu duy nhất. Ô **Tìm kiếm cán bộ** chỉ lọc **trên đúng 200 cán bộ đã tải về** — không gọi lại máy chủ. Vì vậy, nếu cơ quan có **nhiều hơn 200 cán bộ**, các cán bộ nằm ngoài 200 mục đầu sẽ **không thể tìm thấy và không thể chọn** trên màn hình này, dù vẫn còn trong hệ thống. Tình huống này thường gặp ở các đơn vị / sở ngành quy mô lớn.
->
-> **Cách xử lý tạm thời** khi gặp giới hạn này:
->
-> - Trước mắt: dùng cách gửi văn bản / phân công thông thường (chọn từng cán bộ trên màn hình **Văn bản đến** hoặc **Bút phê / Phân công**) — không phụ thuộc vào danh sách 200 ở đây.
-> - Đề nghị tăng giới hạn hoặc bổ sung tìm kiếm phía máy chủ — phản hồi cho đội phát triển để mở rộng ở phiên bản sau.
+Bảng cột trái hiển thị **20 cán bộ mỗi trang**, có thanh phân trang ở cuối bảng. Ô **Tìm kiếm cán bộ** lọc **trực tiếp ở máy chủ** — gõ một phần tên / chức vụ / phòng ban, hệ thống sẽ tìm trên **toàn bộ danh sách cán bộ của hệ thống** (không bị giới hạn theo trang). Hệ thống có cơ chế **chống dội** (debounce) khoảng 0,35 giây — chỉ thực sự tìm khi người dùng dừng gõ, tránh gửi yêu cầu liên tục.
+
+> Cấu hình **đã chọn** (cột phải) được lưu tách riêng — khi đổi từ khóa tìm kiếm hoặc chuyển sang trang khác, danh sách "Đã chọn" **không bị mất** mà giữ nguyên đến khi bấm **Lưu cấu hình** hoặc thoát khỏi trang.
 
 ### 7.6. Bảng tổng hợp các thông báo của hệ thống
 

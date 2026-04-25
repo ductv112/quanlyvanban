@@ -37,13 +37,16 @@ const MODULES = [
 
 // 1. Build merged Markdown
 console.log('[1/3] Merging Markdown files');
-const indexMd = fs.readFileSync(path.join(HDSD_DIR, 'HDSD_index.md'), 'utf8');
+let indexMd = fs.readFileSync(path.join(HDSD_DIR, 'HDSD_index.md'), 'utf8');
+
+// Strip the "Mục lục các chức năng" section (5.x) — links to .md files are
+// meaningless inside the docx output. Keep section 6 (Quy ước) onward.
+indexMd = indexMd.replace(/## 5\. Mục lục các chức năng[\s\S]*?(?=^## 6\. )/m, '');
+
 const parts = [
-  // Cover from index
-  indexMd,
+  indexMd.trimEnd(),
   '',
-  '\\newpage',
-  '',
+  // No page break: Word's TOC handles navigation; manual breaks fragment the doc.
   '# Phần I — Chi tiết các chức năng',
   '',
 ];
@@ -72,8 +75,7 @@ for (const file of MODULES) {
   }).join('\n');
   parts.push(fixed);
   parts.push('');
-  parts.push('\\newpage');
-  parts.push('');
+  // No \newpage — Word will flow naturally; users can search via TOC.
   console.log(`  ✓ ${file}`);
 }
 

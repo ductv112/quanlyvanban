@@ -8,6 +8,7 @@ import { rawQuery } from '../lib/db/query.js';
 import { v4 as uuidv4 } from 'uuid';
 import { handleDbError } from '../lib/error-handler.js';
 import { resolveDeptSubtree, resolveAncestorUnit } from '../lib/department-subtree.js';
+import { notifyBell } from '../lib/notifications/bell-emit.js';
 
 const router = Router();
 
@@ -150,6 +151,29 @@ router.post('/', async (req: Request, res: Response) => {
       res.status(400).json({ success: false, message: result.message });
       return;
     }
+
+    // Bell notification — best-effort. Curator được giao là người chính phụ trách HSCV.
+    try {
+      const curatorId = body.curator_id ? Number(body.curator_id) : null;
+      if (curatorId) {
+        const senderRows = await rawQuery<{ full_name: string }>(
+          'SELECT full_name FROM public.staff WHERE id = $1', [staffId],
+        );
+        const senderName = senderRows[0]?.full_name?.trim() || 'Cán bộ';
+        await notifyBell({
+          targetStaffIds: [curatorId],
+          senderStaffId: staffId,
+          type: 'task_assigned',
+          title: 'Bạn được giao xử lý hồ sơ công việc',
+          message: `${senderName} đã giao bạn xử lý "${body.name.trim()}"`,
+          link: `/ho-so-cong-viec/${result.id}`,
+          metadata: { hscv_id: result.id, role: 'curator', sender_id: staffId },
+        });
+      }
+    } catch (err) {
+      req.log?.warn({ err, hscvId: result.id }, 'Bell notification (task_assigned/create) failed');
+    }
+
     res.status(201).json({ success: true, message: result.message, data: { id: result.id } });
   } catch (error) {
     handleDbError(error, res);
@@ -274,6 +298,32 @@ router.post('/:id/phan-cong', async (req: Request, res: Response) => {
       res.status(400).json({ success: false, message: result.message });
       return;
     }
+
+    // Bell notification — best-effort. Cán bộ được phân công vào HSCV (phụ trách
+    // hoặc phối hợp tuỳ role_type) đều nhận thông báo.
+    try {
+      const senderRows = await rawQuery<{ full_name: string }>(
+        'SELECT full_name FROM public.staff WHERE id = $1', [staffId],
+      );
+      const docRows = await rawQuery<{ name: string | null }>(
+        'SELECT name FROM edoc.handling_docs WHERE id = $1', [docId],
+      );
+      const senderName = senderRows[0]?.full_name?.trim() || 'Cán bộ';
+      const hscvName = docRows[0]?.name?.trim() || `HSCV #${docId}`;
+      const roleLabel = role_type && Number(role_type) === 2 ? 'phối hợp' : 'xử lý';
+      await notifyBell({
+        targetStaffIds: staff_ids.map(Number),
+        senderStaffId: staffId,
+        type: 'task_assigned',
+        title: 'Bạn được giao xử lý hồ sơ công việc',
+        message: `${senderName} đã giao bạn ${roleLabel} "${hscvName}"`,
+        link: `/ho-so-cong-viec/${docId}`,
+        metadata: { hscv_id: docId, role_type: role_type ? Number(role_type) : 1, sender_id: staffId },
+      });
+    } catch (err) {
+      req.log?.warn({ err, hscvId: docId }, 'Bell notification (task_assigned/assign) failed');
+    }
+
     res.json({ success: true, data: { message: result.message } });
   } catch (error) {
     handleDbError(error, res);

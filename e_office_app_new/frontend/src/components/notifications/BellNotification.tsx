@@ -32,6 +32,9 @@ import {
   BellOutlined,
   CheckCircleOutlined,
   CloseCircleOutlined,
+  FileTextOutlined,
+  SolutionOutlined,
+  EditOutlined,
 } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import dayjs from 'dayjs';
@@ -65,6 +68,15 @@ function iconForType(type: string): React.ReactNode {
   }
   if (type === 'sign_failed') {
     return <CloseCircleOutlined style={{ color: '#DC2626', fontSize: 16 }} />;
+  }
+  if (type === 'incoming_doc_assigned') {
+    return <FileTextOutlined style={{ color: '#1B3A5C', fontSize: 16 }} />;
+  }
+  if (type === 'task_assigned') {
+    return <SolutionOutlined style={{ color: '#0891B2', fontSize: 16 }} />;
+  }
+  if (type === 'leader_note_received') {
+    return <EditOutlined style={{ color: '#D97706', fontSize: 16 }} />;
   }
   return <BellOutlined style={{ color: '#0891B2', fontSize: 16 }} />;
 }
@@ -164,12 +176,39 @@ export default function BellNotification() {
       }
     };
 
+    // New generic notification (Phase 13 mở rộng — incoming_doc_assigned,
+    // task_assigned, leader_note_received). Backend emit `new_notification` vào
+    // room user_{staffId} sau khi persist DB.
+    const onNewNotification = (payload: {
+      id?: number;
+      type?: string;
+      title?: string;
+      message?: string;
+    }) => {
+      notification.info({
+        message: payload.title || 'Thông báo mới',
+        description: payload.message || '',
+        duration: TOAST_DURATION,
+        placement: 'topRight',
+      });
+      setUnread((n) => n + 1);
+      if (open) {
+        listNotifications(1, PAGE_SIZE)
+          .then((r) => setItems(r.data))
+          .catch(() => {
+            /* silent */
+          });
+      }
+    };
+
     socket.on(SOCKET_EVENTS.SIGN_COMPLETED, onCompleted);
     socket.on(SOCKET_EVENTS.SIGN_FAILED, onFailed);
+    socket.on(SOCKET_EVENTS.NEW_NOTIFICATION, onNewNotification);
 
     return () => {
       socket.off(SOCKET_EVENTS.SIGN_COMPLETED, onCompleted);
       socket.off(SOCKET_EVENTS.SIGN_FAILED, onFailed);
+      socket.off(SOCKET_EVENTS.NEW_NOTIFICATION, onNewNotification);
     };
     // currentStaffId include để re-subscribe nếu user đổi (login switch)
   }, [notification, open, currentStaffId]);

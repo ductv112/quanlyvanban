@@ -131,9 +131,9 @@ export default function ThongBaoPage() {
           <div>
             <h1 className="page-title">
               <BellOutlined />
-              Thông báo
+              Thông báo nội bộ
             </h1>
-            <p className="page-description">Quản lý và theo dõi các thông báo hệ thống</p>
+            <p className="page-description">Quản lý và theo dõi các thông báo nội bộ của đơn vị</p>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             <Button

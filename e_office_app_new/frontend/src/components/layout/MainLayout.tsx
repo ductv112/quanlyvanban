@@ -214,8 +214,8 @@ function buildMenuItems({ badgeCounts, isAdmin, roles }: MenuBuildParams): MenuI
       key: '/thong-bao',
       icon: <BellOutlined />,
       label: badgeCounts.thongBao > 0
-        ? <span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>Thông báo<span className="sidebar-badge">{badgeCounts.thongBao}</span></span>
-        : 'Thông báo',
+        ? <span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>Thông báo nội bộ<span className="sidebar-badge">{badgeCounts.thongBao}</span></span>
+        : 'Thông báo nội bộ',
     },
     {
       key: 'lich',
@@ -351,7 +351,7 @@ const breadcrumbMap: Record<string, string> = {
   '/van-ban-lien-thong': 'Văn bản liên thông',
   '/ho-so-cong-viec': 'Hồ sơ công việc',
   '/tin-nhan': 'Tin nhắn',
-  '/thong-bao': 'Thông báo',
+  '/thong-bao': 'Thông báo nội bộ',
   '/quan-tri': 'Quản trị',
   '/quan-tri/don-vi': 'Đơn vị',
   '/quan-tri/chuc-vu': 'Chức vụ',

@@ -22495,6 +22495,27 @@ CREATE TRIGGER trg_staff_auto_unit_id
 
 DO $$ BEGIN RAISE NOTICE '032-2: trg_staff_auto_unit_id created'; END $$;
 
+-- Sync edoc.signers.department_id + unit_id khi staff doi phong ban
+-- Khong tu xoa nguoi ky khoi danh sach, chi cap nhat phong ban hien tai
+CREATE OR REPLACE FUNCTION public.fn_staff_sync_signers_dept()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+  IF OLD.department_id IS DISTINCT FROM NEW.department_id THEN
+    UPDATE edoc.signers
+       SET department_id = NEW.department_id,
+           unit_id = COALESCE(public.fn_get_ancestor_unit(NEW.department_id), unit_id)
+     WHERE staff_id = NEW.id;
+  END IF;
+  RETURN NEW;
+END; $$;
+
+DROP TRIGGER IF EXISTS trg_staff_sync_signers_dept ON public.staff;
+CREATE TRIGGER trg_staff_sync_signers_dept
+  AFTER UPDATE OF department_id ON public.staff
+  FOR EACH ROW EXECUTE FUNCTION public.fn_staff_sync_signers_dept();
+
+DO $$ BEGIN RAISE NOTICE 'trg_staff_sync_signers_dept created'; END $$;
+
 -- ============================================================
 -- PART 3: ALTER TABLE — Add department_id to data tables
 -- ============================================================

@@ -10,9 +10,11 @@ import type { ColumnsType } from 'antd/es/table';
 import {
   PlusOutlined, MoreOutlined, EyeOutlined, EditOutlined, DeleteOutlined,
   SearchOutlined, SaveOutlined, ExclamationCircleOutlined, PrinterOutlined,
+  FileExcelOutlined,
 } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import dayjs from 'dayjs';
+import ExcelJS from 'exceljs';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth.store';
 import { buildTree, flattenTreeForSelect } from '@/lib/tree-utils';
@@ -291,6 +293,95 @@ export default function HoSoCongViecPage() {
     setPage(1);
   };
 
+  // ── Excel Export ─────────────────────────────────────────────────────────────
+
+  const exportExcel = async () => {
+    const tabLabel = FILTER_TABS.find((t) => t.key === filterType)?.label ?? 'Tất cả';
+
+    setLoading(true);
+    let exportRows: HscvRecord[] = [];
+    try {
+      const params: Record<string, string | number> = {
+        page: 1,
+        page_size: 10000,
+        filter_type: filterType,
+      };
+      if (keyword.trim()) params.keyword = keyword.trim();
+      if (fieldId) params.field_id = fieldId;
+      if (unitId) params.unit_id = unitId;
+      if (dateRange?.[0]) params.start_date = dateRange[0].format('YYYY-MM-DD');
+      if (dateRange?.[1]) params.end_date = dateRange[1].format('YYYY-MM-DD');
+
+      const { data: res } = await api.get('/ho-so-cong-viec', { params });
+      exportRows = res.data?.data ?? res.data ?? [];
+    } catch {
+      message.error('Không tải được dữ liệu để xuất Excel');
+      setLoading(false);
+      return;
+    } finally {
+      setLoading(false);
+    }
+
+    if (exportRows.length === 0) {
+      message.warning('Không có hồ sơ nào phù hợp để xuất');
+      return;
+    }
+
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet('Hồ sơ công việc');
+
+    sheet.columns = [
+      { header: 'STT', key: 'stt', width: 6 },
+      { header: 'Tên hồ sơ', key: 'name', width: 40 },
+      { header: 'Loại văn bản', key: 'doc_type', width: 18 },
+      { header: 'Lĩnh vực', key: 'doc_field', width: 18 },
+      { header: 'Ngày mở', key: 'start_date', width: 12 },
+      { header: 'Hạn giải quyết', key: 'end_date', width: 14 },
+      { header: 'Trạng thái', key: 'status', width: 14 },
+      { header: 'Người phụ trách', key: 'curator', width: 22 },
+      { header: 'Lãnh đạo ký', key: 'signer', width: 22 },
+      { header: 'Tiến độ (%)', key: 'progress', width: 12 },
+    ];
+
+    const headerRow = sheet.getRow(1);
+    headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    headerRow.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF1B3A5C' },
+    };
+    headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
+    headerRow.height = 22;
+
+    exportRows.forEach((row, idx) => {
+      const statusInfo = STATUS_MAP[row.status] ?? { label: 'Không rõ' };
+      sheet.addRow({
+        stt: idx + 1,
+        name: row.name,
+        doc_type: row.doc_type_name ?? '',
+        doc_field: row.doc_field_name ?? '',
+        start_date: row.start_date ? dayjs(row.start_date).format('DD/MM/YYYY') : '',
+        end_date: row.end_date ? dayjs(row.end_date).format('DD/MM/YYYY') : '',
+        status: statusInfo.label,
+        curator: row.curator_name ?? '',
+        signer: row.signer_name ?? '',
+        progress: row.progress ?? 0,
+      });
+    });
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ho-so-cong-viec-${tabLabel}-${dayjs().format('YYYYMMDD-HHmmss')}.xlsx`;
+    a.click();
+    URL.revokeObjectURL(url);
+    message.success(`Đã xuất ${exportRows.length} hồ sơ`);
+  };
+
   // ── Table columns ────────────────────────────────────────────────────────────
 
   const now = dayjs();
@@ -453,6 +544,7 @@ export default function HoSoCongViecPage() {
         <h1 className="page-title">Hồ sơ công việc</h1>
         <Space>
           <Button icon={<PrinterOutlined />} onClick={() => window.print()}>In</Button>
+          <Button icon={<FileExcelOutlined />} onClick={exportExcel}>Xuất Excel</Button>
           <Button
             type="primary"
             icon={<PlusOutlined />}

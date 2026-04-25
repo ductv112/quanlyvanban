@@ -78,9 +78,10 @@ Hệ thống hiển thị 9 tab theo thứ tự bên dưới. Mỗi tab có Badg
 | Nút | Khi nào hiển thị | Tác dụng |
 |---|---|---|
 | **In** | Luôn hiển thị | Mở hộp thoại in của trình duyệt với danh sách HSCV hiện tại — gồm tiêu đề "DANH SÁCH HỒ SƠ CÔNG VIỆC", ngày in, bảng các cột STT / Tên hồ sơ / Ngày bắt đầu / Hạn hoàn thành / Người phụ trách / Tiến độ / Trạng thái và dòng tổng cuối trang. |
+| **Xuất Excel** | Luôn hiển thị | Tải về tệp Excel `.xlsx` chứa toàn bộ HSCV theo bộ lọc và tab đang chọn (tối đa 10.000 dòng). Tên tệp dạng `ho-so-cong-viec-<Tab>-<Ngày giờ>.xlsx`. Bảng có 10 cột: STT, Tên hồ sơ, Loại văn bản, Lĩnh vực, Ngày mở, Hạn giải quyết, Trạng thái, Người phụ trách, Lãnh đạo ký, Tiến độ. Dòng tiêu đề được bôi đậm trên nền xanh navy. |
 | **Tạo hồ sơ mới** (chính, xanh dương) | Luôn hiển thị | Mở Drawer **Tạo hồ sơ công việc** — nhập thông tin HSCV mới (xem mục 7). |
 
-> **Lưu ý**: Tại phiên bản hiện tại, màn hình danh sách Hồ sơ công việc **chỉ có nút "In"**, **không có nút "Xuất Excel"**. Khi cần đưa danh sách ra file rời, người dùng có thể chọn **In > Lưu thành PDF** từ chính hộp thoại in của trình duyệt. Nếu nghiệp vụ thực sự cần file Excel để tổng hợp / báo cáo, đề nghị phản hồi để bổ sung ở phiên bản sau.
+> **Lưu ý**: Nút **Xuất Excel** xuất theo đúng bộ lọc và tab đang chọn — nếu muốn xuất toàn bộ thì chọn tab "Tất cả" và bỏ hết bộ lọc trước khi bấm. Nếu danh sách hiện trống, hệ thống sẽ thông báo *"Không có hồ sơ nào phù hợp để xuất"* thay vì tạo file rỗng.
 
 ---
 
@@ -256,6 +257,9 @@ Dropdown **Lãnh đạo ký** chỉ liệt kê những cán bộ đã được Q
 | Xóa HSCV thành công | Đã xóa hồ sơ |
 | Lỗi xóa HSCV | Lỗi xóa hồ sơ |
 | Lỗi tải danh sách | Lỗi tải danh sách hồ sơ công việc |
+| Xuất Excel thành công | Đã xuất N hồ sơ |
+| Xuất Excel khi danh sách trống | Không có hồ sơ nào phù hợp để xuất |
+| Lỗi tải dữ liệu khi xuất Excel | Không tải được dữ liệu để xuất Excel |
 | Để trống Tên hồ sơ | Vui lòng nhập tên hồ sơ công việc |
 | Để trống Ngày mở | Vui lòng chọn ngày mở hồ sơ |
 | Để trống Hạn giải quyết | Vui lòng chọn hạn giải quyết |

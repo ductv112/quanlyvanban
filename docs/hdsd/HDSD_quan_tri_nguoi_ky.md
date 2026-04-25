@@ -135,7 +135,7 @@ Trong **cùng một đơn vị**, mỗi nhân viên **chỉ được thêm vào 
 
 > *"Nhân viên đã có trong danh sách người ký"*
 
-Nếu người ký đó đã chuyển sang phòng ban khác trong cùng đơn vị nhưng vẫn giữ quyền ký, **bản ghi người ký không tự cập nhật phòng ban**. Khi thêm người ký, hệ thống ghi cứng phòng ban của nhân viên tại đúng thời điểm đó vào danh sách người ký; sau đó nếu nhân viên đổi phòng ban trong **Quản trị > Nhân viên** thì cột **Phòng ban** trong danh sách người ký vẫn hiển thị phòng ban cũ. Cách xử lý đúng: **xóa** bản ghi người ký cũ rồi **thêm lại** sau khi đã chọn đúng phòng ban mới trên cây bên trái — bản ghi mới sẽ ghi nhận phòng ban hiện tại của nhân viên.
+Khi nhân viên là người ký được chuyển sang phòng ban khác trong **Quản trị > Nhân viên**, hệ thống **tự động đồng bộ** phòng ban của bản ghi người ký theo phòng ban mới — danh sách người ký luôn hiển thị đúng phòng ban hiện tại của nhân viên mà không cần thao tác thủ công. Nếu nhân viên chuyển sang đơn vị khác hoàn toàn, đơn vị sở hữu của bản ghi người ký cũng được cập nhật theo.
 
 ### 7.2. Nhân viên đã xóa không thể chọn làm người ký
 

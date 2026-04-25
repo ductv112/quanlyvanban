@@ -63,7 +63,7 @@ Một người dùng có thể được gán **nhiều vai trò** cùng lúc; qu
 |---|---|---|
 | 1 | Đăng nhập + Thông tin cá nhân | [HDSD_dang_nhap_va_thong_tin_ca_nhan.md](HDSD_dang_nhap_va_thong_tin_ca_nhan.md) |
 | 2 | Trang Tổng quan (Dashboard) | [HDSD_dashboard.md](HDSD_dashboard.md) |
-| 3 | Thông báo (chuông + danh sách) | [HDSD_thong_bao.md](HDSD_thong_bao.md) |
+| 3 | Thông báo (chuông cá nhân + Thông báo nội bộ) | [HDSD_thong_bao.md](HDSD_thong_bao.md) |
 
 ### 5.2. Văn bản
 
