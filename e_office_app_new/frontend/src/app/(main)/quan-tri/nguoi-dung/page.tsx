@@ -233,20 +233,31 @@ export default function StaffPage() {
     setDrawerOpen(true);
   };
 
-  const handleEdit = (record: Staff) => {
-    setEditingRecord(record);
+  const handleEdit = async (record: Staff) => {
     // Reset truoc khi setFieldsValue de tranh leak gia tri tu lan edit/add truoc.
     form.resetFields();
-    const values: any = {
-      ...record,
-      birth_date: record.birth_date ? dayjs(record.birth_date) : null,
-    };
-    form.setFieldsValue(values);
-    if (record.unit_id) {
-      setSelectedUnit(record.unit_id);
-      fetchDeptsByUnit(record.unit_id);
-    }
+    setEditingRecord(record);
     setDrawerOpen(true);
+    // List API tra slim response (chi 7 cot: id, full_name, unit_id, dept_id, ...)
+    // do bi shadow boi public-catalog route. Phai goi GET /:id de lay full detail
+    // (username, first_name, last_name, email, phone, mobile, gender, address, ...).
+    try {
+      const { data: res } = await api.get(`/quan-tri/nguoi-dung/${record.id}`);
+      const detail = res?.data ?? res;
+      if (!detail) return;
+      const values: any = {
+        ...detail,
+        birth_date: detail.birth_date ? dayjs(detail.birth_date) : null,
+      };
+      form.setFieldsValue(values);
+      if (detail.unit_id) {
+        setSelectedUnit(detail.unit_id);
+        fetchDeptsByUnit(detail.unit_id);
+      }
+      setEditingRecord(detail);
+    } catch (err: any) {
+      message.error(err?.response?.data?.message || 'Lỗi tải chi tiết người dùng');
+    }
   };
 
   const handleDelete = async (id: number) => {

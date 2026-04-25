@@ -15533,8 +15533,12 @@ END) STORED,
     code character varying(20),
     password_changed boolean DEFAULT false,
     sign_ca text,
-    sign_image character varying(500)
+    sign_image character varying(500),
+    sign_phone character varying(20)
 );
+
+-- Idempotent: them sign_phone neu DB cu chua co (truoc khi master schema include cot nay)
+ALTER TABLE public.staff ADD COLUMN IF NOT EXISTS sign_phone character varying(20);
 
 
 --
