@@ -4,8 +4,8 @@ milestone: planning-next
 milestone_name: chờ-milestone-mới
 status: v3.0 archived 2026-04-24
 stopped_at: Milestone v3.0 shipped + tagged + pushed to GitHub
-last_updated: "2026-04-24T11:30:00.000Z"
-last_activity: 2026-04-24
+last_updated: "2026-04-25T05:30:00.000Z"
+last_activity: 2026-04-25
 progress:
   total_phases: 0
   completed_phases: 0
@@ -40,6 +40,12 @@ See: .planning/PROJECT.md
 
 ## Session Continuity
 
-Last session: 2026-04-24
-Stopped at: Milestone v3.0 archived + tagged + pushed
+Last session: 2026-04-25
+Stopped at: Quick task 260425-g4z hoàn tất — fix HSCV (3 commit atomic + smoke test 16/16 PASS), sẵn sàng deploy prod
 Resume: `/gsd-new-milestone` để bắt đầu v3.1 hoặc `/gsd-discuss-phase` cho work hiện tại
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260425-g4z | Fix HSCV: consolidate 4 archive migrations + fix SP status flow (5-step) + smoke test | 2026-04-25 | fb53494 | [260425-g4z-fix-hscv-consolidate-4-archive-migration](./quick/260425-g4z-fix-hscv-consolidate-4-archive-migration/) |
