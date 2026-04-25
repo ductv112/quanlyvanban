@@ -22049,32 +22049,42 @@ CREATE OR REPLACE FUNCTION edoc.fn_handling_doc_count_by_status(
   p_unit_id INT, p_staff_id INT, p_dept_ids INT[] DEFAULT NULL
 ) RETURNS TABLE (filter_type TEXT, count BIGINT) LANGUAGE plpgsql AS $$
 BEGIN
+  -- Visibility: dept subtree HOAC user duoc assigned (signer/curator/staff_handling_docs).
+  -- Khop voi fn_handling_doc_get_list — lanh dao o phong con duoc assigned phai thay HSCV.
   RETURN QUERY
-  SELECT 'all'::TEXT,               COUNT(*)::BIGINT FROM edoc.handling_docs WHERE (p_dept_ids IS NULL OR department_id = ANY(p_dept_ids))
+  WITH visible AS (
+    SELECT h.* FROM edoc.handling_docs h
+    WHERE p_dept_ids IS NULL
+       OR h.department_id = ANY(p_dept_ids)
+       OR h.curator = p_staff_id
+       OR h.signer = p_staff_id
+       OR EXISTS (SELECT 1 FROM edoc.staff_handling_docs shd WHERE shd.handling_doc_id = h.id AND shd.staff_id = p_staff_id)
+  )
+  SELECT 'all'::TEXT,               COUNT(*)::BIGINT FROM visible
   UNION ALL
-  SELECT 'created_by_me'::TEXT,     COUNT(*)::BIGINT FROM edoc.handling_docs WHERE (p_dept_ids IS NULL OR department_id = ANY(p_dept_ids)) AND created_by = p_staff_id
+  SELECT 'created_by_me'::TEXT,     COUNT(*)::BIGINT FROM visible WHERE created_by = p_staff_id
   UNION ALL
-  SELECT 'rejected'::TEXT,          COUNT(*)::BIGINT FROM edoc.handling_docs WHERE (p_dept_ids IS NULL OR department_id = ANY(p_dept_ids)) AND status = -1 AND created_by = p_staff_id
+  SELECT 'rejected'::TEXT,          COUNT(*)::BIGINT FROM visible WHERE status = -1 AND created_by = p_staff_id
   UNION ALL
-  SELECT 'returned'::TEXT,          COUNT(*)::BIGINT FROM edoc.handling_docs WHERE (p_dept_ids IS NULL OR department_id = ANY(p_dept_ids)) AND status = -2
+  SELECT 'returned'::TEXT,          COUNT(*)::BIGINT FROM visible WHERE status = -2
   UNION ALL
   SELECT 'pending_primary'::TEXT,   COUNT(*)::BIGINT
-    FROM edoc.handling_docs h
-    WHERE (p_dept_ids IS NULL OR h.department_id = ANY(p_dept_ids)) AND h.status = 0
+    FROM visible h
+    WHERE h.status = 0
       AND EXISTS (SELECT 1 FROM edoc.staff_handling_docs shd WHERE shd.handling_doc_id = h.id AND shd.staff_id = p_staff_id AND shd.role = 1)
   UNION ALL
   SELECT 'pending_coord'::TEXT,     COUNT(*)::BIGINT
-    FROM edoc.handling_docs h
-    WHERE (p_dept_ids IS NULL OR h.department_id = ANY(p_dept_ids)) AND h.status IN (0, 1)
+    FROM visible h
+    WHERE h.status IN (0, 1)
       AND EXISTS (SELECT 1 FROM edoc.staff_handling_docs shd WHERE shd.handling_doc_id = h.id AND shd.staff_id = p_staff_id AND shd.role = 2)
   UNION ALL
-  SELECT 'submitting'::TEXT,        COUNT(*)::BIGINT FROM edoc.handling_docs WHERE (p_dept_ids IS NULL OR department_id = ANY(p_dept_ids)) AND status = 3
+  SELECT 'submitting'::TEXT,        COUNT(*)::BIGINT FROM visible WHERE status = 3
   UNION ALL
-  SELECT 'in_progress'::TEXT,       COUNT(*)::BIGINT FROM edoc.handling_docs WHERE (p_dept_ids IS NULL OR department_id = ANY(p_dept_ids)) AND status = 1
+  SELECT 'in_progress'::TEXT,       COUNT(*)::BIGINT FROM visible WHERE status = 1
   UNION ALL
-  SELECT 'proposed_complete'::TEXT, COUNT(*)::BIGINT FROM edoc.handling_docs WHERE (p_dept_ids IS NULL OR department_id = ANY(p_dept_ids)) AND status = 3
+  SELECT 'proposed_complete'::TEXT, COUNT(*)::BIGINT FROM visible WHERE status = 3
   UNION ALL
-  SELECT 'completed'::TEXT,         COUNT(*)::BIGINT FROM edoc.handling_docs WHERE (p_dept_ids IS NULL OR department_id = ANY(p_dept_ids)) AND status = 4;
+  SELECT 'completed'::TEXT,         COUNT(*)::BIGINT FROM visible WHERE status = 4;
 END; $$;
 
 -- 5. fn_dashboard_get_stats
@@ -22358,7 +22368,16 @@ BEGIN
     FROM edoc.handling_docs h
     LEFT JOIN public.staff sc ON sc.id = h.curator LEFT JOIN public.staff ss ON ss.id = h.signer
     LEFT JOIN edoc.doc_fields df ON df.id = h.doc_field_id LEFT JOIN edoc.doc_types dt ON dt.id = h.doc_type_id
-    WHERE (p_dept_ids IS NULL OR h.department_id = ANY(p_dept_ids))
+    WHERE (
+        -- Visibility: dept subtree HOAC user duoc assigned (signer/curator/staff_handling_docs).
+        -- Lanh dao o phong con (dothil-dept=10) duoc assign signer cho HSCV o dept cha (dept=2)
+        -- van phai thay duoc HSCV de duyet — khong gioi han boi dept subtree.
+        p_dept_ids IS NULL
+        OR h.department_id = ANY(p_dept_ids)
+        OR h.curator = p_staff_id
+        OR h.signer = p_staff_id
+        OR EXISTS (SELECT 1 FROM edoc.staff_handling_docs shd WHERE shd.handling_doc_id = h.id AND shd.staff_id = p_staff_id)
+      )
       AND (p_status IS NULL OR p_status = -99 OR h.status = p_status)
       AND (p_filter_type IS NULL OR p_filter_type = 'all' OR
         (p_filter_type = 'created_by_me' AND h.created_by = p_staff_id) OR
