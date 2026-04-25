@@ -653,12 +653,12 @@ export default function StaffPage() {
                 </Form.Item>
               )}
 
-              <Form.Item label="Họ" name="last_name" rules={[{ required: true, message: 'Nhập họ' }]}>
-                <Input maxLength={50} style={{ borderRadius: 8 }} />
+              <Form.Item label="Họ và tên đệm" name="first_name" rules={[{ required: true, message: 'Nhập họ và tên đệm' }]}>
+                <Input maxLength={50} placeholder="VD: Nguyễn Văn" style={{ borderRadius: 8 }} />
               </Form.Item>
 
-              <Form.Item label="Tên" name="first_name" rules={[{ required: true, message: 'Nhập tên' }]}>
-                <Input maxLength={50} style={{ borderRadius: 8 }} />
+              <Form.Item label="Tên" name="last_name" rules={[{ required: true, message: 'Nhập tên' }]}>
+                <Input maxLength={50} placeholder="VD: An" style={{ borderRadius: 8 }} />
               </Form.Item>
 
               <Form.Item label="Email" name="email" rules={[{ type: 'email', message: 'Email không đúng định dạng' }]}>
