@@ -1884,7 +1884,8 @@ export default function HscvDetailPage() {
               max={100}
               value={progressValue}
               onChange={(v) => setProgressValue(v || 0)}
-              addonAfter="%"
+              formatter={(v) => `${v}%`}
+              parser={(s) => Number((s || '').replace('%', '')) as number & (0 | 100)}
               style={{ width: 100 }}
             />
           </div>
