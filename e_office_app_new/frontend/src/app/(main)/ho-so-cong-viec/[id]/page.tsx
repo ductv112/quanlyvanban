@@ -904,11 +904,16 @@ export default function HscvDetailPage() {
       }).catch(() => {});
     }
     if (staffOptions.length === 0) {
-      // Bug fix: filter staff cùng đơn vị + tách leader cho dropdown "Lãnh đạo ký"
+      // Curator: tat ca staff cung don vi
       api.get('/ho-so-cong-viec/nhan-vien-cung-don-vi').then(({ data: r }) => {
-        const items: { id: number; full_name: string; is_leader?: boolean }[] = r.data || [];
+        const items: { id: number; full_name: string }[] = r.data || [];
         setStaffOptions(items.map((x) => ({ value: x.id, label: x.full_name })));
-        setLeaderOptions(items.filter((x) => x.is_leader).map((x) => ({ value: x.id, label: x.full_name })));
+      }).catch(() => {});
+      // Signer: chi nhung nguoi admin da dang ky lam "Nguoi ky" cho don vi
+      // (theo pattern .NET cu Prc_StaffGetSignerByUnitId — bang edoc.signers)
+      api.get('/quan-tri/nguoi-ky').then(({ data: r }) => {
+        const items: { staff_id: number; staff_name: string }[] = r.data || [];
+        setLeaderOptions(items.map((x) => ({ value: x.staff_id, label: x.staff_name })));
       }).catch(() => {});
     }
   };
@@ -1136,11 +1141,16 @@ export default function HscvDetailPage() {
     childForm.setFieldsValue({ parent_id: detail?.id, parent_name: detail?.name });
     setChildDrawerOpen(true);
     if (staffOptions.length === 0) {
-      // Bug fix: filter staff cùng đơn vị + tách leader cho dropdown "Lãnh đạo ký"
+      // Curator: tat ca staff cung don vi
       api.get('/ho-so-cong-viec/nhan-vien-cung-don-vi').then(({ data: r }) => {
-        const items: { id: number; full_name: string; is_leader?: boolean }[] = r.data || [];
+        const items: { id: number; full_name: string }[] = r.data || [];
         setStaffOptions(items.map((x) => ({ value: x.id, label: x.full_name })));
-        setLeaderOptions(items.filter((x) => x.is_leader).map((x) => ({ value: x.id, label: x.full_name })));
+      }).catch(() => {});
+      // Signer: chi nhung nguoi admin da dang ky lam "Nguoi ky" cho don vi
+      // (theo pattern .NET cu Prc_StaffGetSignerByUnitId — bang edoc.signers)
+      api.get('/quan-tri/nguoi-ky').then(({ data: r }) => {
+        const items: { staff_id: number; staff_name: string }[] = r.data || [];
+        setLeaderOptions(items.map((x) => ({ value: x.staff_id, label: x.staff_name })));
       }).catch(() => {});
     }
   };

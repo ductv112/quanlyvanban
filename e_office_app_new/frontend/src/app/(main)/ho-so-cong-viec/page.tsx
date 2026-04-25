@@ -158,20 +158,24 @@ export default function HoSoCongViecPage() {
 
   const fetchOptions = useCallback(async () => {
     try {
-      const [typeRes, fieldRes, staffRes, workflowRes, hscvRes, unitRes] = await Promise.all([
+      const [typeRes, fieldRes, staffRes, signerRes, workflowRes, hscvRes, unitRes] = await Promise.all([
         api.get('/quan-tri/loai-van-ban/tree').catch(() => ({ data: { data: [] } })),
         api.get('/quan-tri/linh-vuc').catch(() => ({ data: { data: [] } })),
-        // Bug fix: filter staff cùng đơn vị (Người phụ trách) + lọc thêm is_leader cho Lãnh đạo ký
+        // Curator dropdown: tat ca staff cung don vi
         api.get('/ho-so-cong-viec/nhan-vien-cung-don-vi').catch(() => ({ data: { data: [] } })),
+        // Signer dropdown: chi nhung nguoi admin da dang ky lam "Nguoi ky" cho don vi
+        // (theo pattern .NET cu Prc_StaffGetSignerByUnitId — bang edoc.signers)
+        api.get('/quan-tri/nguoi-ky').catch(() => ({ data: { data: [] } })),
         api.get('/quan-tri/quy-trinh').catch(() => ({ data: { data: [] } })),
         api.get('/ho-so-cong-viec', { params: { page: 1, page_size: 200, filter_type: 'all' } }).catch(() => ({ data: { data: [] } })),
         api.get('/quan-tri/don-vi').catch(() => ({ data: { data: [] } })),
       ]);
       setDocTypes((typeRes.data.data || []).map((t: { id: number; name: string }) => ({ value: t.id, label: t.name })));
       setDocFields((fieldRes.data.data || []).map((f: { id: number; name: string }) => ({ value: f.id, label: f.name })));
-      const staffItems: { id: number; full_name: string; is_leader?: boolean }[] = staffRes.data.data || [];
+      const staffItems: { id: number; full_name: string }[] = staffRes.data.data || [];
       setStaffList(staffItems.map((s) => ({ value: s.id, label: s.full_name })));
-      setLeaderList(staffItems.filter((s) => s.is_leader).map((s) => ({ value: s.id, label: s.full_name })));
+      const signerItems: { staff_id: number; staff_name: string }[] = signerRes.data.data || [];
+      setLeaderList(signerItems.map((s) => ({ value: s.staff_id, label: s.staff_name })));
       setWorkflows((workflowRes.data.data || []).map((w: { id: number; name: string }) => ({ value: w.id, label: w.name })));
       setParentHscvs((hscvRes.data.data || []).map((h: { id: number; name: string }) => ({ value: h.id, label: h.name })));
       const unitItems = unitRes.data.data || [];
