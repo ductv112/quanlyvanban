@@ -17,7 +17,7 @@ export const signerRepository = {
     return callFunction<SignerRow>('edoc.fn_signer_get_list', [unitId, departmentId]);
   },
 
-  async create(unitId: number, departmentId: number, staffId: number): Promise<DbResultWithId> {
+  async create(unitId: number, departmentId: number | null, staffId: number): Promise<DbResultWithId> {
     const row = await callFunctionOne<DbResultWithId>(
       'edoc.fn_signer_create',
       [unitId, departmentId, staffId],

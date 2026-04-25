@@ -606,23 +606,37 @@ router.get('/nguoi-ky', async (req: Request, res: Response) => {
 // POST /nguoi-ky
 router.post('/nguoi-ky', async (req: Request, res: Response) => {
   try {
-    const { departmentId } = (req as AuthRequest).user;
-    const ancestorUnitId = await resolveAncestorUnit(departmentId);
+    const { departmentId: callerDeptId } = (req as AuthRequest).user;
+    const callerUnitId = await resolveAncestorUnit(callerDeptId);
     const { unit_id, department_id, staff_id } = req.body;
 
-    if (!unit_id && !ancestorUnitId) {
-      res.status(400).json({ success: false, message: 'Đơn vị là bắt buộc' });
-      return;
-    }
     if (!staff_id) {
       res.status(400).json({ success: false, message: 'Nhân viên là bắt buộc' });
       return;
     }
 
+    // Resolve unit_id chinh xac:
+    // - Neu client gui department_id -> ancestor cua dept (luon dung)
+    // - Else neu client gui unit_id -> dung
+    // - Else fallback unit cua admin
+    let resolvedUnitId: number;
+    if (department_id) {
+      resolvedUnitId = await resolveAncestorUnit(Number(department_id));
+    } else if (unit_id) {
+      resolvedUnitId = Number(unit_id);
+    } else {
+      resolvedUnitId = callerUnitId;
+    }
+
+    if (!resolvedUnitId) {
+      res.status(400).json({ success: false, message: 'Đơn vị là bắt buộc' });
+      return;
+    }
+
     const result = await signerRepository.create(
-      unit_id ?? ancestorUnitId,
-      department_id ?? 0,
-      staff_id,
+      resolvedUnitId,
+      department_id ? Number(department_id) : null,
+      Number(staff_id),
     );
 
     if (!result.success) {

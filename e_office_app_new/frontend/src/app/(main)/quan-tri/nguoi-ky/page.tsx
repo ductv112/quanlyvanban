@@ -117,9 +117,17 @@ export default function SignerPage() {
       message.warning('Vui lòng chọn nhân viên');
       return;
     }
+    if (!selectedDept) {
+      message.warning('Vui lòng chọn phòng ban / đơn vị từ cây bên trái trước');
+      return;
+    }
     setAddingSigners(true);
     try {
-      await api.post('/quan-tri/nguoi-ky', { staff_id: selectedStaffId });
+      // Backend tu resolve unit_id tu ancestor cua department_id.
+      await api.post('/quan-tri/nguoi-ky', {
+        staff_id: selectedStaffId,
+        department_id: selectedDept,
+      });
       message.success('Thêm người ký thành công');
       setModalOpen(false);
       fetchSigners(selectedDept);
