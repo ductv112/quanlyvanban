@@ -319,8 +319,14 @@ router.delete('/chuc-vu/:id', async (req: Request, res: Response) => {
 // GET /nguoi-dung
 router.get('/nguoi-dung', async (req: Request, res: Response) => {
   try {
-    const unitId = req.query.unit_id ? Number(req.query.unit_id) : null;
+    let unitId = req.query.unit_id ? Number(req.query.unit_id) : null;
     const departmentId = req.query.department_id ? Number(req.query.department_id) : null;
+    // Khi co department_id, auto-resolve unit_id tu ancestor cua dept (luon chinh xac).
+    // Tranh case page truyen unit_id=admin's unit nhung click dept khac don vi -> SP filter sai.
+    // (Note: admin route nay shadow boi public-catalog.ts mount truoc — fix da apply o ca 2 noi.)
+    if (departmentId) {
+      unitId = await resolveAncestorUnit(departmentId);
+    }
     const keyword = (req.query.keyword as string) || '';
     const isLocked = req.query.is_locked !== undefined ? req.query.is_locked === 'true' : null;
     const page = Number(req.query.page) || 1;

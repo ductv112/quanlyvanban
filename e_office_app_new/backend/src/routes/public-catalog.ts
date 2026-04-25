@@ -118,8 +118,13 @@ router.get('/linh-vuc', async (_req: Request, res: Response) => {
 // Shadow admin route /quan-tri/nguoi-dung (mount trước) — phải trả đủ position_name + department_name để form admin render đúng.
 router.get('/nguoi-dung', async (req: Request, res: Response) => {
   try {
-    const unitId = req.query.unit_id ? Number(req.query.unit_id) : null;
+    let unitId = req.query.unit_id ? Number(req.query.unit_id) : null;
     const departmentId = req.query.department_id ? Number(req.query.department_id) : null;
+    // Khi co department_id, auto-resolve unit_id tu ancestor cua dept (luon chinh xac).
+    // Tranh case page truyen unit_id=admin's unit nhung click dept khac don vi -> filter sai.
+    if (departmentId) {
+      unitId = await resolveAncestorUnit(departmentId);
+    }
     const keyword = ((req.query.keyword as string) || '').trim();
     const rows = await rawQuery<{
       id: number;
