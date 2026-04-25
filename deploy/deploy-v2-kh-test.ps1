@@ -323,6 +323,31 @@ try {
     else { Warn "    Login response khong co accessToken: $($login.Content)" }
 } catch { Warn "    Login that bai: $($_.Exception.Message)" }
 
+# -- 11. Smoke test HSCV (16 testcase E2E) -------------------
+Step '11. Smoke test HSCV (16 testcase E2E)'
+$smokeScript = Join-Path $DEPLOY_DIR 'smoke-test-hscv.ps1'
+if (-not (Test-Path $smokeScript)) {
+    Warn 'Khong tim thay smoke-test-hscv.ps1 - skip smoke test'
+} else {
+    Log "  -> Running smoke-test-hscv.ps1..."
+    $smokeLog = Join-Path $env:TEMP 'qlvb_deploy_smoke.log'
+    & powershell -NoProfile -ExecutionPolicy Bypass -File $smokeScript `
+        -ApiUrl 'http://localhost:4000' -User 'admin' -Pass 'Admin@123' > $smokeLog 2>&1
+    $smokeRc = $LASTEXITCODE
+    if ($smokeRc -ne 0) {
+        Write-Host ''
+        Write-Host '---- Smoke test output (cuoi file) ----' -ForegroundColor Yellow
+        Get-Content $smokeLog -Tail 50
+        Write-Host "---- Full log: $smokeLog ----" -ForegroundColor Yellow
+        Err 'Smoke test HSCV that bai - block deploy. Kiem tra log phia tren.'
+    }
+    # Print summary line tu output
+    $passLine = (Get-Content $smokeLog) | Where-Object { $_ -match 'Pass:\s+\d+/\d+' } | Select-Object -First 1
+    if ($passLine) { Log "  $($passLine.Trim())" }
+    Remove-Item $smokeLog -ErrorAction SilentlyContinue
+    Log 'Smoke test HSCV PASS (16/16)'
+}
+
 # -- Summary -------------------------------------------------
 $duration = [int]((Get-Date) - $ScriptStart).TotalSeconds
 Write-Host ''

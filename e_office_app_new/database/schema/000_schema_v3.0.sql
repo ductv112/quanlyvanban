@@ -6567,7 +6567,8 @@ BEGIN
     RETURN;
   END IF;
 
-  IF NOT EXISTS (SELECT 1 FROM edoc.handling_docs WHERE id = p_doc_id) THEN
+  -- Qualify table.id to avoid ambiguous reference with RETURNS TABLE(id) — Rule 3 fix
+  IF NOT EXISTS (SELECT 1 FROM edoc.handling_docs hd WHERE hd.id = p_doc_id) THEN
     RETURN QUERY SELECT FALSE, 'Hồ sơ công việc không tồn tại'::TEXT, 0::BIGINT;
     RETURN;
   END IF;
