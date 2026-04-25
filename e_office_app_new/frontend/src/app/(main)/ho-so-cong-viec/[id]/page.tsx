@@ -589,9 +589,11 @@ export default function HscvDetailPage() {
       onOk: () => {
         if (!reason.trim()) {
           message.error('Vui lòng nhập lý do từ chối');
-          // Reject voi Error object thay vi string raw — tranh "Uncaught (in promise) missing reason"
-          // o React 19 / Next 16. AntD Modal.confirm onOk reject -> giu modal open, da xu ly internally.
-          return Promise.reject(new Error('VALIDATION_FAILED'));
+          // Custom thenable rejection — Next 16 strict mode catch moi Promise.reject() ke ca
+          // AntD handle internally. Thenable nay khong di qua Promise machinery -> Next dev
+          // overlay khong thay "unhandled rejection". AntD onOk treat thenable resolve/reject
+          // y nhu Promise -> modal van giu open.
+          return { then: (_res: unknown, rej: (reason?: unknown) => void) => rej() } as unknown as Promise<void>;
         }
         return handleStatusChange('reject', undefined, reason);
       },
@@ -619,9 +621,11 @@ export default function HscvDetailPage() {
       onOk: () => {
         if (!reason.trim()) {
           message.error('Vui lòng nhập lý do trả về');
-          // Reject voi Error object thay vi string raw — tranh "Uncaught (in promise) missing reason"
-          // o React 19 / Next 16. AntD Modal.confirm onOk reject -> giu modal open, da xu ly internally.
-          return Promise.reject(new Error('VALIDATION_FAILED'));
+          // Custom thenable rejection — Next 16 strict mode catch moi Promise.reject() ke ca
+          // AntD handle internally. Thenable nay khong di qua Promise machinery -> Next dev
+          // overlay khong thay "unhandled rejection". AntD onOk treat thenable resolve/reject
+          // y nhu Promise -> modal van giu open.
+          return { then: (_res: unknown, rej: (reason?: unknown) => void) => rej() } as unknown as Promise<void>;
         }
         return handleStatusChange('return', undefined, reason);
       },
