@@ -235,6 +235,8 @@ export default function StaffPage() {
 
   const handleEdit = (record: Staff) => {
     setEditingRecord(record);
+    // Reset truoc khi setFieldsValue de tranh leak gia tri tu lan edit/add truoc.
+    form.resetFields();
     const values: any = {
       ...record,
       birth_date: record.birth_date ? dayjs(record.birth_date) : null,
@@ -596,7 +598,6 @@ export default function StaffPage() {
         title={editingRecord ? `Sửa người dùng — ${editingRecord.code || ''}` : 'Thêm người dùng mới'}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        destroyOnHidden
         rootClassName="drawer-gradient"
         size={720}
         extra={
