@@ -583,9 +583,19 @@ router.put('/co-quan', async (req: Request, res: Response) => {
 router.get('/nguoi-ky', async (req: Request, res: Response) => {
   try {
     const { departmentId } = (req as AuthRequest).user;
-    const ancestorUnitId = await resolveAncestorUnit(departmentId);
-    const uId = req.query.unit_id ? Number(req.query.unit_id) : ancestorUnitId;
+    const callerUnitId = await resolveAncestorUnit(departmentId);
     const deptIdFilter = req.query.department_id ? Number(req.query.department_id) : null;
+    // Resolve unit_id theo dept duoc click (admin co the quan ly signers cua moi don vi).
+    // Ru tien thu tu: ancestor cua department_id (luon chinh xac) > explicit unit_id query > unit cua user.
+    // Lan truoc bug: page truyen unit_id=user's unit nhung admin click dept khac don vi -> SP filter sai.
+    let uId: number;
+    if (deptIdFilter) {
+      uId = await resolveAncestorUnit(deptIdFilter);
+    } else if (req.query.unit_id) {
+      uId = Number(req.query.unit_id);
+    } else {
+      uId = callerUnitId;
+    }
     const data = await signerRepository.getList(uId, deptIdFilter);
     res.json({ success: true, data });
   } catch (error) {
