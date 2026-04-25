@@ -109,11 +109,11 @@ export const dashboardRepository = {
     );
   },
 
-  // SP: fn_dashboard_recent_incoming(p_unit_id, p_limit, p_dept_ids)
-  async getRecentIncoming(unitId: number, limit = 10, deptIds?: number[] | null): Promise<RecentIncomingRow[]> {
+  // SP: fn_dashboard_recent_incoming(p_unit_id, p_limit, p_dept_ids, p_staff_id)
+  async getRecentIncoming(unitId: number, limit = 10, deptIds?: number[] | null, staffId?: number): Promise<RecentIncomingRow[]> {
     return callFunction<RecentIncomingRow>(
       'edoc.fn_dashboard_recent_incoming',
-      [unitId, limit, deptIds ?? null],
+      [unitId, limit, deptIds ?? null, staffId ?? null],
     );
   },
 
@@ -142,10 +142,10 @@ export const dashboardRepository = {
     );
   },
 
-  async getDocByMonth(deptIds?: number[] | null, months = 6): Promise<DocByMonthRow[]> {
+  async getDocByMonth(deptIds?: number[] | null, months = 6, staffId?: number): Promise<DocByMonthRow[]> {
     return callFunction<DocByMonthRow>(
       'edoc.fn_dashboard_doc_by_month',
-      [deptIds ?? null, months],
+      [deptIds ?? null, months, staffId ?? null],
     );
   },
 

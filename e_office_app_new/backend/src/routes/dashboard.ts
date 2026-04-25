@@ -44,6 +44,7 @@ router.get('/recent-incoming', async (req: Request, res: Response) => {
       0,
       limit ? Number(limit) : 10,
       deptIds,
+      staffId, // Recipient visibility — VB den dang ky boi unit khac van hien neu user la recipient
     );
     res.json({ success: true, data: rows });
   } catch (error) {
@@ -115,11 +116,11 @@ router.get('/stats-extra', async (req: Request, res: Response) => {
 // ============================================================
 router.get('/doc-by-month', async (req: Request, res: Response) => {
   try {
-    const { departmentId, isAdmin } = (req as AuthRequest).user;
+    const { staffId, departmentId, isAdmin } = (req as AuthRequest).user;
     const deptIds = await resolveDeptSubtree(departmentId, isAdmin);
     const months = req.query.months ? Number(req.query.months) : 6;
 
-    const rows = await dashboardRepository.getDocByMonth(deptIds, months);
+    const rows = await dashboardRepository.getDocByMonth(deptIds, months, staffId);
     res.json({ success: true, data: rows });
   } catch (error) {
     handleDbError(error, res);

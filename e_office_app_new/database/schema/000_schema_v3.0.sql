@@ -22138,8 +22138,11 @@ BEGIN
 END; $$;
 
 -- 6. fn_dashboard_recent_incoming
+-- Visibility: dept subtree HOAC user la recipient (user_incoming_docs).
+-- VB den thuong duoc dang ky boi don vi van thu nhung send toi recipient o
+-- don vi khac -> phai check ca recipient relation, khong chi dept_subtree.
 CREATE OR REPLACE FUNCTION edoc.fn_dashboard_recent_incoming(
-  p_unit_id INT, p_limit INT DEFAULT 10, p_dept_ids INT[] DEFAULT NULL
+  p_unit_id INT, p_limit INT DEFAULT 10, p_dept_ids INT[] DEFAULT NULL, p_staff_id INT DEFAULT NULL
 ) RETURNS TABLE (
   id BIGINT, doc_code VARCHAR, abstract TEXT, received_date TIMESTAMPTZ, urgency_name VARCHAR, sender_name VARCHAR
 ) LANGUAGE plpgsql SECURITY DEFINER AS $$
@@ -22150,7 +22153,14 @@ BEGIN
     CASE d.urgent_id WHEN 1 THEN 'Thường' WHEN 2 THEN 'Khẩn' WHEN 3 THEN 'Hỏa tốc' ELSE 'Thường' END::VARCHAR,
     COALESCE(d.publish_unit, '')::VARCHAR
   FROM edoc.incoming_docs d
-  WHERE (p_dept_ids IS NULL OR d.department_id = ANY(p_dept_ids))
+  WHERE (
+    p_dept_ids IS NULL
+    OR d.department_id = ANY(p_dept_ids)
+    OR (p_staff_id IS NOT NULL AND EXISTS (
+      SELECT 1 FROM edoc.user_incoming_docs uid
+      WHERE uid.incoming_doc_id = d.id AND uid.staff_id = p_staff_id
+    ))
+  )
   ORDER BY d.received_date DESC NULLS LAST, d.created_at DESC
   LIMIT COALESCE(p_limit, 10);
 END; $$;
@@ -25708,7 +25718,8 @@ $$;
 -- ==========================================
 CREATE OR REPLACE FUNCTION edoc.fn_dashboard_doc_by_month(
   p_dept_ids INT[] DEFAULT NULL,
-  p_months   INT DEFAULT 6
+  p_months   INT DEFAULT 6,
+  p_staff_id INT DEFAULT NULL
 ) RETURNS TABLE (
   month_label  TEXT,
   incoming_count BIGINT,
@@ -25729,7 +25740,14 @@ BEGIN
       SELECT COUNT(*)
       FROM edoc.incoming_docs ind
       WHERE date_trunc('month', COALESCE(ind.received_date, ind.created_at)) = mo.m
-        AND (p_dept_ids IS NULL OR ind.unit_id = ANY(p_dept_ids))
+        AND (
+          p_dept_ids IS NULL
+          OR ind.unit_id = ANY(p_dept_ids)
+          OR (p_staff_id IS NOT NULL AND EXISTS (
+            SELECT 1 FROM edoc.user_incoming_docs uid
+            WHERE uid.incoming_doc_id = ind.id AND uid.staff_id = p_staff_id
+          ))
+        )
     ), 0) AS incoming_count,
     COALESCE((
       SELECT COUNT(*)
