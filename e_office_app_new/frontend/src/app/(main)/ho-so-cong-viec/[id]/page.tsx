@@ -591,7 +591,9 @@ export default function HscvDetailPage() {
       onOk: () => {
         if (!reason.trim()) {
           message.error('Vui lòng nhập lý do từ chối');
-          return Promise.reject('missing reason');
+          // Reject voi Error object thay vi string raw — tranh "Uncaught (in promise) missing reason"
+          // o React 19 / Next 16. AntD Modal.confirm onOk reject -> giu modal open, da xu ly internally.
+          return Promise.reject(new Error('VALIDATION_FAILED'));
         }
         return handleStatusChange('reject', undefined, reason);
       },
@@ -619,7 +621,9 @@ export default function HscvDetailPage() {
       onOk: () => {
         if (!reason.trim()) {
           message.error('Vui lòng nhập lý do trả về');
-          return Promise.reject('missing reason');
+          // Reject voi Error object thay vi string raw — tranh "Uncaught (in promise) missing reason"
+          // o React 19 / Next 16. AntD Modal.confirm onOk reject -> giu modal open, da xu ly internally.
+          return Promise.reject(new Error('VALIDATION_FAILED'));
         }
         return handleStatusChange('return', undefined, reason);
       },
