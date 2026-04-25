@@ -22141,6 +22141,8 @@ END; $$;
 -- Visibility: dept subtree HOAC user la recipient (user_incoming_docs).
 -- VB den thuong duoc dang ky boi don vi van thu nhung send toi recipient o
 -- don vi khac -> phai check ca recipient relation, khong chi dept_subtree.
+-- DROP signature cu de tranh overload (signature thay doi khi them p_staff_id)
+DROP FUNCTION IF EXISTS edoc.fn_dashboard_recent_incoming(int, int, int[]) CASCADE;
 CREATE OR REPLACE FUNCTION edoc.fn_dashboard_recent_incoming(
   p_unit_id INT, p_limit INT DEFAULT 10, p_dept_ids INT[] DEFAULT NULL, p_staff_id INT DEFAULT NULL
 ) RETURNS TABLE (
@@ -25716,6 +25718,8 @@ $$;
 -- 2. VB đến/đi theo tháng (6 tháng gần nhất)
 -- Dùng cho biểu đồ cột grouped bar chart
 -- ==========================================
+-- DROP signature cu de tranh overload (signature thay doi khi them p_staff_id)
+DROP FUNCTION IF EXISTS edoc.fn_dashboard_doc_by_month(int[], int) CASCADE;
 CREATE OR REPLACE FUNCTION edoc.fn_dashboard_doc_by_month(
   p_dept_ids INT[] DEFAULT NULL,
   p_months   INT DEFAULT 6,
