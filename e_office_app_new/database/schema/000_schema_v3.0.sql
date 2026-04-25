@@ -3463,51 +3463,101 @@ $$;
 
 --
 -- Name: fn_handling_doc_get_by_id(bigint); Type: FUNCTION; Schema: edoc; Owner: -
+-- 36 cột: 28 cũ + 4 cột số (number, sub_number, doc_book_id, doc_book_name) + JOIN doc_books
+--          + 3 cột cancel (cancel_reason, cancelled_at, cancelled_by) — Gap D
 --
 
-CREATE OR REPLACE FUNCTION edoc.fn_handling_doc_get_by_id(p_id bigint) RETURNS TABLE(id bigint, unit_id integer, unit_name character varying, department_id integer, department_name character varying, name character varying, abstract text, comments text, doc_notation character varying, doc_type_id integer, doc_type_name character varying, doc_field_id integer, doc_field_name character varying, start_date timestamp with time zone, end_date timestamp with time zone, curator_id integer, curator_name text, signer_id integer, signer_name text, status smallint, progress smallint, workflow_id integer, workflow_name character varying, parent_id bigint, parent_name character varying, is_from_doc boolean, created_by integer, created_at timestamp with time zone, updated_at timestamp with time zone)
-    LANGUAGE plpgsql
-    AS $$
+DROP FUNCTION IF EXISTS edoc.fn_handling_doc_get_by_id(bigint) CASCADE;
+
+CREATE OR REPLACE FUNCTION edoc.fn_handling_doc_get_by_id(p_id bigint)
+RETURNS TABLE(
+    id bigint,
+    unit_id integer,
+    unit_name character varying,
+    department_id integer,
+    department_name character varying,
+    name character varying,
+    abstract text,
+    comments text,
+    doc_notation character varying,
+    doc_type_id integer,
+    doc_type_name character varying,
+    doc_field_id integer,
+    doc_field_name character varying,
+    start_date timestamp with time zone,
+    end_date timestamp with time zone,
+    curator_id integer,
+    curator_name text,
+    signer_id integer,
+    signer_name text,
+    status smallint,
+    progress smallint,
+    workflow_id integer,
+    workflow_name character varying,
+    parent_id bigint,
+    parent_name character varying,
+    is_from_doc boolean,
+    created_by integer,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    "number" integer,
+    sub_number character varying,
+    doc_book_id integer,
+    doc_book_name character varying,
+    cancel_reason text,
+    cancelled_at timestamp with time zone,
+    cancelled_by integer
+)
+LANGUAGE plpgsql
+AS $$
 BEGIN
   RETURN QUERY
   SELECT
     h.id,
     h.unit_id,
-    du.name                                 AS unit_name,
+    du.name                                     AS unit_name,
     h.department_id,
-    dd.name                                 AS department_name,
+    dd.name                                     AS department_name,
     h.name,
     h.abstract,
     h.comments,
     h.doc_notation,
     h.doc_type_id,
-    dt.name                                 AS doc_type_name,
+    dt.name                                     AS doc_type_name,
     h.doc_field_id,
-    df.name                                 AS doc_field_name,
+    df.name                                     AS doc_field_name,
     h.start_date,
     h.end_date,
-    h.curator                               AS curator_id,
-    CONCAT(sc.last_name, ' ', sc.first_name) AS curator_name,
-    h.signer                                AS signer_id,
-    CONCAT(ss.last_name, ' ', ss.first_name) AS signer_name,
+    h.curator                                   AS curator_id,
+    CONCAT(sc.last_name, ' ', sc.first_name)    AS curator_name,
+    h.signer                                    AS signer_id,
+    CONCAT(ss.last_name, ' ', ss.first_name)    AS signer_name,
     h.status,
     h.progress,
     h.workflow_id,
-    NULL::VARCHAR                           AS workflow_name,
+    NULL::VARCHAR                               AS workflow_name,
     h.parent_id,
-    hp.name                                 AS parent_name,
+    hp.name                                     AS parent_name,
     h.is_from_doc,
     h.created_by,
     h.created_at,
-    h.updated_at
+    h.updated_at,
+    h.number,
+    h.sub_number,
+    h.doc_book_id,
+    db.name::VARCHAR                            AS doc_book_name,
+    h.cancel_reason,
+    h.cancelled_at,
+    h.cancelled_by
   FROM edoc.handling_docs h
   LEFT JOIN public.departments du ON du.id = h.unit_id
   LEFT JOIN public.departments dd ON dd.id = h.department_id
-  LEFT JOIN edoc.doc_types dt ON dt.id = h.doc_type_id
-  LEFT JOIN edoc.doc_fields df ON df.id = h.doc_field_id
-  LEFT JOIN public.staff sc ON sc.id = h.curator
-  LEFT JOIN public.staff ss ON ss.id = h.signer
+  LEFT JOIN edoc.doc_types     dt ON dt.id = h.doc_type_id
+  LEFT JOIN edoc.doc_fields    df ON df.id = h.doc_field_id
+  LEFT JOIN public.staff       sc ON sc.id = h.curator
+  LEFT JOIN public.staff       ss ON ss.id = h.signer
   LEFT JOIN edoc.handling_docs hp ON hp.id = h.parent_id
+  LEFT JOIN edoc.doc_books     db ON db.id = h.doc_book_id AND db.is_deleted = FALSE
   WHERE h.id = p_id;
 END;
 $$;
@@ -4047,6 +4097,384 @@ BEGIN
   END IF;
 
   RETURN QUERY SELECT TRUE, 'Cập nhật tiến độ thành công'::TEXT;
+END;
+$$;
+
+
+--
+-- ============================================================================
+-- HSCV Advanced SPs — consolidated từ archive/v1.0-migrations/quick_260418_*
+-- (HDSD III.2.5 Hủy + III.2.6 Forward ý kiến + III.2.7 Transfer + Lấy số / Mở lại)
+-- ============================================================================
+--
+
+--
+-- Name: fn_handling_doc_reopen(bigint, integer); Type: FUNCTION; Schema: edoc; Owner: -
+-- Mở lại HSCV (status 4 → 1). GIỮ NGUYÊN progress per A2.
+--
+
+DROP FUNCTION IF EXISTS edoc.fn_handling_doc_reopen(bigint, integer) CASCADE;
+
+CREATE OR REPLACE FUNCTION edoc.fn_handling_doc_reopen(
+    p_id      bigint,
+    p_user_id integer
+)
+RETURNS TABLE(success boolean, message text)
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    v_status SMALLINT;
+BEGIN
+    SELECT status INTO v_status
+      FROM edoc.handling_docs
+      WHERE id = p_id;
+
+    IF NOT FOUND THEN
+        RETURN QUERY SELECT FALSE, 'Không tìm thấy hồ sơ công việc'::TEXT;
+        RETURN;
+    END IF;
+
+    IF v_status <> 4 THEN
+        RETURN QUERY SELECT FALSE,
+            ('Chỉ có thể mở lại HSCV đã hoàn thành. Trạng thái hiện tại: ' || v_status)::TEXT;
+        RETURN;
+    END IF;
+
+    -- A2: status 4 → 1, GIỮ NGUYÊN progress, clear complete_date / complete_user_id
+    UPDATE edoc.handling_docs
+    SET status           = 1,
+        complete_date    = NULL,
+        complete_user_id = NULL,
+        updated_by       = p_user_id,
+        updated_at       = NOW()
+    WHERE id = p_id;
+
+    RETURN QUERY SELECT TRUE, 'Đã mở lại hồ sơ công việc'::TEXT;
+END;
+$$;
+
+
+--
+-- Name: fn_handling_doc_get_next_number(integer, integer); Type: FUNCTION; Schema: edoc; Owner: -
+-- Tính số HSCV kế tiếp = MAX(number)+1 theo năm created_at + doc_book_id + unit_id (A3).
+--
+
+DROP FUNCTION IF EXISTS edoc.fn_handling_doc_get_next_number(integer, integer) CASCADE;
+
+CREATE OR REPLACE FUNCTION edoc.fn_handling_doc_get_next_number(
+    p_doc_book_id integer,
+    p_unit_id     integer
+)
+RETURNS integer
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_next INT;
+BEGIN
+    SELECT COALESCE(MAX(number), 0) + 1
+      INTO v_next
+      FROM edoc.handling_docs
+      WHERE doc_book_id = p_doc_book_id
+        AND unit_id = p_unit_id
+        AND number IS NOT NULL
+        AND EXTRACT(YEAR FROM created_at) = EXTRACT(YEAR FROM NOW());
+    RETURN v_next;
+END;
+$$;
+
+
+--
+-- Name: fn_handling_doc_assign_number(bigint, integer, integer); Type: FUNCTION; Schema: edoc; Owner: -
+-- Gán số HSCV: kiểm tra chưa có số → tính MAX+1 theo năm + sổ → UPDATE row.
+--
+
+DROP FUNCTION IF EXISTS edoc.fn_handling_doc_assign_number(bigint, integer, integer) CASCADE;
+
+CREATE OR REPLACE FUNCTION edoc.fn_handling_doc_assign_number(
+    p_id          bigint,
+    p_user_id     integer,
+    p_doc_book_id integer
+)
+RETURNS TABLE(success boolean, message text, "number" integer)
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    v_unit_id          INT;
+    v_existing_number  INT;
+    v_next             INT;
+BEGIN
+    SELECT h.unit_id, h.number
+      INTO v_unit_id, v_existing_number
+      FROM edoc.handling_docs h
+      WHERE h.id = p_id;
+
+    IF NOT FOUND THEN
+        RETURN QUERY SELECT FALSE, 'Không tìm thấy hồ sơ công việc'::TEXT, NULL::INT;
+        RETURN;
+    END IF;
+
+    IF v_existing_number IS NOT NULL THEN
+        RETURN QUERY SELECT FALSE,
+            ('HSCV đã có số ' || v_existing_number)::TEXT,
+            v_existing_number;
+        RETURN;
+    END IF;
+
+    IF p_doc_book_id IS NULL THEN
+        RETURN QUERY SELECT FALSE, 'Vui lòng chọn sổ văn bản'::TEXT, NULL::INT;
+        RETURN;
+    END IF;
+
+    -- A3: Tính số kế tiếp theo năm created_at + doc_book_id + unit_id
+    v_next := edoc.fn_handling_doc_get_next_number(p_doc_book_id, v_unit_id);
+
+    UPDATE edoc.handling_docs
+    SET number      = v_next,
+        doc_book_id = p_doc_book_id,
+        updated_by  = p_user_id,
+        updated_at  = NOW()
+    WHERE id = p_id;
+
+    RETURN QUERY SELECT TRUE, ('Đã lấy số ' || v_next)::TEXT, v_next;
+END;
+$$;
+
+
+--
+-- Name: fn_handling_doc_cancel(bigint, integer, text); Type: FUNCTION; Schema: edoc; Owner: -
+-- Hủy HSCV với lý do (Gap D / TC-066).
+-- LƯU Ý: Bug B fix (chỉ cho phép hủy ở status IN (-1, -2)) sẽ làm ở Commit 2.
+--        Commit 1 copy nguyên bản từ archive: reject status=4 và status=-3.
+--
+
+DROP FUNCTION IF EXISTS edoc.fn_handling_doc_cancel(bigint, integer, text) CASCADE;
+
+CREATE OR REPLACE FUNCTION edoc.fn_handling_doc_cancel(
+    p_id bigint,
+    p_user_id integer,
+    p_reason text
+)
+RETURNS TABLE(success boolean, message text)
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    v_status SMALLINT;
+BEGIN
+    IF p_reason IS NULL OR LENGTH(TRIM(p_reason)) = 0 THEN
+        RETURN QUERY SELECT FALSE, 'Vui lòng nhập lý do hủy'::TEXT;
+        RETURN;
+    END IF;
+
+    SELECT h.status INTO v_status FROM edoc.handling_docs h WHERE h.id = p_id;
+    IF NOT FOUND THEN
+        RETURN QUERY SELECT FALSE, 'Không tìm thấy hồ sơ công việc'::TEXT;
+        RETURN;
+    END IF;
+    IF v_status = -3 THEN
+        RETURN QUERY SELECT FALSE, 'HSCV đã hủy trước đó'::TEXT;
+        RETURN;
+    END IF;
+    IF v_status = 4 THEN
+        RETURN QUERY SELECT FALSE, 'HSCV đã hoàn thành, không thể hủy'::TEXT;
+        RETURN;
+    END IF;
+
+    UPDATE edoc.handling_docs
+    SET status = -3,
+        cancel_reason = p_reason,
+        cancelled_at = NOW(),
+        cancelled_by = p_user_id,
+        updated_at = NOW()
+    WHERE id = p_id;
+
+    RETURN QUERY SELECT TRUE, 'Đã hủy hồ sơ công việc'::TEXT;
+END;
+$$;
+
+
+--
+-- Name: fn_handling_doc_transfer(bigint, integer, integer, text, integer); Type: FUNCTION; Schema: edoc; Owner: -
+-- Chuyển tiếp HSCV (transfer ownership) — Gap F / TC-068.
+--
+
+DROP FUNCTION IF EXISTS edoc.fn_handling_doc_transfer(bigint, integer, integer, text, integer) CASCADE;
+
+CREATE OR REPLACE FUNCTION edoc.fn_handling_doc_transfer(
+    p_id bigint,
+    p_from_staff_id integer,
+    p_to_staff_id integer,
+    p_note text,
+    p_by integer
+)
+RETURNS TABLE(success boolean, message text)
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    v_current_curator INT;
+    v_doc_unit INT;
+    v_to_unit INT;
+    v_to_locked BOOLEAN;
+    v_to_deleted BOOLEAN;
+BEGIN
+    IF p_to_staff_id IS NULL OR p_to_staff_id <= 0 THEN
+        RETURN QUERY SELECT FALSE, 'Vui lòng chọn người nhận'::TEXT;
+        RETURN;
+    END IF;
+    IF p_from_staff_id = p_to_staff_id THEN
+        RETURN QUERY SELECT FALSE, 'Không thể chuyển cho chính mình'::TEXT;
+        RETURN;
+    END IF;
+
+    SELECT h.curator, h.unit_id INTO v_current_curator, v_doc_unit
+      FROM edoc.handling_docs h WHERE h.id = p_id;
+    IF NOT FOUND THEN
+        RETURN QUERY SELECT FALSE, 'Không tìm thấy hồ sơ công việc'::TEXT;
+        RETURN;
+    END IF;
+
+    SELECT s.unit_id, COALESCE(s.is_locked, FALSE), COALESCE(s.is_deleted, FALSE)
+      INTO v_to_unit, v_to_locked, v_to_deleted
+      FROM public.staff s WHERE s.id = p_to_staff_id;
+    IF NOT FOUND THEN
+        RETURN QUERY SELECT FALSE, 'Không tìm thấy người nhận'::TEXT;
+        RETURN;
+    END IF;
+    IF v_to_locked THEN
+        RETURN QUERY SELECT FALSE, 'Người nhận đã khóa tài khoản'::TEXT;
+        RETURN;
+    END IF;
+    IF v_to_deleted THEN
+        RETURN QUERY SELECT FALSE, 'Người nhận đã bị xoá'::TEXT;
+        RETURN;
+    END IF;
+    IF v_to_unit <> v_doc_unit THEN
+        RETURN QUERY SELECT FALSE, 'Chỉ có thể chuyển HSCV cho người cùng đơn vị'::TEXT;
+        RETURN;
+    END IF;
+
+    UPDATE edoc.handling_docs
+    SET curator = p_to_staff_id,
+        updated_at = NOW()
+    WHERE id = p_id;
+
+    INSERT INTO edoc.handling_doc_history(
+        handling_doc_id, action_type, from_staff_id, to_staff_id, note, created_by, created_at
+    )
+    VALUES (p_id, 'transfer', v_current_curator, p_to_staff_id, p_note, p_by, NOW());
+
+    RETURN QUERY SELECT TRUE, 'Đã chuyển tiếp hồ sơ công việc'::TEXT;
+END;
+$$;
+
+
+--
+-- Name: fn_handling_doc_history_list(bigint); Type: FUNCTION; Schema: edoc; Owner: -
+-- Lịch sử transfer/cancel HSCV — Gap F.
+--
+
+DROP FUNCTION IF EXISTS edoc.fn_handling_doc_history_list(bigint) CASCADE;
+
+CREATE OR REPLACE FUNCTION edoc.fn_handling_doc_history_list(p_id bigint)
+RETURNS TABLE(
+    id bigint,
+    handling_doc_id bigint,
+    action_type character varying,
+    from_staff_id integer,
+    from_staff_name text,
+    to_staff_id integer,
+    to_staff_name text,
+    note text,
+    created_by integer,
+    created_by_name text,
+    created_at timestamp with time zone
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RETURN QUERY
+    SELECT
+        h.id,
+        h.handling_doc_id,
+        h.action_type,
+        h.from_staff_id,
+        CASE WHEN fs.id IS NOT NULL THEN CONCAT(fs.last_name, ' ', fs.first_name)::TEXT ELSE NULL::TEXT END AS from_staff_name,
+        h.to_staff_id,
+        CASE WHEN ts.id IS NOT NULL THEN CONCAT(ts.last_name, ' ', ts.first_name)::TEXT ELSE NULL::TEXT END AS to_staff_name,
+        h.note,
+        h.created_by,
+        CASE WHEN cs.id IS NOT NULL THEN CONCAT(cs.last_name, ' ', cs.first_name)::TEXT ELSE NULL::TEXT END AS created_by_name,
+        h.created_at
+    FROM edoc.handling_doc_history h
+    LEFT JOIN public.staff fs ON fs.id = h.from_staff_id
+    LEFT JOIN public.staff ts ON ts.id = h.to_staff_id
+    LEFT JOIN public.staff cs ON cs.id = h.created_by
+    WHERE h.handling_doc_id = p_id
+    ORDER BY h.created_at DESC;
+END;
+$$;
+
+
+--
+-- Name: fn_opinion_forward(bigint, integer, integer, text); Type: FUNCTION; Schema: edoc; Owner: -
+-- Chuyển tiếp ý kiến HSCV — Gap E / TC-067.
+--
+
+DROP FUNCTION IF EXISTS edoc.fn_opinion_forward(bigint, integer, integer, text) CASCADE;
+
+CREATE OR REPLACE FUNCTION edoc.fn_opinion_forward(
+    p_opinion_id bigint,
+    p_from_staff_id integer,
+    p_to_staff_id integer,
+    p_note text
+)
+RETURNS TABLE(success boolean, message text, id bigint)
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    v_handling_doc_id BIGINT;
+    v_to_exists BOOLEAN;
+    v_new_id BIGINT;
+BEGIN
+    IF p_note IS NULL OR LENGTH(TRIM(p_note)) = 0 THEN
+        RETURN QUERY SELECT FALSE, 'Vui lòng nhập nội dung chuyển tiếp'::TEXT, NULL::BIGINT;
+        RETURN;
+    END IF;
+
+    SELECT o.handling_doc_id INTO v_handling_doc_id
+      FROM edoc.opinion_handling_docs o
+      WHERE o.id = p_opinion_id;
+    IF NOT FOUND THEN
+        RETURN QUERY SELECT FALSE, 'Không tìm thấy ý kiến gốc'::TEXT, NULL::BIGINT;
+        RETURN;
+    END IF;
+
+    SELECT EXISTS(
+        SELECT 1 FROM public.staff s
+        WHERE s.id = p_to_staff_id
+          AND COALESCE(s.is_locked, FALSE) = FALSE
+          AND COALESCE(s.is_deleted, FALSE) = FALSE
+    ) INTO v_to_exists;
+    IF NOT v_to_exists THEN
+        RETURN QUERY SELECT FALSE, 'Không tìm thấy người nhận hoặc đã khóa/xoá'::TEXT, NULL::BIGINT;
+        RETURN;
+    END IF;
+
+    INSERT INTO edoc.opinion_handling_docs(
+        handling_doc_id, staff_id, content, created_at,
+        forwarded_to_staff_id, forwarded_at, forward_note, parent_opinion_id
+    )
+    VALUES (
+        v_handling_doc_id, p_from_staff_id, p_note, NOW(),
+        p_to_staff_id, NOW(), p_note, p_opinion_id
+    )
+    RETURNING edoc.opinion_handling_docs.id INTO v_new_id;
+
+    RETURN QUERY SELECT TRUE, 'Đã chuyển tiếp ý kiến'::TEXT, v_new_id;
 END;
 $$;
 
@@ -6152,11 +6580,27 @@ $$;
 
 --
 -- Name: fn_opinion_get_list(bigint); Type: FUNCTION; Schema: edoc; Owner: -
+-- 11 cột: 6 cũ + 5 forward (forwarded_to_staff_id, forwarded_to_name, forwarded_at, forward_note, parent_opinion_id) — Gap E
 --
 
-CREATE OR REPLACE FUNCTION edoc.fn_opinion_get_list(p_doc_id bigint) RETURNS TABLE(id bigint, staff_id integer, staff_name text, content text, attachment_path character varying, created_at timestamp with time zone)
-    LANGUAGE plpgsql
-    AS $$
+DROP FUNCTION IF EXISTS edoc.fn_opinion_get_list(bigint) CASCADE;
+
+CREATE OR REPLACE FUNCTION edoc.fn_opinion_get_list(p_doc_id bigint)
+RETURNS TABLE(
+    id bigint,
+    staff_id integer,
+    staff_name text,
+    content text,
+    attachment_path character varying,
+    created_at timestamp with time zone,
+    forwarded_to_staff_id integer,
+    forwarded_to_name text,
+    forwarded_at timestamp with time zone,
+    forward_note text,
+    parent_opinion_id bigint
+)
+LANGUAGE plpgsql
+AS $$
 BEGIN
   RETURN QUERY
   SELECT
@@ -6165,9 +6609,18 @@ BEGIN
     CONCAT(s.last_name, ' ', s.first_name)::TEXT AS staff_name,
     o.content,
     o.attachment_path,
-    o.created_at
+    o.created_at,
+    o.forwarded_to_staff_id,
+    CASE
+        WHEN ts.id IS NOT NULL THEN CONCAT(ts.last_name, ' ', ts.first_name)::TEXT
+        ELSE NULL::TEXT
+    END AS forwarded_to_name,
+    o.forwarded_at,
+    o.forward_note,
+    o.parent_opinion_id
   FROM edoc.opinion_handling_docs o
   JOIN public.staff s ON s.id = o.staff_id
+  LEFT JOIN public.staff ts ON ts.id = o.forwarded_to_staff_id
   WHERE o.handling_doc_id = p_doc_id
   ORDER BY o.created_at ASC;
 END;
@@ -12731,6 +13184,33 @@ CREATE TABLE IF NOT EXISTS edoc.handling_docs (
     updated_at timestamp with time zone DEFAULT now()
 );
 
+-- Gap D (HDSD III.2.5): Hủy HSCV với lý do — 3 cột audit hủy
+ALTER TABLE edoc.handling_docs
+  ADD COLUMN IF NOT EXISTS cancel_reason text,
+  ADD COLUMN IF NOT EXISTS cancelled_at timestamp with time zone,
+  ADD COLUMN IF NOT EXISTS cancelled_by integer;
+
+-- FK forward-reference: nếu public.staff chưa tồn tại (fresh apply lần 1) → bỏ qua silently.
+-- Lần apply 2+ public.staff đã tồn tại → FK được tạo. IF NOT EXISTS check để idempotent.
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_handling_docs_cancelled_by') THEN
+        ALTER TABLE edoc.handling_docs
+          ADD CONSTRAINT fk_handling_docs_cancelled_by
+          FOREIGN KEY (cancelled_by) REFERENCES public.staff(id);
+    END IF;
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+    WHEN duplicate_table THEN NULL;
+    WHEN invalid_table_definition THEN NULL;
+    WHEN duplicate_column THEN NULL;
+    WHEN undefined_table THEN NULL;
+    WHEN undefined_object THEN NULL;
+    WHEN invalid_foreign_key THEN NULL;
+    WHEN OTHERS THEN
+        RAISE NOTICE 'fk_handling_docs_cancelled_by skipped: %', SQLERRM;
+END $$;
+
 
 --
 -- Name: handling_docs_id_seq; Type: SEQUENCE; Schema: edoc; Owner: -
@@ -13278,6 +13758,36 @@ CREATE TABLE IF NOT EXISTS edoc.opinion_handling_docs (
     created_at timestamp with time zone DEFAULT now()
 );
 
+-- Gap E (HDSD III.2.6): Chuyển tiếp ý kiến HSCV — 4 cột forward
+ALTER TABLE edoc.opinion_handling_docs
+  ADD COLUMN IF NOT EXISTS forwarded_to_staff_id integer,
+  ADD COLUMN IF NOT EXISTS forwarded_at timestamp with time zone,
+  ADD COLUMN IF NOT EXISTS forward_note text,
+  ADD COLUMN IF NOT EXISTS parent_opinion_id bigint;
+
+-- FK self-reference: cần PRIMARY KEY constraint trên opinion_handling_docs.id (apply cuối file)
+-- → Trên fresh apply lần 1, PK chưa tồn tại → bỏ qua silently. Lần apply 2+ sẽ thành công.
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_opinion_parent') THEN
+        ALTER TABLE edoc.opinion_handling_docs
+          ADD CONSTRAINT fk_opinion_parent
+          FOREIGN KEY (parent_opinion_id)
+          REFERENCES edoc.opinion_handling_docs(id)
+          ON DELETE SET NULL;
+    END IF;
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+    WHEN duplicate_table THEN NULL;
+    WHEN invalid_table_definition THEN NULL;
+    WHEN duplicate_column THEN NULL;
+    WHEN undefined_table THEN NULL;
+    WHEN undefined_object THEN NULL;
+    WHEN invalid_foreign_key THEN NULL;
+    WHEN OTHERS THEN
+        RAISE NOTICE 'fk_opinion_parent skipped: %', SQLERRM;
+END $$;
+
 
 --
 -- Name: opinion_handling_docs_id_seq; Type: SEQUENCE; Schema: edoc; Owner: -
@@ -13803,6 +14313,64 @@ CREATE TABLE IF NOT EXISTS edoc.staff_handling_docs (
     assigned_at timestamp with time zone DEFAULT now(),
     completed_at timestamp with time zone
 );
+
+
+--
+-- Name: handling_doc_history; Type: TABLE; Schema: edoc; Owner: -
+-- Gap F (HDSD III.2.7): Lịch sử transfer/cancel/reopen HSCV
+-- FK constraints đặt deferred (DO block) để tránh forward-ref khi apply lần 1.
+--
+
+CREATE TABLE IF NOT EXISTS edoc.handling_doc_history (
+    id bigserial PRIMARY KEY,
+    handling_doc_id bigint NOT NULL,
+    action_type character varying(50) NOT NULL,
+    from_staff_id integer,
+    to_staff_id integer,
+    note text,
+    created_by integer,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_handling_doc_history_doc_id
+  ON edoc.handling_doc_history(handling_doc_id);
+CREATE INDEX IF NOT EXISTS idx_handling_doc_history_created_at
+  ON edoc.handling_doc_history(created_at DESC);
+
+-- FK forward-reference cho handling_doc_history (PK của handling_docs/staff đặt cuối file)
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_hdh_handling_doc') THEN
+        ALTER TABLE edoc.handling_doc_history
+          ADD CONSTRAINT fk_hdh_handling_doc
+          FOREIGN KEY (handling_doc_id) REFERENCES edoc.handling_docs(id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_hdh_from_staff') THEN
+        ALTER TABLE edoc.handling_doc_history
+          ADD CONSTRAINT fk_hdh_from_staff
+          FOREIGN KEY (from_staff_id) REFERENCES public.staff(id);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_hdh_to_staff') THEN
+        ALTER TABLE edoc.handling_doc_history
+          ADD CONSTRAINT fk_hdh_to_staff
+          FOREIGN KEY (to_staff_id) REFERENCES public.staff(id);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_hdh_created_by') THEN
+        ALTER TABLE edoc.handling_doc_history
+          ADD CONSTRAINT fk_hdh_created_by
+          FOREIGN KEY (created_by) REFERENCES public.staff(id);
+    END IF;
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+    WHEN duplicate_table THEN NULL;
+    WHEN invalid_table_definition THEN NULL;
+    WHEN duplicate_column THEN NULL;
+    WHEN undefined_table THEN NULL;
+    WHEN undefined_object THEN NULL;
+    WHEN invalid_foreign_key THEN NULL;
+    WHEN OTHERS THEN
+        RAISE NOTICE 'handling_doc_history FK skipped: %', SQLERRM;
+END $$;
 
 
 --

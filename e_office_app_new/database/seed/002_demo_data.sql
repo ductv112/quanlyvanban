@@ -315,6 +315,50 @@ WHERE NOT EXISTS (SELECT 1 FROM edoc.handling_docs WHERE id = n);
 
 SELECT setval('edoc.handling_docs_id_seq', 1000, true);
 
+-- ─── 14b. HSCV demo cho field mới (Gap D / Lấy số / History) ──────────────
+-- 1) HSCV id=10 đã ở status=3 (chờ duyệt) → gán số demo cho Lấy số
+UPDATE edoc.handling_docs
+SET number = 1, sub_number = NULL, doc_book_id = 1
+WHERE id = 10 AND status = 3 AND number IS NULL;
+
+-- 2) HSCV id=16 demo bị hủy (Gap D) — status=-3 + cancel_reason
+INSERT INTO edoc.handling_docs (
+  id, unit_id, department_id, name, abstract, doc_notation,
+  doc_type_id, doc_field_id, doc_book_id,
+  start_date, end_date, received_date,
+  curator, status, progress,
+  cancel_reason, cancelled_at, cancelled_by, created_by
+)
+SELECT 16, 1, 1,
+  'Hồ sơ công việc demo 16 (đã hủy)',
+  'HSCV demo Gap D — hủy với lý do',
+  'HSCV-16', 1, 1, 1,
+  NOW() - INTERVAL '5 days', NOW() + INTERVAL '10 days', NOW() - INTERVAL '5 days',
+  2, (-3)::smallint, 50::smallint,
+  'Hủy do thay đổi yêu cầu nghiệp vụ', NOW() - INTERVAL '2 days', 1, 1
+WHERE NOT EXISTS (SELECT 1 FROM edoc.handling_docs WHERE id = 16);
+
+-- 3) handling_doc_history: 3 record demo (transfer x2 + cancel x1)
+INSERT INTO edoc.handling_doc_history (
+  handling_doc_id, action_type, from_staff_id, to_staff_id, note, created_by, created_at
+)
+SELECT v.handling_doc_id, v.action_type, v.from_staff_id, v.to_staff_id, v.note, v.created_by, v.created_at
+FROM (VALUES
+  (1::bigint, 'transfer'::varchar, 2, 3, 'Chuyển cho anh xử lý giúp', 1, NOW() - INTERVAL '3 days'),
+  (1::bigint, 'transfer'::varchar, 3, 4, 'Chuyển tiếp xử lý phần 2', 3, NOW() - INTERVAL '1 day'),
+  (16::bigint, 'cancel'::varchar, 2, NULL::int, 'Hủy do thay đổi yêu cầu nghiệp vụ', 1, NOW() - INTERVAL '2 days')
+) AS v(handling_doc_id, action_type, from_staff_id, to_staff_id, note, created_by, created_at)
+WHERE NOT EXISTS (
+  SELECT 1 FROM edoc.handling_doc_history h
+  WHERE h.handling_doc_id = v.handling_doc_id
+    AND h.action_type = v.action_type
+    AND h.note = v.note
+);
+
+-- Bump sequence sau insert explicit id
+SELECT setval(pg_get_serial_sequence('edoc.handling_docs', 'id'),
+              GREATEST((SELECT COALESCE(MAX(id), 0) FROM edoc.handling_docs), 1000), true);
+
 -- ─── 15. VB LIÊN THÔNG v3.0 — gộp vào incoming_docs với source_type='external_lgsp' ──
 -- v3.0: bảng inter_incoming_docs đã DROP, dùng incoming_docs với cờ source_type
 -- Seed 8 cơ quan ngoài tỉnh trước (inter_organizations, rename từ lgsp_organizations)
