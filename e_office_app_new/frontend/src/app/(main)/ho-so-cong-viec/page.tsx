@@ -28,21 +28,24 @@ const STATUS_MAP: Record<number, { label: string; color: string }> = {
   2: { label: 'Chờ trình ký', color: '#D97706' },
   3: { label: 'Đã trình ký', color: '#7C3AED' },
   4: { label: 'Hoàn thành', color: '#059669' },
+  5: { label: 'Tạm dừng', color: '#6B7280' },
   '-1': { label: 'Từ chối', color: '#DC2626' },
   '-2': { label: 'Trả về', color: '#F59E0B' },
+  '-3': { label: 'Đã hủy', color: '#94A3B8' },
 };
 
+// Tabs mapping 1-1 voi status — clean, khong duplicate.
+// Filter "Chua XL phu trach/phoi hop" da chuyen thanh filter phu (filter row).
 const FILTER_TABS = [
   { key: 'all', label: 'Tất cả' },
   { key: 'created_by_me', label: 'Tôi tạo' },
-  { key: 'rejected', label: 'Bị từ chối' },
-  { key: 'returned', label: 'Trả về bổ sung' },
-  { key: 'pending_primary', label: 'Chưa XL phụ trách' },
-  { key: 'pending_coord', label: 'Chưa XL phối hợp' },
-  { key: 'submitting', label: 'Trình ký' },
-  { key: 'in_progress', label: 'Đang giải quyết' },
-  { key: 'proposed_complete', label: 'Đề xuất hoàn thành' },
-  { key: 'completed', label: 'Đã hoàn thành' },
+  { key: 'new', label: 'Mới tạo' },          // status=0
+  { key: 'in_progress', label: 'Đang xử lý' }, // status=1
+  { key: 'submitting', label: 'Chờ duyệt' },  // status=3 (rename "Trinh ky" -> "Cho duyet")
+  { key: 'completed', label: 'Hoàn thành' },  // status=4
+  { key: 'returned', label: 'Trả về' },       // status=-2
+  { key: 'rejected', label: 'Bị từ chối' },   // status=-1
+  { key: 'cancelled', label: 'Đã hủy' },      // status=-3
 ];
 
 // ─── Interfaces ───────────────────────────────────────────────────────────────

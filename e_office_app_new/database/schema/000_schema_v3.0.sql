@@ -22085,7 +22085,11 @@ BEGIN
   UNION ALL
   SELECT 'created_by_me'::TEXT,     COUNT(*)::BIGINT FROM edoc.handling_docs WHERE (p_dept_ids IS NULL OR department_id = ANY(p_dept_ids)) AND created_by = p_staff_id
   UNION ALL
-  SELECT 'rejected'::TEXT,          COUNT(*)::BIGINT FROM edoc.handling_docs WHERE (p_dept_ids IS NULL OR department_id = ANY(p_dept_ids)) AND status = -1 AND created_by = p_staff_id
+  SELECT 'new'::TEXT,               COUNT(*)::BIGINT FROM edoc.handling_docs WHERE (p_dept_ids IS NULL OR department_id = ANY(p_dept_ids)) AND status = 0
+  UNION ALL
+  SELECT 'cancelled'::TEXT,         COUNT(*)::BIGINT FROM edoc.handling_docs WHERE (p_dept_ids IS NULL OR department_id = ANY(p_dept_ids)) AND status = -3
+  UNION ALL
+  SELECT 'rejected'::TEXT,          COUNT(*)::BIGINT FROM edoc.handling_docs WHERE (p_dept_ids IS NULL OR department_id = ANY(p_dept_ids)) AND status = -1
   UNION ALL
   SELECT 'returned'::TEXT,          COUNT(*)::BIGINT FROM edoc.handling_docs WHERE (p_dept_ids IS NULL OR department_id = ANY(p_dept_ids)) AND status = -2
   UNION ALL
@@ -22393,12 +22397,17 @@ BEGIN
       AND (p_status IS NULL OR p_status = -99 OR h.status = p_status)
       AND (p_filter_type IS NULL OR p_filter_type = 'all' OR
         (p_filter_type = 'created_by_me' AND h.created_by = p_staff_id) OR
-        (p_filter_type = 'rejected' AND h.status = -1 AND h.created_by = p_staff_id) OR
+        (p_filter_type = 'new' AND h.status = 0) OR
+        (p_filter_type = 'in_progress' AND h.status = 1) OR
+        (p_filter_type = 'submitting' AND h.status = 3) OR
+        (p_filter_type = 'completed' AND h.status = 4) OR
         (p_filter_type = 'returned' AND h.status = -2) OR
+        (p_filter_type = 'rejected' AND h.status = -1) OR
+        (p_filter_type = 'cancelled' AND h.status = -3) OR
+        -- Backward compat: legacy filter keys
         (p_filter_type = 'pending_primary' AND h.status = 0 AND EXISTS (SELECT 1 FROM edoc.staff_handling_docs shd WHERE shd.handling_doc_id = h.id AND shd.staff_id = p_staff_id AND shd.role = 1)) OR
         (p_filter_type = 'pending_coord' AND h.status IN (0, 1) AND EXISTS (SELECT 1 FROM edoc.staff_handling_docs shd WHERE shd.handling_doc_id = h.id AND shd.staff_id = p_staff_id AND shd.role = 2)) OR
-        (p_filter_type = 'submitting' AND h.status = 3) OR (p_filter_type = 'in_progress' AND h.status = 1) OR
-        (p_filter_type = 'proposed_complete' AND h.status = 3) OR (p_filter_type = 'completed' AND h.status = 4))
+        (p_filter_type = 'proposed_complete' AND h.status = 3))
       AND (p_keyword IS NULL OR TRIM(p_keyword) = '' OR h.name ILIKE '%' || p_keyword || '%')
       AND (p_from_date IS NULL OR h.start_date >= p_from_date)
       AND (p_to_date IS NULL OR h.start_date <= p_to_date)
