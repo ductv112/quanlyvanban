@@ -197,7 +197,6 @@ const STATUS_MAP: Record<number, { text: string; color: string }> = {
   2: { text: 'Chờ trình ký', color: 'orange' },
   3: { text: 'Đã trình ký', color: 'purple' },
   4: { text: 'Hoàn thành', color: 'success' },
-  5: { text: 'Tạm dừng', color: 'default' },
   '-1': { text: 'Từ chối', color: 'error' },
   '-2': { text: 'Trả về', color: 'warning' },
   '-3': { text: 'Đã hủy', color: 'default' },
@@ -265,7 +264,8 @@ function getToolbarButtons(status: number, hasNumber: boolean = true): ToolbarBu
       }
       buttons.push(transferBtn);
       buttons.push(historyBtn);
-      buttons.push({ label: 'Tạm dừng', type: 'default', action: 'change', newStatus: 5 });
+      // Status=5 (Tạm dừng) đã deprecated — bỏ nút "Tạm dừng" trong commit gỡ Option 2.
+      // Khi cần ngưng tạm thời, user ghi note trong tab "Ý kiến xử lý" thay thế.
       return buttons;
     }
     case 2:
@@ -298,10 +298,8 @@ function getToolbarButtons(status: number, hasNumber: boolean = true): ToolbarBu
         { label: 'Mở lại', type: 'primary', action: 'reopen' },
         { label: 'Xem lịch sử', type: 'default', action: 'history' },
       ];
-    case 5:
-      return [
-        { label: 'Tiếp tục xử lý', type: 'primary', action: 'change', newStatus: 1 },
-      ];
+    // case 5 (Tạm dừng) đã deprecated — không còn HSCV nào ở status này.
+    // Status 5 vẫn giữ trong DB schema để không phá data cũ nếu có.
     case -1:
     case -2:
       return [

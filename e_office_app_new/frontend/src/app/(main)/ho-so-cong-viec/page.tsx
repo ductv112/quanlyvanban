@@ -28,7 +28,6 @@ const STATUS_MAP: Record<number, { label: string; color: string }> = {
   2: { label: 'Chờ trình ký', color: '#D97706' },
   3: { label: 'Đã trình ký', color: '#7C3AED' },
   4: { label: 'Hoàn thành', color: '#059669' },
-  5: { label: 'Tạm dừng', color: '#6B7280' },
   '-1': { label: 'Từ chối', color: '#DC2626' },
   '-2': { label: 'Trả về', color: '#F59E0B' },
   '-3': { label: 'Đã hủy', color: '#94A3B8' },
