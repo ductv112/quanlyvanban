@@ -290,7 +290,6 @@ export default function PositionPage() {
         title={editingRecord ? 'Cập nhật chức vụ' : 'Thêm chức vụ mới'}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        destroyOnHidden
         rootClassName="drawer-gradient"
         size={720}
         extra={

@@ -303,7 +303,6 @@ export default function WorkflowPage() {
         title={editingRecord ? 'Chỉnh sửa quy trình' : 'Thêm quy trình'}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        destroyOnHidden
         rootClassName="drawer-gradient"
         size={720}
         extra={

@@ -399,7 +399,6 @@ export default function AddressPage() {
         title={drawerTitle}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        destroyOnHidden
         rootClassName="drawer-gradient"
         size={720}
         extra={

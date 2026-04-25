@@ -436,7 +436,6 @@ export default function NotificationTemplatePage() {
         title={drawerTitle}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        destroyOnHidden
         rootClassName="drawer-gradient"
         size={720}
         extra={

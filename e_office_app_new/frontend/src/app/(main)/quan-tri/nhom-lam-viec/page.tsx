@@ -413,7 +413,6 @@ export default function WorkGroupPage() {
         title={editingRecord ? 'Cập nhật nhóm làm việc' : 'Thêm nhóm làm việc mới'}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        destroyOnHidden
         rootClassName="drawer-gradient"
         size={720}
         extra={
@@ -449,7 +448,6 @@ export default function WorkGroupPage() {
         title={<>Quản lý thành viên — {currentGroup?.name}</>}
         open={memberDrawerOpen}
         onClose={() => setMemberDrawerOpen(false)}
-        destroyOnHidden
         rootClassName="drawer-gradient"
         size={720}
         extra={

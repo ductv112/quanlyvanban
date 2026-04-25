@@ -1032,7 +1032,6 @@ export default function KySoCauHinhPage() {
         }
         open={drawerOpen}
         onClose={handleCloseDrawer}
-        destroyOnHidden
         rootClassName="drawer-gradient"
         size={720}
         extra={

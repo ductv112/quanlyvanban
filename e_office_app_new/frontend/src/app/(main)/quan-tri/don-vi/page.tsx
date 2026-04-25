@@ -360,7 +360,6 @@ export default function DepartmentPage() {
         title={editingRecord ? 'Cập nhật đơn vị' : 'Thêm đơn vị mới'}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        destroyOnHidden
         rootClassName="drawer-gradient"
         size={720}
         extra={

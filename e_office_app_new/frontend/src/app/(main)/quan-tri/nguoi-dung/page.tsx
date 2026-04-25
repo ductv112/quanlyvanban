@@ -720,7 +720,6 @@ export default function StaffPage() {
         title={<>Phân quyền: <strong>{roleStaff?.full_name}</strong></>}
         open={roleDrawerOpen}
         onClose={() => setRoleDrawerOpen(false)}
-        destroyOnHidden
         rootClassName="drawer-gradient"
         size={480}
         extra={

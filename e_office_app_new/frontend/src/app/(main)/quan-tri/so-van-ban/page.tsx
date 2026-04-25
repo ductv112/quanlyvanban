@@ -276,7 +276,6 @@ export default function DocBookPage() {
         title={editingRecord ? 'Cập nhật sổ văn bản' : 'Thêm sổ văn bản mới'}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        destroyOnHidden
         rootClassName="drawer-gradient"
         size={720}
         extra={

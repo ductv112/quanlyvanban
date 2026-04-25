@@ -321,7 +321,6 @@ export default function DelegationPage() {
         title="Thêm ủy quyền mới"
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        destroyOnHidden
         rootClassName="drawer-gradient"
         size={720}
         extra={

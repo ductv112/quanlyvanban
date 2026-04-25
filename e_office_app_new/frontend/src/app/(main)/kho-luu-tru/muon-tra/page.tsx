@@ -512,7 +512,6 @@ export default function MuonTraPage() {
         title="Tạo yêu cầu mượn hồ sơ"
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        destroyOnHidden
         rootClassName="drawer-gradient"
         size={720}
         extra={
