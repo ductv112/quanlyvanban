@@ -115,7 +115,6 @@ router.get('/count-by-status', async (req: Request, res: Response) => {
 router.post('/', async (req: Request, res: Response) => {
   try {
     const { staffId, departmentId } = (req as AuthRequest).user;
-    const ancestorUnitId = await resolveAncestorUnit(departmentId);
     const body = req.body;
 
     if (!body.name?.trim()) {
@@ -123,9 +122,16 @@ router.post('/', async (req: Request, res: Response) => {
       return;
     }
 
+    // unit_id phai lay tu ancestor cua department_id (cua HSCV), KHONG phai
+    // unit cua creator. Tranh inconsistency khi admin (unit=1) tao HSCV gan
+    // cho dept khac unit (vd dept=2 So Noi vu) -> stored unit_id=1, list filter
+    // boi dept_subtree match nhung detail filter boi unit_id thi 403.
+    const finalDeptId = body.department_id ? Number(body.department_id) : departmentId;
+    const finalUnitId = await resolveAncestorUnit(finalDeptId);
+
     const result = await handlingDocRepository.create({
-      unitId: ancestorUnitId,
-      departmentId: body.department_id ? Number(body.department_id) : departmentId,
+      unitId: finalUnitId,
+      departmentId: finalDeptId,
       docTypeId: body.doc_type_id ? Number(body.doc_type_id) : undefined,
       docFieldId: body.doc_field_id ? Number(body.doc_field_id) : undefined,
       name: body.name.trim(),

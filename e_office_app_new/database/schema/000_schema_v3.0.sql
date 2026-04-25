@@ -27954,3 +27954,17 @@ EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 -- Idempotent: nếu không còn record status=2 thì UPDATE 0 rows, không lỗi.
 -- ============================================================================
 UPDATE edoc.handling_docs SET status = 3, updated_at = NOW() WHERE status = 2;
+
+-- ============================================================================
+-- Data migration: Normalize handling_docs.unit_id = ancestor(department_id)
+-- ============================================================================
+-- Bug cu: route POST /ho-so-cong-viec luu unit_id = creator's ancestor unit
+-- (vi du admin dept=1 tao HSCV cho dept=2 -> unit_id=1, dept=2). List filter
+-- match boi dept_subtree, nhung detail filter check unit_id -> 403.
+-- Fix: unit_id phai khop voi ancestor cua department_id. Migration chay 1 lan
+-- tren data cu, route POST da fix luu unit_id dung tu giờ tro di.
+-- Idempotent: chi UPDATE rows mismatch.
+-- ============================================================================
+UPDATE edoc.handling_docs h
+SET unit_id = public.fn_get_ancestor_unit(h.department_id), updated_at = NOW()
+WHERE h.unit_id <> public.fn_get_ancestor_unit(h.department_id);
