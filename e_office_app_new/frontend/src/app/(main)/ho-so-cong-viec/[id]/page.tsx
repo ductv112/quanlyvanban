@@ -568,68 +568,35 @@ export default function HscvDetailPage() {
     [id, message, fetchDetail]
   );
 
+  // State-based modals cho Tu choi / Tra ve — required validation, OK button
+  // disabled khi chua nhap ly do. Tranh hack Promise.reject + runtime error.
+  const [rejectModalOpen, setRejectModalOpen] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
+  const [returnModalOpen, setReturnModalOpen] = useState(false);
+  const [returnReason, setReturnReason] = useState('');
+
   const handleReject = () => {
-    let reason = '';
-    modal.confirm({
-      title: 'Từ chối hồ sơ',
-      icon: <ExclamationCircleOutlined />,
-      content: (
-        <div>
-          <p>Nhập lý do từ chối để thông báo cho người xử lý.</p>
-          <TextArea
-            rows={3}
-            placeholder="Nhập lý do từ chối..."
-            onChange={(e) => { reason = e.target.value; }}
-          />
-        </div>
-      ),
-      okText: 'Từ chối',
-      okType: 'danger',
-      cancelText: 'Hủy bỏ',
-      onOk: () => {
-        if (!reason.trim()) {
-          message.error('Vui lòng nhập lý do từ chối');
-          // Custom thenable rejection — Next 16 strict mode catch moi Promise.reject() ke ca
-          // AntD handle internally. Thenable nay khong di qua Promise machinery -> Next dev
-          // overlay khong thay "unhandled rejection". AntD onOk treat thenable resolve/reject
-          // y nhu Promise -> modal van giu open.
-          return { then: (_res: unknown, rej: (reason?: unknown) => void) => rej() } as unknown as Promise<void>;
-        }
-        return handleStatusChange('reject', undefined, reason);
-      },
-    });
+    setRejectReason('');
+    setRejectModalOpen(true);
+  };
+
+  const submitReject = async () => {
+    const trimmed = rejectReason.trim();
+    if (!trimmed) return; // OK button da disabled, defensive
+    await handleStatusChange('reject', undefined, trimmed);
+    setRejectModalOpen(false);
   };
 
   const handleReturn = () => {
-    let reason = '';
-    modal.confirm({
-      title: 'Trả về hồ sơ',
-      icon: <ExclamationCircleOutlined />,
-      content: (
-        <div>
-          <p>Nhập lý do trả về để người xử lý biết cần chỉnh sửa gì.</p>
-          <TextArea
-            rows={3}
-            placeholder="Nhập lý do trả về..."
-            onChange={(e) => { reason = e.target.value; }}
-          />
-        </div>
-      ),
-      okText: 'Trả về',
-      okType: 'primary',
-      cancelText: 'Hủy bỏ',
-      onOk: () => {
-        if (!reason.trim()) {
-          message.error('Vui lòng nhập lý do trả về');
-          // Custom thenable rejection — Next 16 strict mode catch moi Promise.reject() ke ca
-          // AntD handle internally. Thenable nay khong di qua Promise machinery -> Next dev
-          // overlay khong thay "unhandled rejection". AntD onOk treat thenable resolve/reject
-          // y nhu Promise -> modal van giu open.
-          return { then: (_res: unknown, rej: (reason?: unknown) => void) => rej() } as unknown as Promise<void>;
-        }
-        return handleStatusChange('return', undefined, reason);
-      },
-    });
+    setReturnReason('');
+    setReturnModalOpen(true);
+  };
+
+  const submitReturn = async () => {
+    const trimmed = returnReason.trim();
+    if (!trimmed) return;
+    await handleStatusChange('return', undefined, trimmed);
+    setReturnModalOpen(false);
   };
 
   const handleDelete = () => {
@@ -1864,6 +1831,51 @@ export default function HscvDetailPage() {
           tabBarStyle={{ marginBottom: 0, paddingLeft: 16, paddingTop: 8 }}
         />
       </Card>
+
+      {/* Tu choi modal — required reason */}
+      <Modal
+        title="Từ chối hồ sơ"
+        open={rejectModalOpen}
+        onOk={submitReject}
+        onCancel={() => setRejectModalOpen(false)}
+        okText="Từ chối"
+        okType="danger"
+        cancelText="Hủy"
+        okButtonProps={{ disabled: !rejectReason.trim() }}
+      >
+        <p>Nhập lý do từ chối để thông báo cho người xử lý.</p>
+        <TextArea
+          rows={3}
+          maxLength={500}
+          showCount
+          placeholder="Nhập lý do từ chối..."
+          value={rejectReason}
+          onChange={(e) => setRejectReason(e.target.value)}
+          autoFocus
+        />
+      </Modal>
+
+      {/* Tra ve modal — required reason */}
+      <Modal
+        title="Trả về hồ sơ"
+        open={returnModalOpen}
+        onOk={submitReturn}
+        onCancel={() => setReturnModalOpen(false)}
+        okText="Trả về"
+        cancelText="Hủy"
+        okButtonProps={{ disabled: !returnReason.trim() }}
+      >
+        <p>Nhập lý do trả về để người xử lý biết cần chỉnh sửa gì.</p>
+        <TextArea
+          rows={3}
+          maxLength={500}
+          showCount
+          placeholder="Nhập lý do trả về..."
+          value={returnReason}
+          onChange={(e) => setReturnReason(e.target.value)}
+          autoFocus
+        />
+      </Modal>
 
       {/* Progress update modal */}
       <Modal
