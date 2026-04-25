@@ -3161,15 +3161,19 @@ BEGIN
     RETURN;
   END IF;
 
-  IF v_status <> 2 THEN
-    RETURN QUERY SELECT FALSE, 'Chỉ được duyệt khi hồ sơ ở trạng thái Chờ duyệt'::TEXT;
+  -- 5-step flow: chỉ duyệt khi đã trình ký (status=3) → set Hoàn thành (status=4)
+  IF v_status <> 3 THEN
+    RETURN QUERY SELECT FALSE, 'Chỉ được duyệt khi hồ sơ ở trạng thái Đã trình ký'::TEXT;
     RETURN;
   END IF;
 
   UPDATE edoc.handling_docs SET
-    status     = 3,  -- Đã duyệt
-    updated_by = p_approved_by,
-    updated_at = NOW()
+    status           = 4,    -- Hoàn thành
+    progress         = 100,
+    complete_user_id = p_approved_by,
+    complete_date    = NOW(),
+    updated_by       = p_approved_by,
+    updated_at       = NOW()
   WHERE id = p_id;
 
   RETURN QUERY SELECT TRUE, 'Duyệt hồ sơ công việc thành công'::TEXT;
@@ -3893,8 +3897,9 @@ BEGIN
     RETURN;
   END IF;
 
-  IF v_status <> 2 THEN
-    RETURN QUERY SELECT FALSE, 'Chỉ được từ chối khi hồ sơ ở trạng thái Chờ duyệt'::TEXT;
+  -- 5-step flow: chỉ từ chối khi đã trình ký (status=3)
+  IF v_status <> 3 THEN
+    RETURN QUERY SELECT FALSE, 'Chỉ được từ chối khi hồ sơ ở trạng thái Đã trình ký'::TEXT;
     RETURN;
   END IF;
 
@@ -4245,8 +4250,7 @@ $$;
 --
 -- Name: fn_handling_doc_cancel(bigint, integer, text); Type: FUNCTION; Schema: edoc; Owner: -
 -- Hủy HSCV với lý do (Gap D / TC-066).
--- LƯU Ý: Bug B fix (chỉ cho phép hủy ở status IN (-1, -2)) sẽ làm ở Commit 2.
---        Commit 1 copy nguyên bản từ archive: reject status=4 và status=-3.
+-- Bug B fix: chỉ cho phép hủy khi status IN (-1, -2) (Từ chối/Trả về).
 --
 
 DROP FUNCTION IF EXISTS edoc.fn_handling_doc_cancel(bigint, integer, text) CASCADE;
@@ -4273,12 +4277,11 @@ BEGIN
         RETURN QUERY SELECT FALSE, 'Không tìm thấy hồ sơ công việc'::TEXT;
         RETURN;
     END IF;
-    IF v_status = -3 THEN
-        RETURN QUERY SELECT FALSE, 'HSCV đã hủy trước đó'::TEXT;
-        RETURN;
-    END IF;
-    IF v_status = 4 THEN
-        RETURN QUERY SELECT FALSE, 'HSCV đã hoàn thành, không thể hủy'::TEXT;
+
+    -- Bug B fix: chỉ cho phép hủy khi đã từ chối (-1) hoặc trả về (-2)
+    IF v_status NOT IN (-1, -2) THEN
+        RETURN QUERY SELECT FALSE,
+            ('Chỉ được hủy HSCV ở trạng thái Từ chối (-1) hoặc Trả về (-2). Trạng thái hiện tại: ' || v_status::TEXT)::TEXT;
         RETURN;
     END IF;
 
