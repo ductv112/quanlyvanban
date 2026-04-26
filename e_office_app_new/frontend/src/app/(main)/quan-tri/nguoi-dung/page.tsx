@@ -405,9 +405,19 @@ export default function StaffPage() {
     },
     {
       title: 'SDT',
-      dataIndex: 'phone',
       key: 'phone',
-      width: 110,
+      width: 160,
+      render: (_, r) => {
+        const phone = r.phone?.trim();
+        const mobile = r.mobile?.trim();
+        if (!phone && !mobile) return <span style={{ color: '#9CA3AF' }}>—</span>;
+        return (
+          <div style={{ lineHeight: 1.4 }}>
+            {phone && <div>{phone}</div>}
+            {mobile && <div style={{ color: '#64748B', fontSize: 12 }}>{mobile}</div>}
+          </div>
+        );
+      },
     },
     {
       title: 'Trạng thái',

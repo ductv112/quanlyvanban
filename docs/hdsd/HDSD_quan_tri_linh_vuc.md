@@ -67,7 +67,7 @@ Khi bấm **Thêm lĩnh vực** hoặc **Sửa**, hệ thống mở cửa sổ p
 | Nút | Vị trí | Khi nào hiển thị | Tác dụng |
 |---|---|---|---|
 | **Thêm lĩnh vực** | Góc trên bên phải khung "Danh sách lĩnh vực" | Luôn hiển thị | Mở cửa sổ Thêm lĩnh vực mới. |
-| **Ô tìm kiếm "Tìm kiếm..."** | Góc trên bên phải khung, bên trái nút Thêm | Luôn hiển thị | Lọc danh sách theo từ khóa nhập (so khớp trong **Mã** hoặc **Tên**). Có nút xóa nhanh để bỏ từ khóa và hiển thị lại toàn bộ. Bấm Enter hoặc bấm biểu tượng kính lúp để áp dụng. |
+| **Ô tìm kiếm "Tìm kiếm..."** | Góc trên bên phải khung, bên trái nút Thêm | Luôn hiển thị | Lọc danh sách theo từ khóa nhập (so khớp trong **Mã** hoặc **Tên**). Bấm **Enter** để áp dụng. Có nút xóa nhanh (dấu nhân trong ô) để bỏ từ khóa và hiển thị lại toàn bộ. |
 | **Sửa** | Trong menu ba chấm trên mỗi dòng | Luôn hiển thị | Mở cửa sổ Cập nhật lĩnh vực với dữ liệu hiện có để chỉnh sửa. |
 | **Xóa** | Trong menu ba chấm trên mỗi dòng (mục cuối, màu đỏ) | Luôn hiển thị | Mở hộp xác nhận, sau đó xóa lĩnh vực. |
 | **Thêm mới** / **Cập nhật** | Góc trên bên phải cửa sổ Thêm/Sửa | Trong cửa sổ Thêm/Sửa | Lưu dữ liệu vừa nhập. Nhãn nút thay đổi tùy theo đang Thêm mới hay Cập nhật. |
@@ -114,7 +114,7 @@ Khi bấm **Thêm lĩnh vực** hoặc **Sửa**, hệ thống mở cửa sổ p
 ### 6.4. Tìm kiếm lĩnh vực
 
 1. Trên ô **Tìm kiếm...** ở góc trên bên phải khung, gõ từ khóa (một phần Mã hoặc một phần Tên).
-2. Bấm Enter hoặc bấm biểu tượng **kính lúp** để áp dụng.
+2. Bấm **Enter** để áp dụng.
 3. Bảng sẽ chỉ hiển thị các lĩnh vực có Mã hoặc Tên chứa từ khóa.
 4. Bấm biểu tượng **dấu nhân** trong ô tìm kiếm để xóa từ khóa và hiển thị lại toàn bộ.
 

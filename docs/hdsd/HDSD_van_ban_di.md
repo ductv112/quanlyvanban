@@ -245,12 +245,15 @@ Thanh nút thao tác trên Header chỉ hiển thị các nút phù hợp với 
 | Nút | Khi nào hiển thị | Tác dụng |
 |---|---|---|
 | **Đánh dấu / Bỏ đánh dấu** (sao) | Luôn | Đánh dấu văn bản cá nhân để dễ truy cập. |
-| **Giao việc** | Có quyền duyệt | Mở Drawer "Giao việc" — tạo Hồ sơ công việc mới gắn với văn bản này, chọn người phụ trách, ngày bắt đầu, hạn hoàn thành, ghi chú. |
-| **Thêm vào HSCV** | Có quyền duyệt | Mở Modal — chọn một Hồ sơ công việc đã tồn tại để gắn văn bản vào đó. |
 | **Sửa** | Có quyền sửa | Mở Drawer Sửa văn bản — quay lại màn Danh sách với tham số `?edit=<id>`. |
 | **Duyệt** | Có quyền duyệt | Đặt văn bản về Đã duyệt. Thông báo "Duyệt văn bản đi thành công". |
 | (Menu ba chấm) **Từ chối** | Có quyền duyệt và chưa từng bị từ chối | Mở hộp xác nhận có ô nhập "Lý do từ chối (không bắt buộc)". |
 | (Menu ba chấm) **Xóa văn bản** | Có quyền sửa | Hộp xác nhận; chỉ xóa được khi văn bản chưa duyệt. |
+
+> Hai nút **Giao việc** và **Thêm vào HSCV** **luôn hiển thị** ở mọi trạng thái khi người dùng có quyền duyệt — không phụ thuộc văn bản đã duyệt hay chưa. Chi tiết tác dụng:
+>
+> - **Giao việc** — Mở Drawer "Giao việc" để tạo Hồ sơ công việc mới gắn với văn bản này, chọn người phụ trách, ngày bắt đầu, hạn hoàn thành, ghi chú.
+> - **Thêm vào HSCV** — Mở Modal để chọn một Hồ sơ công việc đã tồn tại và gắn văn bản vào đó.
 
 ### 9.2. Khi văn bản ở trạng thái **Đã duyệt** nhưng **Chưa ban hành**
 

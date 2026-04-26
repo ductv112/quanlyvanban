@@ -175,6 +175,11 @@ export default function DocTypePage() {
       dataIndex: 'notation_type',
       key: 'notation_type',
       width: 140,
+      render: (v: number | string | null | undefined) => {
+        if (v === 1 || v === '1' || v === 'so/ky_hieu') return 'Số/Ký hiệu';
+        if (v === 2 || v === '2' || v === 'so-ky_hieu') return 'Số-Ký hiệu';
+        return <span style={{ color: '#9CA3AF' }}>—</span>;
+      },
     },
     {
       title: 'Thứ tự',

@@ -49,16 +49,16 @@ Bấm vào một dòng thông báo trong bảng thả xuống sẽ:
 
 ---
 
-## 3. Bố cục Trang Thông báo (`/thong-bao`)
+## 3. Bố cục Trang Thông báo nội bộ (`/thong-bao`)
 
-![Màn hình Thông báo](screenshots/thong_bao_02_main_page.png)
+![Màn hình Thông báo nội bộ](screenshots/thong_bao_02_main_page.png)
 
-Truy cập từ menu bên trái → bấm mục **Thông báo** (biểu tượng chuông). Nếu trên menu có số đếm in đậm bên cạnh chữ "Thông báo", đó là số thông báo chưa đọc của trang này (theo nguồn đơn vị).
+Truy cập từ menu bên trái → bấm mục **Thông báo nội bộ** (biểu tượng chuông). Nếu trên menu có số đếm in đậm bên cạnh nhãn, đó là số thông báo chưa đọc của trang này (theo nguồn đơn vị).
 
 Bố cục màn hình gồm:
 
 - **Phần đầu trang**:
-  - Tiêu đề **"Thông báo"** kèm biểu tượng chuông và dòng mô tả ngắn *"Quản lý và theo dõi các thông báo hệ thống"*.
+  - Tiêu đề **"Thông báo nội bộ"** kèm biểu tượng chuông và dòng mô tả ngắn *"Quản lý và theo dõi các thông báo nội bộ của đơn vị"*.
   - **Nút "Đánh dấu đã đọc tất cả"** — đánh dấu toàn bộ thông báo đang còn chưa đọc thành đã đọc.
   - **Nút "Tạo thông báo"** (màu xanh) — chỉ hiển thị với tài khoản **Quản trị**. Người dùng thường không thấy nút này.
 - **Thanh phân loại (tab)**:

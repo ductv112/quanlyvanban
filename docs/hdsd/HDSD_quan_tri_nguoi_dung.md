@@ -50,7 +50,7 @@ Màn hình được chia thành 2 cột chính cùng phần đầu trang:
 | **Chức vụ** | Tên chức vụ hiện tại của người dùng (lấy từ danh mục Chức vụ). Có thể trống nếu chưa gán. |
 | **Phòng ban** | Tên phòng ban (hoặc đơn vị) trực tiếp của người dùng. |
 | **Email** | Địa chỉ email công vụ. Nếu dài sẽ tự động cắt và hiện tooltip khi rê chuột. |
-| **SDT** | Số điện thoại liên hệ. Nếu để trống số bàn, hệ thống tự lấy số di động hiển thị. |
+| **SDT** | Hiển thị **đồng thời** số điện thoại bàn (dòng trên) và số di động (dòng dưới, in nhỏ màu xám). Nếu chỉ có một trong hai thì chỉ hiển thị số đó. Nếu cả hai đều trống, hiển thị dấu gạch ngang `—`. |
 | **Trạng thái** | **Hoạt động** (nhãn xanh lá) hoặc **Đã khóa** (nhãn đỏ). Tài khoản bị khóa sẽ không thể đăng nhập hệ thống. |
 | (cột thao tác) | Nút ba chấm dọc, mở menu các lệnh: Sửa thông tin, Phân quyền, Khóa / Mở khóa tài khoản, Reset mật khẩu, Xóa người dùng. |
 

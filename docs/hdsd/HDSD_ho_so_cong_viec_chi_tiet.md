@@ -118,7 +118,7 @@ Quản lý các tài liệu, file đính kèm của HSCV.
 - **Tải xuống**: Bấm nút **"Tải xuống"** (biểu tượng mũi tên xuống) ở mỗi file
 - **Ký số**: Hiển thị nút **"Ký số"** (xanh lá, biểu tượng khiên) khi đủ các điều kiện sau:
   - Người đang đăng nhập đúng là **lãnh đạo ký** của HSCV
-  - HSCV đang ở trạng thái **"Chờ trình ký"** (cũ) hoặc **"Đã trình ký"**
+  - HSCV đang ở trạng thái **"Đã trình ký"**
   - File là định dạng **PDF**
   - File **chưa được ký số** trước đó
 - **Xóa file**: Có hộp xác nhận trước khi xóa
@@ -291,7 +291,7 @@ Hệ thống hiển thị hộp xác nhận *"Trạng thái sẽ chuyển từ '
 
 Trong tab **"File đính kèm"**, lãnh đạo ký có thể thực hiện ký số trực tiếp trên file PDF đính kèm. Nút **"Ký số"** (xanh lá, biểu tượng khiên) chỉ xuất hiện khi:
 - Người đăng nhập đúng là **lãnh đạo ký** của HSCV
-- HSCV ở trạng thái **"Chờ trình ký"** (cũ) hoặc **"Đã trình ký"**
+- HSCV ở trạng thái **"Đã trình ký"**
 - File là định dạng **PDF**
 - File chưa được ký số
 

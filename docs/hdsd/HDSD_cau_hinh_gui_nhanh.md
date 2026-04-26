@@ -25,15 +25,13 @@ Màn hình được thiết kế dạng một thẻ (card) duy nhất, gồm cá
   - Bên phải: nút **Lưu cấu hình (N người)** màu xanh navy — N là số cán bộ đang được chọn ở thời điểm hiện tại.
 - **Khung gợi ý (nền xanh nhạt)**: Hiển thị nội dung *"Chọn cán bộ thường gửi văn bản. Khi gửi VB hoặc bút phê phân công, danh sách này sẽ được tick sẵn — tiết kiệm thời gian chọn lại mỗi lần."*
 - **Cột trái — Danh sách toàn bộ cán bộ**:
-  - Ô **Tìm kiếm cán bộ...** ở phía trên.
-  - Bảng dữ liệu liệt kê toàn bộ cán bộ trong cơ quan, mỗi dòng có ô đánh dấu (checkbox) để chọn / bỏ chọn.
-  - Phân trang **10 dòng / trang**, dưới chân bảng hiển thị tổng số cán bộ (ví dụ *"35 cán bộ"*).
+  - Ô **Tìm kiếm cán bộ theo tên, chức vụ, phòng ban...** ở phía trên — gõ vào để tìm trên toàn bộ danh sách cán bộ của hệ thống (xem mục 7.5).
+  - Bảng dữ liệu liệt kê cán bộ, mỗi dòng có ô đánh dấu (checkbox) để chọn / bỏ chọn.
+  - Phân trang **20 dòng / trang**, dưới chân bảng hiển thị tổng số cán bộ (ví dụ *"35 cán bộ"*).
 - **Cột phải — Đã chọn gửi nhanh**:
   - Khung nền vàng nhạt, tiêu đề **"Đã chọn gửi nhanh (N người)"**.
   - Bên trong là danh sách rút gọn các cán bộ đã được tick từ cột trái, mỗi dòng có nút **Bỏ** màu đỏ để loại nhanh.
   - Khi chưa chọn ai, khung này hiển thị thông báo *"Chưa chọn cán bộ nào"*.
-
-> **Lưu ý**: Hệ thống chỉ tải tối đa **200 cán bộ đầu tiên** vào danh sách bên trái. Nếu cơ quan có nhiều hơn 200 cán bộ, dùng ô tìm kiếm để lọc theo tên / chức vụ / phòng ban thay vì cuộn tay.
 
 ---
 
