@@ -40,16 +40,41 @@ Login: `admin / Admin@123`. Test accounts khác (cùng password): `nguyenvana` (
 
 ### 🚀 Deploy lên server KH test / production
 
-**Khi user yêu cầu "deploy server" / "deploy KH test" / "deploy product" / tương tự:**
+**Phân biệt 2 kịch bản — RẤT QUAN TRỌNG:**
 
-→ Hướng dẫn user SSH/RDP vào server Windows, rồi chạy 1 lệnh:
+| Kịch bản | Script / Quy trình | Data KH? |
+|---|---|---|
+| **Update prod đang có data KH** (đã test thật) | **4 bước manual** trong [`deploy/MANUAL_UPDATE_PROD.md`](deploy/MANUAL_UPDATE_PROD.md) | **GIỮ NGUYÊN** ✓ |
+| **Fresh setup / KH test môi trường mới** (chưa có data) | `.\deploy\deploy-v2-kh-test.ps1 -Force` | **DROP DB + seed lại** ⚠️ |
+
+#### Kịch bản 1 — Update prod (KH đang có data) → 4 bước manual
+
+**Khi user yêu cầu "update prod" / "đẩy code mới lên server" / "deploy fix" → KH đã test thật:**
+
+→ Hướng dẫn user SSH/RDP vào server Windows, làm theo [`deploy/MANUAL_UPDATE_PROD.md`](deploy/MANUAL_UPDATE_PROD.md):
+1. Backup DB (đề phòng rollback)
+2. `git fetch + reset --hard origin/main`
+3. Re-apply master schema (idempotent — KHÔNG mất data)
+4. Build backend (`NODE_ENV=development` cho install) + frontend (`Remove-Item Env:NODE_ENV` TRƯỚC `next build`)
+5. `pm2 restart all --update-env` + health check
+
+→ Tổng ~5-7 phút. Schema apply idempotent + skip seed → data nghiệp vụ KH **KHÔNG bị mất**.
+
+#### Kịch bản 2 — Fresh deploy / KH test mới → script tự động
+
+**Khi user yêu cầu "deploy KH test mới" / "fresh setup server" → KH CHƯA có data:**
+
 ```powershell
 cd C:\qlvb\quanlyvanban
 git pull origin main
 .\deploy\deploy-v2-kh-test.ps1 -Force
 ```
 
-Script `deploy-v2-kh-test.ps1` tự động 10 bước: stop pm2 → pull code → build production → clear Redis/MinIO → reset DB + seed → restart → verify.
+Script `deploy-v2-kh-test.ps1` tự động 10 bước: stop pm2 → pull code → build production → clear Redis/MinIO → **reset DB + seed** → restart → verify.
+
+⚠️ **NGHIÊM CẤM** chạy `deploy-v2-kh-test.ps1` lên prod đã có data KH — script sẽ **DROP schemas + seed lại** = mất hết HSCV/VB của KH.
+
+#### Pre-push check (cả 2 kịch bản)
 
 **TRƯỚC KHI user bảo deploy, YÊU CẦU user chạy pre-push check local:**
 ```powershell
