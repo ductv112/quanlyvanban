@@ -223,30 +223,6 @@ Thông tin này hiển thị trên thẻ provider và trên dải thông báo tr
 
 Riêng nút **Kiểm tra với secret mới** **không** ghi vào lịch sử kiểm tra — vì secret đó chưa được lưu, đây chỉ là kiểm tra tạm thời trước khi lưu.
 
-### 7.8. Bảng tổng hợp các thông báo của hệ thống
-
-| Tình huống | Thông báo |
-|---|---|
-| Cập nhật cấu hình thành công | Cập nhật cấu hình thành công |
-| Lưu và kích hoạt thành công | Lưu và kích hoạt cấu hình thành công |
-| Kích hoạt provider thành công | Đã kích hoạt &lt;Tên provider&gt; |
-| Provider đang hoạt động — bấm Kích hoạt lại | Provider này đang được kích hoạt |
-| Bấm Kích hoạt trên provider chưa cấu hình | Provider này chưa được cấu hình |
-| Kiểm tra kết nối với secret mới — thành công | Kiểm tra kết nối thành công |
-| Kiểm tra cấu hình đã lưu — thành công | Kiểm tra cấu hình đã lưu thành công |
-| Kết nối tới provider thất bại | Kết nối thất bại / Không kết nối được provider |
-| Provider chưa cấu hình mà bấm Kiểm tra cấu hình đã lưu | Provider chưa cấu hình, vui lòng nhập Base URL + Client ID + Client Secret trước khi test |
-| Bỏ trống Base URL | Nhập Base URL của provider |
-| Base URL sai định dạng | Base URL phải bắt đầu bằng https:// (hoặc http://localhost cho dev) |
-| Bỏ trống Client ID | Nhập Client ID |
-| Client Secret quá ngắn | Client Secret tối thiểu 8 ký tự |
-| Bỏ trống Profile ID (MySign Viettel) | Profile ID là bắt buộc với MySign Viettel |
-| Bấm Kiểm tra với secret mới mà chưa nhập secret | Nhập client_secret để kiểm tra kết nối |
-| Cố kích hoạt provider chưa kiểm tra OK | Không thể kích hoạt &lt;Tên provider&gt; khi chưa kiểm tra kết nối thành công |
-| Lỗi tải dữ liệu | Không tải được cấu hình ký số |
-| Lưu cấu hình thất bại | Lưu cấu hình thất bại |
-| Kích hoạt thất bại | Kích hoạt thất bại |
-| Tài khoản không phải Quản trị | Bạn không có quyền truy cập trang này |
 
 ---
 

@@ -203,24 +203,6 @@ Khi xóa thành công một nhóm quyền (sau khi đã gỡ hết nhân viên),
 
 Mỗi nhóm quyền được tạo dưới phạm vi đơn vị của người tạo (do hệ thống tự xác định theo phòng ban của tài khoản đang đăng nhập). Trong phiên bản hiện tại, danh sách hiển thị bao gồm các nhóm quyền của đơn vị hiện tại và các nhóm quyền dùng chung (không gắn đơn vị cụ thể). Người dùng quản trị thông thường không cần quan tâm đến chi tiết này.
 
-### 7.7. Bảng tổng hợp các thông báo của hệ thống
-
-| Tình huống | Thông báo |
-|---|---|
-| Thêm nhóm quyền thành công | Thêm thành công |
-| Cập nhật nhóm quyền thành công | Cập nhật thành công |
-| Xóa nhóm quyền thành công | Xóa thành công |
-| Lưu phân quyền thành công | Lưu phân quyền thành công |
-| Để trống Tên nhóm quyền (cửa sổ nhập) | Nhập tên nhóm quyền |
-| Để trống Tên nhóm quyền (lưu lên máy chủ) | Tên nhóm quyền là bắt buộc |
-| Tên nhóm quyền trùng | Tên nhóm quyền đã tồn tại |
-| Xóa nhóm còn nhân viên | Không thể xóa: còn N nhân viên trong nhóm quyền này |
-| Không tạo được nhóm quyền (lỗi máy chủ) | Không thể tạo nhóm quyền |
-| Không tìm thấy nhóm quyền khi cập nhật | Không tìm thấy nhóm quyền |
-| Lỗi khi tải danh sách nhóm quyền | Lỗi tải dữ liệu |
-| Lỗi khi tải cây chức năng / quyền hiện có | Lỗi tải quyền |
-| Lỗi khi lưu phân quyền | Lỗi lưu phân quyền |
-| Lỗi khi xóa | Lỗi khi xóa |
 
 ---
 

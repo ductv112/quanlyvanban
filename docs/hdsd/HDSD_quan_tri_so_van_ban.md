@@ -203,24 +203,6 @@ Số ở trường **Thứ tự** quyết định vị trí hiển thị của s
 
 Cùng quy tắc sắp xếp này được áp dụng ở **các ô chọn sổ** tại màn hình Văn bản đến / Văn bản đi — sổ có thứ tự nhỏ sẽ hiện trước trong danh sách thả xuống.
 
-### 7.7. Bảng tổng hợp các thông báo của hệ thống
-
-| Tình huống | Thông báo |
-|---|---|
-| Thêm sổ thành công | Thêm thành công |
-| Cập nhật sổ thành công | Cập nhật thành công |
-| Xóa sổ thành công | Xóa thành công |
-| Đặt mặc định thành công | Đặt mặc định thành công |
-| Để trống Tên sổ (nhập từ form) | Nhập tên sổ văn bản |
-| Để trống Tên sổ (kiểm tra ở máy chủ) | Tên sổ văn bản là bắt buộc |
-| Tên sổ chỉ có khoảng trắng / rỗng | Tên sổ văn bản không được để trống |
-| Tên sổ vượt quá 200 ký tự | Tên sổ văn bản không được vượt quá 200 ký tự |
-| Tên sổ trùng trong cùng đơn vị + nhóm | Tên sổ văn bản đã tồn tại trong đơn vị |
-| Thiếu nhóm sổ khi tạo | Loại văn bản là bắt buộc |
-| Sửa / Xóa sổ không tồn tại | Không tìm thấy sổ văn bản |
-| Lỗi khi xóa | Lỗi khi xóa |
-| Lỗi khi đặt mặc định | Lỗi khi đặt mặc định |
-| Lỗi tải dữ liệu | Lỗi tải dữ liệu |
 
 ---
 

@@ -412,39 +412,6 @@ Khi gửi cùng một văn bản nhiều lần cho cùng một người, hệ th
 - **Số tờ**, **Số bản**: số nguyên ≥ 0, mặc định 1.
 - **Sổ văn bản**: bắt buộc khi tạo và khi sửa.
 
-### 13.7. Bảng tổng hợp các thông báo của hệ thống
-
-| Tình huống | Thông báo |
-|---|---|
-| Tạo dự thảo thành công | Tạo văn bản dự thảo thành công |
-| Cập nhật thành công | Cập nhật thành công |
-| Xóa thành công | Đã xóa |
-| Để trống Trích yếu | Trích yếu nội dung là bắt buộc / Bắt buộc nhập trích yếu |
-| Để trống Sổ văn bản | Sổ văn bản là bắt buộc / Bắt buộc chọn sổ văn bản |
-| Sửa văn bản đã duyệt | Không thể sửa văn bản đã được duyệt |
-| Sửa văn bản đã phát hành | Không thể sửa văn bản đã phát hành |
-| Duyệt thành công | Duyệt thành công |
-| Hủy duyệt thành công | Hủy duyệt thành công |
-| Hủy duyệt khi đã phát hành | Không thể hủy duyệt: văn bản đã phát hành |
-| Từ chối thành công | Đã từ chối văn bản dự thảo |
-| Phát hành khi chưa duyệt | Văn bản chưa được duyệt, không thể phát hành |
-| Phát hành lần 2 | Văn bản đã được phát hành trước đó |
-| Phát hành thành công | Phát hành thành công, đã tạo văn bản đi |
-| Gửi khi chưa duyệt | Văn bản chưa được duyệt, không thể gửi |
-| Gửi không chọn ai | Vui lòng chọn ít nhất một người nhận / Chọn ít nhất một người nhận |
-| Gửi thành công | Đã gửi cho N người nhận |
-| Thu hồi thành công | Thu hồi thành công — đã xóa N người nhận |
-| Thu hồi khi đã phát hành | Không thể thu hồi — văn bản đã phát hành |
-| Tải lên file thành công | Tải lên thành công |
-| Không có quyền sửa | Không có quyền sửa văn bản này |
-| Không có quyền duyệt | Không có quyền duyệt văn bản này |
-| Không có quyền phát hành | Không có quyền phát hành văn bản này |
-| Không có quyền thu hồi | Không có quyền thu hồi văn bản này |
-| Không có quyền gửi | Không có quyền gửi văn bản này |
-| Không tìm thấy văn bản | Không tìm thấy văn bản dự thảo |
-| Lỗi tải danh sách | Lỗi tải danh sách văn bản dự thảo |
-| Ý kiến — chưa nhập nội dung | Nhập nội dung ý kiến / Nội dung ý kiến là bắt buộc |
-| Ý kiến — thêm thành công | Thêm ý kiến thành công |
 
 ---
 

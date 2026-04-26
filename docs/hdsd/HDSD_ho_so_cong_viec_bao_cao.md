@@ -207,13 +207,6 @@ Sau khi mở màn hình, **dữ liệu chỉ được tải lại khi bấm nút
 
 Bảng báo cáo hiển thị **20 dòng mỗi trang**, không cho đổi số dòng / trang. Khi danh sách dài, dùng thanh phân trang ở dưới bảng để chuyển trang.
 
-### 9.9. Bảng tổng hợp các thông báo của hệ thống
-
-| Tình huống | Thông báo |
-|---|---|
-| Xuất Excel thành công | Xuất Excel thành công |
-| Bảng báo cáo không có dữ liệu | Không có dữ liệu thống kê |
-| Biểu đồ chưa có dữ liệu | Chưa có dữ liệu biểu đồ |
 
 ---
 

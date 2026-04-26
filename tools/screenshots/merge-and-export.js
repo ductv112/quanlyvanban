@@ -97,16 +97,28 @@ for (const file of MODULES) {
   console.log(`  ✓ ${file}`);
 }
 
-fs.writeFileSync(FULL_MD, parts.join('\n'));
+// Strip markdown links since printed docx has no clickable navigation:
+//   [text](path)        → text  (regular link)
+//   ![alt](image.png)   → keep (this is image syntax — preserved by negative lookbehind)
+//   <http://...>        → http://...
+let merged = parts.join('\n');
+const linkBefore = (merged.match(/(?<!!)\[[^\]]+\]\([^)]+\)/g) || []).length;
+merged = merged.replace(/(?<!!)\[([^\]]+)\]\(([^)]+)\)/g, '$1');
+merged = merged.replace(/<((?:https?|mailto):[^>]+)>/g, '$1');
+console.log(`  Stripped ${linkBefore} markdown link(s)`);
+
+fs.writeFileSync(FULL_MD, merged);
 const stats = fs.statSync(FULL_MD);
 console.log(`\n  Merged: ${FULL_MD}`);
 console.log(`  Size:   ${(stats.size / 1024).toFixed(0)} KB`);
-const lineCount = parts.join('\n').split('\n').length;
+const lineCount = merged.split('\n').length;
 console.log(`  Lines:  ${lineCount}`);
 
-// 2. Export to docx via pandoc
+// 2. Export to docx via pandoc using custom reference.docx that adds borders to Table style
 console.log('\n[2/3] Exporting to docx via pandoc');
-const cmd = `"${PANDOC}" "${FULL_MD}" -o "${FULL_DOCX}" --resource-path="${HDSD_DIR}" --toc --toc-depth=2 --standalone -f gfm+raw_html -t docx`;
+const REFERENCE_DOCX = path.resolve(__dirname, 'reference.docx');
+const refFlag = fs.existsSync(REFERENCE_DOCX) ? `--reference-doc="${REFERENCE_DOCX}"` : '';
+const cmd = `"${PANDOC}" "${FULL_MD}" -o "${FULL_DOCX}" --resource-path="${HDSD_DIR}" --toc --toc-depth=2 --standalone ${refFlag} -f gfm+raw_html -t docx`;
 try {
   execSync(cmd, { stdio: 'inherit', cwd: HDSD_DIR });
   const docxStats = fs.statSync(FULL_DOCX);

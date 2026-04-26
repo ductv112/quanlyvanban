@@ -201,35 +201,20 @@ Nếu cần cập nhật các thông tin này:
 
 ## 13. Lưu ý / Ràng buộc nghiệp vụ và bảng tổng hợp thông báo
 
-### 13.1. Quy tắc mật khẩu
 
-Mật khẩu mới khi đổi mật khẩu **phải** thỏa cả 4 điều kiện sau:
 
-1. Có **tối thiểu 6 ký tự**.
-2. Có **ít nhất 1 chữ hoa** (`A` đến `Z`).
-3. Có **ít nhất 1 chữ thường** (`a` đến `z`).
-4. Có **ít nhất 1 chữ số** (`0` đến `9`).
-
-Đồng thời mật khẩu mới phải **khác** mật khẩu hiện tại và ô **Xác nhận mật khẩu mới** phải khớp tuyệt đối với ô **Mật khẩu mới**.
-
-### 13.2. Trạng thái tài khoản — khóa, xóa
+### 13.1. Trạng thái tài khoản — khóa, xóa
 
 - Khi tài khoản bị **khóa** (do Quản trị viên đặt) → người dùng không đăng nhập được, hệ thống báo *"Tài khoản đã bị khóa"*. Cần liên hệ Quản trị viên để mở khóa.
 - Khi tài khoản bị **xóa** → cũng không đăng nhập được, hệ thống báo *"Tài khoản đã bị xóa"*. Tài khoản đã xóa không thể tự khôi phục từ phía người dùng.
 
-### 13.3. Phiên đăng nhập tự hết hạn
+### 13.2. Phiên đăng nhập tự hết hạn
 
 Vì lý do bảo mật, mỗi phiên đăng nhập có thời hạn nhất định. Khi phiên hết hạn, hệ thống tự đăng xuất và đưa về màn hình `/login`. Nếu đã tích **Ghi nhớ đăng nhập**, hệ thống có thể tự gia hạn phiên trong giới hạn cho phép — ngược lại sẽ yêu cầu đăng nhập lại sớm hơn.
 
-### 13.4. Quên mật khẩu
 
-Hệ thống hiện chưa cung cấp chức năng **Quên mật khẩu** trên giao diện đăng nhập. Khi quên mật khẩu, người dùng cần:
 
-1. Liên hệ **Quản trị viên** đơn vị.
-2. Quản trị viên cấp lại mật khẩu mới ở màn hình **Quản trị > Người dùng** (chức năng *Đặt lại mật khẩu*).
-3. Người dùng đăng nhập bằng mật khẩu được cấp, sau đó vào **Thông tin cá nhân → Đổi mật khẩu** để đặt mật khẩu của riêng mình.
-
-### 13.5. Phạm vi thay đổi thông tin
+### 13.3. Phạm vi thay đổi thông tin
 
 | Thông tin | Người dùng tự sửa | Quản trị viên sửa |
 |---|---|---|
@@ -244,35 +229,6 @@ Hệ thống hiện chưa cung cấp chức năng **Quên mật khẩu** trên g
 | Vai trò (Quản trị viên / nhóm quyền) | Không | Có |
 | Khóa / Mở khóa tài khoản | Không | Có |
 
-### 13.6. Bảng tổng hợp các thông báo của hệ thống
-
-| Tình huống | Thông báo |
-|---|---|
-| **Đăng nhập** | |
-| Để trống ô Tên đăng nhập | Vui lòng nhập tên đăng nhập |
-| Để trống ô Mật khẩu | Vui lòng nhập mật khẩu |
-| Cả hai ô để trống (báo từ máy chủ) | Vui lòng nhập tên đăng nhập và mật khẩu |
-| Tên đăng nhập hoặc mật khẩu sai | Tên đăng nhập hoặc mật khẩu không đúng |
-| Tài khoản đã bị xóa | Tài khoản đã bị xóa |
-| Tài khoản bị khóa | Tài khoản đã bị khóa |
-| Đăng nhập thành công | Đăng nhập thành công |
-| Lỗi không xác định khi đăng nhập | Đăng nhập thất bại |
-| **Đổi mật khẩu** | |
-| Để trống Mật khẩu hiện tại | Nhập mật khẩu hiện tại |
-| Để trống Mật khẩu mới | Nhập mật khẩu mới |
-| Mật khẩu mới ngắn hơn 6 ký tự | Tối thiểu 6 ký tự |
-| Mật khẩu mới thiếu chữ hoa / chữ thường / số | Phải chứa chữ hoa, chữ thường và số |
-| Để trống ô Xác nhận | Xác nhận mật khẩu mới |
-| Xác nhận không khớp với mật khẩu mới | Mật khẩu xác nhận không khớp |
-| Sai mật khẩu hiện tại | Mật khẩu hiện tại không đúng |
-| Mật khẩu mới trùng mật khẩu hiện tại | Mật khẩu mới không được trùng với mật khẩu hiện tại |
-| Mật khẩu mới không đáp ứng quy tắc (báo từ máy chủ) | Mật khẩu mới phải có ít nhất 6 ký tự, chứa chữ hoa, chữ thường và số |
-| Thiếu một trong hai mật khẩu (báo từ máy chủ) | Mật khẩu cũ và mật khẩu mới là bắt buộc |
-| Đổi mật khẩu thành công | Đổi mật khẩu thành công |
-| Lỗi máy chủ khi đổi mật khẩu | Lỗi đổi mật khẩu |
-| **Đăng xuất** | |
-| Hộp xác nhận đăng xuất | Bạn có chắc chắn muốn đăng xuất? |
-| Đăng xuất thành công | Đăng xuất thành công |
 
 ---
 

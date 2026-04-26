@@ -247,30 +247,6 @@ Trên bảng danh sách, dòng nào có **Hạn giải quyết** đã trôi qua 
 
 Dropdown **Lãnh đạo ký** chỉ liệt kê những cán bộ đã được Quản trị đăng ký vào danh mục **Người ký** của đơn vị. Khi đơn vị chưa có ai trong danh mục này, dropdown trống và hiển thị *"Đơn vị chưa có lãnh đạo"*. Khi đó, đề nghị Quản trị bổ sung Người ký trong **Quản trị** trước khi tạo HSCV.
 
-### 10.6. Bảng tổng hợp các thông báo của hệ thống
-
-| Tình huống | Thông báo |
-|---|---|
-| Tạo HSCV thành công | Tạo hồ sơ thành công |
-| Lưu (sửa) HSCV thành công | Lưu hồ sơ thành công |
-| Lưu HSCV thất bại (lỗi không cụ thể) | Lưu hồ sơ thất bại. Vui lòng kiểm tra lại thông tin và thử lại. |
-| Xóa HSCV thành công | Đã xóa hồ sơ |
-| Lỗi xóa HSCV | Lỗi xóa hồ sơ |
-| Lỗi tải danh sách | Lỗi tải danh sách hồ sơ công việc |
-| Xuất Excel thành công | Đã xuất N hồ sơ |
-| Xuất Excel khi danh sách trống | Không có hồ sơ nào phù hợp để xuất |
-| Lỗi tải dữ liệu khi xuất Excel | Không tải được dữ liệu để xuất Excel |
-| Để trống Tên hồ sơ | Vui lòng nhập tên hồ sơ công việc |
-| Để trống Ngày mở | Vui lòng chọn ngày mở hồ sơ |
-| Để trống Hạn giải quyết | Vui lòng chọn hạn giải quyết |
-| Hạn giải quyết trước Ngày mở | Hạn giải quyết phải sau hoặc bằng ngày mở hồ sơ |
-| Để trống Người phụ trách | Vui lòng chọn người phụ trách |
-| Để trống Lãnh đạo ký | Vui lòng chọn lãnh đạo ký |
-| Đơn vị không có lãnh đạo trong dropdown | Đơn vị chưa có lãnh đạo |
-| Bảng trống — không có hồ sơ nào | Chưa có hồ sơ công việc — Nhấn "Tạo hồ sơ mới" để bắt đầu quản lý công việc của bạn. |
-| Bảng trống khi đang lọc | Không tìm thấy hồ sơ phù hợp. Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm. |
-| Truy cập HSCV ngoài quyền | Không có quyền truy cập hồ sơ này |
-| Hộp xác nhận xóa | Bạn có chắc muốn xóa hồ sơ này? Hành động này không thể hoàn tác. |
 
 ---
 

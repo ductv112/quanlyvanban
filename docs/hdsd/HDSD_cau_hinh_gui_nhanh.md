@@ -135,17 +135,6 @@ Bảng cột trái hiển thị **20 cán bộ mỗi trang**, có thanh phân tr
 
 > Cấu hình **đã chọn** (cột phải) được lưu tách riêng — khi đổi từ khóa tìm kiếm hoặc chuyển sang trang khác, danh sách "Đã chọn" **không bị mất** mà giữ nguyên đến khi bấm **Lưu cấu hình** hoặc thoát khỏi trang.
 
-### 7.6. Bảng tổng hợp các thông báo của hệ thống
-
-| Tình huống | Thông báo |
-|---|---|
-| Lưu cấu hình thành công | Đã lưu N người nhận |
-| Lưu thành công (mặc định khi backend không trả thông báo riêng) | Đã lưu cấu hình gửi nhanh |
-| Lỗi khi tải dữ liệu (cán bộ hoặc cấu hình hiện tại) | Lỗi tải dữ liệu |
-| Lỗi khi lưu cấu hình | Lỗi lưu |
-| Danh sách người nhận gửi lên không hợp lệ | Danh sách người nhận không hợp lệ |
-| Bảng cán bộ trống sau khi tìm kiếm | Không tìm thấy cán bộ |
-| Khung "Đã chọn" trống — chưa tick ai | Chưa chọn cán bộ nào |
 
 ---
 

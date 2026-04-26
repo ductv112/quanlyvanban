@@ -187,28 +187,6 @@ Hệ thống hỗ trợ tổ chức loại văn bản theo nhiều cấp (cây p
 
 Số ở trường **Thứ tự** quyết định vị trí hiển thị của loại văn bản trong bảng và trong các ô chọn ở phân hệ Văn bản đến / đi / dự thảo. Số nhỏ đứng trước số lớn. Khi nhiều loại cùng số thứ tự, hệ thống tiếp tục sắp xếp theo tên (theo bảng chữ cái, có hỗ trợ tiếng Việt).
 
-### 7.6. Bảng tổng hợp các thông báo của hệ thống
-
-| Tình huống | Thông báo |
-|---|---|
-| Thêm loại văn bản thành công | Thêm thành công |
-| Cập nhật loại văn bản thành công | Cập nhật thành công |
-| Xóa loại văn bản thành công | Xóa thành công |
-| Để trống Mã (ngay tại ô) | Nhập mã loại văn bản |
-| Để trống Tên (ngay tại ô) | Nhập tên loại văn bản |
-| Để trống Tên (kiểm tra máy chủ) | Tên loại văn bản là bắt buộc |
-| Tên trống (kiểm tra ở quy trình lưu) | Tên loại văn bản không được để trống |
-| Tên dài quá 200 ký tự | Tên loại văn bản không được vượt quá 200 ký tự |
-| Để trống Mã (kiểm tra máy chủ) | Mã loại văn bản là bắt buộc |
-| Mã trống (kiểm tra ở quy trình lưu) | Mã loại văn bản không được để trống |
-| Mã dài quá 20 ký tự | Mã loại văn bản không được vượt quá 20 ký tự |
-| Mã trùng | Mã loại văn bản đã tồn tại |
-| Chọn loại cha không tồn tại | Loại văn bản cha không tồn tại |
-| Chọn chính mình làm cha (khi sửa) | Không thể chọn chính mình làm cha |
-| Xóa loại còn loại con bên trong | Không thể xóa: còn N loại văn bản con |
-| Sửa/xóa nhưng loại không tồn tại | Không tìm thấy loại văn bản |
-| Lỗi tải dữ liệu | Lỗi tải dữ liệu |
-| Lỗi khi xóa (lỗi hệ thống) | Lỗi khi xóa |
 
 ---
 

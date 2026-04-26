@@ -220,29 +220,6 @@ Nếu để trống một trong hai, hệ thống báo **"Vui lòng nhập tiêu
 - Bảng thả xuống của chuông chỉ hiển thị **10 thông báo cá nhân gần nhất**. Thông báo cá nhân (ký số) cũ hơn 10 mục **không có giao diện để xem lại** — chuông không có nút "Xem tất cả" và cũng không có trang riêng cho danh sách thông báo cá nhân. Trang `/thong-bao` (mở từ menu **Thông báo**) chỉ hiển thị **thông báo nội bộ đơn vị**, **không** liệt kê thông báo ký số. Vì vậy: khi cần tra cứu lịch sử các giao dịch ký số đã xảy ra, hãy vào thẳng **Ký số > Danh sách giao dịch** và lọc theo tab **Đã ký** / **Thất bại** thay vì tìm trên chuông.
 - Trang `/thong-bao` hiển thị **20 thông báo / trang** với phân trang đầy đủ.
 
-### 7.7. Bảng tổng hợp các thông báo của hệ thống
-
-| Tình huống | Thông báo |
-|---|---|
-| Đánh dấu đã đọc tất cả (trang Thông báo) | Đã đánh dấu tất cả là đã đọc |
-| Đánh dấu đã đọc tất cả (trang Thông báo) — thất bại | Thao tác thất bại. Vui lòng thử lại. |
-| Tạo thông báo thành công (trang Thông báo) | Tạo thông báo thành công |
-| Tạo thông báo (trang Thông báo) — thất bại | Tạo thông báo thất bại. Vui lòng thử lại. |
-| Tạo thông báo (trang Thông báo) — bỏ trống tiêu đề | Vui lòng nhập tiêu đề |
-| Tạo thông báo (trang Thông báo) — bỏ trống nội dung | Vui lòng nhập nội dung |
-| Tạo thông báo (trang Thông báo) — tiêu đề rỗng phía máy chủ | Tiêu đề thông báo là bắt buộc |
-| Tạo thông báo (trang Thông báo) — tiêu đề quá 300 ký tự | Tiêu đề không được vượt quá 300 ký tự |
-| Tạo thông báo (trang Thông báo) — nội dung rỗng phía máy chủ | Nội dung thông báo là bắt buộc |
-| Toast nổi khi ký số thành công (chuông) | **Ký số thành công** — Giao dịch #N đã hoàn tất |
-| Toast nổi khi ký số thất bại (chuông) | **Ký số thất bại** — chi tiết lý do |
-| Toast nổi khi ký số hết hạn (chuông) | **Ký số hết hạn** — chi tiết lý do |
-| Toast nổi khi ký số bị hủy (chuông) | **Đã hủy ký số** — chi tiết lý do |
-| Tiêu đề thông báo bell — ký số thành công | Ký số thành công: *(tên file)* |
-| Tiêu đề thông báo bell — ký số thất bại | Ký số thất bại |
-| Tiêu đề thông báo bell — ký số hết hạn | Ký số hết hạn |
-| Bảng thả xuống chuông — không có thông báo | Không có thông báo |
-| Trang Thông báo — danh sách rỗng | Chưa có thông báo / Hệ thống sẽ thông báo khi có văn bản mới hoặc việc được giao. |
-| Đánh dấu một thông báo (chuông) — không tìm thấy / không phải của mình | Thông báo không tồn tại hoặc không thuộc về bạn |
 
 ---
 

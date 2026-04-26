@@ -137,16 +137,6 @@ Mặc định, danh sách được sắp xếp theo hai tiêu chí, theo thứ t
 1. Văn bản có cờ **Quan trọng** lên trước.
 2. Trong cùng nhóm, văn bản có **ngày đánh dấu mới hơn** lên trước.
 
-### 7.7. Bảng tổng hợp các thông báo của hệ thống
-
-| Tình huống | Thông báo |
-|---|---|
-| Đánh dấu văn bản (từ màn hình chi tiết) | Đã đánh dấu |
-| Bỏ đánh dấu (từ màn hình chi tiết hoặc màn hình này) | Đã bỏ đánh dấu |
-| Lỗi tải danh sách | Lỗi tải dữ liệu |
-| Lỗi khi bỏ đánh dấu | Lỗi |
-| Lỗi khi bật / tắt cờ Quan trọng | Lỗi |
-| Bảng trống — chưa đánh dấu văn bản nào | Chưa đánh dấu văn bản nào |
 
 ---
 

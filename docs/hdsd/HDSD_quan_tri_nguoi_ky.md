@@ -186,25 +186,6 @@ Vì vậy, cần đảm bảo **luôn cập nhật danh sách kịp thời**:
 
 Bảng người ký không có nút **Sửa**. Nếu cần thay đổi chức vụ / phòng ban hiển thị, hãy thực hiện ở màn hình **Quản trị > Nhân viên**. Nếu cần đổi sang một nhân viên khác, hãy **xóa** và **thêm mới** lại với nhân viên đúng.
 
-### 7.8. Bảng tổng hợp các thông báo của hệ thống
-
-| Tình huống | Thông báo |
-|---|---|
-| Thêm người ký thành công (frontend) | Thêm người ký thành công |
-| Thêm người ký thành công (backend) | Them nguoi ky thanh cong |
-| Xóa người ký thành công (frontend) | Xóa người ký thành công |
-| Xóa người ký thành công (backend) | Xoa nguoi ky thanh cong |
-| Chưa chọn nhân viên trong hộp thoại | Vui lòng chọn nhân viên |
-| Chưa chọn phòng ban / đơn vị trên cây | Vui lòng chọn phòng ban / đơn vị từ cây bên trái trước |
-| Thêm trùng nhân viên trong cùng đơn vị | Nhân viên đã có trong danh sách người ký |
-| Nhân viên đã xóa / không tồn tại | Nhân viên không tồn tại |
-| Không tìm thấy người ký khi xóa | Không tìm thấy người ký |
-| Đơn vị bắt buộc (chưa xác định được đơn vị) | Đơn vị là bắt buộc |
-| Lỗi tải dữ liệu cây phòng ban | Lỗi tải dữ liệu đơn vị |
-| Lỗi tải danh sách người ký | Lỗi tải danh sách người ký |
-| Lỗi tải danh sách nhân viên (trong hộp thoại) | Lỗi tải danh sách nhân viên |
-| Lỗi khi thêm người ký (chung) | Lỗi khi thêm người ký |
-| Lỗi khi xóa (chung) | Lỗi khi xóa |
 
 ---
 

@@ -261,31 +261,6 @@ Hệ thống không có nút **Làm mới** thủ công. Danh sách tự cập n
 
 Nếu nghi ngờ dữ liệu không đồng bộ, có thể tải lại trang bằng phím **F5**.
 
-### 7.11. Bảng tổng hợp các thông báo của hệ thống
-
-| Tình huống | Thông báo |
-|---|---|
-| Khởi tạo ký số thành công | Yêu cầu ký đã được gửi. Vui lòng xác nhận OTP trên ứng dụng di động. |
-| Ký số thành công | Ký số thành công |
-| Hủy giao dịch thành công | Đã hủy giao dịch ký số |
-| Hết thời gian chờ OTP | Hết thời gian chờ xác nhận OTP. Vui lòng thử lại. |
-| Chưa cấu hình nhà cung cấp | Hệ thống chưa cấu hình provider ký số. Vui lòng liên hệ Quản trị viên. |
-| Chưa cấu hình tài khoản ký số | Bạn chưa cấu hình tài khoản ký số. Vui lòng vào "Tài khoản ký số cá nhân" để cấu hình. |
-| Tài khoản ký số chưa xác thực | Tài khoản ký số chưa được xác thực. Vui lòng bấm "Kiểm tra" trong trang Tài khoản ký số cá nhân. |
-| Không có quyền ký tệp | Bạn không có quyền ký file này |
-| Cố ký văn bản đến | Không được ký số văn bản đến |
-| Tệp không phải PDF | Chỉ hỗ trợ ký file PDF. File hiện tại không phải định dạng PDF. |
-| PDF lỗi cấu trúc | File PDF không hợp lệ hoặc không tương thích ký số: \<chi tiết\> |
-| Nhà cung cấp từ chối yêu cầu | Provider từ chối yêu cầu ký: \<chi tiết\> |
-| Hủy giao dịch của người khác | Bạn không có quyền hủy giao dịch này |
-| Hủy giao dịch không ở trạng thái pending | Giao dịch không thể hủy (trạng thái hiện tại: \<status\>) |
-| Tải file khi giao dịch chưa hoàn tất | Giao dịch chưa có file đã ký |
-| Tải file của giao dịch người khác (không phải admin) | Bạn không có quyền tải file của giao dịch này |
-| Lỗi tải danh sách | Không tải được danh sách |
-| Tab "Cần ký" trống | Bạn không có văn bản nào đang chờ ký |
-| Tab "Đang xử lý" trống | Không có giao dịch nào đang xử lý |
-| Tab "Đã ký" trống | Bạn chưa có giao dịch ký số hoàn tất |
-| Tab "Thất bại" trống | Không có giao dịch thất bại / hết hạn / đã hủy |
 
 ---
 

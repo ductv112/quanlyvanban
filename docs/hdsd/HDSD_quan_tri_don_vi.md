@@ -201,23 +201,6 @@ Cấu hình chi tiết của các sổ văn bản được thực hiện ở mà
 
 Sai định dạng sẽ thấy thông báo đỏ ngay dưới ô nhập.
 
-### 7.7. Bảng tổng hợp các thông báo của hệ thống
-
-| Tình huống | Thông báo |
-|---|---|
-| Thêm đơn vị thành công | Thêm thành công |
-| Cập nhật đơn vị thành công | Cập nhật thành công |
-| Xóa đơn vị thành công | Xóa thành công |
-| Khóa đơn vị | Đã khóa |
-| Mở khóa đơn vị | Đã mở khóa |
-| Để trống Tên | Tên đơn vị là bắt buộc |
-| Mã trùng | Mã đơn vị đã tồn tại |
-| Email sai định dạng | Email không hợp lệ |
-| SDT sai định dạng | Số điện thoại không hợp lệ |
-| Fax sai định dạng | Số fax không hợp lệ |
-| Xóa đơn vị còn phòng ban con | Không thể xóa: còn N phòng ban con |
-| Xóa đơn vị còn nhân viên | Không thể xóa: còn N nhân viên thuộc phòng ban này |
-| Lỗi tải dữ liệu | Lỗi tải dữ liệu đơn vị / Lỗi tải danh sách |
 
 ---
 
