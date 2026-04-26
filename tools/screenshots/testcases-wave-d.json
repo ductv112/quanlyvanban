@@ -1,0 +1,1614 @@
+{
+  "wave": "D",
+  "title": "Testcases nhom Quan tri (Don vi, Chuc vu, Nguoi dung, Nhom quyen)",
+  "generated_at": "2026-04-26",
+  "source_docs": [
+    "docs/hdsd/HDSD_quan_tri_don_vi.md",
+    "docs/hdsd/HDSD_quan_tri_chuc_vu.md",
+    "docs/hdsd/HDSD_quan_tri_nguoi_dung.md",
+    "docs/hdsd/HDSD_quan_tri_nhom_quyen.md"
+  ],
+  "modules": [
+    {
+      "module": "Quan tri Don vi",
+      "code": "QTDV",
+      "menu_path": "Quan tri > Don vi",
+      "screens": ["Danh sach", "Drawer Them", "Drawer Sua", "Modal Xoa"],
+      "testcases": [
+        {
+          "id": "TC-QTDV-001",
+          "category": "UI",
+          "screen": "Danh sach",
+          "title": "Hien thi cay co cau to chuc va bang danh sach",
+          "preconditions": "Da dang nhap voi quyen admin. He thong co it nhat 1 don vi va 1 phong ban.",
+          "steps": [
+            "Truy cap menu Quan tri > Don vi",
+            "Quan sat layout 2 cot: cay ben trai, bang ben phai"
+          ],
+          "expected": "Cay don vi hien thi day du cap. Bang ben phai hien thi tat ca don vi/phong ban khi chua chon node nao. Tieu de trang 'Quan ly don vi' xuat hien.",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTDV-002",
+          "category": "UI",
+          "screen": "Danh sach",
+          "title": "Cot bang hien thi day du Ma, Ten, Cap, So NV, Trang thai",
+          "preconditions": "Co data don vi va phong ban",
+          "steps": ["Quan sat header bang"],
+          "expected": "Bang hien thi 5 cot: Ma (in dam navy), Ten, Cap (the xanh teal/navy), So NV, Trang thai (Hoat dong xanh / Da khoa do)",
+          "priority": "Medium"
+        },
+        {
+          "id": "TC-QTDV-003",
+          "category": "UI",
+          "screen": "Danh sach",
+          "title": "Click node tren cay loc bang ben phai",
+          "preconditions": "Cay co cau co nhieu don vi",
+          "steps": [
+            "Click chon 1 don vi tren cay trai",
+            "Quan sat bang ben phai"
+          ],
+          "expected": "Bang chi hien thi phong ban con cap 1 va cap 2 cua don vi vua chon",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTDV-004",
+          "category": "UI",
+          "screen": "Danh sach",
+          "title": "Tim kiem don vi tren cay theo ten",
+          "preconditions": "Co nhieu don vi",
+          "steps": [
+            "Nhap ten don vi vao o tim kiem cay",
+            "Quan sat ket qua"
+          ],
+          "expected": "Cay tu loc highlight cac node match ten tim kiem",
+          "priority": "Medium"
+        },
+        {
+          "id": "TC-QTDV-005",
+          "category": "UI",
+          "screen": "Danh sach",
+          "title": "Nut Tai lai cay don vi hoat dong",
+          "preconditions": "Da o trang Don vi",
+          "steps": ["Click nut Tai lai goc phai card cay"],
+          "expected": "He thong goi lai API tai cay, hien thi trang thai loading roi update lai data",
+          "priority": "Low"
+        },
+        {
+          "id": "TC-QTDV-006",
+          "category": "Positive",
+          "screen": "Drawer Them",
+          "title": "Them don vi cap cao (cap Don vi) thanh cong",
+          "preconditions": "Da dang nhap admin",
+          "steps": [
+            "Click nut Them don vi",
+            "Bo trong Don vi cha (de tao goc)",
+            "Nhap Ma: 'SO_TEST'",
+            "Nhap Ten: 'So Test 001'",
+            "Chon Cap: Don vi",
+            "Click Them moi"
+          ],
+          "expected": "Drawer dong, message 'Them thanh cong'. Don vi moi xuat hien tren cay voi the xanh teal 'Don vi'",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTDV-007",
+          "category": "Positive",
+          "screen": "Drawer Them",
+          "title": "Them phong ban con thanh cong (chon don vi cha)",
+          "preconditions": "Co don vi So Test 001",
+          "steps": [
+            "Tren cay trai click chon don vi 'So Test 001'",
+            "Click Them don vi",
+            "Quan sat truong Don vi cha",
+            "Nhap Ma: 'PB01_TEST', Ten: 'Phong test 1'",
+            "Cap: Phong ban (mac dinh)",
+            "Click Them moi"
+          ],
+          "expected": "Truong Don vi cha tu dong gan = So Test 001. Sau khi luu, phong ban con xuat hien duoi don vi cha tren cay",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTDV-008",
+          "category": "Positive",
+          "screen": "Drawer Them",
+          "title": "Them don vi voi day du truong tuy chon (Email, SDT, Fax, Dia chi, Mo ta)",
+          "preconditions": "Da o Drawer Them",
+          "steps": [
+            "Nhap Ma: 'FULL_TEST', Ten: 'Don vi day du'",
+            "Ten tieng Anh: 'Full Test Unit'",
+            "Ten viet tat: 'FT'",
+            "SDT: '0241234567'",
+            "Fax: '0241234568'",
+            "Email: 'test@dft.vn'",
+            "Dia chi: '123 Pho Hue, Ha Noi'",
+            "Bat Switch 'Cho phep so van ban'",
+            "Mo ta: 'Don vi test full'",
+            "Click Them moi"
+          ],
+          "expected": "Luu thanh cong, tat ca cac truong duoc luu va hien thi dung khi mo Sua",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTDV-009",
+          "category": "Negative",
+          "screen": "Drawer Them",
+          "title": "Bo trong Ma -> hien thi loi inline 'Nhap ma'",
+          "preconditions": "Da mo Drawer Them",
+          "steps": [
+            "Nhap Ten: 'Test loi'",
+            "Bo trong Ma",
+            "Click Them moi"
+          ],
+          "expected": "Loi inline tai truong Ma: 'Nhap ma'. Drawer khong dong, khong goi API",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTDV-010",
+          "category": "Negative",
+          "screen": "Drawer Them",
+          "title": "Bo trong Ten -> hien thi loi inline 'Nhap ten'",
+          "preconditions": "Da mo Drawer Them",
+          "steps": [
+            "Nhap Ma: 'CODE001'",
+            "Bo trong Ten",
+            "Click Them moi"
+          ],
+          "expected": "Loi inline tai truong Ten: 'Nhap ten'",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTDV-011",
+          "category": "Negative",
+          "screen": "Drawer Them",
+          "title": "Trung Ma don vi -> hien thi loi inline 'Ma don vi da ton tai'",
+          "preconditions": "Da co don vi voi Ma 'SO_TEST'",
+          "steps": [
+            "Mo Drawer Them",
+            "Nhap Ma: 'SO_TEST', Ten: 'Don vi trung ma'",
+            "Click Them moi"
+          ],
+          "expected": "Loi inline tai truong Ma: 'Ma don vi da ton tai'. Drawer khong dong",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTDV-012",
+          "category": "Negative",
+          "screen": "Drawer Them",
+          "title": "Email sai dinh dang -> 'Email khong hop le'",
+          "preconditions": "Da mo Drawer Them",
+          "steps": [
+            "Nhap Ma: 'C1', Ten: 'T1'",
+            "Nhap Email: 'abc@xyz' (thieu domain)",
+            "Click Them moi"
+          ],
+          "expected": "Loi inline tai Email: 'Email khong hop le'",
+          "priority": "Medium"
+        },
+        {
+          "id": "TC-QTDV-013",
+          "category": "Negative",
+          "screen": "Drawer Them",
+          "title": "SDT chua chu cai -> 'So dien thoai khong hop le'",
+          "preconditions": "Da mo Drawer Them",
+          "steps": [
+            "Nhap SDT: '024abc123'",
+            "Click Them moi"
+          ],
+          "expected": "Loi inline tai SDT: 'So dien thoai khong hop le'",
+          "priority": "Medium"
+        },
+        {
+          "id": "TC-QTDV-014",
+          "category": "Negative",
+          "screen": "Drawer Them",
+          "title": "Fax chua ky tu khong hop le -> 'So fax khong hop le'",
+          "preconditions": "Da mo Drawer Them",
+          "steps": [
+            "Nhap Fax: '02@3#456'",
+            "Click Them moi"
+          ],
+          "expected": "Loi inline tai Fax: 'So fax khong hop le'",
+          "priority": "Medium"
+        },
+        {
+          "id": "TC-QTDV-015",
+          "category": "Boundary",
+          "screen": "Drawer Them",
+          "title": "Ma vuot 50 ky tu -> bi cat hoac bao loi",
+          "preconditions": "Da mo Drawer Them",
+          "steps": [
+            "Nhap Ma 51 ky tu chu/so"
+          ],
+          "expected": "Input bi maxLength=50 chan, chi luu duoc 50 ky tu dau",
+          "priority": "Medium"
+        },
+        {
+          "id": "TC-QTDV-016",
+          "category": "Boundary",
+          "screen": "Drawer Them",
+          "title": "Ten don vi 200 ky tu (max) -> luu OK",
+          "preconditions": "Da mo Drawer Them",
+          "steps": [
+            "Nhap Ma: 'BD200'",
+            "Nhap Ten: chuoi 200 ky tu",
+            "Click Them moi"
+          ],
+          "expected": "Luu thanh cong, ten 200 ky tu duoc luu day du",
+          "priority": "Medium"
+        },
+        {
+          "id": "TC-QTDV-017",
+          "category": "Boundary",
+          "screen": "Drawer Them",
+          "title": "Dia chi 500 ky tu (max) -> luu OK",
+          "preconditions": "Da mo Drawer Them",
+          "steps": [
+            "Nhap Dia chi: chuoi 500 ky tu",
+            "Click Them moi"
+          ],
+          "expected": "Luu thanh cong",
+          "priority": "Low"
+        },
+        {
+          "id": "TC-QTDV-018",
+          "category": "Boundary",
+          "screen": "Drawer Them",
+          "title": "Mo ta 500 ky tu (max) -> luu OK voi bo dem",
+          "preconditions": "Da mo Drawer Them",
+          "steps": [
+            "Nhap Mo ta 500 ky tu"
+          ],
+          "expected": "TextArea hien thi bo dem 500/500. Luu OK",
+          "priority": "Low"
+        },
+        {
+          "id": "TC-QTDV-019",
+          "category": "Positive",
+          "screen": "Drawer Sua",
+          "title": "Sua ten don vi thanh cong",
+          "preconditions": "Co 1 don vi",
+          "steps": [
+            "Click menu ba cham, chon 'Sua thong tin'",
+            "Doi Ten thanh 'Don vi sua ten'",
+            "Click Cap nhat"
+          ],
+          "expected": "Drawer dong, message 'Cap nhat thanh cong'. Bang refresh hien ten moi",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTDV-020",
+          "category": "Negative",
+          "screen": "Drawer Sua",
+          "title": "Sua Ma sang ma da co o don vi khac -> 'Ma don vi da ton tai'",
+          "preconditions": "Co 2 don vi: A (ma A1) va B (ma B1)",
+          "steps": [
+            "Sua don vi B",
+            "Doi Ma thanh 'A1'",
+            "Click Cap nhat"
+          ],
+          "expected": "Loi inline tai Ma: 'Ma don vi da ton tai'",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTDV-021",
+          "category": "Positive",
+          "screen": "Danh sach",
+          "title": "Khoa don vi -> trang thai chuyen sang Da khoa",
+          "preconditions": "Co don vi dang Hoat dong",
+          "steps": [
+            "Click menu ba cham, chon 'Khoa'",
+            "Quan sat trang thai"
+          ],
+          "expected": "Message 'Da khoa'. Cot Trang thai chuyen sang 'Da khoa' mau do. Menu xuat hien tuy chon 'Mo khoa'",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTDV-022",
+          "category": "Positive",
+          "screen": "Danh sach",
+          "title": "Mo khoa don vi -> tro lai Hoat dong",
+          "preconditions": "Co don vi Da khoa",
+          "steps": [
+            "Click menu ba cham, chon 'Mo khoa'"
+          ],
+          "expected": "Message 'Da mo khoa'. Cot Trang thai sang 'Hoat dong' mau xanh",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTDV-023",
+          "category": "Positive",
+          "screen": "Modal Xoa",
+          "title": "Xoa don vi rong (khong co con, khong co NV) thanh cong",
+          "preconditions": "Don vi rong khong co phong ban con va khong co nhan vien",
+          "steps": [
+            "Click menu ba cham, chon 'Xoa'",
+            "Modal hien 'Ban co chac chan muon xoa don vi nay?'",
+            "Click Xoa"
+          ],
+          "expected": "Message 'Xoa thanh cong'. Don vi bien mat khoi cay va bang",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTDV-024",
+          "category": "Negative",
+          "screen": "Modal Xoa",
+          "title": "Xoa don vi con phong ban con -> 'Khong the xoa: con N phong ban con'",
+          "preconditions": "Don vi A co 2 phong ban con",
+          "steps": [
+            "Mo menu ba cham don vi A, chon 'Xoa'",
+            "Click Xoa trong modal"
+          ],
+          "expected": "Message loi: 'Khong the xoa: con 2 phong ban con'. Don vi van con tren cay",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTDV-025",
+          "category": "Negative",
+          "screen": "Modal Xoa",
+          "title": "Xoa don vi con nhan vien -> 'Khong the xoa: con N nhan vien thuoc phong ban nay'",
+          "preconditions": "Phong ban X co 3 nhan vien",
+          "steps": [
+            "Click menu ba cham phong ban X, chon 'Xoa'",
+            "Click Xoa"
+          ],
+          "expected": "Message loi: 'Khong the xoa: con 3 nhan vien thuoc phong ban nay'",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTDV-026",
+          "category": "UI",
+          "screen": "Modal Xoa",
+          "title": "Click Huy trong modal -> dong modal, khong xoa",
+          "preconditions": "Modal xoa dang mo",
+          "steps": ["Click nut Huy"],
+          "expected": "Modal dong, don vi van ton tai",
+          "priority": "Medium"
+        },
+        {
+          "id": "TC-QTDV-027",
+          "category": "Permission",
+          "screen": "Danh sach",
+          "title": "User khong phai admin -> khong truy cap duoc menu Quan tri > Don vi",
+          "preconditions": "Dang nhap voi user vai tro 'Chuyen vien' (khong co quyen admin)",
+          "steps": [
+            "Mo sidebar, tim menu Quan tri"
+          ],
+          "expected": "Menu Quan tri an hoan toan. Truy cap truc tiep URL /quan-tri/don-vi -> redirect 403 hoac trang error",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTDV-028",
+          "category": "UI",
+          "screen": "Drawer Them",
+          "title": "Cap = Don vi -> bat duoc Switch 'Cho phep so van ban'",
+          "preconditions": "Drawer Them dang mo",
+          "steps": [
+            "Chon Cap = Don vi",
+            "Bat Switch 'Cho phep so van ban'"
+          ],
+          "expected": "Switch chuyen sang ON. Khi luu, don vi co kha nang cau hinh so van ban",
+          "priority": "Medium"
+        },
+        {
+          "id": "TC-QTDV-029",
+          "category": "UI",
+          "screen": "Drawer Them",
+          "title": "Thu tu nhap so am -> bi chan hoac fallback ve 0",
+          "preconditions": "Drawer Them dang mo",
+          "steps": [
+            "Nhap Thu tu: -5"
+          ],
+          "expected": "InputNumber khong cho nhap so am hoac tu reset ve 0",
+          "priority": "Low"
+        },
+        {
+          "id": "TC-QTDV-030",
+          "category": "UI",
+          "screen": "Drawer Them",
+          "title": "Click Huy o header drawer -> dong drawer khong luu",
+          "preconditions": "Drawer Them dang mo, da nhap mot phan du lieu",
+          "steps": ["Click nut Huy"],
+          "expected": "Drawer dong, du lieu khong duoc luu, bang khong thay doi",
+          "priority": "Low"
+        }
+      ]
+    },
+    {
+      "module": "Quan tri Chuc vu",
+      "code": "QTCV",
+      "menu_path": "Quan tri > Chuc vu",
+      "screens": ["Danh sach", "Drawer Them", "Drawer Sua", "Modal Xoa"],
+      "testcases": [
+        {
+          "id": "TC-QTCV-001",
+          "category": "UI",
+          "screen": "Danh sach",
+          "title": "Hien thi bang chuc vu day du cot",
+          "preconditions": "Da dang nhap admin, co data chuc vu",
+          "steps": ["Truy cap menu Quan tri > Chuc vu"],
+          "expected": "Bang hien thi 7 cot: Ma, Ten chuc vu, Thu tu, So NV, Lanh dao (Co/Khong), XL Van ban (Co/Khong), Trang thai. Header card co tieu de 'Danh sach chuc vu'",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTCV-002",
+          "category": "UI",
+          "screen": "Danh sach",
+          "title": "Phan trang chuc vu va chon so dong/trang",
+          "preconditions": "Co > 10 chuc vu",
+          "steps": [
+            "Quan sat thanh phan trang cuoi bang",
+            "Doi page size sang 20"
+          ],
+          "expected": "Bang reload voi 20 dong/trang, tong so ban ghi hien thi dung",
+          "priority": "Medium"
+        },
+        {
+          "id": "TC-QTCV-003",
+          "category": "Positive",
+          "screen": "Danh sach",
+          "title": "Tim kiem theo tu khoa hoat dong",
+          "preconditions": "Co chuc vu 'Truong phong'",
+          "steps": [
+            "Nhap 'Truong phong' vao o tim kiem header card",
+            "Nhan Enter"
+          ],
+          "expected": "Bang loc, hien chi cac chuc vu match 'Truong phong'",
+          "priority": "Medium"
+        },
+        {
+          "id": "TC-QTCV-004",
+          "category": "Positive",
+          "screen": "Drawer Them",
+          "title": "Them chuc vu thanh cong voi truong toi thieu",
+          "preconditions": "Drawer Them dang mo",
+          "steps": [
+            "Nhap Ten chuc vu: 'Test chuc vu'",
+            "Nhap Ma: 'TCV01'",
+            "Click Them moi"
+          ],
+          "expected": "Drawer dong, message 'Them thanh cong'. Chuc vu xuat hien tren bang voi mac dinh: Lanh dao=Khong, XL VB=Co, Trang thai=Hoat dong",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTCV-005",
+          "category": "Positive",
+          "screen": "Drawer Them",
+          "title": "Them chuc vu lanh dao (bat Switch 'Chuc vu lanh dao')",
+          "preconditions": "Drawer Them dang mo",
+          "steps": [
+            "Nhap Ten: 'Giam doc test', Ma: 'GDTEST'",
+            "Bat Switch 'Chuc vu lanh dao'",
+            "Click Them moi"
+          ],
+          "expected": "Luu OK. Cot Lanh dao tren bang hien 'Co' xanh",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTCV-006",
+          "category": "Positive",
+          "screen": "Drawer Them",
+          "title": "Them chuc vu khong xu ly van ban (tat Switch XL VB)",
+          "preconditions": "Drawer Them dang mo",
+          "steps": [
+            "Nhap Ten: 'Bao ve', Ma: 'BV'",
+            "Tat Switch 'Duoc xu ly van ban'",
+            "Click Them moi"
+          ],
+          "expected": "Luu OK. Cot XL Van ban tren bang hien 'Khong' xam. Khi van thu phan cong van ban, chuc vu nay khong xuat hien trong Select",
+          "priority": "Medium"
+        },
+        {
+          "id": "TC-QTCV-007",
+          "category": "Negative",
+          "screen": "Drawer Them",
+          "title": "Bo trong Ten chuc vu -> 'Nhap ten chuc vu'",
+          "preconditions": "Drawer Them dang mo",
+          "steps": [
+            "Bo trong Ten",
+            "Nhap Ma: 'C001'",
+            "Click Them moi"
+          ],
+          "expected": "Loi inline tai Ten: 'Nhap ten chuc vu'",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTCV-008",
+          "category": "Negative",
+          "screen": "Drawer Them",
+          "title": "Bo trong Ma -> 'Nhap ma'",
+          "preconditions": "Drawer Them dang mo",
+          "steps": [
+            "Nhap Ten: 'X'",
+            "Bo trong Ma",
+            "Click Them moi"
+          ],
+          "expected": "Loi inline tai Ma: 'Nhap ma'",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTCV-009",
+          "category": "Negative",
+          "screen": "Drawer Them",
+          "title": "Trung Ma chuc vu -> 'Ma chuc vu da ton tai'",
+          "preconditions": "Da co chuc vu Ma 'GD'",
+          "steps": [
+            "Mo Drawer Them",
+            "Nhap Ten: 'Test', Ma: 'GD'",
+            "Click Them moi"
+          ],
+          "expected": "Loi inline tai Ma: 'Ma chuc vu da ton tai'",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTCV-010",
+          "category": "Boundary",
+          "screen": "Drawer Them",
+          "title": "Ma vuot 20 ky tu -> bi cat",
+          "preconditions": "Drawer Them dang mo",
+          "steps": [
+            "Nhap Ma 21 ky tu"
+          ],
+          "expected": "Input maxLength=20, chi cho nhap 20 ky tu",
+          "priority": "Medium"
+        },
+        {
+          "id": "TC-QTCV-011",
+          "category": "Boundary",
+          "screen": "Drawer Them",
+          "title": "Ten chuc vu 100 ky tu (max) -> luu OK",
+          "preconditions": "Drawer Them dang mo",
+          "steps": [
+            "Nhap Ten 100 ky tu, Ma 'B100'",
+            "Click Them moi"
+          ],
+          "expected": "Luu thanh cong, du 100 ky tu",
+          "priority": "Medium"
+        },
+        {
+          "id": "TC-QTCV-012",
+          "category": "Boundary",
+          "screen": "Drawer Them",
+          "title": "Mo ta 500 ky tu (max) -> luu OK",
+          "preconditions": "Drawer Them dang mo",
+          "steps": [
+            "Nhap Mo ta 500 ky tu"
+          ],
+          "expected": "TextArea hien bo dem 500/500. Luu OK",
+          "priority": "Low"
+        },
+        {
+          "id": "TC-QTCV-013",
+          "category": "Positive",
+          "screen": "Drawer Sua",
+          "title": "Sua chuc vu doi Switch Lanh dao -> luu OK",
+          "preconditions": "Co chuc vu 'Chuyen vien'",
+          "steps": [
+            "Click menu ba cham, 'Sua thong tin'",
+            "Bat Switch 'Chuc vu lanh dao'",
+            "Click Cap nhat"
+          ],
+          "expected": "Message 'Cap nhat thanh cong'. Cot Lanh dao tren bang chuyen sang Co",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTCV-014",
+          "category": "Negative",
+          "screen": "Drawer Sua",
+          "title": "Sua Ma trung voi chuc vu khac -> 'Ma chuc vu da ton tai'",
+          "preconditions": "Co 2 chuc vu A (ma A1), B (ma B1)",
+          "steps": [
+            "Sua chuc vu B, doi Ma thanh 'A1'",
+            "Click Cap nhat"
+          ],
+          "expected": "Loi inline tai Ma: 'Ma chuc vu da ton tai'",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTCV-015",
+          "category": "Positive",
+          "screen": "Drawer Sua",
+          "title": "Doi Trang thai sang Ngung -> chuc vu khong xuat hien trong Select gan nhan vien",
+          "preconditions": "Co chuc vu 'Cu nhan tap su'",
+          "steps": [
+            "Sua chuc vu, tat Switch Trang thai",
+            "Cap nhat",
+            "Vao Quan tri > Nguoi dung > Drawer Them, mo Select Chuc vu"
+          ],
+          "expected": "Chuc vu 'Cu nhan tap su' khong xuat hien trong dropdown Chuc vu",
+          "priority": "Medium"
+        },
+        {
+          "id": "TC-QTCV-016",
+          "category": "Positive",
+          "screen": "Modal Xoa",
+          "title": "Xoa chuc vu khong co nhan vien -> thanh cong",
+          "preconditions": "Co chuc vu rong khong nhan vien",
+          "steps": [
+            "Click menu ba cham, 'Xoa'",
+            "Click Xoa trong modal"
+          ],
+          "expected": "Message 'Xoa thanh cong'. Chuc vu bien mat",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTCV-017",
+          "category": "Negative",
+          "screen": "Modal Xoa",
+          "title": "Xoa chuc vu con nhan vien -> 'Khong the xoa: con N nhan vien dang su dung chuc vu nay'",
+          "preconditions": "Chuc vu 'Truong phong' co 5 nhan vien",
+          "steps": [
+            "Mo menu ba cham, chon Xoa",
+            "Click Xoa"
+          ],
+          "expected": "Loi: 'Khong the xoa: con 5 nhan vien dang su dung chuc vu nay'",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTCV-018",
+          "category": "UI",
+          "screen": "Drawer Them",
+          "title": "Switch Trang thai mac dinh = Hoat dong",
+          "preconditions": "Drawer Them moi mo",
+          "steps": ["Quan sat Switch Trang thai"],
+          "expected": "Switch ON, label 'Hoat dong'",
+          "priority": "Low"
+        },
+        {
+          "id": "TC-QTCV-019",
+          "category": "UI",
+          "screen": "Drawer Them",
+          "title": "Switch 'Duoc xu ly van ban' mac dinh = Co",
+          "preconditions": "Drawer Them moi mo",
+          "steps": ["Quan sat Switch 'Duoc xu ly van ban'"],
+          "expected": "Switch ON, mac dinh Co",
+          "priority": "Low"
+        },
+        {
+          "id": "TC-QTCV-020",
+          "category": "Permission",
+          "screen": "Danh sach",
+          "title": "User khong admin -> khong vao duoc",
+          "preconditions": "Dang nhap voi user thuong",
+          "steps": ["Truy cap URL /quan-tri/chuc-vu"],
+          "expected": "Redirect 403 hoac an menu",
+          "priority": "High"
+        }
+      ]
+    },
+    {
+      "module": "Quan tri Nguoi dung",
+      "code": "QTND",
+      "menu_path": "Quan tri > Nguoi dung",
+      "screens": ["Danh sach", "Drawer Them", "Drawer Sua", "Drawer Phan quyen", "Modal Reset MK", "Modal Xoa"],
+      "testcases": [
+        {
+          "id": "TC-QTND-001",
+          "category": "UI",
+          "screen": "Danh sach",
+          "title": "Layout 2 cot: cay don vi trai, bang nguoi dung phai",
+          "preconditions": "Da dang nhap admin",
+          "steps": ["Truy cap Quan tri > Nguoi dung"],
+          "expected": "Cay don vi/phong ban ben trai voi o tim kiem va nut Tai lai. Bang ben phai co thanh loc va bang phan trang",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTND-002",
+          "category": "UI",
+          "screen": "Danh sach",
+          "title": "Cot bang day du: Anh, Ho ten, Ma NV, Username, Chuc vu, Phong ban, Email, SDT, Trang thai",
+          "preconditions": "Co data nguoi dung",
+          "steps": ["Quan sat header bang"],
+          "expected": "9 cot hien thi dung. Cot SDT hien 2 dong: phone bold + di dong xam nho",
+          "priority": "Medium"
+        },
+        {
+          "id": "TC-QTND-003",
+          "category": "UI",
+          "screen": "Danh sach",
+          "title": "Cot SDT hien dau gach khi ca 2 deu trong",
+          "preconditions": "Co user khong nhap SDT va di dong",
+          "steps": ["Quan sat cot SDT cua user do"],
+          "expected": "Hien dau '—'",
+          "priority": "Low"
+        },
+        {
+          "id": "TC-QTND-004",
+          "category": "Positive",
+          "screen": "Danh sach",
+          "title": "Click node phong ban tren cay -> loc bang ben phai",
+          "preconditions": "Co cay phong ban va nguoi dung",
+          "steps": ["Click 1 phong ban tren cay"],
+          "expected": "Bang loc chi nhung user thuoc phong ban do",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTND-005",
+          "category": "Positive",
+          "screen": "Danh sach",
+          "title": "Tim kiem theo ho ten / username",
+          "preconditions": "Co user 'Nguyen Van A' username 'nguyenvana'",
+          "steps": [
+            "Nhap 'nguyenvana' vao o tim kiem",
+            "Nhan Enter"
+          ],
+          "expected": "Bang loc, hien chi user 'Nguyen Van A'",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTND-006",
+          "category": "Positive",
+          "screen": "Danh sach",
+          "title": "Loc theo trang thai = Hoat dong",
+          "preconditions": "Co user Hoat dong va Da khoa",
+          "steps": ["Chon dropdown trang thai = 'Hoat dong'"],
+          "expected": "Bang chi hien user Hoat dong",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTND-007",
+          "category": "Positive",
+          "screen": "Danh sach",
+          "title": "Loc theo trang thai = Da khoa",
+          "preconditions": "Co user Da khoa",
+          "steps": ["Chon dropdown trang thai = 'Da khoa'"],
+          "expected": "Bang chi hien user Da khoa",
+          "priority": "Medium"
+        },
+        {
+          "id": "TC-QTND-008",
+          "category": "Positive",
+          "screen": "Drawer Them",
+          "title": "Them user thanh cong voi truong bat buoc",
+          "preconditions": "Drawer Them mo, co don vi va phong ban san",
+          "steps": [
+            "Username: 'testuser01'",
+            "Mat khau: 'Abcd1234'",
+            "Ho va ten dem: 'Nguyen Van'",
+            "Ten: 'Test'",
+            "Don vi: chon So Noi Vu",
+            "Phong ban: chon Phong Hanh chinh",
+            "Click Them moi"
+          ],
+          "expected": "Drawer dong, message 'Them thanh cong'. User moi xuat hien trong bang",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTND-009",
+          "category": "Positive",
+          "screen": "Drawer Them",
+          "title": "Them user khong nhap mat khau -> mac dinh Admin@123",
+          "preconditions": "Drawer Them mo",
+          "steps": [
+            "Nhap day du truong bat buoc, BO TRONG mat khau",
+            "Click Them moi"
+          ],
+          "expected": "User tao thanh cong. Test login bang Admin@123 OK",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTND-010",
+          "category": "Positive",
+          "screen": "Drawer Them",
+          "title": "Them user voi day du 13 truong",
+          "preconditions": "Drawer Them mo",
+          "steps": [
+            "Dien tat ca cac truong: Username, mat khau, ho ten dem, ten, email, SDT, di dong, don vi, phong ban, chuc vu, gioi tinh, ngay sinh, dia chi"
+          ],
+          "expected": "Luu OK, mo Sua thay du lieu day du",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTND-011",
+          "category": "Positive",
+          "screen": "Drawer Them",
+          "title": "Da chon phong ban tren cay -> mo Drawer Them tu gan Don vi + Phong ban",
+          "preconditions": "Click chon 'Phong Hanh chinh' tren cay trai",
+          "steps": [
+            "Click Them nguoi dung"
+          ],
+          "expected": "Truong Don vi va Phong ban da co san gia tri tuong ung voi node da chon",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTND-012",
+          "category": "Negative",
+          "screen": "Drawer Them",
+          "title": "Bo trong Username -> 'Nhap ten dang nhap'",
+          "preconditions": "Drawer Them mo",
+          "steps": [
+            "Bo trong username, dien cac truong khac",
+            "Click Them moi"
+          ],
+          "expected": "Loi inline: 'Nhap ten dang nhap'",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTND-013",
+          "category": "Negative",
+          "screen": "Drawer Them",
+          "title": "Username < 3 ky tu -> 'Toi thieu 3 ky tu'",
+          "preconditions": "Drawer Them mo",
+          "steps": [
+            "Username: 'ab'",
+            "Click Them moi"
+          ],
+          "expected": "Loi inline tai Username: 'Toi thieu 3 ky tu'",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTND-014",
+          "category": "Negative",
+          "screen": "Drawer Them",
+          "title": "Username chua khoang trang -> 'Chi chua chu cai, so, dau cham, gach ngang'",
+          "preconditions": "Drawer Them mo",
+          "steps": [
+            "Username: 'user 01'",
+            "Click Them moi"
+          ],
+          "expected": "Loi inline: 'Chi chua chu cai, so, dau cham, gach ngang'",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTND-015",
+          "category": "Negative",
+          "screen": "Drawer Them",
+          "title": "Username chua ky tu dac biet @# -> bao loi format",
+          "preconditions": "Drawer Them mo",
+          "steps": ["Username: 'user@01'"],
+          "expected": "Loi inline format username",
+          "priority": "Medium"
+        },
+        {
+          "id": "TC-QTND-016",
+          "category": "Negative",
+          "screen": "Drawer Them",
+          "title": "Username trung -> 'Ten dang nhap da ton tai'",
+          "preconditions": "Co user 'admin'",
+          "steps": [
+            "Username: 'admin'",
+            "Dien du truong khac, Click Them moi"
+          ],
+          "expected": "Loi inline tai Username: 'Ten dang nhap da ton tai'",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTND-017",
+          "category": "Negative",
+          "screen": "Drawer Them",
+          "title": "Mat khau < 6 ky tu -> 'Toi thieu 6 ky tu'",
+          "preconditions": "Drawer Them mo",
+          "steps": [
+            "Mat khau: 'Ab1'",
+            "Click Them moi"
+          ],
+          "expected": "Loi inline: 'Toi thieu 6 ky tu'",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTND-018",
+          "category": "Negative",
+          "screen": "Drawer Them",
+          "title": "Mat khau khong co chu hoa -> 'Phai chua chu hoa, chu thuong va so'",
+          "preconditions": "Drawer Them mo",
+          "steps": [
+            "Mat khau: 'abcdef1'",
+            "Click Them moi"
+          ],
+          "expected": "Loi inline: 'Phai chua chu hoa, chu thuong va so'",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTND-019",
+          "category": "Negative",
+          "screen": "Drawer Them",
+          "title": "Mat khau khong co chu thuong -> bao loi",
+          "preconditions": "Drawer Them mo",
+          "steps": ["Mat khau: 'ABCDEF1'"],
+          "expected": "Loi: 'Phai chua chu hoa, chu thuong va so'",
+          "priority": "Medium"
+        },
+        {
+          "id": "TC-QTND-020",
+          "category": "Negative",
+          "screen": "Drawer Them",
+          "title": "Mat khau khong co so -> bao loi",
+          "preconditions": "Drawer Them mo",
+          "steps": ["Mat khau: 'AbcdefG'"],
+          "expected": "Loi: 'Phai chua chu hoa, chu thuong va so'",
+          "priority": "Medium"
+        },
+        {
+          "id": "TC-QTND-021",
+          "category": "Negative",
+          "screen": "Drawer Them",
+          "title": "Bo trong Ho va ten dem -> 'Nhap ho va ten dem'",
+          "preconditions": "Drawer Them mo",
+          "steps": [
+            "Bo trong Ho va ten dem",
+            "Click Them moi"
+          ],
+          "expected": "Loi inline: 'Nhap ho va ten dem'",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTND-022",
+          "category": "Negative",
+          "screen": "Drawer Them",
+          "title": "Bo trong Ten -> 'Nhap ten'",
+          "preconditions": "Drawer Them mo",
+          "steps": [
+            "Bo trong Ten",
+            "Click Them moi"
+          ],
+          "expected": "Loi inline tai Ten: 'Nhap ten'",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTND-023",
+          "category": "Negative",
+          "screen": "Drawer Them",
+          "title": "Email sai dinh dang -> 'Email khong hop le'",
+          "preconditions": "Drawer Them mo",
+          "steps": [
+            "Email: 'abc'",
+            "Click Them moi"
+          ],
+          "expected": "Loi inline tai Email: 'Email khong hop le'",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTND-024",
+          "category": "Negative",
+          "screen": "Drawer Them",
+          "title": "Email trung user khac -> 'Email da duoc su dung'",
+          "preconditions": "Co user voi email 'a@dft.vn'",
+          "steps": [
+            "Tao user moi voi Email 'a@dft.vn'",
+            "Click Them moi"
+          ],
+          "expected": "Loi inline tai Email: 'Email da duoc su dung'",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTND-025",
+          "category": "Negative",
+          "screen": "Drawer Them",
+          "title": "SDT < 8 ky tu -> 'So dien thoai khong dung dinh dang'",
+          "preconditions": "Drawer Them mo",
+          "steps": [
+            "SDT: '12345'",
+            "Click Them moi"
+          ],
+          "expected": "Loi inline tai SDT",
+          "priority": "Medium"
+        },
+        {
+          "id": "TC-QTND-026",
+          "category": "Negative",
+          "screen": "Drawer Them",
+          "title": "SDT > 15 ky tu -> bao loi",
+          "preconditions": "Drawer Them mo",
+          "steps": [
+            "SDT: '0241234567890123'",
+            "Click Them moi"
+          ],
+          "expected": "Loi inline tai SDT",
+          "priority": "Medium"
+        },
+        {
+          "id": "TC-QTND-027",
+          "category": "Negative",
+          "screen": "Drawer Them",
+          "title": "SDT chua chu cai -> bao loi",
+          "preconditions": "Drawer Them mo",
+          "steps": ["SDT: '0241234abc'"],
+          "expected": "Loi inline format SDT",
+          "priority": "Medium"
+        },
+        {
+          "id": "TC-QTND-028",
+          "category": "Negative",
+          "screen": "Drawer Them",
+          "title": "Di dong sai dinh dang -> 'So di dong khong dung dinh dang'",
+          "preconditions": "Drawer Them mo",
+          "steps": ["Di dong: '098abc1234'"],
+          "expected": "Loi inline tai Di dong",
+          "priority": "Medium"
+        },
+        {
+          "id": "TC-QTND-029",
+          "category": "Negative",
+          "screen": "Drawer Them",
+          "title": "Bo trong Don vi -> 'Chon don vi'",
+          "preconditions": "Drawer Them mo",
+          "steps": [
+            "Khong chon Don vi",
+            "Click Them moi"
+          ],
+          "expected": "Loi inline tai Don vi: 'Chon don vi'",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTND-030",
+          "category": "Negative",
+          "screen": "Drawer Them",
+          "title": "Bo trong Phong ban -> 'Chon phong ban'",
+          "preconditions": "Drawer Them mo, da chon Don vi",
+          "steps": [
+            "Khong chon Phong ban",
+            "Click Them moi"
+          ],
+          "expected": "Loi inline tai Phong ban: 'Chon phong ban'",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTND-031",
+          "category": "Positive",
+          "screen": "Drawer Them",
+          "title": "Doi Don vi -> Phong ban tu reset va load lai theo don vi moi",
+          "preconditions": "Drawer Them, da chon Don vi A va Phong ban X cua A",
+          "steps": [
+            "Chon Don vi B"
+          ],
+          "expected": "Truong Phong ban tu reset (clear), Select Phong ban load lai danh sach phong ban thuoc Don vi B",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTND-032",
+          "category": "Boundary",
+          "screen": "Drawer Them",
+          "title": "Username 50 ky tu (max) -> luu OK",
+          "preconditions": "Drawer Them mo",
+          "steps": [
+            "Username 50 ky tu hop le",
+            "Dien du truong, Click Them moi"
+          ],
+          "expected": "Luu thanh cong",
+          "priority": "Medium"
+        },
+        {
+          "id": "TC-QTND-033",
+          "category": "Boundary",
+          "screen": "Drawer Them",
+          "title": "Ho va ten dem 50 ky tu (max) -> luu OK",
+          "preconditions": "Drawer Them mo",
+          "steps": ["Ho va ten dem 50 ky tu", "Click Them moi"],
+          "expected": "Luu OK",
+          "priority": "Low"
+        },
+        {
+          "id": "TC-QTND-034",
+          "category": "Boundary",
+          "screen": "Drawer Them",
+          "title": "Dia chi 500 ky tu (max) -> luu OK voi bo dem",
+          "preconditions": "Drawer Them mo",
+          "steps": ["Dia chi 500 ky tu"],
+          "expected": "Hien bo dem 500/500. Luu OK",
+          "priority": "Low"
+        },
+        {
+          "id": "TC-QTND-035",
+          "category": "UI",
+          "screen": "Drawer Them",
+          "title": "Mac dinh Gioi tinh = Nam",
+          "preconditions": "Drawer Them moi mo",
+          "steps": ["Quan sat Radio Gioi tinh"],
+          "expected": "Radio 'Nam' duoc check san",
+          "priority": "Low"
+        },
+        {
+          "id": "TC-QTND-036",
+          "category": "UI",
+          "screen": "Drawer Them",
+          "title": "DatePicker Ngay sinh dung dinh dang dd/MM/yyyy",
+          "preconditions": "Drawer Them mo",
+          "steps": ["Click vao Ngay sinh"],
+          "expected": "DatePicker mo, format dd/MM/yyyy",
+          "priority": "Low"
+        },
+        {
+          "id": "TC-QTND-037",
+          "category": "Positive",
+          "screen": "Drawer Sua",
+          "title": "Mo Drawer Sua -> Username bi disable",
+          "preconditions": "Co user trong he thong",
+          "steps": [
+            "Click menu ba cham, 'Sua thong tin'",
+            "Quan sat truong Username"
+          ],
+          "expected": "Username hien gia tri hien tai nhung disabled (xam, khong nhap duoc)",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTND-038",
+          "category": "Positive",
+          "screen": "Drawer Sua",
+          "title": "Drawer Sua khong co truong Mat khau",
+          "preconditions": "Drawer Sua dang mo",
+          "steps": ["Quan sat danh sach truong"],
+          "expected": "Khong co o nhap Mat khau (chi co o Drawer Them)",
+          "priority": "Medium"
+        },
+        {
+          "id": "TC-QTND-039",
+          "category": "Positive",
+          "screen": "Drawer Sua",
+          "title": "Sua email user -> luu OK",
+          "preconditions": "Co user co email",
+          "steps": [
+            "Mo Drawer Sua",
+            "Doi email thanh email moi hop le va chua trung",
+            "Click Cap nhat"
+          ],
+          "expected": "Message 'Cap nhat thanh cong'. Bang refresh hien email moi",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTND-040",
+          "category": "Negative",
+          "screen": "Drawer Sua",
+          "title": "Sua email trung user khac -> 'Email da duoc su dung'",
+          "preconditions": "Co 2 user A va B; A co email a@dft.vn",
+          "steps": [
+            "Sua user B, doi email thanh 'a@dft.vn'",
+            "Click Cap nhat"
+          ],
+          "expected": "Loi inline tai Email: 'Email da duoc su dung'",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTND-041",
+          "category": "Positive",
+          "screen": "Drawer Sua",
+          "title": "Sua user thay doi don vi/phong ban",
+          "preconditions": "User dang thuoc Don vi A / Phong ban X",
+          "steps": [
+            "Sua, doi Don vi sang B, Phong ban sang Y",
+            "Click Cap nhat"
+          ],
+          "expected": "Luu OK. User chuyen sang Don vi B / Phong ban Y, hien thi dung tren bang",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTND-042",
+          "category": "Positive",
+          "screen": "Danh sach",
+          "title": "Khoa tai khoan -> trang thai Da khoa",
+          "preconditions": "User dang Hoat dong",
+          "steps": ["Click menu ba cham, 'Khoa tai khoan'"],
+          "expected": "Message 'Da khoa'. User chuyen Trang thai = Da khoa do. User do khong dang nhap duoc",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTND-043",
+          "category": "Positive",
+          "screen": "Danh sach",
+          "title": "Mo khoa tai khoan -> Hoat dong tro lai",
+          "preconditions": "User Da khoa",
+          "steps": ["Click menu ba cham, 'Mo khoa tai khoan'"],
+          "expected": "Message 'Da mo khoa'. User dang nhap duoc binh thuong",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTND-044",
+          "category": "Positive",
+          "screen": "Drawer Phan quyen",
+          "title": "Mo Drawer Phan quyen -> tieu de hien Ho ten user",
+          "preconditions": "Co user Nguyen Van A",
+          "steps": ["Menu ba cham, 'Phan quyen'"],
+          "expected": "Drawer mo (480px), tieu de 'Phan quyen: Nguyen Van A'. Hien thi danh sach nhom quyen dang card",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTND-045",
+          "category": "Positive",
+          "screen": "Drawer Phan quyen",
+          "title": "Tich chon nhom quyen -> card doi mau xanh teal",
+          "preconditions": "Drawer Phan quyen mo",
+          "steps": [
+            "Click vao card 'Quan tri he thong'",
+            "Quan sat mau card"
+          ],
+          "expected": "Card co nen xanh nhat, vien xanh teal, checkbox tick",
+          "priority": "Medium"
+        },
+        {
+          "id": "TC-QTND-046",
+          "category": "Positive",
+          "screen": "Drawer Phan quyen",
+          "title": "Luu phan quyen thanh cong",
+          "preconditions": "Drawer Phan quyen mo, da tich 2 nhom quyen",
+          "steps": ["Click nut Luu o header drawer"],
+          "expected": "Drawer dong, message 'Luu phan quyen thanh cong'",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTND-047",
+          "category": "Positive",
+          "screen": "Drawer Phan quyen",
+          "title": "Mo lai Drawer -> nhom quyen da gan duoc tich san",
+          "preconditions": "User da co nhom quyen 'Quan tri'",
+          "steps": ["Mo Drawer Phan quyen lan 2"],
+          "expected": "Card 'Quan tri' co tick va nen xanh teal",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTND-048",
+          "category": "Positive",
+          "screen": "Drawer Phan quyen",
+          "title": "Bo tat ca nhom quyen -> luu OK, user khong con quyen",
+          "preconditions": "User co nhom quyen",
+          "steps": [
+            "Bo tich tat ca card",
+            "Click Luu"
+          ],
+          "expected": "Luu OK. Reload, user khong co nhom quyen nao",
+          "priority": "Medium"
+        },
+        {
+          "id": "TC-QTND-049",
+          "category": "Positive",
+          "screen": "Modal Reset MK",
+          "title": "Reset mat khau ve Admin@123 thanh cong",
+          "preconditions": "Co user 'Nguyen Van A'",
+          "steps": [
+            "Menu ba cham, 'Reset mat khau'",
+            "Modal hien 'Mat khau cua \"Nguyen Van A\" se duoc dat ve mac dinh (Admin@123)?'",
+            "Click Reset"
+          ],
+          "expected": "Message 'Da reset mat khau'. User dang nhap voi Admin@123 thanh cong",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTND-050",
+          "category": "UI",
+          "screen": "Modal Reset MK",
+          "title": "Click Huy modal -> dong, khong reset",
+          "preconditions": "Modal Reset MK dang mo",
+          "steps": ["Click Huy"],
+          "expected": "Modal dong, mat khau cu giu nguyen",
+          "priority": "Medium"
+        },
+        {
+          "id": "TC-QTND-051",
+          "category": "Positive",
+          "screen": "Modal Xoa",
+          "title": "Xoa user chua xu ly van ban -> thanh cong",
+          "preconditions": "User khong co lich su xu ly",
+          "steps": [
+            "Menu ba cham, 'Xoa nguoi dung'",
+            "Modal hien 'Ban co chac chan muon xoa \"Nguyen Van A\"?'",
+            "Click Xoa"
+          ],
+          "expected": "Message 'Xoa thanh cong'. User bien mat khoi bang",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTND-052",
+          "category": "Negative",
+          "screen": "Modal Xoa",
+          "title": "Xoa user co lich su -> nen Khoa thay vi xoa (warning hoac error)",
+          "preconditions": "User da xu ly van ban",
+          "steps": ["Menu ba cham, 'Xoa nguoi dung', Click Xoa"],
+          "expected": "Loi: 'Loi khi xoa' hoac chinh xac thong bao FK. Khuyen cao Khoa tai khoan thay vi Xoa",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTND-053",
+          "category": "Permission",
+          "screen": "Danh sach",
+          "title": "User khong admin -> khong vao duoc",
+          "preconditions": "User vai tro chuyen vien",
+          "steps": ["Truy cap /quan-tri/nguoi-dung"],
+          "expected": "An menu hoac redirect 403",
+          "priority": "High"
+        }
+      ]
+    },
+    {
+      "module": "Quan tri Nhom quyen",
+      "code": "QTNQ",
+      "menu_path": "Quan tri > Nhom quyen",
+      "screens": ["Danh sach", "Drawer Them", "Drawer Sua", "Drawer Phan quyen", "Modal Xoa"],
+      "testcases": [
+        {
+          "id": "TC-QTNQ-001",
+          "category": "UI",
+          "screen": "Danh sach",
+          "title": "Hien thi bang nhom quyen voi cot Ten nhom, Mo ta, So nguoi dung, Ngay tao",
+          "preconditions": "Da dang nhap admin",
+          "steps": ["Truy cap menu Quan tri > Nhom quyen"],
+          "expected": "Bang co 4 cot. Cot So nguoi dung hien dang the xanh. Ngay tao format dd/MM/yyyy",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTNQ-002",
+          "category": "UI",
+          "screen": "Danh sach",
+          "title": "Header card co tieu de 'Danh sach nhom quyen' va nut Them",
+          "preconditions": "Trang Nhom quyen",
+          "steps": ["Quan sat header card"],
+          "expected": "Trai: tieu de + dong mo ta. Phai: o tim kiem + nut 'Them nhom quyen'",
+          "priority": "Low"
+        },
+        {
+          "id": "TC-QTNQ-003",
+          "category": "Positive",
+          "screen": "Danh sach",
+          "title": "Tim kiem theo tu khoa",
+          "preconditions": "Co nhom quyen 'Van thu'",
+          "steps": [
+            "Nhap 'Van thu' vao o tim kiem",
+            "Nhan Enter"
+          ],
+          "expected": "Bang loc, hien chi nhom 'Van thu'",
+          "priority": "Medium"
+        },
+        {
+          "id": "TC-QTNQ-004",
+          "category": "UI",
+          "screen": "Danh sach",
+          "title": "Phan trang voi tong so ban ghi",
+          "preconditions": "> 10 nhom quyen",
+          "steps": ["Quan sat thanh phan trang"],
+          "expected": "Hien total + page size selector. Doi page size hoat dong",
+          "priority": "Low"
+        },
+        {
+          "id": "TC-QTNQ-005",
+          "category": "Positive",
+          "screen": "Drawer Them",
+          "title": "Them nhom quyen toi thieu (chi ten) thanh cong",
+          "preconditions": "Drawer Them mo",
+          "steps": [
+            "Ten nhom quyen: 'Test nhom 1'",
+            "Click Them moi"
+          ],
+          "expected": "Drawer dong, message 'Them thanh cong'. Nhom moi xuat hien tren bang voi So nguoi dung = 0",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTNQ-006",
+          "category": "Positive",
+          "screen": "Drawer Them",
+          "title": "Them nhom quyen day du (ten + mo ta)",
+          "preconditions": "Drawer Them mo",
+          "steps": [
+            "Ten nhom quyen: 'Quan ly van thu'",
+            "Mo ta: 'Vai tro xu ly van ban den di hang ngay'",
+            "Click Them moi"
+          ],
+          "expected": "Luu OK. Mo ta hien thi tren bang",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTNQ-007",
+          "category": "Negative",
+          "screen": "Drawer Them",
+          "title": "Bo trong Ten nhom quyen -> 'Nhap ten nhom quyen'",
+          "preconditions": "Drawer Them mo",
+          "steps": [
+            "Bo trong Ten",
+            "Click Them moi"
+          ],
+          "expected": "Loi inline tai Ten: 'Nhap ten nhom quyen'",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTNQ-008",
+          "category": "Negative",
+          "screen": "Drawer Them",
+          "title": "Trung Ten nhom quyen -> 'Ten nhom quyen da ton tai'",
+          "preconditions": "Da co nhom 'Quan tri'",
+          "steps": [
+            "Mo Drawer Them",
+            "Ten: 'Quan tri'",
+            "Click Them moi"
+          ],
+          "expected": "Loi inline tai Ten: 'Ten nhom quyen da ton tai'",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTNQ-009",
+          "category": "Boundary",
+          "screen": "Drawer Them",
+          "title": "Ten nhom quyen 100 ky tu (max) -> luu OK",
+          "preconditions": "Drawer Them mo",
+          "steps": [
+            "Ten 100 ky tu",
+            "Click Them moi"
+          ],
+          "expected": "Luu thanh cong",
+          "priority": "Medium"
+        },
+        {
+          "id": "TC-QTNQ-010",
+          "category": "Boundary",
+          "screen": "Drawer Them",
+          "title": "Mo ta 500 ky tu (max) -> luu OK",
+          "preconditions": "Drawer Them mo",
+          "steps": [
+            "Mo ta 500 ky tu"
+          ],
+          "expected": "TextArea hien 500/500. Luu OK",
+          "priority": "Low"
+        },
+        {
+          "id": "TC-QTNQ-011",
+          "category": "Positive",
+          "screen": "Drawer Sua",
+          "title": "Sua mo ta nhom quyen thanh cong",
+          "preconditions": "Co nhom quyen 'Van thu'",
+          "steps": [
+            "Menu ba cham, 'Sua thong tin'",
+            "Doi Mo ta",
+            "Click Cap nhat"
+          ],
+          "expected": "Message 'Cap nhat thanh cong'. Mo ta moi hien tren bang",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTNQ-012",
+          "category": "Negative",
+          "screen": "Drawer Sua",
+          "title": "Sua Ten trung voi nhom khac -> 'Ten nhom quyen da ton tai'",
+          "preconditions": "Co 2 nhom A va B",
+          "steps": [
+            "Sua nhom B, doi Ten thanh ten cua A",
+            "Click Cap nhat"
+          ],
+          "expected": "Loi inline: 'Ten nhom quyen da ton tai'",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTNQ-013",
+          "category": "Positive",
+          "screen": "Drawer Phan quyen",
+          "title": "Mo Drawer Phan quyen -> hien cay chuc nang voi checkbox",
+          "preconditions": "Co nhom quyen 'Quan tri'",
+          "steps": [
+            "Menu ba cham, 'Phan quyen'"
+          ],
+          "expected": "Drawer 720px, tieu de 'Phan quyen: Quan tri'. Cay menu cha-con-hanh dong, mac dinh mo rong tat ca",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTNQ-014",
+          "category": "Positive",
+          "screen": "Drawer Phan quyen",
+          "title": "Tich menu cha -> menu con tu dong duoc tich",
+          "preconditions": "Drawer Phan quyen mo",
+          "steps": [
+            "Tich vao node cha 'Van ban den'"
+          ],
+          "expected": "Tat ca node con cua 'Van ban den' (Danh sach, Tiep nhan, ...) tu dong duoc tich",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTNQ-015",
+          "category": "Positive",
+          "screen": "Drawer Phan quyen",
+          "title": "Luu phan quyen thanh cong",
+          "preconditions": "Drawer Phan quyen mo, da chon mot so quyen",
+          "steps": ["Click nut 'Luu phan quyen'"],
+          "expected": "Drawer dong, message 'Luu phan quyen thanh cong'",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTNQ-016",
+          "category": "Positive",
+          "screen": "Drawer Phan quyen",
+          "title": "Mo lai Drawer -> quyen da gan tich san",
+          "preconditions": "Da gan quyen cho nhom",
+          "steps": ["Mo Drawer Phan quyen lan 2"],
+          "expected": "Cac quyen da gan duoc tich san trong cay",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTNQ-017",
+          "category": "UI",
+          "screen": "Drawer Phan quyen",
+          "title": "Trong qua trinh tai -> hien icon loading o giua",
+          "preconditions": "Click Phan quyen",
+          "steps": ["Quan sat khi Drawer dang tai"],
+          "expected": "Hien spinner / icon loading o giua noi dung",
+          "priority": "Low"
+        },
+        {
+          "id": "TC-QTNQ-018",
+          "category": "Positive",
+          "screen": "Drawer Phan quyen",
+          "title": "Bo tat ca quyen -> luu OK, nhom rong quyen",
+          "preconditions": "Nhom co quyen, Drawer Phan quyen mo",
+          "steps": [
+            "Bo tich tat ca",
+            "Click Luu phan quyen"
+          ],
+          "expected": "Luu OK. Mo lai thay khong co quyen nao tich",
+          "priority": "Medium"
+        },
+        {
+          "id": "TC-QTNQ-019",
+          "category": "Positive",
+          "screen": "Modal Xoa",
+          "title": "Xoa nhom quyen khong co nguoi dung -> thanh cong",
+          "preconditions": "Nhom quyen 'Test' co So nguoi dung = 0",
+          "steps": [
+            "Menu ba cham, 'Xoa'",
+            "Click Xoa trong modal"
+          ],
+          "expected": "Message 'Xoa thanh cong'. Nhom bien mat khoi bang",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTNQ-020",
+          "category": "Negative",
+          "screen": "Modal Xoa",
+          "title": "Xoa nhom co nguoi dung -> 'Khong the xoa: con N nhan vien trong nhom quyen nay'",
+          "preconditions": "Nhom 'Quan tri' co 3 user",
+          "steps": [
+            "Menu ba cham, 'Xoa'",
+            "Click Xoa"
+          ],
+          "expected": "Loi: 'Khong the xoa: con 3 nhan vien trong nhom quyen nay'",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTNQ-021",
+          "category": "UI",
+          "screen": "Modal Xoa",
+          "title": "Click Huy modal -> dong, khong xoa",
+          "preconditions": "Modal Xoa mo",
+          "steps": ["Click Huy"],
+          "expected": "Modal dong, nhom van ton tai",
+          "priority": "Low"
+        },
+        {
+          "id": "TC-QTNQ-022",
+          "category": "Permission",
+          "screen": "Danh sach",
+          "title": "User khong admin -> khong vao duoc Quan tri > Nhom quyen",
+          "preconditions": "User chuyen vien dang nhap",
+          "steps": ["Truy cap /quan-tri/nhom-quyen"],
+          "expected": "An menu / redirect 403",
+          "priority": "High"
+        },
+        {
+          "id": "TC-QTNQ-023",
+          "category": "Positive",
+          "screen": "Drawer Phan quyen",
+          "title": "User co nhieu nhom quyen -> tong hop quyen union",
+          "preconditions": "User A co nhom 'Van thu' (quyen Van ban den) va 'Lanh dao' (quyen Duyet van ban)",
+          "steps": [
+            "Dang nhap voi user A",
+            "Quan sat menu va chuc nang"
+          ],
+          "expected": "User A thay duoc ca menu Van ban den va chuc nang Duyet van ban (tong hop quyen tu 2 nhom)",
+          "priority": "High"
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "total_testcases": 126,
+    "by_module": {
+      "QTDV": 30,
+      "QTCV": 20,
+      "QTND": 53,
+      "QTNQ": 23
+    },
+    "by_category": {
+      "Positive": 47,
+      "Negative": 39,
+      "Boundary": 12,
+      "UI": 24,
+      "Permission": 4
+    },
+    "by_priority": {
+      "High": 76,
+      "Medium": 32,
+      "Low": 18
+    }
+  }
+}

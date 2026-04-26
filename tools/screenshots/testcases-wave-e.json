@@ -1,0 +1,978 @@
+{
+  "wave": "E",
+  "title": "Testcase chi tiet 4 module Danh muc (So van ban, Loai van ban, Linh vuc, Nguoi ky)",
+  "generated_date": "2026-04-26",
+  "source_hdsd": [
+    "docs/hdsd/HDSD_quan_tri_so_van_ban.md",
+    "docs/hdsd/HDSD_quan_tri_loai_van_ban.md",
+    "docs/hdsd/HDSD_quan_tri_linh_vuc.md",
+    "docs/hdsd/HDSD_quan_tri_nguoi_ky.md"
+  ],
+  "modules": [
+    {
+      "module_code": "DMSV",
+      "module_name": "Quan ly so van ban",
+      "url": "/quan-tri/so-van-ban",
+      "testcases": [
+        {
+          "id": "TC-DMSV-001",
+          "title": "Hien thi 3 tab phan loai so van ban",
+          "type": "UI",
+          "priority": "High",
+          "preconditions": "Dang nhap tai khoan quan tri don vi, vao trang Quan ly so van ban",
+          "steps": [
+            "Quan sat khu vuc tieu de the 'Danh sach so van ban'",
+            "Quan sat hang tab phia tren bang"
+          ],
+          "expected_result": "Hien thi 3 tab: Van ban den / Van ban di / Van ban du thao. Tab Van ban den la tab mac dinh duoc chon."
+        },
+        {
+          "id": "TC-DMSV-002",
+          "title": "Chuyen doi giua cac tab loc theo nhom van ban",
+          "type": "UI",
+          "priority": "High",
+          "preconditions": "Da co so van ban thuoc ca 3 nhom",
+          "steps": [
+            "Click tab 'Van ban di'",
+            "Click tab 'Van ban du thao'",
+            "Click lai tab 'Van ban den'"
+          ],
+          "expected_result": "Bang danh sach lam moi du lieu theo nhom van ban tuong ung moi tab."
+        },
+        {
+          "id": "TC-DMSV-003",
+          "title": "Hien thi day du cac cot du lieu",
+          "type": "UI",
+          "priority": "Medium",
+          "preconditions": "Da co it nhat 1 so van ban",
+          "steps": [
+            "Quan sat header bang danh sach"
+          ],
+          "expected_result": "Bang co cac cot: Ten so (in dam mau xanh dam), Mo ta, Thu tu, Mac dinh (nhan 'Mac dinh' xanh / 'Khong')."
+        },
+        {
+          "id": "TC-DMSV-004",
+          "title": "Them so van ban moi voi du lieu hop le (tab Van ban den)",
+          "type": "Positive",
+          "priority": "High",
+          "preconditions": "Dang o tab 'Van ban den'",
+          "steps": [
+            "Click 'Them so van ban'",
+            "Nhap Ten so: 'So van ban den 2026'",
+            "Nhap Mo ta: 'So phuc vu nam 2026'",
+            "Nhap Thu tu: 1",
+            "Tat cong tac So mac dinh",
+            "Click 'Them moi'"
+          ],
+          "expected_result": "Hien thi thong bao 'Them thanh cong'. Drawer dong. Ban ghi moi xuat hien o tab Van ban den voi cot Mac dinh la 'Khong'."
+        },
+        {
+          "id": "TC-DMSV-005",
+          "title": "Them so van ban kem dat mac dinh",
+          "type": "Positive",
+          "priority": "High",
+          "preconditions": "Tab 'Van ban den' da co 1 so dang la mac dinh (So A)",
+          "steps": [
+            "Click 'Them so van ban'",
+            "Nhap Ten so: 'So van ban den B'",
+            "Bat cong tac So mac dinh",
+            "Click 'Them moi'"
+          ],
+          "expected_result": "Thong bao 'Them thanh cong'. So B hien thi nhan 'Mac dinh' (xanh). So A truoc do tu dong chuyen ve 'Khong'."
+        },
+        {
+          "id": "TC-DMSV-006",
+          "title": "Bo trong Ten so khi Them moi",
+          "type": "Negative",
+          "priority": "High",
+          "preconditions": "Drawer Them so van ban dang mo",
+          "steps": [
+            "Khong nhap Ten so",
+            "Click 'Them moi'"
+          ],
+          "expected_result": "Hien thi loi 'Nhap ten so van ban' inline duoi truong Ten so. Drawer khong dong."
+        },
+        {
+          "id": "TC-DMSV-007",
+          "title": "Ten so vuot qua 200 ky tu",
+          "type": "Boundary",
+          "priority": "Medium",
+          "preconditions": "Drawer Them so dang mo",
+          "steps": [
+            "Nhap Ten so 201 ky tu (paste chuoi dai)",
+            "Click 'Them moi'"
+          ],
+          "expected_result": "Thong bao 'Ten so van ban khong duoc vuot qua 200 ky tu'. Khong tao moi."
+        },
+        {
+          "id": "TC-DMSV-008",
+          "title": "Ten so 200 ky tu (boundary tren)",
+          "type": "Boundary",
+          "priority": "Medium",
+          "preconditions": "Drawer Them so dang mo",
+          "steps": [
+            "Nhap Ten so dung 200 ky tu",
+            "Click 'Them moi'"
+          ],
+          "expected_result": "Tao thanh cong, hien thi 'Them thanh cong'."
+        },
+        {
+          "id": "TC-DMSV-009",
+          "title": "Mo ta vuot qua 500 ky tu",
+          "type": "Boundary",
+          "priority": "Medium",
+          "preconditions": "Drawer Them so dang mo",
+          "steps": [
+            "Nhap Ten so hop le",
+            "Nhap Mo ta 501 ky tu",
+            "Click 'Them moi'"
+          ],
+          "expected_result": "Form khong cho nhap qua 500 ky tu HOAC tra ve loi do dai mo ta."
+        },
+        {
+          "id": "TC-DMSV-010",
+          "title": "Trung Ten so trong cung don vi va cung nhom",
+          "type": "Negative",
+          "priority": "High",
+          "preconditions": "Tab Van ban den da co so 'So cong van den'",
+          "steps": [
+            "Click 'Them so van ban'",
+            "Nhap Ten so: 'So cong van den' (trung)",
+            "Click 'Them moi'"
+          ],
+          "expected_result": "Thong bao loi inline 'Ten so van ban da ton tai trong don vi'. Khong tao moi."
+        },
+        {
+          "id": "TC-DMSV-011",
+          "title": "Cho phep trung ten so giua cac nhom khac nhau",
+          "type": "Positive",
+          "priority": "Medium",
+          "preconditions": "Tab Van ban den da co so 'So 01'",
+          "steps": [
+            "Chuyen sang tab Van ban di",
+            "Click 'Them so van ban'",
+            "Nhap Ten so: 'So 01'",
+            "Click 'Them moi'"
+          ],
+          "expected_result": "Tao thanh cong (vi rang buoc unique chi trong cung nhom)."
+        },
+        {
+          "id": "TC-DMSV-012",
+          "title": "Thu tu am bi tu choi",
+          "type": "Negative",
+          "priority": "Medium",
+          "preconditions": "Drawer Them so dang mo",
+          "steps": [
+            "Nhap Ten so hop le",
+            "Nhap Thu tu: -1",
+            "Click 'Them moi'"
+          ],
+          "expected_result": "InputNumber chan gia tri am HOAC tra ve loi 'Thu tu phai la so nguyen khong am'."
+        },
+        {
+          "id": "TC-DMSV-013",
+          "title": "Sua so van ban hien co",
+          "type": "Positive",
+          "priority": "High",
+          "preconditions": "Da co it nhat 1 so van ban",
+          "steps": [
+            "Click bieu tuong 3 cham doc cuoi dong",
+            "Chon 'Sua'",
+            "Sua Mo ta thanh 'Mo ta moi'",
+            "Click 'Cap nhat'"
+          ],
+          "expected_result": "Drawer dong. Thong bao 'Cap nhat thanh cong'. Cot Mo ta cap nhat gia tri moi."
+        },
+        {
+          "id": "TC-DMSV-014",
+          "title": "Dat mac dinh tu menu 3 cham",
+          "type": "Positive",
+          "priority": "High",
+          "preconditions": "Tab Van ban den co So A (mac dinh) va So B (khong mac dinh)",
+          "steps": [
+            "Click 3 cham doc dong So B",
+            "Chon 'Dat mac dinh'"
+          ],
+          "expected_result": "Thong bao 'Dat mac dinh thanh cong'. So B chuyen sang nhan 'Mac dinh' xanh. So A tu dong chuyen ve 'Khong'."
+        },
+        {
+          "id": "TC-DMSV-015",
+          "title": "Xoa so van ban khong dang duoc tham chieu",
+          "type": "Positive",
+          "priority": "High",
+          "preconditions": "Da co so chua duoc su dung trong VB den/di/du thao",
+          "steps": [
+            "Click 3 cham doc cuoi dong",
+            "Chon 'Xoa'",
+            "Click nut 'Xoa' mau do trong hop xac nhan"
+          ],
+          "expected_result": "Hop thoai dong. Thong bao 'Xoa thanh cong'. Ban ghi bien mat khoi bang."
+        },
+        {
+          "id": "TC-DMSV-016",
+          "title": "Huy hop xac nhan xoa",
+          "type": "UI",
+          "priority": "Medium",
+          "preconditions": "Hop xac nhan xoa dang mo",
+          "steps": [
+            "Click nut 'Huy'"
+          ],
+          "expected_result": "Hop thoai dong, ban ghi van con trong bang, khong co thong bao."
+        },
+        {
+          "id": "TC-DMSV-017",
+          "title": "Xoa so van ban dang duoc tham chieu boi van ban",
+          "type": "Negative",
+          "priority": "High",
+          "preconditions": "Co so van ban dang duoc su dung boi >=1 van ban den",
+          "steps": [
+            "Click 3 cham doc dong so do",
+            "Chon 'Xoa'",
+            "Click 'Xoa' mau do"
+          ],
+          "expected_result": "Thong bao 'Loi khi xoa' (tu rang buoc FK). Ban ghi van con trong bang."
+        },
+        {
+          "id": "TC-DMSV-018",
+          "title": "Drawer mo voi tieu de dung khi Them moi",
+          "type": "UI",
+          "priority": "Low",
+          "preconditions": "Dang o tab Van ban di",
+          "steps": [
+            "Click 'Them so van ban'"
+          ],
+          "expected_result": "Drawer hien tieu de 'Them so van ban moi'. Co 2 nut Huy va Them moi o phia tren ben phai."
+        },
+        {
+          "id": "TC-DMSV-019",
+          "title": "Drawer mo voi tieu de dung khi Sua",
+          "type": "UI",
+          "priority": "Low",
+          "preconditions": "Co it nhat 1 so van ban",
+          "steps": [
+            "Click 3 cham doc -> Sua"
+          ],
+          "expected_result": "Drawer hien tieu de 'Cap nhat so van ban'. Co 2 nut Huy va Cap nhat. Cac truong da fill du lieu hien tai."
+        },
+        {
+          "id": "TC-DMSV-020",
+          "title": "Huy Drawer khi Them moi khong luu",
+          "type": "UI",
+          "priority": "Medium",
+          "preconditions": "Drawer Them so dang mo, da nhap mot vai truong",
+          "steps": [
+            "Click nut 'Huy'"
+          ],
+          "expected_result": "Drawer dong. Khong co ban ghi moi trong bang. Khong co thong bao."
+        },
+        {
+          "id": "TC-DMSV-021",
+          "title": "Thu tu hien thi theo cot 'Thu tu' tang dan",
+          "type": "UI",
+          "priority": "Low",
+          "preconditions": "Tab Van ban den co 3 so voi thu tu 0, 5, 2",
+          "steps": [
+            "Quan sat thu tu hien thi tu tren xuong"
+          ],
+          "expected_result": "Cac so duoc sap xep theo Thu tu tang dan: 0, 2, 5."
+        },
+        {
+          "id": "TC-DMSV-022",
+          "title": "Khong the dat mac dinh khi so do dang la mac dinh",
+          "type": "UI",
+          "priority": "Low",
+          "preconditions": "So A dang la mac dinh trong tab Van ban den",
+          "steps": [
+            "Click 3 cham doc dong So A",
+            "Chon 'Dat mac dinh'"
+          ],
+          "expected_result": "Thong bao 'Dat mac dinh thanh cong' nhung trang thai khong thay doi (idempotent), HOAC menu 'Dat mac dinh' bi disabled / an khi so da la mac dinh."
+        }
+      ]
+    },
+    {
+      "module_code": "DMLV",
+      "module_name": "Quan ly loai van ban",
+      "url": "/quan-tri/loai-van-ban",
+      "testcases": [
+        {
+          "id": "TC-DMLV-001",
+          "title": "Hien thi 3 tab phan loai loai van ban",
+          "type": "UI",
+          "priority": "High",
+          "preconditions": "Dang nhap quan tri, vao Quan ly loai van ban",
+          "steps": [
+            "Quan sat the 'Danh sach loai van ban'"
+          ],
+          "expected_result": "Hien 3 tab: Van ban den / Van ban di / Van ban du thao. Tab Van ban den mac dinh."
+        },
+        {
+          "id": "TC-DMLV-002",
+          "title": "Chuyen tab loc theo type_id",
+          "type": "UI",
+          "priority": "High",
+          "preconditions": "Co loai van ban thuoc ca 3 nhom",
+          "steps": [
+            "Click tab Van ban di",
+            "Click tab Van ban du thao",
+            "Click lai tab Van ban den"
+          ],
+          "expected_result": "Bang lam moi theo type_id 1/2/3."
+        },
+        {
+          "id": "TC-DMLV-003",
+          "title": "Hien thi day du cac cot va kha nang mo rong cay",
+          "type": "UI",
+          "priority": "Medium",
+          "preconditions": "Co loai van ban co loai con",
+          "steps": [
+            "Quan sat header bang",
+            "Click mui ten mo rong dong cha"
+          ],
+          "expected_result": "Co cot Ma (in dam xanh dam), Ten loai VB, Ky hieu, Thu tu. Mui ten mo rong hien thi loai con thut le."
+        },
+        {
+          "id": "TC-DMLV-004",
+          "title": "Cot 'Ky hieu' render mapping enum",
+          "type": "UI",
+          "priority": "Medium",
+          "preconditions": "Co 3 loai voi sign_type lan luot: Khong co, So/Ky hieu, So-Ky hieu",
+          "steps": [
+            "Quan sat cot Ky hieu cua 3 loai"
+          ],
+          "expected_result": "Loai 1: hien dau gach ngang '-'. Loai 2: 'So/Ky hieu'. Loai 3: 'So-Ky hieu'."
+        },
+        {
+          "id": "TC-DMLV-005",
+          "title": "Them loai van ban goc voi du lieu hop le",
+          "type": "Positive",
+          "priority": "High",
+          "preconditions": "Tab Van ban den dang chon",
+          "steps": [
+            "Click 'Them loai van ban'",
+            "Bo trong Loai cha",
+            "Nhap Ma: 'NQ'",
+            "Nhap Ten: 'Nghi quyet'",
+            "Chon Kieu ky hieu: So/Ky hieu",
+            "Nhap Thu tu: 1",
+            "Click 'Them moi'"
+          ],
+          "expected_result": "Thong bao 'Them thanh cong'. Drawer dong. Ban ghi moi hien o muc goc cua bang voi cot Ky hieu = 'So/Ky hieu'."
+        },
+        {
+          "id": "TC-DMLV-006",
+          "title": "Them loai con co Loai cha",
+          "type": "Positive",
+          "priority": "High",
+          "preconditions": "Co loai 'NQ' (Nghi quyet)",
+          "steps": [
+            "Click 'Them loai van ban'",
+            "Chon Loai cha: 'NQ - Nghi quyet'",
+            "Nhap Ma: 'NQHD'",
+            "Nhap Ten: 'Nghi quyet hoi dong'",
+            "Click 'Them moi'"
+          ],
+          "expected_result": "Tao thanh cong. Loai NQHD hien thi nhu loai con khi mo rong NQ."
+        },
+        {
+          "id": "TC-DMLV-007",
+          "title": "Bo trong Ma khi Them moi",
+          "type": "Negative",
+          "priority": "High",
+          "preconditions": "Drawer Them dang mo",
+          "steps": [
+            "Khong nhap Ma",
+            "Nhap Ten 'Nghi quyet'",
+            "Click 'Them moi'"
+          ],
+          "expected_result": "Loi inline 'Nhap ma loai van ban' duoi truong Ma. Khong tao moi."
+        },
+        {
+          "id": "TC-DMLV-008",
+          "title": "Bo trong Ten khi Them moi",
+          "type": "Negative",
+          "priority": "High",
+          "preconditions": "Drawer Them dang mo",
+          "steps": [
+            "Nhap Ma 'NQ'",
+            "Khong nhap Ten",
+            "Click 'Them moi'"
+          ],
+          "expected_result": "Loi inline 'Nhap ten loai van ban' duoi truong Ten."
+        },
+        {
+          "id": "TC-DMLV-009",
+          "title": "Ma vuot 20 ky tu",
+          "type": "Boundary",
+          "priority": "Medium",
+          "preconditions": "Drawer Them dang mo",
+          "steps": [
+            "Nhap Ma 21 ky tu",
+            "Nhap Ten hop le",
+            "Click 'Them moi'"
+          ],
+          "expected_result": "Thong bao 'Ma loai van ban khong duoc vuot qua 20 ky tu' HOAC input chan o 20 ky tu."
+        },
+        {
+          "id": "TC-DMLV-010",
+          "title": "Ten vuot 200 ky tu",
+          "type": "Boundary",
+          "priority": "Medium",
+          "preconditions": "Drawer Them dang mo",
+          "steps": [
+            "Nhap Ma hop le",
+            "Nhap Ten 201 ky tu",
+            "Click 'Them moi'"
+          ],
+          "expected_result": "Thong bao 'Ten loai van ban khong duoc vuot qua 200 ky tu'."
+        },
+        {
+          "id": "TC-DMLV-011",
+          "title": "Trung Ma loai van ban",
+          "type": "Negative",
+          "priority": "High",
+          "preconditions": "Da co loai voi Ma 'NQ'",
+          "steps": [
+            "Click Them",
+            "Nhap Ma: 'NQ'",
+            "Nhap Ten: 'Bat ky'",
+            "Click 'Them moi'"
+          ],
+          "expected_result": "Thong bao 'Ma loai van ban da ton tai'. Khong tao moi."
+        },
+        {
+          "id": "TC-DMLV-012",
+          "title": "Sua loai - chon chinh minh lam Loai cha",
+          "type": "Negative",
+          "priority": "High",
+          "preconditions": "Co loai NQ",
+          "steps": [
+            "Click 3 cham -> Sua loai NQ",
+            "Chon Loai cha: 'NQ - Nghi quyet' (chinh minh)",
+            "Click 'Cap nhat'"
+          ],
+          "expected_result": "Thong bao 'Khong the chon chinh minh lam cha'. Khong cap nhat."
+        },
+        {
+          "id": "TC-DMLV-013",
+          "title": "Sua loai - thay doi Kieu ky hieu",
+          "type": "Positive",
+          "priority": "Medium",
+          "preconditions": "Co loai NQ voi sign_type='Khong co'",
+          "steps": [
+            "Click Sua loai NQ",
+            "Chon Kieu ky hieu: 'So-Ky hieu'",
+            "Click 'Cap nhat'"
+          ],
+          "expected_result": "Thong bao 'Cap nhat thanh cong'. Cot Ky hieu cua loai NQ chuyen tu '-' sang 'So-Ky hieu'."
+        },
+        {
+          "id": "TC-DMLV-014",
+          "title": "Search Loai cha trong dropdown",
+          "type": "UI",
+          "priority": "Low",
+          "preconditions": "Co nhieu loai van ban",
+          "steps": [
+            "Mo Drawer Them",
+            "Click vao truong Loai cha",
+            "Go tu khoa 'Nghi'"
+          ],
+          "expected_result": "Dropdown loc va hien thi cac loai co ten chua 'Nghi'."
+        },
+        {
+          "id": "TC-DMLV-015",
+          "title": "Xoa loai van ban khong co loai con va khong tham chieu",
+          "type": "Positive",
+          "priority": "High",
+          "preconditions": "Co loai van ban roi",
+          "steps": [
+            "Click 3 cham -> Xoa",
+            "Click 'Xoa' mau do"
+          ],
+          "expected_result": "Thong bao 'Xoa thanh cong'. Ban ghi bien mat."
+        },
+        {
+          "id": "TC-DMLV-016",
+          "title": "Xoa loai dang co loai con",
+          "type": "Negative",
+          "priority": "High",
+          "preconditions": "Loai NQ co loai con NQHD",
+          "steps": [
+            "Click 3 cham dong NQ -> Xoa",
+            "Click 'Xoa'"
+          ],
+          "expected_result": "Thong bao 'Loi khi xoa' (FK). Khong xoa duoc."
+        },
+        {
+          "id": "TC-DMLV-017",
+          "title": "Xoa loai dang duoc tham chieu boi van ban",
+          "type": "Negative",
+          "priority": "High",
+          "preconditions": "Loai NQ duoc gan cho >=1 van ban",
+          "steps": [
+            "Click 3 cham dong NQ -> Xoa",
+            "Click 'Xoa'"
+          ],
+          "expected_result": "Thong bao 'Loi khi xoa'. Ban ghi van con."
+        },
+        {
+          "id": "TC-DMLV-018",
+          "title": "Boundary - Ma 20 ky tu",
+          "type": "Boundary",
+          "priority": "Low",
+          "preconditions": "Drawer Them mo",
+          "steps": [
+            "Nhap Ma dung 20 ky tu",
+            "Nhap Ten hop le",
+            "Click 'Them moi'"
+          ],
+          "expected_result": "Tao thanh cong."
+        },
+        {
+          "id": "TC-DMLV-019",
+          "title": "Drawer tieu de dung khi Sua",
+          "type": "UI",
+          "priority": "Low",
+          "preconditions": "Co loai van ban",
+          "steps": [
+            "Click 3 cham -> Sua"
+          ],
+          "expected_result": "Drawer hien 'Cap nhat loai van ban'. Cac truong da fill gia tri hien tai."
+        },
+        {
+          "id": "TC-DMLV-020",
+          "title": "Huy Drawer Sua khong luu thay doi",
+          "type": "UI",
+          "priority": "Medium",
+          "preconditions": "Drawer Sua dang mo, da sua mot truong",
+          "steps": [
+            "Click nut 'Huy'"
+          ],
+          "expected_result": "Drawer dong. Du lieu trong bang khong thay doi."
+        }
+      ]
+    },
+    {
+      "module_code": "DMLN",
+      "module_name": "Quan ly linh vuc",
+      "url": "/quan-tri/linh-vuc",
+      "testcases": [
+        {
+          "id": "TC-DMLN-001",
+          "title": "Hien thi danh sach linh vuc cua don vi",
+          "type": "UI",
+          "priority": "High",
+          "preconditions": "Dang nhap quan tri, vao Quan ly linh vuc",
+          "steps": [
+            "Quan sat the 'Danh sach linh vuc'"
+          ],
+          "expected_result": "Bang hien cot Ma, Ten linh vuc, Thu tu, Trang thai. Co o tim kiem va nut 'Them linh vuc' o goc phai tieu de the."
+        },
+        {
+          "id": "TC-DMLN-002",
+          "title": "Trang thai 'Hoat dong' va 'Ngung' hien thi mau khac nhau",
+          "type": "UI",
+          "priority": "Medium",
+          "preconditions": "Co linh vuc Hoat dong va linh vuc Ngung",
+          "steps": [
+            "Quan sat cot Trang thai"
+          ],
+          "expected_result": "Linh vuc Hoat dong: nhan xanh. Linh vuc Ngung: nhan do."
+        },
+        {
+          "id": "TC-DMLN-003",
+          "title": "Tim kiem theo tu khoa khi nhan Enter",
+          "type": "Positive",
+          "priority": "High",
+          "preconditions": "Co linh vuc 'Khoa hoc cong nghe' va 'Tai chinh'",
+          "steps": [
+            "Nhap 'Khoa' vao o tim kiem",
+            "Nhan phim Enter"
+          ],
+          "expected_result": "Bang chi hien linh vuc co ten hoac ma chua 'Khoa' (Khoa hoc cong nghe)."
+        },
+        {
+          "id": "TC-DMLN-004",
+          "title": "Click bieu tuong kinh lup khong trigger search",
+          "type": "UI",
+          "priority": "Low",
+          "preconditions": "O tim kiem co tu khoa 'KHCN'",
+          "steps": [
+            "Click bieu tuong kinh lup"
+          ],
+          "expected_result": "Bang khong loc (kinh lup chi trang tri). Theo HDSD: 'ap dung khi nhan Enter'."
+        },
+        {
+          "id": "TC-DMLN-005",
+          "title": "Them linh vuc moi voi du lieu hop le",
+          "type": "Positive",
+          "priority": "High",
+          "preconditions": "Drawer Them linh vuc dang mo",
+          "steps": [
+            "Nhap Ma: 'KHCN'",
+            "Nhap Ten: 'Khoa hoc cong nghe'",
+            "Nhap Thu tu: 1",
+            "Click 'Them moi'"
+          ],
+          "expected_result": "Thong bao 'Them thanh cong'. Drawer dong. Ban ghi moi co Trang thai mac dinh 'Hoat dong'."
+        },
+        {
+          "id": "TC-DMLN-006",
+          "title": "Khi Them moi khong co truong Trang thai",
+          "type": "UI",
+          "priority": "Medium",
+          "preconditions": "Drawer Them linh vuc dang mo",
+          "steps": [
+            "Quan sat cac truong trong Drawer"
+          ],
+          "expected_result": "Drawer chi co Ma, Ten, Thu tu. KHONG hien truong Trang thai (theo HDSD: chi hien khi sua)."
+        },
+        {
+          "id": "TC-DMLN-007",
+          "title": "Bo trong Ma khi Them",
+          "type": "Negative",
+          "priority": "High",
+          "preconditions": "Drawer Them dang mo",
+          "steps": [
+            "Khong nhap Ma",
+            "Nhap Ten 'Tai chinh'",
+            "Click 'Them moi'"
+          ],
+          "expected_result": "Loi inline 'Nhap ma linh vuc'."
+        },
+        {
+          "id": "TC-DMLN-008",
+          "title": "Bo trong Ten khi Them",
+          "type": "Negative",
+          "priority": "High",
+          "preconditions": "Drawer Them dang mo",
+          "steps": [
+            "Nhap Ma 'TC'",
+            "Khong nhap Ten",
+            "Click 'Them moi'"
+          ],
+          "expected_result": "Loi inline 'Nhap ten linh vuc'."
+        },
+        {
+          "id": "TC-DMLN-009",
+          "title": "Ma vuot 20 ky tu",
+          "type": "Boundary",
+          "priority": "Medium",
+          "preconditions": "Drawer Them dang mo",
+          "steps": [
+            "Nhap Ma 21 ky tu",
+            "Click 'Them moi'"
+          ],
+          "expected_result": "Thong bao 'Ma linh vuc khong duoc vuot qua 20 ky tu'."
+        },
+        {
+          "id": "TC-DMLN-010",
+          "title": "Ten vuot 200 ky tu",
+          "type": "Boundary",
+          "priority": "Medium",
+          "preconditions": "Drawer Them dang mo",
+          "steps": [
+            "Nhap Ma hop le",
+            "Nhap Ten 201 ky tu",
+            "Click 'Them moi'"
+          ],
+          "expected_result": "Thong bao 'Ten linh vuc khong duoc vuot qua 200 ky tu'."
+        },
+        {
+          "id": "TC-DMLN-011",
+          "title": "Trung Ma trong cung don vi",
+          "type": "Negative",
+          "priority": "High",
+          "preconditions": "Da co linh vuc voi Ma 'KHCN'",
+          "steps": [
+            "Click Them",
+            "Nhap Ma: 'KHCN'",
+            "Nhap Ten 'Bat ky'",
+            "Click 'Them moi'"
+          ],
+          "expected_result": "Thong bao 'Ma linh vuc da ton tai trong don vi'. Khong tao moi."
+        },
+        {
+          "id": "TC-DMLN-012",
+          "title": "Sua linh vuc - bat/tat trang thai",
+          "type": "Positive",
+          "priority": "High",
+          "preconditions": "Co linh vuc 'KHCN' Hoat dong",
+          "steps": [
+            "Click 3 cham -> Sua",
+            "Quan sat truong Trang thai (cong tac)",
+            "Tat cong tac Trang thai",
+            "Click 'Cap nhat'"
+          ],
+          "expected_result": "Thong bao 'Cap nhat thanh cong'. Cot Trang thai chuyen tu xanh 'Hoat dong' sang do 'Ngung'."
+        },
+        {
+          "id": "TC-DMLN-013",
+          "title": "Linh vuc Ngung khong xuat hien o form chon van ban",
+          "type": "Positive",
+          "priority": "Medium",
+          "preconditions": "Linh vuc 'KHCN' o trang thai Ngung",
+          "steps": [
+            "Mo form Tao van ban den moi",
+            "Mo dropdown 'Linh vuc'"
+          ],
+          "expected_result": "Linh vuc 'KHCN' KHONG xuat hien trong dropdown. Cac linh vuc Hoat dong khac van xuat hien."
+        },
+        {
+          "id": "TC-DMLN-014",
+          "title": "Xoa linh vuc khong tham chieu",
+          "type": "Positive",
+          "priority": "High",
+          "preconditions": "Co linh vuc chua duoc gan vao van ban nao",
+          "steps": [
+            "Click 3 cham -> Xoa",
+            "Click 'Xoa' mau do"
+          ],
+          "expected_result": "Thong bao 'Xoa thanh cong'. Ban ghi bien mat."
+        },
+        {
+          "id": "TC-DMLN-015",
+          "title": "Xoa linh vuc dang duoc tham chieu",
+          "type": "Negative",
+          "priority": "High",
+          "preconditions": "Linh vuc 'KHCN' duoc gan cho >=1 van ban",
+          "steps": [
+            "Click 3 cham -> Xoa",
+            "Click 'Xoa'"
+          ],
+          "expected_result": "Thong bao 'Loi khi xoa'. Ban ghi van con."
+        }
+      ]
+    },
+    {
+      "module_code": "DMNK",
+      "module_name": "Quan ly nguoi ky",
+      "url": "/quan-tri/nguoi-ky",
+      "testcases": [
+        {
+          "id": "TC-DMNK-001",
+          "title": "Hien thi 2 cot: cay phong ban + bang nguoi ky",
+          "type": "UI",
+          "priority": "High",
+          "preconditions": "Dang nhap quan tri, vao Quan ly nguoi ky",
+          "steps": [
+            "Quan sat layout trang"
+          ],
+          "expected_result": "Cot trai: the 'Phong ban' co o tim kiem va nut tai lai, hien thi cay phong ban don vi. Cot phai: the 'Danh sach nguoi ky' va nut 'Them nguoi ky' o goc phai."
+        },
+        {
+          "id": "TC-DMNK-002",
+          "title": "Khi chua chon phong ban tren cay - hien toan bo nguoi ky cua don vi",
+          "type": "UI",
+          "priority": "High",
+          "preconditions": "Don vi co nguoi ky o nhieu phong ban",
+          "steps": [
+            "Vao trang Quan ly nguoi ky (chua click cay)"
+          ],
+          "expected_result": "Bang ben phai hien thi tat ca nguoi ky cua don vi (khong loc)."
+        },
+        {
+          "id": "TC-DMNK-003",
+          "title": "Loc nguoi ky theo nhanh phong ban da chon",
+          "type": "Positive",
+          "priority": "High",
+          "preconditions": "Co nguoi ky tai 'Phong KHCN' va 'Phong Tai chinh'",
+          "steps": [
+            "Click 'Phong KHCN' tren cay"
+          ],
+          "expected_result": "Bang chi hien thi nguoi ky thuoc Phong KHCN (va cac phong ban con neu co)."
+        },
+        {
+          "id": "TC-DMNK-004",
+          "title": "Tim kiem phong ban tren cay",
+          "type": "Positive",
+          "priority": "Medium",
+          "preconditions": "Cay co Phong KHCN, Phong TC, Phong NS",
+          "steps": [
+            "Nhap 'KHCN' vao o tim kiem phong ban"
+          ],
+          "expected_result": "Cay loc va highlight nhanh chua 'KHCN'. Cac nhanh khac an di hoac mo."
+        },
+        {
+          "id": "TC-DMNK-005",
+          "title": "Tai lai cay phong ban",
+          "type": "UI",
+          "priority": "Low",
+          "preconditions": "Dang xem cay phong ban",
+          "steps": [
+            "Click bieu tuong tai lai goc phai tieu de the Phong ban"
+          ],
+          "expected_result": "Cay reload, hien lai du lieu phong ban moi nhat."
+        },
+        {
+          "id": "TC-DMNK-006",
+          "title": "Hien thi day du cac cot trong bang nguoi ky",
+          "type": "UI",
+          "priority": "Medium",
+          "preconditions": "Co >=1 nguoi ky",
+          "steps": [
+            "Quan sat header bang"
+          ],
+          "expected_result": "Co cot Ho ten (in dam mau xanh dam), Chuc vu, Phong ban, Thao tac (bieu tuong thung rac)."
+        },
+        {
+          "id": "TC-DMNK-007",
+          "title": "Bang KHONG co nut Sua",
+          "type": "UI",
+          "priority": "Medium",
+          "preconditions": "Co >=1 nguoi ky",
+          "steps": [
+            "Quan sat cot Thao tac cua moi dong"
+          ],
+          "expected_result": "Cot Thao tac CHI co bieu tuong thung rac (xoa). KHONG co bieu tuong/menu Sua."
+        },
+        {
+          "id": "TC-DMNK-008",
+          "title": "Bao loi khi click 'Them nguoi ky' chua chon nhanh tren cay",
+          "type": "Negative",
+          "priority": "High",
+          "preconditions": "Chua click vao bat ky nhanh nao tren cay phong ban",
+          "steps": [
+            "Click 'Them nguoi ky'"
+          ],
+          "expected_result": "Hien thi thong bao 'Vui long chon phong ban / don vi tu cay ben trai truoc'. Khong mo Modal."
+        },
+        {
+          "id": "TC-DMNK-009",
+          "title": "Mo Modal Them nguoi ky sau khi chon nhanh",
+          "type": "Positive",
+          "priority": "High",
+          "preconditions": "Da chon 'Phong KHCN' tren cay",
+          "steps": [
+            "Click 'Them nguoi ky'"
+          ],
+          "expected_result": "Modal hien thi tieu de 'Them nguoi ky' voi dong huong dan 'Chon nhan vien de them vao danh sach nguoi ky' va o chon nhan vien."
+        },
+        {
+          "id": "TC-DMNK-010",
+          "title": "Dropdown chi hien nhan vien thuoc nhanh da chon (gom phong ban con)",
+          "type": "Positive",
+          "priority": "High",
+          "preconditions": "Modal Them mo, da chon 'Phong KHCN' (co phong con 'Phong CNTT')",
+          "steps": [
+            "Click vao o chon nhan vien"
+          ],
+          "expected_result": "Dropdown chi hien thi nhan vien thuoc Phong KHCN va Phong CNTT theo dinh dang 'Ho ten - Chuc vu - Phong ban'. Khong hien nhan vien phong ban khac."
+        },
+        {
+          "id": "TC-DMNK-011",
+          "title": "Chua chon nhan vien khi nhan Them",
+          "type": "Negative",
+          "priority": "High",
+          "preconditions": "Modal Them dang mo, chua chon nhan vien",
+          "steps": [
+            "Click 'Them'"
+          ],
+          "expected_result": "Thong bao 'Vui long chon nhan vien'. Modal khong dong."
+        },
+        {
+          "id": "TC-DMNK-012",
+          "title": "Them nguoi ky thanh cong",
+          "type": "Positive",
+          "priority": "High",
+          "preconditions": "Modal Them mo, da chon nhan vien 'Nguyen Van A - Truong phong - Phong KHCN'",
+          "steps": [
+            "Click 'Them'"
+          ],
+          "expected_result": "Thong bao 'Them nguoi ky thanh cong'. Modal dong. Bang hien thi them dong moi voi Ho ten = 'Nguyen Van A'."
+        },
+        {
+          "id": "TC-DMNK-013",
+          "title": "Khong duoc them lai nhan vien da la nguoi ky cua phong ban do",
+          "type": "Negative",
+          "priority": "High",
+          "preconditions": "Nguyen Van A da la nguoi ky cua Phong KHCN",
+          "steps": [
+            "Click Phong KHCN tren cay",
+            "Click 'Them nguoi ky'",
+            "Mo dropdown chon nhan vien"
+          ],
+          "expected_result": "Nguyen Van A KHONG xuat hien trong dropdown HOAC khi chon va Click 'Them' se bao loi 'Nhan vien da la nguoi ky cua phong ban'. Khong them duplicate."
+        },
+        {
+          "id": "TC-DMNK-014",
+          "title": "Xoa nguoi ky - hop xac nhan hien ten",
+          "type": "UI",
+          "priority": "Medium",
+          "preconditions": "Co nguoi ky 'Nguyen Van A' trong bang",
+          "steps": [
+            "Click bieu tuong thung rac dong A"
+          ],
+          "expected_result": "Hop xac nhan hien tieu de 'Xac nhan xoa' va noi dung 'Ban co chac chan muon xoa nguoi ky \"Nguyen Van A\"?'."
+        },
+        {
+          "id": "TC-DMNK-015",
+          "title": "Xoa nguoi ky thanh cong",
+          "type": "Positive",
+          "priority": "High",
+          "preconditions": "Hop xac nhan xoa Nguyen Van A dang mo",
+          "steps": [
+            "Click 'Xoa' mau do"
+          ],
+          "expected_result": "Thong bao 'Xoa nguoi ky thanh cong'. Hop dong. Dong A bien mat khoi bang."
+        },
+        {
+          "id": "TC-DMNK-016",
+          "title": "Huy hop xac nhan xoa",
+          "type": "UI",
+          "priority": "Low",
+          "preconditions": "Hop xac nhan xoa dang mo",
+          "steps": [
+            "Click 'Huy'"
+          ],
+          "expected_result": "Hop dong. Dong nguoi ky van con. Khong co thong bao."
+        },
+        {
+          "id": "TC-DMNK-017",
+          "title": "Trigger DB tu sync khi nhan vien doi phong ban",
+          "type": "Positive",
+          "priority": "High",
+          "preconditions": "Nguyen Van A la nguoi ky thuoc Phong KHCN. Quan tri vua chuyen A sang Phong CNTT (cap nhat staff.department_id)",
+          "steps": [
+            "Mo lai trang Quan ly nguoi ky",
+            "Click Phong CNTT tren cay",
+            "Quan sat bang"
+          ],
+          "expected_result": "Nguyen Van A xuat hien trong bang khi loc Phong CNTT (trigger DB tu dong sync). Cot Phong ban hien 'Phong CNTT'. Khong can quan tri thao tac thu cong."
+        },
+        {
+          "id": "TC-DMNK-018",
+          "title": "Tim kiem nhan vien trong dropdown Modal Them",
+          "type": "Positive",
+          "priority": "Medium",
+          "preconditions": "Modal Them mo, da chon Phong KHCN co nhieu nhan vien",
+          "steps": [
+            "Click o chon nhan vien",
+            "Go 'Nguyen'"
+          ],
+          "expected_result": "Dropdown loc, hien thi nhan vien co ho ten/chuc vu/phong ban chua 'Nguyen'."
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "total_testcases": 75,
+    "by_module": {
+      "DMSV": 22,
+      "DMLV": 20,
+      "DMLN": 15,
+      "DMNK": 18
+    },
+    "by_type": {
+      "Positive": 22,
+      "Negative": 18,
+      "Boundary": 8,
+      "UI": 27
+    },
+    "by_priority": {
+      "High": 44,
+      "Medium": 22,
+      "Low": 9
+    }
+  }
+}
