@@ -66,12 +66,30 @@ for (const file of MODULES) {
     return `*[Hình minh họa: ${alt}]*`;
   });
 
-  // Demote H1 → H2, H2 → H3, ... so module titles become subsections of "Phần I"
+  // Demote heading levels so each module fits cleanly under "Phần I" (H1):
+  //   - 1st H1 in file = module title          → H2 (demote +1)
+  //   - 2nd+ H1 in file = sub-section ("PHẦN 1/2", etc.)
+  //                                            → H3 (demote +2)
+  //                       and all subsequent H2..H5 fall *inside* that sub-section
+  //                                            → demote +2 instead of +1
+  //   - H2..H5 before any H1 sub-section: demote +1 as usual
   const lines = content.split('\n');
+  let firstH1Seen = false;
+  let inSubsection = false;
   const fixed = lines.map((line) => {
     const m = line.match(/^(#{1,5}) /);
     if (!m) return line;
-    return '#' + line; // increase depth by 1
+    if (m[1] === '#') {
+      if (!firstH1Seen) {
+        firstH1Seen = true;
+        inSubsection = false;
+        return '#' + line; // H1 → H2 (module title)
+      }
+      inSubsection = true;
+      return '##' + line; // H1 → H3 (sub-section header)
+    }
+    // H2..H5: demote +2 if inside a sub-section (so 1.., 2.. become children of PHẦN 1)
+    return inSubsection ? '##' + line : '#' + line;
   }).join('\n');
   parts.push(fixed);
   parts.push('');
