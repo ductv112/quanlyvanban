@@ -97,15 +97,63 @@ for (const file of MODULES) {
   console.log(`  ✓ ${file}`);
 }
 
-// Strip markdown links since printed docx has no clickable navigation:
-//   [text](path)        → text  (regular link)
-//   ![alt](image.png)   → keep (this is image syntax — preserved by negative lookbehind)
-//   <http://...>        → http://...
 let merged = parts.join('\n');
+
+// Strip horizontal rules (---) — không cần đường line ngang giữa các mục.
+// Pandoc render --- thành horizontal line trong docx, gây rối khi đọc.
+const hrBefore = (merged.match(/^---\s*$/gm) || []).length;
+merged = merged.replace(/^---\s*$/gm, '');
+console.log(`  Stripped ${hrBefore} horizontal rule(s)`);
+
+// Strip markdown links — printed docx has no clickable navigation:
+//   [text](path) → text   ;  <http://...> → http://...   ;  ![alt](img) giữ nguyên
 const linkBefore = (merged.match(/(?<!!)\[[^\]]+\]\([^)]+\)/g) || []).length;
 merged = merged.replace(/(?<!!)\[([^\]]+)\]\(([^)]+)\)/g, '$1');
 merged = merged.replace(/<((?:https?|mailto):[^>]+)>/g, '$1');
 console.log(`  Stripped ${linkBefore} markdown link(s)`);
+
+// Auto-number headings H2..H5 theo cấu trúc lồng:
+//   H2 → "1." (chương — module title)
+//   H3 → "1.1." (sub-section / section trong module)
+//   H4 → "1.1.1." (mục trong section)
+//   H5 → "1.1.1.1." (sub-mục)
+// Đồng thời strip manual numbering cũ trong text gốc:
+//   "Hướng dẫn sử dụng: X" → "X"
+//   "PHẦN N — TEXT"        → "TEXT"
+//   "N.M.K. TEXT"          → "TEXT"
+const counters = { 2: 0, 3: 0, 4: 0, 5: 0 };
+function stripPrefix(level, text) {
+  let r = text;
+  if (level === 2) {
+    r = r.replace(/^Hướng dẫn sử dụng:\s*/i, '');
+  }
+  r = r.replace(/^PH[ẦầAa]N\s+\d+\s+[—–\-]\s+/i, '');
+  r = r.replace(/^\d+(\.\d+)*\.?\s+/, '');
+  return r.trim();
+}
+function makeNumber(level) {
+  counters[level]++;
+  for (let l = level + 1; l <= 5; l++) counters[l] = 0;
+  const parts = [];
+  for (let l = 2; l <= level; l++) parts.push(counters[l]);
+  return parts.join('.') + '.';
+}
+const lines = merged.split('\n');
+const renumbered = lines.map((line) => {
+  // Reset counters at H1 "Phần I" boundary so detailed-section chapters start at 1
+  if (/^# Ph[ầa]n\s+I\b/i.test(line)) {
+    counters[2] = counters[3] = counters[4] = counters[5] = 0;
+    return line;
+  }
+  const m = line.match(/^(#{2,5})\s+(.+?)\s*$/);
+  if (!m) return line;
+  const level = m[1].length;
+  const num = makeNumber(level);
+  const cleanText = stripPrefix(level, m[2]);
+  return `${m[1]} ${num} ${cleanText}`;
+});
+merged = renumbered.join('\n');
+console.log(`  Auto-numbered headings (chapter 1..N restart at "Phần I" boundary)`);
 
 fs.writeFileSync(FULL_MD, merged);
 const stats = fs.statSync(FULL_MD);
@@ -114,11 +162,12 @@ console.log(`  Size:   ${(stats.size / 1024).toFixed(0)} KB`);
 const lineCount = merged.split('\n').length;
 console.log(`  Lines:  ${lineCount}`);
 
-// 2. Export to docx via pandoc using custom reference.docx that adds borders to Table style
+// 2. Export to docx via pandoc — reference.docx adds borders to Table style.
+//    --toc-depth=3 ⇒ TOC shows H1 + H2 + H3 (Phần I + các chương + sub-section).
 console.log('\n[2/3] Exporting to docx via pandoc');
 const REFERENCE_DOCX = path.resolve(__dirname, 'reference.docx');
 const refFlag = fs.existsSync(REFERENCE_DOCX) ? `--reference-doc="${REFERENCE_DOCX}"` : '';
-const cmd = `"${PANDOC}" "${FULL_MD}" -o "${FULL_DOCX}" --resource-path="${HDSD_DIR}" --toc --toc-depth=2 --standalone ${refFlag} -f gfm+raw_html -t docx`;
+const cmd = `"${PANDOC}" "${FULL_MD}" -o "${FULL_DOCX}" --resource-path="${HDSD_DIR}" --toc --toc-depth=3 --standalone ${refFlag} -f gfm+raw_html -t docx`;
 try {
   execSync(cmd, { stdio: 'inherit', cwd: HDSD_DIR });
   const docxStats = fs.statSync(FULL_DOCX);
