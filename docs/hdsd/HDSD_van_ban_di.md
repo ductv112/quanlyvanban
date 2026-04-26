@@ -1,442 +1,371 @@
-# Hướng dẫn sử dụng: Văn bản đi
-
-Tài liệu này mô tả đầy đủ các chức năng có trong hai màn hình **Văn bản đi (Danh sách)** và **Văn bản đi (Chi tiết)** của hệ thống Quản lý văn bản điện tử (e-Office), giúp người dùng hiểu rõ cách sử dụng và quy trình nghiệp vụ.
-
----
+# Văn bản đi
 
 ## 1. Giới thiệu
 
-**Văn bản đi** là toàn bộ các văn bản do cơ quan / đơn vị soạn thảo, ban hành và gửi đến các đơn vị, cá nhân khác — bao gồm gửi nội bộ trong hệ thống và gửi ra ngoài qua trục liên thông LGSP. Đây là một trong ba luồng nghiệp vụ cốt lõi của hệ thống e-Office (cùng với Văn bản đến và Hồ sơ công việc).
+Văn bản đi là phân hệ quản lý các văn bản do cơ quan ban hành ra bên ngoài hoặc tới đơn vị nội bộ khác. Phân hệ phục vụ toàn bộ chu trình từ soạn thảo, trình lãnh đạo duyệt, ký số, ban hành cấp số, đến gửi nội bộ và liên thông qua LGSP.
 
-Vòng đời điển hình của một văn bản đi gồm các giai đoạn:
+Phân hệ phục vụ ba vai chính:
+- Chuyên viên soạn thảo: nhập nội dung, chọn đơn vị nhận, đính kèm file.
+- Lãnh đạo: duyệt hoặc từ chối văn bản, ký số file, ban hành.
+- Văn thư: ban hành cấp số, gửi tới đơn vị nhận, theo dõi tracking liên thông.
 
-1. **Soạn thảo** — cán bộ chuyên môn nhập thông tin văn bản, đính kèm file, chọn nơi nhận (đơn vị nội bộ + cơ quan ngoài qua LGSP).
-2. **Trình duyệt** — văn bản đang ở trạng thái "Chờ duyệt", chờ lãnh đạo xem xét.
-3. **Lãnh đạo phê duyệt** — bấm Duyệt (đồng ý) / Từ chối (kèm lý do).
-4. **Ban hành** — văn thư cấp số văn bản chính thức theo sổ và đặt văn bản ở trạng thái **Đã ban hành**.
-5. **Gửi** — hệ thống tự động sinh "Văn bản đến" cho từng đơn vị nội bộ và đẩy lên LGSP cho từng cơ quan ngoài.
-6. **Theo dõi** — văn thư xem trạng thái nhận của từng nơi nhận (đã nhận / đang chờ / lỗi LGSP).
-7. **Thu hồi (nếu cần)** — xóa toàn bộ người nhận và đặt văn bản về trạng thái chưa duyệt khi phát hiện sai sót.
+Văn bản đi có thể được tạo bằng hai cách:
+- Tạo trực tiếp tại danh sách văn bản đi.
+- Tự sinh từ Phát hành một văn bản dự thảo đã duyệt.
 
-Cùng văn bản đó, có thể được dùng để **giao việc** (tạo hồ sơ công việc xử lý nội dung văn bản) hoặc **thêm vào một hồ sơ công việc** đã tồn tại để gắn nó vào tập hồ sơ liên quan.
+## 2. Quy trình thao tác và ràng buộc nghiệp vụ
 
----
+Quy trình chuẩn của một văn bản đi:
 
-## 2. Bố cục màn hình Danh sách
+1. Chuyên viên Thêm mới văn bản đi (chọn đơn vị nhận nội bộ và cơ quan ngoài LGSP) → trạng thái Chờ duyệt.
+2. Lãnh đạo bấm Duyệt (hoặc Từ chối kèm lý do) → trạng thái Đã duyệt.
+3. Lãnh đạo ký số file đính kèm trên trang chi tiết.
+4. Văn thư bấm Ban hành (cấp số chính thức) hoặc Ban hành & Gửi (kết hợp 2 bước).
+5. Khi Gửi, hệ thống tự sinh Văn bản đến cho các đơn vị nội bộ và đẩy lên LGSP cho cơ quan ngoài. Người dùng theo dõi tracking ở khung Đơn vị/Cơ quan nhận trên trang chi tiết.
 
-![Màn hình danh sách Văn bản đi](screenshots/van_ban_di_01_main.png)
+Ràng buộc nghiệp vụ:
 
-Màn hình **Văn bản đi** (đường dẫn `/van-ban-di`) gồm 4 phần chính:
+- Trích yếu nội dung, Sổ văn bản, Đơn vị soạn thảo, Người soạn thảo là bắt buộc.
+- Số đi tự cấp theo Sổ văn bản — hệ thống đề xuất số tiếp theo khi chọn sổ.
+- Văn bản đã duyệt không cho sửa hay xóa nữa, cũng không cho thay đổi danh sách đính kèm. Muốn sửa lại phải Hủy duyệt trước.
+- Đã ban hành mới được phép Gửi nội bộ và Gửi liên thông LGSP.
+- Khi Gửi mà chưa chọn đơn vị nhận trong danh sách Nội bộ, hệ thống mở Modal chọn đơn vị nhận trước.
+- Văn bản đã có người nhận muốn sửa lại — phải Thu hồi để xóa danh sách người nhận và đặt lại trạng thái Chờ duyệt.
+- Lý do từ chối không bắt buộc, nhưng nên ghi rõ để chuyên viên biết cách sửa lại.
+- Nút Sửa, Duyệt, Ban hành, Gửi, Thu hồi, Xóa hiển thị có điều kiện theo trạng thái và quyền của người dùng.
 
-- **Thanh tiêu đề** — biểu tượng máy bay giấy + chữ "Văn bản đi" ở góc trên bên trái thẻ dữ liệu, các nút thao tác chung ở góc trên bên phải:
-  - **Đánh dấu đã đọc (N)** — chỉ hiện khi đã tích chọn tối thiểu 1 dòng.
-  - **Xuất Excel** — tải file `VanBanDi_yyyy-mm-dd.xlsx` chứa danh sách hiện tại.
-  - **In** — in danh sách thẳng từ trình duyệt.
-  - **Thêm mới** — mở cửa sổ soạn văn bản đi mới.
-- **Thanh bộ lọc** — bộ lọc nhanh (xem mục 4).
-- **Bảng danh sách** — các văn bản đi (xem mục 3).
-- **Cửa sổ phụ (Drawer)** — soạn / sửa văn bản đi mở từ bên phải khi bấm Thêm mới hoặc Sửa.
+## 3. Các màn hình chức năng
 
----
+### 3.1. Màn hình danh sách văn bản đi
 
-## 3. Các cột trong Bảng Văn bản đi
+![Danh sách văn bản đi](screenshots/van_ban_di_01_list.png)
+
+#### Bố cục màn hình
+
+Trên cùng là tiêu đề "Văn bản đi" với nhóm nút Đánh dấu đã đọc, Xuất Excel, In, Thêm mới ở góc phải. Dưới là thanh bộ lọc gồm ô tìm kiếm, lựa chọn phòng ban (chỉ admin), Sổ văn bản, Loại văn bản, Độ khẩn, khoảng ngày và nút xóa bộ lọc. Phần thân là bảng danh sách văn bản đi phân trang.
+
+#### Các nút chức năng
+
+| Nút | Vị trí | Khi nào hiển thị | Tác dụng |
+|---|---|---|---|
+| Thêm mới | Góc phải tiêu đề | Luôn hiển thị | Mở Drawer thêm văn bản đi |
+| Xuất Excel | Góc phải tiêu đề | Luôn hiển thị | Tải file Excel danh sách hiện tại theo bộ lọc |
+| In | Góc phải tiêu đề | Luôn hiển thị | In danh sách hiện tại ra giấy |
+| Đánh dấu đã đọc (N) | Góc phải tiêu đề | Khi đã chọn ít nhất 1 dòng | Đánh dấu các văn bản đã chọn là đã đọc |
+| Xóa bộ lọc | Cuối hàng bộ lọc | Luôn hiển thị | Xóa toàn bộ điều kiện lọc, quay về trang 1 |
+| Tìm kiếm | Đầu hàng bộ lọc | Luôn hiển thị | Lọc theo trích yếu hoặc số ký hiệu |
+| Dropdown thao tác | Cột cuối mỗi dòng | Luôn hiển thị | Mở danh sách thao tác cho dòng đó |
+
+Các mục trong Dropdown thao tác:
+
+| Mục | Khi nào hiển thị | Tác dụng |
+|---|---|---|
+| Xem chi tiết | Luôn có | Mở trang chi tiết văn bản đi |
+| Sửa | Chưa duyệt + có quyền sửa | Mở Drawer sửa |
+| Duyệt | Chưa duyệt + có quyền duyệt | Duyệt văn bản |
+| Từ chối | Chưa duyệt + chưa từ chối + có quyền duyệt | Mở Modal nhập lý do từ chối |
+| Hủy duyệt | Đã duyệt + có quyền duyệt | Mở hộp xác nhận hủy duyệt |
+| Thu hồi | Đã duyệt + có quyền thu hồi | Mở hộp xác nhận thu hồi |
+| Xóa | Chưa duyệt + có quyền sửa | Mở hộp xác nhận xóa |
+
+#### Các cột hiển thị
 
 | Tên cột | Mô tả |
 |---|---|
-| **Ô chọn** | Tích chọn để đánh dấu đã đọc hàng loạt. |
-| **Số đi** | Số đăng ký của văn bản trong sổ. In đậm nếu chưa đọc, in thường nếu đã đọc. |
-| **Số phụ** | Số phụ (nếu có) — ví dụ `a`, `b`, `c`. |
-| **Ngày đề** | Ngày văn bản (format `DD/MM/YYYY`). |
-| **Ký hiệu** | Số ký hiệu văn bản — ví dụ `123/UBND-VP`. |
-| **Trích yếu** | Nội dung tóm tắt văn bản (đường dẫn — bấm vào sẽ mở Chi tiết). Nếu văn bản được "Gửi cho tôi" (cá nhân là người nhận), sẽ hiện thẻ vàng cam **📩 Gửi cho tôi** kèm tooltip cho biết ai gửi và vào lúc nào. |
-| **Đơn vị soạn** | Tên phòng ban / đơn vị soạn thảo. |
-| **Nơi nhận** | Tổng hợp các đơn vị / cơ quan nhận, ngăn cách bởi dấu `;`. |
-| **Loại VB** | Tên loại văn bản (ví dụ Công văn, Quyết định). |
-| **Trạng thái** | Thẻ màu tương ứng — **Đã duyệt** (xanh lá), **Từ chối** (đỏ), **Chờ duyệt** (vàng). |
-| (cột thao tác) | Nút **ba chấm dọc** mở menu các lệnh — Xem chi tiết, Sửa, Duyệt, Từ chối, Hủy duyệt, Thu hồi, Xóa (các lệnh chỉ hiển thị nếu trạng thái cho phép và quyền hiện có). |
+| Số đi | Số thứ tự cấp khi ban hành |
+| Số phụ | Phần phụ của số đi (a, b, c) |
+| Ngày đề | Ngày soạn văn bản |
+| Ký hiệu | Ký hiệu chính thức (vd: 123/UBND-VP) |
+| Trích yếu | Tóm tắt nội dung, click mở chi tiết. Có thẻ "Gửi cho tôi" nếu là người nhận |
+| Đơn vị soạn | Đơn vị tạo văn bản |
+| Nơi nhận | Tóm tắt các đơn vị nhận |
+| Loại VB | Loại văn bản |
+| Trạng thái | Chờ duyệt (vàng) / Đã duyệt (xanh) / Từ chối (đỏ) |
 
-Mỗi trang mặc định **20 dòng**. Có thể chuyển 10 / 50 / 100 dòng / trang tại thanh phân trang dưới bảng.
+#### Thông báo của hệ thống
 
----
-
-## 4. Bộ lọc nhanh phía trên bảng
-
-| Bộ lọc | Hành vi |
+| Tình huống | Thông báo |
 |---|---|
-| **Tìm kiếm** | Ô tìm kiếm theo trích yếu, ký hiệu — bấm Enter để áp dụng. |
-| **Phòng ban** (chỉ Quản trị) | Lọc theo phòng ban — chỉ tài khoản admin có cây phòng ban. |
-| **Sổ văn bản** | Lọc theo Sổ đăng ký văn bản đi (ví dụ Sổ đi 2026, Sổ Quyết định 2026...). |
-| **Loại văn bản** | Lọc theo loại văn bản (Công văn, Quyết định, Báo cáo...). |
-| **Độ khẩn** | Lọc theo độ khẩn — Thường / Khẩn / Hỏa tốc. |
-| **Khoảng ngày** | Khoảng ngày đề — chọn "Từ ngày", "Đến ngày" theo lịch. |
-| **Nút Tải lại** (mũi tên tròn) | Xóa toàn bộ bộ lọc, đưa danh sách về mặc định. |
+| Lỗi tải danh sách | Lỗi tải danh sách văn bản đi |
+| Đánh dấu đã đọc thành công | Đã đánh dấu đọc |
+| Lỗi xuất Excel | Lỗi xuất Excel |
 
----
+### 3.2. Drawer thêm/sửa văn bản đi
 
-## 5. Các trạng thái của Văn bản đi
+![Drawer thêm văn bản đi](screenshots/van_ban_di_02_drawer_add.png)
 
-Một văn bản đi tại một thời điểm sẽ ở một trong các trạng thái dưới đây — quyết định màu thẻ, các nút có thể bấm và việc cấp số / gửi:
+#### Bố cục màn hình
 
-| Trạng thái | Ý nghĩa | Thẻ hiển thị |
-|---|---|---|
-| **Chờ duyệt** | Văn bản vừa soạn xong, lãnh đạo chưa duyệt. | Vàng (gold) |
-| **Đã duyệt** | Lãnh đạo đã đồng ý nội dung văn bản. | Xanh lá (success) |
-| **Đã ban hành** | Sau khi duyệt, văn thư đã cấp số chính thức. Hiển thị thêm thẻ tím "Đã ban hành" + thời điểm. | Tím (purple) |
-| **Đã gửi** (`status = 'sent'`) | Hệ thống đã sinh Văn bản đến cho các đơn vị nội bộ và đẩy LGSP cho cơ quan ngoài. | Mặc dù không có thẻ riêng, nhóm nút thay đổi sang chế độ chỉ đọc + Thu hồi. |
-| **Từ chối** | Lãnh đạo không đồng ý — kèm lý do từ chối hiển thị ở banner đỏ ngay bên dưới tiêu đề. | Đỏ (error) |
+Drawer mở từ phải, rộng 720px, đầu Drawer có dải gradient xanh thẫm. Tiêu đề "Thêm văn bản đi" hoặc "Sửa văn bản đi". Phần thân là form nhiều hàng. Dưới đầu Drawer có hai nút Hủy và Tạo mới/Cập nhật.
 
-Các thẻ phụ luôn hiển thị bên cạnh trạng thái chính:
+#### Các nút chức năng
 
-| Thẻ phụ | Khi nào hiển thị |
-|---|---|
-| **Khẩn** (cam) / **Hỏa tốc** (đỏ) | Khi độ khẩn khác Thường. |
-| **Mật / Tối mật / Tuyệt mật** | Khi độ mật khác Thường. |
-| **Đã ký số** (xanh lá) | Khi văn bản đã có file đính kèm được ký số. |
-| **Liên thông** (xanh dương) / **Nội bộ** | Văn bản đã được gửi qua LGSP hay chỉ nội bộ. |
-| **Quá hạn** (đỏ) | Khi hạn xử lý đã quá ngày hiện tại. |
+| Nút | Vị trí | Khi nào hiển thị | Tác dụng |
+|---|---|---|---|
+| Tạo mới / Cập nhật | Góc phải đầu Drawer | Luôn có | Lưu văn bản, đóng Drawer, tải lại danh sách |
+| Hủy | Góc phải đầu Drawer | Luôn có | Đóng Drawer, không lưu |
 
----
-
-## 6. Cửa sổ Soạn / Sửa văn bản đi
-
-![Cửa sổ Thêm văn bản đi](screenshots/van_ban_di_02_drawer.png)
-
-Khi bấm **Thêm mới** hoặc menu **Sửa** trên một dòng, hệ thống mở một cửa sổ rộng 720 px từ bên phải. Tiêu đề là "Thêm văn bản đi" (mới) hoặc "Sửa văn bản đi" (chỉnh sửa). Nút **Tạo mới** / **Cập nhật** + **Hủy** ở góc trên bên phải.
-
-### 6.1. Các trường nhập
+#### Các trường dữ liệu
 
 | Tên trường | Bắt buộc | Mô tả & ràng buộc |
 |---|---|---|
-| **Sổ văn bản** | Có | Chọn sổ đi (lọc theo `type_id = 2` — sổ đi). Khi chọn xong, ô **Số đi** tự động điền số kế tiếp lấy từ máy chủ. |
-| **Số đi** | Tự sinh | Số nguyên ≥ 1. Hệ thống đề xuất sẵn số kế tiếp; có thể sửa thủ công nếu cần. |
-| **Số phụ** | Không | Tối đa 20 ký tự. Dùng khi cần đánh số phụ a, b, c. |
-| **Ngày đề** | Không | Mặc định ngày hiện tại. Định dạng `DD/MM/YYYY`. |
-| **Ký hiệu** | Không | Tối đa 100 ký tự. Ví dụ `123/UBND-VP`. |
-| **Mã văn bản** | Không | Mã định danh nội bộ (tối đa 100 ký tự). |
-| **Trích yếu nội dung** | Có | Bắt buộc. Tối đa 2000 ký tự, có hiển thị bộ đếm. Bỏ trống → "Trích yếu nội dung không được để trống". |
-| **Đơn vị soạn thảo** | Có | Mặc định là phòng ban của người đang đăng nhập. Khi đổi, danh sách "Người soạn thảo" cũng được tải lại. |
-| **Người soạn thảo** | Có | Lọc theo đơn vị soạn vừa chọn. Mặc định là tài khoản đang đăng nhập. |
-| **Đơn vị ban hành** | Không | Đơn vị đứng tên ban hành (thường là đơn vị cấp trên trực tiếp của đơn vị soạn). |
-| **Người ký** | Không | Họ tên người ký (tối đa 200 ký tự). |
-| **Loại văn bản** | Không | Chọn từ danh mục (Công văn, Quyết định...). |
-| **Lĩnh vực** | Không | Chọn từ danh mục lĩnh vực. |
-| **Độ mật** | Có | Mặc định **Thường**. Các giá trị: Thường, Mật, Tối mật, Tuyệt mật. |
-| **Độ khẩn** | Có | Mặc định **Thường**. Các giá trị: Thường, Khẩn, Hỏa tốc. |
-| **Ngày ký** | Không | Định dạng `DD/MM/YYYY`. |
-| **Ngày ban hành** | Không | Định dạng `DD/MM/YYYY`. |
-| **Hạn xử lý** | Không | Định dạng `DD/MM/YYYY`. Khi quá hạn, hiển thị thẻ đỏ "Quá hạn" trên màn chi tiết. |
-| **Số tờ / Số bản** | Không | Mặc định mỗi ô là 1, không âm. |
-| **Đơn vị nhận (nội bộ — trong hệ thống)** | Không | Chọn nhiều đơn vị từ danh sách phòng ban / đơn vị nội bộ. Ghi chú: "Khi 'Gửi', mỗi đơn vị tự nhận được Văn bản đến". Tự loại trừ chính đơn vị đang đăng nhập. |
-| **Cơ quan nhận (ngoài — qua LGSP)** | Không | Chọn nhiều cơ quan ngoài tỉnh từ danh mục cơ quan liên thông. Ghi chú: "Khi 'Gửi', văn bản được đẩy lên LGSP để gửi đến các cơ quan này". |
+| Sổ văn bản | Có | Chọn từ Sổ văn bản loại Đi. Khi chọn xong tự điền Số đi tiếp theo |
+| Số đi | Không | Số nguyên >= 1 |
+| Số phụ | Không | Tối đa 20 ký tự |
+| Ngày đề | Không | DD/MM/YYYY |
+| Ký hiệu | Không | Tối đa 100 ký tự |
+| Mã văn bản | Không | Mã định danh, tối đa 100 ký tự |
+| Trích yếu nội dung | Có | Tối đa 2000 ký tự |
+| Đơn vị soạn thảo | Có | Chọn từ cây đơn vị, mặc định là phòng của người dùng |
+| Người soạn thảo | Có | Phụ thuộc Đơn vị soạn — chọn từ danh sách cán bộ trong đơn vị đó |
+| Đơn vị ban hành | Không | Chọn từ cây đơn vị |
+| Người ký | Không | Tối đa 200 ký tự |
+| Loại văn bản | Không | Chọn từ danh mục Loại VB |
+| Lĩnh vực | Không | Chọn từ danh mục Lĩnh vực |
+| Độ mật | Không | Thường / Mật / Tối mật / Tuyệt mật. Mặc định Thường |
+| Ngày ký | Không | DD/MM/YYYY |
+| Ngày ban hành | Không | DD/MM/YYYY |
+| Hạn xử lý | Không | DD/MM/YYYY |
+| Độ khẩn | Không | Thường / Khẩn / Hỏa tốc. Mặc định Thường |
+| Số tờ | Không | Số nguyên >= 0, mặc định 1 |
+| Số bản | Không | Số nguyên >= 0, mặc định 1 |
+| Đơn vị nhận (nội bộ) | Không | Chọn nhiều đơn vị trong hệ thống. Khi Gửi, hệ thống tự sinh Văn bản đến cho từng đơn vị |
+| Cơ quan nhận (ngoài LGSP) | Không | Chọn nhiều cơ quan ngoài tỉnh. Khi Gửi, hệ thống đẩy lên LGSP |
 
-> **Lưu ý**: Nếu không chọn bất kỳ đơn vị / cơ quan nhận nào ở bước này, hệ thống vẫn cho phép tạo. Khi bấm **Gửi** ở màn chi tiết, hệ thống sẽ mở cửa sổ phụ cho người dùng chọn đơn vị nhận trước khi gửi.
+#### Thông báo của hệ thống
 
-### 6.2. Nút Tạo mới / Cập nhật / Hủy
-
-| Nút | Tác dụng |
+| Tình huống | Thông báo |
 |---|---|
-| **Tạo mới** | Tạo văn bản đi mới. Khi thành công: thông báo "Tạo văn bản đi thành công", lưu danh sách nơi nhận, đóng cửa sổ và làm tươi danh sách. |
-| **Cập nhật** | Lưu thay đổi. Khi thành công: thông báo "Cập nhật thành công". **Không sửa được nếu văn bản đã duyệt** — báo lỗi "Không thể sửa văn bản đã được duyệt". |
-| **Hủy** | Đóng cửa sổ, không lưu thay đổi. |
+| Trích yếu rỗng | Trích yếu nội dung là bắt buộc |
+| Sổ văn bản chưa chọn | Sổ văn bản là bắt buộc |
+| Đơn vị soạn rỗng | Đơn vị soạn là bắt buộc |
+| Người soạn rỗng | Người soạn là bắt buộc |
+| Tạo thành công | Tạo văn bản đi thành công |
+| Cập nhật thành công | Cập nhật thành công |
+| Không có quyền | Không có quyền sửa văn bản đi này |
 
----
+### 3.3. Hộp thoại xác nhận xóa văn bản
 
-## 7. Bố cục màn hình Chi tiết
+![Xác nhận xóa](screenshots/van_ban_di_03_confirm_delete.png)
 
-![Màn hình chi tiết Văn bản đi](screenshots/van_ban_di_03_detail.png)
+#### Bố cục màn hình
 
-Khi bấm trích yếu trên bảng (hoặc menu **Xem chi tiết**), hệ thống mở trang chi tiết tại đường dẫn `/van-ban-di/<id>`. Trang gồm 3 phần lớn:
+Hộp thoại nhỏ giữa màn hình. Tiêu đề "Xác nhận xóa". Nội dung "Xóa văn bản &lt;trích yếu&gt;...?". Hai nút Xóa (đỏ) và Hủy.
 
-- **Thanh tiêu đề (Header)** — đỉnh trang, gồm:
-  - Nút **Quay lại** (mũi tên trái).
-  - Dòng "Số đi: N — Ký hiệu" + dòng phụ "Đơn vị soạn • Ngày ban hành".
-  - Các thẻ trạng thái (Chờ duyệt / Đã duyệt / Từ chối, Khẩn, Hỏa tốc, Mật, Đã ban hành, Đã ký số, Liên thông).
-  - Banner đỏ hiển thị **Lý do từ chối** (chỉ khi văn bản bị từ chối và có lý do).
-  - Thanh nút thao tác (xem mục 9).
-- **Cột trái** — thông tin nội dung:
-  - Trích yếu nội dung (banner xanh nhạt).
-  - Khối "Thông tin văn bản" — đầy đủ trường (xem mục 8.1).
-  - Khối "Tài liệu đính kèm" (xem mục 8.4).
-- **Cột phải** — theo dõi & lịch sử:
-  - "Đơn vị / Cơ quan nhận" — danh sách `outgoing_doc_recipients` kèm trạng thái gửi (xem mục 8.2).
-  - "Người nhận" — danh sách cá nhân nhận trực tiếp (xem mục 8.3).
-  - "Ý kiến lãnh đạo" — kèm ô gửi ý kiến mới.
-  - "Lịch sử xử lý" — timeline các sự kiện.
+#### Các nút chức năng
 
----
+| Nút | Vị trí | Khi nào hiển thị | Tác dụng |
+|---|---|---|---|
+| Xóa | Góc phải hộp thoại | Luôn có | Xóa văn bản, tải lại danh sách |
+| Hủy | Góc phải hộp thoại | Luôn có | Đóng hộp thoại |
 
-## 8. Các khối thông tin trong màn Chi tiết
+#### Thông báo của hệ thống
 
-### 8.1. Khối "Thông tin văn bản"
+| Tình huống | Thông báo |
+|---|---|
+| Xóa thành công | Đã xóa |
+| Không có quyền | Không có quyền xóa văn bản đi này |
+| Văn bản đã duyệt | Không thể xóa văn bản đã duyệt |
 
-Hiển thị đầy đủ các trường đã nhập ở cửa sổ Soạn / Sửa, gồm:
+### 3.4. Modal từ chối văn bản
 
-- **Số đi**, **Ngày ban hành**, **Số ký hiệu** (chữ xanh teal), **Sổ văn bản**.
-- **Đơn vị soạn**, **Người soạn**, **Đơn vị phát hành**.
-- **Loại văn bản**, **Lĩnh vực**, **Người ký**, **Ngày ký**.
-- **Hạn xử lý** — chữ đỏ + thẻ "Quá hạn" nếu đã trễ.
-- **Nơi nhận** — chuỗi tổng hợp các đơn vị / cơ quan nhận. Khi chưa có nơi nhận và văn bản chưa ban hành, có thẻ vàng cảnh báo: *"Chưa chọn đơn vị nhận chính thức — sẽ yêu cầu chọn khi Gửi"*.
-- **Người duyệt** — kèm thẻ thời điểm duyệt (xanh lá).
-- **Trạng thái phát hành** — thẻ tím "Đã ban hành <thời điểm>" hoặc thẻ xám "Chưa ban hành".
-- **Độ mật** + **Độ khẩn**.
-- **Số tờ / Số bản**, **Ký số**, **Liên thông**.
-- **Người nhập** + **Thời gian tạo**.
+![Modal Từ chối](screenshots/van_ban_di_04_modal_reject.png)
 
-### 8.2. Khối "Đơn vị / Cơ quan nhận" (cột phải)
+#### Bố cục màn hình
 
-Chỉ hiển thị khi có ít nhất một nơi nhận. Mỗi dòng là một nơi nhận, gồm:
+Hộp thoại giữa màn hình. Tiêu đề "Từ chối văn bản đi". Trong thân có ô nhập lý do nhiều dòng (không bắt buộc). Hai nút Từ chối (đỏ) và Hủy.
 
-- **Thẻ "Nội bộ"** (xanh dương) — đơn vị trong hệ thống.
-- **Thẻ "LGSP"** (xanh lá) — cơ quan ngoài qua LGSP, kèm mã định danh trong ngoặc.
-- **Trạng thái gửi**:
-  - Đơn vị nội bộ đã nhận: ✓ "Đã nhận lúc HH:mm DD/MM" (xanh).
-  - Cơ quan LGSP gửi thành công: ✓ "LGSP đã gửi (#mã 12 ký tự đầu...)".
-  - LGSP lỗi: ✗ "Lỗi: <thông điệp>" (đỏ).
-  - LGSP đang chờ: ⏳ "Đang chờ worker đẩy LGSP" (vàng).
-  - Chưa gửi: ⏳ "Chưa gửi" (vàng).
+#### Các nút chức năng
 
-### 8.3. Khối "Người nhận" (cột phải)
+| Nút | Vị trí | Khi nào hiển thị | Tác dụng |
+|---|---|---|---|
+| Từ chối | Góc phải hộp thoại | Luôn có | Đặt văn bản về trạng thái Từ chối kèm lý do |
+| Hủy | Góc phải hộp thoại | Luôn có | Đóng hộp thoại |
 
-Chỉ hiển thị khi có cá nhân là người nhận trực tiếp (chức năng Gửi cho cá nhân). Mỗi dòng là một cán bộ, gồm:
+#### Các trường dữ liệu
 
-- **Avatar** + **Tên** + **Chức vụ** + **Phòng ban**.
-- **Trạng thái đọc** — "Đã đọc lúc HH:mm DD/MM" (xanh) hoặc "Chưa đọc" (vàng).
-
-### 8.4. Khối "Tài liệu đính kèm" (cột trái)
-
-- Số file ở tiêu đề: "Tài liệu đính kèm (N)".
-- Mỗi dòng file: biểu tượng (PDF / Word / Excel / ảnh / khác), tên file, kích thước, thời gian tải lên.
-- Các nút bên phải mỗi file:
-  - **Ký số** (chỉ hiện khi file chưa ký số — mở luồng ký qua hook `useSigning`).
-  - Thẻ **Đã ký số** (xanh lá) — thay nút Ký số khi file đã ký.
-  - Nút **Tải xuống** — tải file qua proxy backend (đảm bảo tên file tiếng Việt).
-  - Nút **Xóa** (đỏ) — chỉ hiện khi văn bản chưa duyệt; có hộp xác nhận.
-- Nút **Thêm file** ở góc trên — chỉ hiện khi văn bản chưa duyệt. Kéo thả hoặc bấm chọn file để tải lên.
-
-### 8.5. Khối "Ý kiến lãnh đạo" (cột phải)
-
-- Liệt kê các ý kiến đã ghi nhận, mỗi ý kiến hiển thị tên + chức vụ + nội dung + thời gian (nền vàng nhạt).
-- Người gửi ý kiến có thể xóa ý kiến của chính mình.
-- Ô nhập ở dưới + nút **Gửi ý kiến** — không cho gửi ý kiến trống.
-
-### 8.6. Khối "Lịch sử xử lý" (cột phải)
-
-Timeline (đường dọc) các sự kiện:
-
-- **Tạo văn bản** (xanh dương) — "Tạo văn bản đi, số: N".
-- **Đã duyệt** (xanh lá) — "Duyệt văn bản đi".
-- **Đã gửi** (xanh ngọc) — "Nhận văn bản" (1 dòng cho mỗi cá nhân nhận).
-- **Ý kiến lãnh đạo** (cam).
-
-Mỗi dòng có tên cán bộ + thời điểm `DD/MM/YYYY HH:mm`.
-
----
-
-## 9. Các nút thao tác theo từng trạng thái
-
-Thanh nút thao tác trên Header chỉ hiển thị các nút phù hợp với trạng thái + quyền của người dùng. Quyền (`canEdit`, `canApprove`, `canRelease`, `canSend`, `canRetract`) được tính sẵn ở backend dựa theo:
-
-- Người soạn thảo (drafting_user_id) hoặc người tạo bản ghi (created_by) → là **chủ sở hữu** văn bản.
-- Cùng đơn vị (theo cây phòng ban) hay không.
-- Quyền (right) gắn với vai trò của tài khoản.
-
-### 9.1. Khi văn bản ở trạng thái **Chờ duyệt**
-
-| Nút | Khi nào hiển thị | Tác dụng |
+| Tên trường | Bắt buộc | Mô tả & ràng buộc |
 |---|---|---|
-| **Đánh dấu / Bỏ đánh dấu** (sao) | Luôn | Đánh dấu văn bản cá nhân để dễ truy cập. |
-| **Sửa** | Có quyền sửa | Mở Drawer Sửa văn bản — quay lại màn Danh sách với tham số `?edit=<id>`. |
-| **Duyệt** | Có quyền duyệt | Đặt văn bản về Đã duyệt. Thông báo "Duyệt văn bản đi thành công". |
-| (Menu ba chấm) **Từ chối** | Có quyền duyệt và chưa từng bị từ chối | Mở hộp xác nhận có ô nhập "Lý do từ chối (không bắt buộc)". |
-| (Menu ba chấm) **Xóa văn bản** | Có quyền sửa | Hộp xác nhận; chỉ xóa được khi văn bản chưa duyệt. |
+| Lý do từ chối | Không | Nội dung tự do |
 
-> Hai nút **Giao việc** và **Thêm vào HSCV** **luôn hiển thị** ở mọi trạng thái khi người dùng có quyền duyệt — không phụ thuộc văn bản đã duyệt hay chưa. Chi tiết tác dụng:
->
-> - **Giao việc** — Mở Drawer "Giao việc" để tạo Hồ sơ công việc mới gắn với văn bản này, chọn người phụ trách, ngày bắt đầu, hạn hoàn thành, ghi chú.
-> - **Thêm vào HSCV** — Mở Modal để chọn một Hồ sơ công việc đã tồn tại và gắn văn bản vào đó.
+#### Thông báo của hệ thống
 
-### 9.2. Khi văn bản ở trạng thái **Đã duyệt** nhưng **Chưa ban hành**
+| Tình huống | Thông báo |
+|---|---|
+| Từ chối thành công | Đã từ chối văn bản đi |
+| Không có quyền | Không có quyền từ chối văn bản đi này |
 
-| Nút | Khi nào hiển thị | Tác dụng |
+### 3.5. Trang chi tiết văn bản đi
+
+![Chi tiết văn bản đi](screenshots/van_ban_di_05_detail.png)
+
+#### Bố cục màn hình
+
+Trang chi tiết hai cột. Trên cùng là thanh tiêu đề có nút quay lại, số đi và ký hiệu, đơn vị soạn, ngày ban hành, các thẻ trạng thái và nhóm nút thao tác bên phải.
+
+Cột trái: Trích yếu nội dung, Thông tin văn bản (số đi, ngày ban hành, ký hiệu, sổ văn bản, đơn vị soạn, người soạn, đơn vị phát hành, loại, lĩnh vực, người ký, ngày ký, hạn xử lý, nơi nhận, người duyệt, trạng thái phát hành, độ mật, độ khẩn, số tờ và số bản, ký số, liên thông, người nhập, thời gian tạo), Tài liệu đính kèm (kèm nút Ký số trên mỗi file).
+
+Cột phải: Đơn vị/Cơ quan nhận (kèm tracking nội bộ và LGSP), Người nhận nội bộ (nếu có), Ý kiến lãnh đạo, Lịch sử xử lý dạng timeline.
+
+#### Các nút chức năng
+
+| Nút | Vị trí | Khi nào hiển thị | Tác dụng |
+|---|---|---|---|
+| Quay lại | Trái thanh tiêu đề | Luôn có | Quay về danh sách văn bản đi |
+| Đánh dấu (sao) | Phải thanh tiêu đề | Luôn có | Bật/tắt đánh dấu cá nhân |
+| Giao việc | Phải thanh tiêu đề | Có quyền duyệt | Mở Drawer Giao việc |
+| Thêm vào HSCV | Phải thanh tiêu đề | Có quyền duyệt | Mở Modal chọn hồ sơ công việc |
+| Sửa | Phải thanh tiêu đề | Chưa duyệt + có quyền sửa | Quay về danh sách và mở Drawer sửa |
+| Duyệt | Phải thanh tiêu đề | Chưa duyệt + có quyền duyệt | Duyệt văn bản |
+| Ban hành | Phải thanh tiêu đề | Đã duyệt + chưa ban hành + có quyền ban hành | Cấp số chính thức cho văn bản |
+| Ban hành & Gửi | Phải thanh tiêu đề | Đã duyệt + chưa ban hành + có quyền ban hành & gửi | Cấp số và gửi đi luôn trong 1 thao tác |
+| Gửi | Phải thanh tiêu đề | Đã ban hành + chưa gửi + có quyền gửi | Gửi tới đơn vị nhận đã chọn |
+| Dropdown thao tác phụ | Phải thanh tiêu đề | Tùy trạng thái | Mở danh sách thao tác phụ |
+| Thêm file | Khu vực Đính kèm | Văn bản chưa duyệt | Mở hộp chọn file để upload |
+| Ký số | Mỗi dòng đính kèm | File chưa ký số | Mở Modal ký số file |
+| Tải | Mỗi dòng đính kèm | Luôn có | Tải file về máy |
+| Xóa file | Mỗi dòng đính kèm | Văn bản chưa duyệt | Mở Popconfirm xóa file |
+| Gửi ý kiến | Khu vực Ý kiến lãnh đạo | Luôn có | Lưu ý kiến |
+
+Mục trong Dropdown thao tác phụ:
+
+| Mục | Khi nào hiển thị | Tác dụng |
 |---|---|---|
-| **Ban hành** (tím) | Có quyền ban hành | Cấp số chính thức, đặt cờ `is_released = TRUE`. Báo "Ban hành thành công". |
-| **Ban hành & Gửi** (xanh lá) | Có quyền ban hành + gửi | Ban hành rồi gửi luôn trong cùng một thao tác. Nếu chưa có nơi nhận, mở Modal chọn đơn vị nhận trước. |
-| (Menu ba chấm) **Hủy duyệt** | Có quyền duyệt | Đặt lại văn bản về Chờ duyệt. **Không hủy được nếu văn bản đã được gửi cho cán bộ** — báo "Không thể hủy duyệt: văn bản đã được gửi cho cán bộ". |
+| Từ chối | Chưa duyệt + chưa từ chối + có quyền duyệt | Mở Modal nhập lý do từ chối |
+| Xóa văn bản | Chưa duyệt + có quyền sửa | Mở Popconfirm xóa |
+| Hủy duyệt | Đã duyệt chưa ban hành + có quyền duyệt | Hủy duyệt |
+| Thu hồi | Đã có người nhận + có quyền thu hồi | Mở Popconfirm thu hồi |
 
-### 9.3. Khi văn bản ở trạng thái **Đã ban hành** nhưng **Chưa gửi**
+#### Thông báo của hệ thống
 
-| Nút | Khi nào hiển thị | Tác dụng |
+| Tình huống | Thông báo |
+|---|---|
+| Duyệt thành công | Duyệt thành công |
+| Hủy duyệt thành công | Hủy duyệt thành công |
+| Thu hồi thành công | Thu hồi thành công |
+| Từ chối thành công | Đã từ chối |
+| Ban hành thành công | Ban hành thành công, số &lt;số đi&gt; |
+| Tải file lên | Tải lên thành công |
+| Xóa file | Đã xóa |
+
+### 3.6. Modal gửi văn bản tới cán bộ
+
+![Modal Gửi văn bản](screenshots/van_ban_di_06_modal_send.png)
+
+#### Bố cục màn hình
+
+Modal giữa màn hình rộng 560px. Tiêu đề "Gửi văn bản". Trên cùng có Chọn tất cả. Phần thân là danh sách cán bộ gom theo phòng ban có ô chọn. Dưới có hai nút Gửi và Hủy.
+
+#### Các nút chức năng
+
+| Nút | Vị trí | Khi nào hiển thị | Tác dụng |
+|---|---|---|---|
+| Gửi (N) | Góc phải Modal | Luôn có | Gửi văn bản tới N cán bộ đã chọn |
+| Hủy | Góc phải Modal | Luôn có | Đóng Modal |
+| Chọn tất cả | Trên đầu danh sách | Luôn có | Tick chọn toàn bộ cán bộ |
+
+#### Các cột hiển thị
+
+| Tên cột | Mô tả |
+|---|---|
+| Phòng ban | Tiêu đề nhóm cán bộ |
+| Họ tên + Chức vụ | Mỗi cán bộ là 1 dòng có ô chọn |
+
+#### Thông báo của hệ thống
+
+| Tình huống | Thông báo |
+|---|---|
+| Chưa chọn người nhận | Chọn ít nhất một người nhận |
+| Gửi thành công | Đã gửi |
+| Không có quyền | Không có quyền gửi văn bản đi này |
+
+### 3.7. Modal gửi nội bộ (chọn đơn vị nhận)
+
+![Modal Gửi nội bộ](screenshots/van_ban_di_07_modal_send_internal.png)
+
+#### Bố cục màn hình
+
+Modal rộng 600px. Tiêu đề "Gửi nội bộ — chọn đơn vị nhận" hoặc "Ban hành & Gửi — chọn đơn vị nhận" tùy thao tác đang thực hiện. Ngay dưới tiêu đề là dòng hướng dẫn. Phần thân là nhóm ô chọn nhiều với toàn bộ đơn vị trong hệ thống (loại trừ chính đơn vị phát hành). Dưới có hai nút Gửi (N đơn vị) và Hủy.
+
+#### Các nút chức năng
+
+| Nút | Vị trí | Khi nào hiển thị | Tác dụng |
+|---|---|---|---|
+| Gửi / Ban hành & Gửi (N) | Góc phải Modal | Luôn có | Lưu danh sách đơn vị nhận, ban hành (nếu cần) và gửi |
+| Hủy | Góc phải Modal | Luôn có | Đóng Modal |
+
+#### Các trường dữ liệu
+
+| Tên trường | Bắt buộc | Mô tả & ràng buộc |
 |---|---|---|
-| **Gửi** (xanh teal) | Có quyền gửi | Đẩy văn bản đến các nơi nhận đã lưu — sinh "Văn bản đến" cho mỗi đơn vị nội bộ + đẩy LGSP cho mỗi cơ quan ngoài. Nếu **chưa có nơi nhận**, mở Modal "Gửi nội bộ — chọn đơn vị nhận" để chọn trước. |
-| (Menu ba chấm) **Thu hồi** | Có quyền thu hồi và đã có người nhận | Mở hộp xác nhận: "Thu hồi sẽ xóa tất cả người nhận và đặt lại trạng thái chưa duyệt. Bạn chắc chắn?" |
+| Đơn vị nhận | Có | Chọn nhiều đơn vị trong tỉnh |
 
-### 9.4. Khi văn bản ở trạng thái **Đã gửi** (`status = 'sent'`)
+#### Thông báo của hệ thống
 
-| Nút | Khi nào hiển thị | Tác dụng |
+| Tình huống | Thông báo |
+|---|---|
+| Chưa chọn đơn vị | Chọn ít nhất 1 đơn vị nhận |
+| Gửi thành công | Đã gửi: N đơn vị nội bộ |
+| Ban hành & Gửi thành công | Đã ban hành và gửi: N đơn vị nội bộ |
+
+### 3.8. Drawer giao việc
+
+![Drawer Giao việc](screenshots/van_ban_di_08_drawer_giao_viec.png)
+
+#### Bố cục màn hình
+
+Drawer rộng 600px, có gradient xanh thẫm. Tiêu đề "Giao việc". Form gồm Tên hồ sơ công việc, Ngày bắt đầu, Hạn hoàn thành, Người phụ trách, Ghi chú. Dưới đầu Drawer có nút Tạo và giao việc, Hủy.
+
+#### Các nút chức năng
+
+| Nút | Vị trí | Khi nào hiển thị | Tác dụng |
+|---|---|---|---|
+| Tạo và giao việc | Góc phải đầu Drawer | Luôn có | Tạo hồ sơ công việc từ văn bản đi |
+| Hủy | Góc phải đầu Drawer | Luôn có | Đóng Drawer |
+
+#### Các trường dữ liệu
+
+| Tên trường | Bắt buộc | Mô tả & ràng buộc |
 |---|---|---|
-| (Menu ba chấm) **Thu hồi** | Có quyền thu hồi và đã có người nhận | Như mục 9.3. |
+| Tên hồ sơ công việc | Có | Tối đa 500 ký tự. Mặc định "Xử lý VB đi: &lt;ký hiệu hoặc trích yếu&gt;" |
+| Ngày bắt đầu | Không | DD/MM/YYYY |
+| Hạn hoàn thành | Không | DD/MM/YYYY |
+| Người phụ trách | Không | Chọn nhiều cán bộ |
+| Ghi chú | Không | Tối đa 500 ký tự |
 
-Các thao tác khác chỉ ở chế độ đọc.
+#### Thông báo của hệ thống
 
----
+| Tình huống | Thông báo |
+|---|---|
+| Tên hồ sơ rỗng | Tên hồ sơ công việc là bắt buộc |
+| Tạo thành công | Giao việc thành công |
+| Không có quyền | Không có quyền giao xử lý văn bản đi này |
 
-## 10. Quy trình nghiệp vụ chính
+### 3.9. Modal thêm văn bản vào hồ sơ công việc
 
-### 10.1. Soạn và trình một văn bản đi mới
+![Modal Thêm vào HSCV](screenshots/van_ban_di_09_modal_hscv.png)
 
-1. Trên màn Danh sách, bấm **Thêm mới**.
-2. Chọn **Sổ văn bản** — số đi sẽ tự đề xuất.
-3. Nhập **Trích yếu nội dung** (bắt buộc).
-4. Điền các thông tin còn lại — đơn vị soạn, người soạn, người ký, độ khẩn, độ mật...
-5. Tại mục **Đơn vị nhận (nội bộ)** và/hoặc **Cơ quan nhận (ngoài qua LGSP)**, chọn các nơi sẽ gửi tới.
-6. Bấm **Tạo mới** → "Tạo văn bản đi thành công".
-7. Mở Chi tiết, vào khối **Tài liệu đính kèm**, bấm **Thêm file** để tải file văn bản (PDF, Word, ảnh...).
+#### Bố cục màn hình
 
-### 10.2. Lãnh đạo duyệt / từ chối
+Modal cỡ trung bình. Tiêu đề "Thêm vào hồ sơ công việc". Phần thân là ô tìm kiếm và chọn hồ sơ công việc đã có. Dưới có hai nút Thêm vào HSCV và Hủy.
 
-1. Lãnh đạo mở văn bản ở trạng thái Chờ duyệt.
-2. Đọc trích yếu, mở file đính kèm để xem nội dung.
-3. Nếu **đồng ý**: bấm **Duyệt** → văn bản chuyển sang **Đã duyệt**.
-4. Nếu **không đồng ý**: bấm **Từ chối** ở menu ba chấm → nhập lý do (tùy chọn) → văn bản chuyển sang **Từ chối**, banner đỏ hiển thị lý do.
+#### Các nút chức năng
 
-### 10.3. Văn thư ban hành và gửi
+| Nút | Vị trí | Khi nào hiển thị | Tác dụng |
+|---|---|---|---|
+| Thêm vào HSCV | Góc phải Modal | Luôn có | Liên kết văn bản vào hồ sơ công việc đã chọn |
+| Hủy | Góc phải Modal | Luôn có | Đóng Modal |
 
-1. Sau khi văn bản **Đã duyệt**, văn thư mở chi tiết.
-2. Có 2 cách xử lý:
-   - **Tách bước**: bấm **Ban hành** → văn bản được cấp số + chuyển sang Đã ban hành. Sau đó bấm **Gửi** để đẩy đi.
-   - **Gộp 1 bước**: bấm **Ban hành & Gửi** → hệ thống thực hiện tuần tự cả 2 thao tác.
-3. Nếu chưa có nơi nhận, hệ thống mở **Modal "Gửi nội bộ — chọn đơn vị nhận"** liệt kê toàn bộ đơn vị (loại trừ đơn vị đang phát hành). Tích chọn các đơn vị nhận → bấm **Gửi (N đơn vị)** → hệ thống lưu nơi nhận + sinh "Văn bản đến" cho từng đơn vị + đẩy LGSP cho cơ quan ngoài (nếu có).
-4. Sau khi gửi, kiểm tra khối **Đơn vị / Cơ quan nhận** để xem trạng thái thực gửi của từng nơi.
+#### Các trường dữ liệu
 
-### 10.4. Thu hồi văn bản đã gửi
+| Tên trường | Bắt buộc | Mô tả & ràng buộc |
+|---|---|---|
+| Hồ sơ công việc | Có | Hiển thị "Tên (Mới / Đang xử lý / Trình duyệt)" |
 
-1. Khi phát hiện sai sót sau khi đã gửi, bấm **Menu ba chấm → Thu hồi**.
-2. Xác nhận trong hộp thoại "Thu hồi sẽ xóa tất cả người nhận và đặt lại trạng thái chưa duyệt".
-3. Sau thu hồi: toàn bộ người nhận bị xóa, văn bản về **Chưa duyệt**, có thể sửa lại và phát hành lần nữa.
+#### Thông báo của hệ thống
 
-### 10.5. Giao việc / Thêm vào hồ sơ công việc
-
-- **Giao việc**: bấm **Giao việc** → tạo Hồ sơ công việc mới với người phụ trách + hạn xử lý → văn bản đi được gắn vào HSCV mới đó.
-- **Thêm vào HSCV**: bấm **Thêm vào HSCV** → chọn HSCV đã tồn tại từ Modal → văn bản được liên kết vào HSCV đã chọn.
-
-### 10.6. Ký số file đính kèm
-
-1. Mở Chi tiết, đến khối **Tài liệu đính kèm**.
-2. Bên cạnh mỗi file, nút **Ký số** (xanh dương) sẽ hiện nếu file chưa ký.
-3. Bấm Ký số → mở Modal ký theo luồng `useSigning` (kèm chữ ký, lý do mặc định "Phê duyệt VB đi số N/Ký hiệu", địa điểm là tên đơn vị soạn).
-4. Sau khi ký xong, file có thẻ **Đã ký số** (xanh lá).
-
----
-
-## 11. Sơ đồ vòng đời văn bản đi
-
-```
-                 ┌──────────────┐
-                 │ Cán bộ soạn  │
-                 │ (Thêm mới)   │
-                 └──────┬───────┘
-                        │ tạo
-                        ▼
-                  ┌───────────┐
-                  │ Chờ duyệt │◄───────────┐
-                  └─────┬─────┘            │
-                        │                  │ Hủy duyệt
-        ┌───────────────┼──────────┐       │ (chưa gửi)
-        │ Duyệt         │          │       │
-        ▼               │          ▼       │
-  ┌───────────┐         │     ┌─────────┐  │
-  │ Đã duyệt  │         │     │ Từ chối │  │
-  └─────┬─────┘         │     └─────────┘  │
-        │ Ban hành      │                  │
-        ▼               │                  │
-  ┌──────────────┐      │                  │
-  │ Đã ban hành  │──────┘                  │
-  │ (cấp số)     │                         │
-  └──────┬───────┘                         │
-         │ Gửi                             │
-         ▼                                 │
-  ┌───────────┐         Thu hồi            │
-  │  Đã gửi   │─────────────────────────────┘
-  │ (sent)    │   (xóa người nhận, reset duyệt)
-  └───────────┘
-```
-
-Các nhánh phụ:
-- **Từ chối** có thể chuyển ngược về **Chờ duyệt** (cán bộ sửa nội dung và trình lại — văn bản bị từ chối đặt cờ `approved = FALSE`).
-- **Đã duyệt** có thể bị **Hủy duyệt** đưa về Chờ duyệt — chỉ khi chưa gửi.
-- **Ban hành** và **Gửi** có thể được gộp chung qua nút **Ban hành & Gửi** ở 1 click.
-
----
-
-## 12. Lưu ý / Ràng buộc nghiệp vụ
-
-### 12.1. Quy tắc cấp số
-
-- Số đi đề xuất tự động bằng số lớn nhất hiện có trong sổ + 1 — tính theo đơn vị (`unit_id`) và sổ (`doc_book_id`) trong năm hiện tại.
-- Có thể nhập số thủ công, nhưng nếu trùng số đã tồn tại trong cùng sổ + năm, hệ thống báo lỗi khi tạo / sửa.
-- **Khi ban hành**: nếu văn bản chưa có số (`number IS NULL`), hệ thống sẽ tự cấp số kế tiếp dựa trên các văn bản đã ban hành (`is_released = TRUE`) trong cùng sổ.
-
-### 12.2. Trạng thái và quyền
-
-- Chỉ **người soạn (drafting_user_id)** hoặc **người tạo bản ghi (created_by)** được coi là chủ sở hữu của văn bản.
-- Quyền **Sửa** chỉ dành cho chủ sở hữu (hoặc admin / cùng đơn vị có quyền cao hơn).
-- Quyền **Duyệt / Từ chối / Hủy duyệt** dành cho lãnh đạo có quyền duyệt văn bản đi của đơn vị tương ứng.
-- Quyền **Ban hành** và **Gửi** thường dành cho văn thư đơn vị.
-- Quyền **Thu hồi** dành cho người có quyền gửi và áp dụng cho văn bản đã gửi.
-
-### 12.3. Không sửa được khi đã duyệt
-
-Văn bản đã duyệt KHÔNG cho phép sửa nội dung — phải **Hủy duyệt** trước (nếu chưa gửi). Hệ thống báo:
-
-> *"Không thể sửa văn bản đã được duyệt"*
-
-Tương tự, không xóa được văn bản đã duyệt:
-
-> *"Không thể xóa văn bản đã được duyệt"*
-
-### 12.4. Không hủy duyệt được khi đã gửi
-
-Sau khi văn bản đã được gửi cho cán bộ (có ít nhất 1 dòng `user_outgoing_docs`), không cho hủy duyệt nữa — phải dùng chức năng **Thu hồi** thay thế:
-
-> *"Không thể hủy duyệt: văn bản đã được gửi cho cán bộ"*
-
-### 12.5. Phải duyệt trước khi gửi
-
-Cố gắng gửi văn bản chưa duyệt sẽ bị từ chối:
-
-> *"Văn bản chưa được duyệt, không thể gửi"*
-
-Cố gắng gửi văn bản đã duyệt nhưng chưa ban hành cũng bị từ chối:
-
-> *"Văn bản chưa ban hành, không thể gửi"*
-
-### 12.6. Phải có nơi nhận
-
-Khi bấm **Gửi** mà chưa có dòng nào trong `outgoing_doc_recipients`:
-
-> *"Chưa có nơi nhận"*
-
-Frontend bắt sẵn tình huống này và mở Modal cho người dùng chọn đơn vị nhận thay vì hiển thị lỗi.
-
-### 12.7. Liên thông LGSP
-
-- Hệ thống không gửi LGSP đồng bộ — chỉ tạo bản ghi `lgsp_tracking` ở trạng thái `pending`, sau đó worker nền sẽ đẩy lên trục LGSP và cập nhật trạng thái thành `success` / `error`.
-- Trạng thái LGSP thực tế hiển thị ngay trong khối "Đơn vị / Cơ quan nhận" ở cột phải — không cần mở màn riêng.
-- Mỗi cơ quan ngoài tỉnh trong danh mục **Cơ quan liên thông** đều có mã (`code`) — dùng làm `dest_org_code` khi đẩy LGSP.
-
-### 12.8. File đính kèm
-
-- Chỉ tải lên / xóa được khi văn bản **chưa duyệt**.
-- Sau khi văn bản đã duyệt, file đính kèm là cố định — chỉ còn xem, tải xuống và ký số.
-- File ký số là file PDF — sau khi ký, có thẻ **Đã ký số** màu xanh.
-- Tải xuống file qua proxy backend (`/dinh-kem/<id>/download`) — không trả presigned URL ra ngoài để bảo mật.
-
-### 12.9. Số phụ và mã văn bản
-
-- **Số phụ** chỉ là chuỗi định danh phụ (a, b, c) — dùng khi cần phân biệt nhiều văn bản cùng số đi gốc.
-- **Mã văn bản** là mã định danh nội bộ của tổ chức (nếu có quy định riêng) — không trùng với "Số ký hiệu".
-
-
----
-
-*Tài liệu được biên soạn dựa trên hệ thống thực tế đang triển khai. Mọi thắc mắc vui lòng liên hệ với đội phát triển để được hỗ trợ.*
+| Tình huống | Thông báo |
+|---|---|
+| Chưa chọn HSCV | Vui lòng chọn HSCV |
+| Thêm thành công | Đã thêm vào HSCV |
+| Không có quyền | Không có quyền thêm vào hồ sơ công việc |

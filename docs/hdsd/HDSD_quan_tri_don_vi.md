@@ -1,207 +1,184 @@
-# Hướng dẫn sử dụng: Màn hình Quản trị > Đơn vị
+# Quản trị đơn vị
 
-Tài liệu này mô tả đầy đủ các chức năng có trong màn hình **Quản trị > Đơn vị** của hệ thống Quản lý văn bản điện tử (e-Office), giúp người dùng hiểu rõ cách sử dụng và quy trình nghiệp vụ.
+## Giới thiệu
 
----
+Module Quản trị đơn vị giúp quản trị viên thiết lập và duy trì cơ cấu tổ chức của hệ thống, gồm các đơn vị cấp cao (sở, ban, ngành) và phòng ban trực thuộc. Đây là dữ liệu nền tảng cho toàn bộ luồng nghiệp vụ — văn bản đến, văn bản đi, hồ sơ công việc, phân quyền và lịch họp đều dựa trên cây đơn vị này.
 
-## 1. Giới thiệu
+Truy cập: menu **Quản trị → Đơn vị**.
 
-Màn hình **Quản trị > Đơn vị** dùng để quản lý cơ cấu tổ chức của cơ quan, bao gồm các **đơn vị** (cấp lớn — ví dụ: Sở, Ban, Ngành) và các **phòng ban** trực thuộc. Đây là dữ liệu nền tảng của toàn bộ hệ thống e-Office: dùng để phân quyền cho cán bộ, gán đơn vị làm việc, định tuyến gửi/nhận văn bản, lập sổ văn bản và phân công xử lý hồ sơ công việc.
+Đối tượng sử dụng: quản trị viên hệ thống, văn thư cấp đơn vị có quyền quản lý cơ cấu.
 
-Vì là dữ liệu gốc nên màn hình này **chỉ dành cho tài khoản Quản trị hệ thống**. Người dùng thông thường không truy cập được vào đây.
+## Quy trình thao tác và ràng buộc nghiệp vụ
 
-Một thay đổi nhỏ trên màn hình này (ví dụ: khóa một đơn vị, đổi tên một phòng ban) sẽ ảnh hưởng đến nhiều màn hình khác, do đó cần thao tác cẩn thận và đúng quy trình.
+Quy trình chuẩn khi xây dựng cơ cấu tổ chức:
 
----
+1. Tạo đơn vị cấp cao nhất (cấp đơn vị) trước, ví dụ: Sở Nội vụ, Sở Tài chính.
+2. Trong từng đơn vị, thêm các phòng ban trực thuộc (cấp phòng ban).
+3. Có thể tạo nhiều cấp lồng nhau (đơn vị → phòng → tổ) bằng cách chọn đơn vị cha tương ứng.
+4. Đánh dấu **Cho phép sổ văn bản** với các đơn vị/phòng ban được phép tự cấu hình sổ văn bản đến, đi.
+5. Khi đơn vị tạm dừng hoạt động, dùng **Khóa** để vô hiệu hóa thay vì xóa (giữ lịch sử văn bản).
 
-## 2. Bố cục màn hình
+Ràng buộc nghiệp vụ:
 
-![Màn hình danh sách Đơn vị](screenshots/quan_tri_don_vi_01_main.png)
+- **Mã đơn vị** phải duy nhất trong toàn hệ thống (không phân biệt chữ hoa/thường).
+- **Tên đơn vị** là trường bắt buộc.
+- Không thể xóa đơn vị nếu còn phòng ban con trực thuộc — phải xóa hoặc di chuyển các phòng ban con trước.
+- Không thể xóa đơn vị nếu còn nhân viên đang thuộc về đơn vị/phòng ban đó — phải chuyển nhân viên sang đơn vị khác hoặc xóa nhân viên trước.
+- **Cấp** (Đơn vị / Phòng ban) phân biệt mục đích sử dụng: Đơn vị là cấp gán sổ văn bản và phân vùng dữ liệu, Phòng ban là cấp dùng để gán nhân viên xử lý.
+- Khi đơn vị bị **Khóa**, các tài khoản trong đơn vị vẫn có thể đăng nhập nhưng đơn vị không xuất hiện trong các Select chọn đơn vị mới.
 
-Màn hình được chia thành 2 cột chính cùng phần đầu trang:
+## Các màn hình chức năng
 
-- **Phần đầu trang**: Hiển thị tiêu đề "Quản lý đơn vị" và dòng mô tả ngắn "Quản lý cơ cấu tổ chức, đơn vị và phòng ban".
-- **Cột trái — Cơ cấu tổ chức (cây phân cấp)**:
-  - Ô tìm kiếm nhanh ở phía trên cây.
-  - Cây phân cấp đơn vị / phòng ban (mặc định mở rộng tất cả các nhánh).
-  - Nút **Tải lại** (biểu tượng mũi tên xoay tròn) ở góc trên bên phải để tải lại cây sau khi có thay đổi.
-  - Bấm vào một nhánh trên cây sẽ lọc bảng bên phải chỉ hiển thị các phòng ban trực thuộc nhánh đó.
-- **Cột phải — Danh sách đơn vị**:
-  - Bảng dữ liệu hiển thị các đơn vị / phòng ban tương ứng với nhánh đã chọn (mặc định hiển thị toàn bộ).
-  - Nút **Thêm đơn vị** (biểu tượng dấu cộng, màu xanh) ở góc trên bên phải bảng để mở cửa sổ thêm mới.
-  - Mỗi dòng có nút thao tác hình **ba chấm dọc** ở cột cuối cùng, chứa các lệnh: Sửa thông tin, Khóa / Mở khóa, Xóa.
-- **Cửa sổ phụ (Drawer / Modal)**:
-  - **Drawer Thêm đơn vị / Cập nhật đơn vị** — mở ra từ bên phải khi bấm nút Thêm hoặc Sửa.
-  - **Hộp xác nhận xóa** — mở khi bấm Xóa, yêu cầu xác nhận trước khi thực hiện.
+### Màn hình danh sách đơn vị
 
----
+![Danh sách đơn vị](screenshots/quan_tri_don_vi_01_danh_sach.png)
 
-## 3. Các cột trong Bảng danh sách đơn vị
+#### Bố cục màn hình
 
-| Tên cột | Mô tả |
-|---|---|
-| **Mã** | Mã của đơn vị / phòng ban — hiển thị in đậm, màu xanh navy. Dùng để tham chiếu nội bộ. |
-| **Tên** | Tên đầy đủ của đơn vị / phòng ban. Nếu tên dài sẽ tự động cắt bớt và hiện tooltip khi rê chuột. |
-| **Cấp** | Phân loại: **Đơn vị** (nhãn xanh teal) hoặc **Phòng ban** (nhãn xanh navy). Thông tin này quyết định cách phân cấp tổ chức. |
-| **Số NV** | Số lượng nhân viên hiện đang thuộc đơn vị / phòng ban đó. |
-| **Trạng thái** | **Hoạt động** (nhãn xanh lá) hoặc **Đã khóa** (nhãn đỏ). Đơn vị bị khóa sẽ không cho phép thao tác nghiệp vụ liên quan. |
-| (cột thao tác) | Nút ba chấm dọc, mở menu các lệnh: Sửa thông tin, Khóa / Mở khóa, Xóa. |
+Màn hình chia thành hai phần:
 
----
+- **Bên trái** — Cây cơ cấu tổ chức: hiển thị toàn bộ cây đơn vị/phòng ban dưới dạng phân cấp. Có ô tìm kiếm theo tên và nút Tải lại.
+- **Bên phải** — Bảng danh sách đơn vị: hiển thị các đơn vị/phòng ban thuộc nút đang chọn ở cây trái. Khi chưa chọn nút nào, bảng hiển thị toàn bộ.
 
-## 4. Các trường nhập liệu trong cửa sổ Thêm / Cập nhật đơn vị
+Trên cùng là tiêu đề trang **Quản lý đơn vị** kèm dòng mô tả ngắn.
 
-![Cửa sổ Thêm đơn vị](screenshots/quan_tri_don_vi_02_add_drawer.png)
-
-Khi bấm **Thêm đơn vị** hoặc **Sửa thông tin**, hệ thống mở cửa sổ phía bên phải màn hình với các trường sau:
-
-| Tên trường | Bắt buộc | Mô tả & ràng buộc |
-|---|---|---|
-| **Đơn vị cha** | Không | Chọn đơn vị cấp trên trực tiếp. Nếu để trống, đơn vị này sẽ là đơn vị gốc (cấp cao nhất). Ô chọn dạng cây phân cấp, có nút xóa để bỏ chọn. Khi đang chọn một nhánh trên cây bên trái rồi mới bấm Thêm, ô này sẽ được điền sẵn nhánh đang chọn. |
-| **Mã** | Có | Mã ngắn dùng để tham chiếu (ví dụ: `PB01`, `STC`). Tối đa 50 ký tự. **Mã phải duy nhất trong toàn hệ thống** — nếu trùng, hệ thống sẽ báo lỗi "Mã đơn vị đã tồn tại". |
-| **Tên** | Có | Tên đầy đủ của đơn vị / phòng ban. Tối đa 200 ký tự. Nếu để trống hệ thống báo lỗi "Tên đơn vị là bắt buộc". |
-| **Tên tiếng Anh** | Không | Tên tiếng Anh tương ứng (dùng khi cần xuất báo cáo song ngữ). Tối đa 200 ký tự. |
-| **Tên viết tắt** | Không | Tên viết tắt ngắn gọn (ví dụ: `CNTT`, `TC-KH`). Tối đa 50 ký tự. |
-| **Cấp** | Có | Chọn một trong hai: **Đơn vị** (cấp tổ chức lớn — Sở, Ban, Ngành) hoặc **Phòng ban** (cấp trực thuộc đơn vị). Mặc định là **Phòng ban**. |
-| **Thứ tự** | Không | Số nguyên không âm, dùng để sắp xếp thứ tự hiển thị trong cây và trong bảng. Số nhỏ hiển thị trước. Mặc định là 0. |
-| **SDT** | Không | Số điện thoại liên hệ. Tối đa 20 ký tự. Chỉ chấp nhận chữ số, dấu cộng `+`, dấu trừ `-`, khoảng trắng, dấu ngoặc tròn `(`, `)`. Nếu sai định dạng hệ thống báo "Số điện thoại không hợp lệ". |
-| **Fax** | Không | Số fax liên hệ. Tối đa 20 ký tự. Quy tắc định dạng giống SDT. Nếu sai báo "Số fax không hợp lệ". |
-| **Email** | Không | Email liên hệ chung của đơn vị. Tối đa 100 ký tự. Phải đúng định dạng email (có ký tự `@` và phần đuôi tên miền). Nếu sai báo "Email không hợp lệ". |
-| **Địa chỉ** | Không | Địa chỉ trụ sở của đơn vị. Tối đa 500 ký tự. |
-| **Cho phép sổ VB** | Không | Công tắc bật/tắt — quy định đơn vị này có được phép có **sổ văn bản riêng** hay không (ảnh hưởng đến chức năng cấp số văn bản trong các nghiệp vụ Văn bản đến / Văn bản đi). Mặc định: tắt. |
-| **Mô tả** | Không | Mô tả thêm về chức năng, nhiệm vụ của đơn vị. Tối đa 500 ký tự, dạng vùng văn bản nhiều dòng. |
-
-> **Lưu ý**: Sau khi điền xong, bấm **Thêm mới** (khi tạo) hoặc **Cập nhật** (khi sửa) ở góc trên bên phải cửa sổ. Các thông báo sai định dạng sẽ hiển thị ngay dưới ô nhập tương ứng để người dùng dễ phát hiện và sửa.
-
----
-
-## 5. Các nút chức năng
+#### Các nút chức năng
 
 | Nút | Vị trí | Khi nào hiển thị | Tác dụng |
 |---|---|---|---|
-| **Thêm đơn vị** | Góc trên bên phải bảng danh sách | Luôn hiển thị | Mở cửa sổ Thêm mới đơn vị. Nếu đang chọn một nhánh trên cây, đơn vị mới sẽ được tạo dưới nhánh đó (đặt sẵn ở ô "Đơn vị cha"). |
-| **Tải lại** (biểu tượng mũi tên xoay tròn) | Góc trên bên phải khung "Cơ cấu tổ chức" | Luôn hiển thị | Tải lại toàn bộ cây phân cấp từ máy chủ. Dùng khi nghi ngờ dữ liệu không đồng bộ. |
-| **Ô tìm kiếm "Tìm kiếm đơn vị..."** | Phía trên cây phân cấp | Luôn hiển thị | Lọc các nhánh trên cây theo từ khóa nhập. Có nút xóa nhanh để xóa từ khóa. |
-| **Sửa thông tin** | Trong menu ba chấm trên mỗi dòng | Luôn hiển thị | Mở cửa sổ Cập nhật đơn vị với dữ liệu hiện có để chỉnh sửa. |
-| **Khóa** | Trong menu ba chấm trên mỗi dòng | Khi đơn vị đang ở trạng thái **Hoạt động** | Khóa đơn vị / phòng ban — không cho phép tham gia các luồng nghiệp vụ tới khi mở khóa lại. |
-| **Mở khóa** | Trong menu ba chấm trên mỗi dòng | Khi đơn vị đang ở trạng thái **Đã khóa** | Mở khóa đơn vị / phòng ban, đưa về trạng thái **Hoạt động**. |
-| **Xóa** | Trong menu ba chấm trên mỗi dòng (mục cuối, màu đỏ) | Luôn hiển thị | Mở hộp xác nhận, sau đó xóa đơn vị. **Chỉ xóa được khi đơn vị không còn phòng ban con và không còn nhân viên** (xem mục 7). |
-| **Thêm mới** / **Cập nhật** | Góc trên bên phải cửa sổ Thêm/Sửa | Trong cửa sổ Thêm/Sửa | Lưu dữ liệu vừa nhập. Nhãn nút thay đổi tùy theo đang Thêm mới hay Cập nhật. |
-| **Hủy** | Góc trên bên phải cửa sổ Thêm/Sửa | Trong cửa sổ Thêm/Sửa | Đóng cửa sổ, không lưu thay đổi. |
-| **Xóa** / **Hủy** trong hộp xác nhận | Trong hộp xác nhận xóa | Khi mở hộp xác nhận | **Xóa** (màu đỏ) — thực hiện xóa. **Hủy** — đóng hộp, không xóa. |
+| Tải lại | Góc phải card cây trái | Luôn hiển thị | Tải lại cây cơ cấu tổ chức từ máy chủ |
+| Thêm đơn vị | Góc phải card bảng phải | Luôn hiển thị | Mở Drawer nhập thông tin đơn vị mới |
+| Sửa thông tin | Trong menu ba chấm cuối mỗi dòng | Mọi dòng | Mở Drawer chỉnh sửa thông tin đơn vị |
+| Khóa | Trong menu ba chấm cuối mỗi dòng | Khi đơn vị đang Hoạt động | Khóa đơn vị, đổi trạng thái sang Đã khóa |
+| Mở khóa | Trong menu ba chấm cuối mỗi dòng | Khi đơn vị Đã khóa | Mở khóa, đổi trạng thái sang Hoạt động |
+| Xóa | Trong menu ba chấm cuối mỗi dòng | Mọi dòng | Mở hộp xác nhận xóa |
 
----
+#### Các cột / trường dữ liệu
 
-## 6. Quy trình thao tác chính
+| Cột | Ý nghĩa |
+|---|---|
+| Mã | Mã đơn vị, in đậm màu xanh navy |
+| Tên | Tên đầy đủ của đơn vị/phòng ban |
+| Cấp | Đơn vị (thẻ xanh teal) hoặc Phòng ban (thẻ xanh navy) |
+| Số NV | Số nhân viên đang thuộc về đơn vị/phòng ban |
+| Trạng thái | Hoạt động (xanh) hoặc Đã khóa (đỏ) |
 
-### 6.1. Thêm mới một đơn vị / phòng ban
+Khi click chọn một nút trong cây trái, bảng phải tự động lọc danh sách phòng ban con cấp 1 và cấp 2 của nút đó.
 
-1. (Tùy chọn) Trên cây bên trái, bấm chọn nhánh muốn đặt đơn vị mới vào — khi đó "Đơn vị cha" trong cửa sổ thêm sẽ được điền sẵn.
-2. Bấm nút **Thêm đơn vị** ở góc trên bên phải bảng.
-3. Trong cửa sổ Thêm đơn vị, điền:
-   - **Mã** (bắt buộc): mã ngắn không trùng đơn vị nào khác.
-   - **Tên** (bắt buộc): tên đầy đủ.
-   - **Cấp**: chọn **Đơn vị** hoặc **Phòng ban** (xem ý nghĩa ở mục 7).
-   - Các thông tin còn lại điền tùy nhu cầu.
-4. Bấm **Thêm mới**.
-5. Hệ thống thông báo **"Thêm thành công"** và đóng cửa sổ. Cây bên trái và bảng bên phải tự động cập nhật.
+#### Thông báo của hệ thống
 
-![Hộp Thêm đơn vị đã điền dữ liệu](screenshots/quan_tri_don_vi_03_add_filled.png)
+| Tình huống | Thông báo |
+|---|---|
+| Tải cây không thành công | Lỗi tải dữ liệu đơn vị |
+| Tải bảng không thành công | Lỗi tải danh sách |
+| Khóa đơn vị thành công | Đã khóa |
+| Mở khóa đơn vị thành công | Đã mở khóa |
+| Xóa thành công | Xóa thành công |
+| Xóa khi còn phòng ban con | Không thể xóa: còn N phòng ban con |
+| Xóa khi còn nhân viên | Không thể xóa: còn N nhân viên thuộc phòng ban này |
 
-### 6.2. Chỉnh sửa thông tin một đơn vị
+### Màn hình Thêm đơn vị mới
 
-1. Tìm đơn vị cần sửa trên bảng (có thể bấm chọn nhánh trên cây để thu hẹp danh sách).
-2. Trên dòng tương ứng, bấm biểu tượng **ba chấm dọc** ở cột cuối → chọn **Sửa thông tin**.
-3. Cửa sổ **Cập nhật đơn vị** mở ra với dữ liệu sẵn có. Sửa các thông tin cần thiết.
-4. Bấm **Cập nhật**.
-5. Hệ thống thông báo **"Cập nhật thành công"** và đóng cửa sổ.
+![Drawer thêm đơn vị](screenshots/quan_tri_don_vi_02_drawer_them.png)
 
-> Khi đổi **Đơn vị cha**, đơn vị này sẽ được di chuyển sang nhánh mới trên cây. Cần cân nhắc kỹ vì việc di chuyển ảnh hưởng đến phân quyền của nhân viên thuộc đơn vị đó.
+Mở khi nhấn nút **Thêm đơn vị** ở góc phải bảng. Drawer trượt từ phải vào, tiêu đề **Thêm đơn vị mới**, có nền gradient xanh navy.
 
-### 6.3. Khóa / Mở khóa đơn vị
+#### Bố cục màn hình
 
-1. Tìm đơn vị cần khóa hoặc mở khóa.
-2. Bấm biểu tượng **ba chấm dọc** ở cột cuối.
-3. Bấm **Khóa** (nếu đang Hoạt động) hoặc **Mở khóa** (nếu đang Đã khóa).
-4. Hệ thống thông báo **"Đã khóa"** hoặc **"Đã mở khóa"** tương ứng. Cột **Trạng thái** trên bảng cập nhật ngay.
+Drawer rộng 720px, bố cục dọc:
 
-> **Khi nào nên khóa?** Khi một phòng ban tạm dừng hoạt động (chia tách, sát nhập, chưa kiện toàn), khóa giúp ngăn việc gán nhân sự / gửi văn bản nhầm tới phòng ban đó, đồng thời vẫn giữ nguyên dữ liệu lịch sử.
+- Trên cùng — Trường **Đơn vị cha** chiếm toàn bộ chiều ngang.
+- Hai cột — Cặp Mã / Tên, Tên tiếng Anh / Tên viết tắt.
+- Một dòng đơn — Cấp (Đơn vị / Phòng ban) dạng Radio.
+- Ba cột — Thứ tự / SDT / Fax.
+- Hai cột — Email / Địa chỉ.
+- Một dòng đơn — Cho phép sổ văn bản (Switch).
+- Cuối — Mô tả (TextArea).
 
-### 6.4. Xóa đơn vị
+#### Các nút chức năng
 
-1. Tìm đơn vị cần xóa.
-2. Bấm biểu tượng **ba chấm dọc** ở cột cuối → chọn **Xóa** (mục cuối cùng, màu đỏ).
-3. Hộp xác nhận hiện ra với câu hỏi *"Bạn có chắc chắn muốn xóa đơn vị này?"*.
+| Nút | Vị trí | Khi nào hiển thị | Tác dụng |
+|---|---|---|---|
+| Hủy | Header drawer (góc phải trên) | Luôn hiển thị | Đóng drawer, không lưu thay đổi |
+| Thêm mới | Header drawer (góc phải trên) | Luôn hiển thị | Lưu đơn vị mới, đóng drawer khi thành công |
 
-   ![Hộp xác nhận xóa](screenshots/quan_tri_don_vi_04_delete_confirm.png)
-4. Bấm **Xóa** (màu đỏ) để xác nhận, hoặc **Hủy** để bỏ qua.
-5. Nếu xóa được, hệ thống thông báo **"Xóa thành công"**.
-6. Nếu không xóa được, hệ thống báo lỗi rõ lý do (xem mục 7).
+#### Các cột / trường dữ liệu
 
-> **Quan trọng**: Hệ thống thực hiện **xóa mềm** — dữ liệu không bị xóa hẳn khỏi cơ sở dữ liệu mà chỉ ẩn khỏi danh sách. Tuy vậy, từ góc nhìn nghiệp vụ, đơn vị đã xóa coi như không còn tồn tại.
+| Trường | Bắt buộc | Ý nghĩa |
+|---|---|---|
+| Đơn vị cha | Không | Chọn đơn vị cấp trên trong cây. Bỏ trống nếu là đơn vị gốc. Nếu trước khi mở Drawer đã chọn 1 nút trong cây trái, hệ thống tự gán đơn vị cha = nút đó |
+| Mã | Có | Tối đa 50 ký tự, ví dụ PB01. Phải duy nhất trong hệ thống |
+| Tên | Có | Tên đơn vị/phòng ban, tối đa 200 ký tự |
+| Tên tiếng Anh | Không | Tên hiển thị tiếng Anh, tối đa 200 ký tự |
+| Tên viết tắt | Không | Viết tắt dùng nội bộ, tối đa 50 ký tự |
+| Cấp | Có | Đơn vị / Phòng ban (mặc định Phòng ban). Đơn vị là cấp gán sổ văn bản |
+| Thứ tự | Không | Số dương, mặc định 0. Quyết định thứ tự hiển thị trong cây |
+| SDT | Không | Số điện thoại cố định, chỉ chấp nhận số, dấu cộng/trừ, dấu cách, ngoặc đơn |
+| Fax | Không | Tương tự SDT |
+| Email | Không | Phải đúng định dạng email nếu có nhập |
+| Địa chỉ | Không | Tối đa 500 ký tự |
+| Cho phép sổ văn bản | Không | Bật để đơn vị này được phép cấu hình sổ văn bản đến/đi |
+| Mô tả | Không | Ghi chú thêm về đơn vị, tối đa 500 ký tự |
 
-### 6.5. Tìm kiếm trên cây cơ cấu tổ chức
+#### Thông báo của hệ thống
 
-1. Trên ô **Tìm kiếm đơn vị...** ở phía trên cây bên trái, gõ một phần tên đơn vị / phòng ban (có thể không cần dấu).
-2. Cây sẽ tự động lọc, chỉ hiển thị các nhánh chứa từ khóa kèm các nhánh cha của chúng.
-3. Bấm biểu tượng **dấu nhân** trong ô tìm kiếm để xóa từ khóa và hiển thị lại toàn bộ cây.
-4. Bấm vào một nhánh trên cây để lọc bảng bên phải chỉ còn các phòng ban thuộc nhánh đó.
+| Tình huống | Thông báo |
+|---|---|
+| Bỏ trống Mã | Nhập mã |
+| Bỏ trống Tên | Nhập tên |
+| Mã đã tồn tại | Mã đơn vị đã tồn tại (hiển thị inline ở trường Mã) |
+| Email không đúng định dạng | Email không hợp lệ |
+| SDT không đúng định dạng | Số điện thoại không hợp lệ |
+| Fax không đúng định dạng | Số fax không hợp lệ |
+| Tên rỗng (gửi lên server) | Tên đơn vị là bắt buộc |
+| Lưu thành công | Thêm thành công |
 
----
+### Màn hình Cập nhật đơn vị
 
-## 7. Lưu ý / Ràng buộc nghiệp vụ
+![Drawer cập nhật đơn vị](screenshots/quan_tri_don_vi_03_drawer_sua.png)
 
-### 7.1. "Đơn vị" và "Phòng ban" — phân biệt thế nào?
+Mở khi chọn **Sửa thông tin** trong menu ba chấm. Drawer giống Drawer Thêm về bố cục và các trường, chỉ khác hai điểm:
 
-Hệ thống chia tổ chức thành 2 cấp khái niệm:
+- Tiêu đề là **Cập nhật đơn vị**.
+- Nút lưu là **Cập nhật**.
 
-- **Đơn vị**: cấp tổ chức lớn — ví dụ Sở, Ban, Ngành, Tổng công ty. Đơn vị thường là chủ thể có sổ văn bản, có lãnh đạo ký, có con dấu riêng.
-- **Phòng ban**: cấp tổ chức trực thuộc bên trong một đơn vị — ví dụ Phòng Kế hoạch, Phòng Tổ chức cán bộ, Văn phòng.
+Toàn bộ trường được tải sẵn dữ liệu hiện tại của đơn vị. Người dùng sửa các trường cần thay đổi và bấm **Cập nhật** để lưu.
 
-Phân biệt này được lưu trên trường **Cấp** của mỗi bản ghi, ảnh hưởng đến cách nhân viên được gán đơn vị làm việc và cách định tuyến văn bản trong toàn hệ thống.
+#### Thông báo của hệ thống
 
-### 7.2. Mã đơn vị phải duy nhất
+| Tình huống | Thông báo |
+|---|---|
+| Cập nhật thành công | Cập nhật thành công |
+| Mã đã tồn tại ở đơn vị khác | Mã đơn vị đã tồn tại |
 
-Trong toàn hệ thống, **mỗi mã đơn vị chỉ tồn tại một lần** (không phân biệt chữ hoa / chữ thường). Khi nhập trùng, hệ thống báo:
+Các thông báo còn lại giống Drawer Thêm.
 
-> *"Mã đơn vị đã tồn tại"*
+### Hộp xác nhận xóa đơn vị
 
-Lỗi này hiển thị ngay tại ô **Mã** trong cửa sổ nhập để người dùng dễ phát hiện.
+![Modal xác nhận xóa](screenshots/quan_tri_don_vi_04_modal_xoa.png)
 
-### 7.3. Không xóa được đơn vị còn dữ liệu liên quan
+Hiển thị khi chọn **Xóa** trong menu ba chấm cuối mỗi dòng.
 
-Hệ thống ngăn xóa nếu:
+#### Bố cục màn hình
 
-- **Còn phòng ban con trực thuộc**:
-  > *"Không thể xóa: còn N phòng ban con"*
+Modal nhỏ nằm giữa màn hình, gồm:
 
-  Cần xóa hoặc chuyển các phòng ban con đi trước.
+- Tiêu đề: **Xác nhận xóa**.
+- Nội dung: dòng văn bản hỏi xác nhận.
+- Hai nút ở chân: **Hủy** và **Xóa** (nút Xóa màu đỏ).
 
-- **Còn nhân viên thuộc đơn vị**:
-  > *"Không thể xóa: còn N nhân viên thuộc phòng ban này"*
+#### Các nút chức năng
 
-  Cần chuyển toàn bộ nhân viên sang đơn vị khác trước (thực hiện ở màn hình **Quản trị > Nhân viên**).
+| Nút | Vị trí | Khi nào hiển thị | Tác dụng |
+|---|---|---|---|
+| Hủy | Chân modal, bên trái | Luôn hiển thị | Đóng modal, không xóa |
+| Xóa | Chân modal, bên phải | Luôn hiển thị | Gọi API xóa đơn vị |
 
-Nếu không xóa được nhưng đơn vị thực sự đã ngừng hoạt động, có thể chuyển sang dùng chức năng **Khóa** (mục 6.3).
+#### Thông báo của hệ thống
 
-### 7.4. Thứ tự sắp xếp (sort_order)
-
-Số ở trường **Thứ tự** quyết định vị trí hiển thị của đơn vị trong cây và trong bảng. Số nhỏ đứng trước số lớn. Khi nhiều đơn vị cùng số thứ tự, hệ thống tiếp tục sắp xếp theo tên (theo bảng chữ cái).
-
-### 7.5. "Cho phép sổ VB" — ý nghĩa nghiệp vụ
-
-Bật công tắc này khi đơn vị có **sổ văn bản riêng** — tức là được phép cấp số văn bản đi / văn bản đến mang đầu sổ của đơn vị. Tắt khi đơn vị không phải là chủ thể quản lý sổ (ví dụ: phòng ban nội bộ chỉ dùng sổ chung của đơn vị cấp trên).
-
-Cấu hình chi tiết của các sổ văn bản được thực hiện ở màn hình **Quản trị > Sổ văn bản**, nhưng việc đơn vị có được tạo sổ hay không phụ thuộc vào công tắc này.
-
-### 7.6. Định dạng SDT, Fax, Email
-
-- **SDT** và **Fax**: chỉ chấp nhận chữ số, dấu `+`, `-`, khoảng trắng và ngoặc tròn `(`, `)`. Không chấp nhận chữ cái.
-- **Email**: phải đúng định dạng chuẩn (có `@` và phần đuôi tên miền).
-
-Sai định dạng sẽ thấy thông báo đỏ ngay dưới ô nhập.
-
-
----
-
-*Tài liệu được biên soạn dựa trên hệ thống thực tế đang triển khai. Mọi thắc mắc vui lòng liên hệ với đội phát triển để được hỗ trợ.*
+| Tình huống | Thông báo |
+|---|---|
+| Nội dung modal | Bạn có chắc chắn muốn xóa đơn vị này? |
+| Xóa thành công | Xóa thành công |
+| Còn phòng ban con | Không thể xóa: còn N phòng ban con |
+| Còn nhân viên | Không thể xóa: còn N nhân viên thuộc phòng ban này |

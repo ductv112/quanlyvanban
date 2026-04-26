@@ -1,267 +1,227 @@
-# Hướng dẫn sử dụng: Màn hình Ký số > Danh sách ký số
-
-Tài liệu này mô tả đầy đủ các chức năng có trong màn hình **Ký số > Danh sách ký số** (đường dẫn `/ky-so/danh-sach`) của hệ thống Quản lý văn bản điện tử (e-Office), giúp người dùng hiểu rõ cách sử dụng và quy trình nghiệp vụ.
-
----
+# Danh sách ký số
 
 ## 1. Giới thiệu
 
-Màn hình **Ký số > Danh sách ký số** là nơi cán bộ thực hiện thao tác **ký số điện tử** trên các tệp đính kèm dạng PDF của văn bản đi, văn bản dự thảo và hồ sơ công việc. Đây là công cụ thay thế cho việc ký giấy, sử dụng chứng thư số (CKS) và ứng dụng OTP trên thiết bị di động (VNPT SmartCA, Viettel MySign) để gắn chữ ký số hợp lệ vào tệp PDF của văn bản.
+Trang Danh sách ký số là điểm vào tập trung để cán bộ ký số các tệp PDF đính kèm trên Văn bản đi, Dự thảo và Hồ sơ công việc. Trang gom tất cả tệp đang chờ ký, các giao dịch đang chạy, đã hoàn tất hoặc thất bại theo bốn tab. Mỗi cán bộ chỉ thấy giao dịch của riêng mình.
 
-Mỗi bản ký số gồm 2 thành phần:
+Khi bấm Ký số, hệ thống mở Modal ký số: gọi API tới nhà cung cấp đang hoạt động (SmartCA VNPT hoặc MySign Viettel), tạo giao dịch ký với thời hạn 3:00 phút và yêu cầu cán bộ xác nhận OTP trên ứng dụng nhà cung cấp đã cài trên điện thoại. Khi cán bộ xác nhận xong, tệp PDF được đính kèm chữ ký số và lưu lại trên hệ thống.
 
-- **Tệp PDF gốc** (đính kèm trên văn bản đi / dự thảo / hồ sơ công việc).
-- **Giao dịch ký số** (sign transaction): bản ghi nhận yêu cầu ký số gửi sang nhà cung cấp dịch vụ chứng thực, lưu trạng thái (đang chờ OTP, đã ký, thất bại, hết hạn, đã hủy) cùng `provider_transaction_id` để tra cứu.
+Đặc biệt với MySign Viettel: file PDF đã ký dùng chứng thư từ Viettel — Adobe Reader chỉ hiển thị chữ ký hợp lệ khi máy người xem đã cài Root CA Viettel. Trang luôn hiển thị banner cung cấp tệp Root CA và hướng dẫn cài đặt.
 
-Màn hình này gom toàn bộ các tệp **cần ký** và các giao dịch **đã / đang / không thành công** của tài khoản đăng nhập hiện tại. Đây là **danh sách cá nhân** — mỗi người dùng chỉ thấy các tệp / giao dịch của chính mình; máy chủ luôn lọc theo `staffId` lấy từ phiên đăng nhập (JWT), không thể xem dữ liệu của người khác.
+## 2. Quy trình thao tác và ràng buộc nghiệp vụ
 
-> **Lưu ý nghiệp vụ**: Hệ thống **không cho phép ký số văn bản đến** — chỉ có 3 loại được ký: **Văn bản đi**, **Dự thảo**, **Hồ sơ công việc**.
+Quy trình ký số một tệp:
 
----
+1. Mở trang Danh sách ký số. Mặc định mở tab Cần ký.
+2. Tìm dòng tệp cần ký, bấm Ký số — Modal Ký số bật ra. Hệ thống tự gửi yêu cầu ký tới nhà cung cấp và bắt đầu đếm ngược 3:00 phút.
+3. Mở ứng dụng nhà cung cấp trên điện thoại (SmartCA / MySign), xác nhận yêu cầu OTP đang chờ.
+4. Khi xác nhận xong, modal đổi trạng thái sang Đã ký — tệp đã ký nằm trên Văn bản tương ứng và xuất hiện trong tab Đã ký.
+5. Nếu hết 3:00 phút mà chưa xác nhận — giao dịch chuyển sang Hết thời gian (xem trong tab Thất bại). Cán bộ có thể bấm Ký lại để tạo giao dịch mới.
+6. Cán bộ có thể đóng modal trong khi đang chờ — giao dịch tiếp tục chạy nền và Bell thông báo sẽ báo khi xong.
 
-## 2. Bố cục màn hình
+Ràng buộc nghiệp vụ:
 
-![Màn hình Danh sách ký số](screenshots/ky_so_danh_sach_01_main.png)
+- Chỉ ký được tệp PDF.
+- Văn bản đến (incoming) không được phép ký số.
+- Mỗi giao dịch ký có thời hạn 3:00 phút (180 giây). Hết hạn mà chưa OTP — giao dịch tự chuyển trạng thái Hết thời gian.
+- Cán bộ chỉ ký được tệp mà mình có quyền (lãnh đạo ký được chỉ định trên Văn bản đi / Dự thảo / HSCV và Văn bản đó đang ở đúng bước trình ký).
+- Mỗi tệp chỉ ký 1 lần. Sau khi ký, tệp gốc không sửa được nữa và sinh ra phiên bản đã ký.
+- Để bật Adobe Reader xác thực chữ ký Viettel — máy người xem phải cài Root CA Viettel.
 
-Màn hình gồm các khu vực chính sau:
+## 3. Các màn hình chức năng
 
-- **Phần đầu trang**: Tiêu đề **"Danh sách ký số"** kèm biểu tượng chứng thư an toàn (hình khiên).
-- **Khung "Cần cài Root CA Viettel"** (dải thông báo màu xanh dương ngay dưới tiêu đề): Hướng dẫn cài Root CA của Viettel để Adobe Reader hiển thị chữ ký hợp lệ. Khung này luôn hiển thị, gồm 2 nút:
-  - **Tải Root CA (.cer)** — tải tệp chứng thư gốc về máy.
-  - **Xem hướng dẫn (PDF)** — mở tài liệu hướng dẫn cài Root CA trong tab mới.
-- **Thanh phân loại (tab)**: Gồm 4 tab xếp hàng ngang, mỗi tab kèm **huy hiệu số đếm** màu phân biệt:
-  - **Cần ký** (huy hiệu cam) — số tệp đang chờ ký.
-  - **Đang xử lý** (huy hiệu xanh teal) — số giao dịch đã gửi đi, đang chờ xác nhận OTP.
-  - **Đã ký** (huy hiệu xanh lá) — số giao dịch đã hoàn tất.
-  - **Thất bại** (huy hiệu đỏ) — số giao dịch thất bại / hết hạn / đã hủy.
-- **Bảng danh sách**: Hiển thị các dòng tương ứng với tab đang chọn. Mặc định mở tab **Cần ký**.
-- **Phân trang**: Dưới chân bảng, mặc định **20 dòng / trang**, có thể đổi sang 10 / 50 / 100 dòng. Dòng tổng kết hiển thị *"Tổng N giao dịch"*.
+### 3.1. Màn hình Danh sách ký số
 
-> **Realtime cập nhật**: Khi giao dịch ký của bạn được nhà cung cấp xử lý xong (thành công hoặc thất bại), hệ thống tự đẩy thông báo qua Socket.IO và **bảng + huy hiệu số đếm sẽ tự động làm mới** mà không cần tải lại trang.
+![Màn hình danh sách ký số](screenshots/ky_so_danh_sach_01_main.png)
 
-> **Đồng bộ với địa chỉ web**: Tab đang chọn, số trang và kích thước trang đều được lưu trên thanh địa chỉ (ví dụ `?tab=completed&page=2&pageSize=20`). Có thể chia sẻ liên kết hoặc dùng nút **Quay lại / Tiến** của trình duyệt mà không mất ngữ cảnh.
+#### Bố cục màn hình
 
----
+Từ trên xuống:
 
-## 3. Các tab phân loại
+- Đầu trang: tiêu đề "Danh sách ký số".
+- Banner Root CA Viettel (luôn hiển thị) — xem 3.2.
+- Thẻ chính chứa 4 tab. Mỗi tab có Badge số lượng giao dịch tương ứng. Bên dưới mỗi tab là bảng dữ liệu phân trang.
 
-| Tab | Số đếm hiển thị | Nội dung |
+#### Các tab
+
+| Tab | Badge | Mô tả |
 |---|---|---|
-| **Cần ký** | `need_sign` | Các **tệp PDF đính kèm** thuộc văn bản đi / dự thảo / hồ sơ công việc mà bạn **có quyền ký** (signer / approver / người tạo / quản trị) nhưng **chưa ký** và **chưa có giao dịch ký nào đang chạy**. Đây là danh sách hành động — bạn cần xử lý từng dòng. |
-| **Đang xử lý** | `pending` | Các **giao dịch ký số** đã được gửi sang nhà cung cấp dịch vụ chứng thực, đang **chờ bạn xác nhận OTP** trên ứng dụng di động (VNPT SmartCA / Viettel MySign). Mỗi giao dịch có thời hạn xác nhận **3 phút**; quá hạn sẽ tự chuyển sang **Thất bại** với trạng thái *Hết thời gian*. |
-| **Đã ký** | `completed` | Các giao dịch đã hoàn tất — file PDF đã được gắn chữ ký số và lưu vào kho tệp. Tải file đã ký từ tab này. |
-| **Thất bại** | `failed` | Gộp 3 trạng thái: **failed** (nhà cung cấp từ chối / lỗi kỹ thuật), **expired** (hết 3 phút không xác nhận OTP), **cancelled** (bạn chủ động hủy). Có thể bấm **Ký lại** để mở lại modal ký. |
+| Cần ký | Cam | Tệp PDF cán bộ đang được giao trách nhiệm ký nhưng chưa tạo giao dịch. |
+| Đang xử lý | Xanh teal | Giao dịch đã tạo, đang đợi OTP hoặc đang chạy nền. |
+| Đã ký | Xanh lá | Giao dịch đã hoàn tất, có tệp đã ký. |
+| Thất bại | Đỏ | Giao dịch đã hủy, hết thời gian, hoặc bị nhà cung cấp từ chối. |
 
-Bấm vào tab nào, bảng bên dưới chỉ hiển thị các dòng thuộc loại đó. Khi chuyển tab, hệ thống **đặt lại số trang về 1** nhưng **giữ nguyên kích thước trang** đã chọn.
-
----
-
-## 4. Các cột trong bảng danh sách
-
-Cột hiển thị **khác nhau theo từng tab** vì bản chất dữ liệu khác nhau (tab **Cần ký** là tệp đính kèm, 3 tab còn lại là giao dịch ký).
-
-### 4.1. Tab "Cần ký"
-
-| Tên cột | Mô tả |
-|---|---|
-| **Mã VB** | Số ký hiệu của văn bản (ví dụ `123/QĐ-UBND`). Nếu chưa cấp số, hiển thị nhãn loại văn bản hoặc `#<id>`. |
-| **Tên file** | Tên tệp PDF đính kèm. Tooltip hiển thị đầy đủ khi rê chuột. Nếu dài sẽ tự động cắt bớt. |
-| **Loại VB** | Nhãn xám phân biệt: **Văn bản đi**, **Dự thảo**, **Hồ sơ công việc**. |
-| **Ngày tạo** | Ngày giờ tệp đính kèm được tạo, định dạng `DD/MM/YYYY HH:mm`. |
-| (cột thao tác) | Nút **Ký số** màu xanh navy (xem mục 6). |
-
-### 4.2. Tab "Đang xử lý"
-
-| Tên cột | Mô tả |
-|---|---|
-| **Mã VB** | Nhãn văn bản (`doc_label`) hoặc `#<doc_id>`. |
-| **Tên file** | Tên tệp PDF đang được ký. |
-| **Nhà cung cấp** | Nhãn xanh dương: **VNPT SmartCA** hoặc **Viettel MySign** — nhà cung cấp dịch vụ chứng thực đang xử lý giao dịch. |
-| **Bắt đầu lúc** | Thời điểm bạn gửi yêu cầu ký, định dạng `DD/MM/YYYY HH:mm`. |
-| (cột thao tác) | Nút **Hủy** (màu đỏ) — chỉ hiển thị cho giao dịch của chính bạn (xem mục 6.2). |
-
-### 4.3. Tab "Đã ký"
-
-| Tên cột | Mô tả |
-|---|---|
-| **Mã VB** | Nhãn văn bản hoặc `#<doc_id>`. |
-| **Tên file** | Tên tệp PDF đã ký. |
-| **Nhà cung cấp** | Nhãn xanh lá: nhà cung cấp đã thực hiện ký (VNPT / Viettel). |
-| **Ngày ký** | Thời điểm hoàn tất (`completed_at`), định dạng `DD/MM/YYYY HH:mm`. |
-| (cột thao tác) | Nút **Tải file đã ký** (biểu tượng mũi tên xuống) — xem mục 6.3. |
-
-### 4.4. Tab "Thất bại"
-
-| Tên cột | Mô tả |
-|---|---|
-| **Mã VB** | Nhãn văn bản hoặc `#<doc_id>`. |
-| **Tên file** | Tên tệp PDF của giao dịch thất bại. |
-| **Lý do lỗi** | Thông điệp lỗi chi tiết (`error_message`). Nếu để trống, hệ thống hiển thị nhãn dự phòng theo trạng thái: **Hết thời gian**, **Đã hủy**, **Thất bại**. Nếu dài quá 80 ký tự sẽ cắt bớt và hiện đầy đủ khi rê chuột. |
-| **Thất bại lúc** | Thời điểm `completed_at`; nếu trống dùng `created_at`. |
-| (cột thao tác) | Nút **Ký lại** màu xanh navy (xem mục 6.4). |
-
-> **Lưu ý**: Trên màn hình này hiện **chưa có ô tìm kiếm tự do và chưa có bộ lọc nâng cao**. Để thu hẹp danh sách, sử dụng các tab phân loại và phân trang.
-
----
-
-## 5. Các nút chức năng
+#### Các nút chức năng
 
 | Nút | Vị trí | Khi nào hiển thị | Tác dụng |
 |---|---|---|---|
-| **Tải Root CA (.cer)** | Khung Root CA dưới tiêu đề | Luôn hiển thị | Tải tệp chứng thư gốc Viettel về máy (`viettel-ca-new.cer`). Cài 1 lần duy nhất vào kho chứng thư của Windows / Adobe Reader để chữ ký hiển thị **hợp lệ**. |
-| **Xem hướng dẫn (PDF)** | Khung Root CA dưới tiêu đề | Luôn hiển thị | Mở tài liệu hướng dẫn cài Root CA dạng PDF (`huong-dan-cai-root-ca.pdf`) trong tab mới. |
-| **Tab "Cần ký" / "Đang xử lý" / "Đã ký" / "Thất bại"** | Thanh phân loại | Luôn hiển thị | Chuyển bảng sang loại dữ liệu tương ứng. Mỗi tab kèm số đếm cập nhật theo thời gian thực. |
-| **Ký số** (biểu tượng khiên, nền xanh navy) | Cột thao tác — tab **Cần ký** | Mỗi dòng | Mở **cửa sổ Ký số điện tử** để bắt đầu giao dịch ký với nhà cung cấp. **Bị vô hiệu hóa khi đang có 1 cửa sổ ký mở** (chống bấm 2 lần tạo 2 giao dịch). |
-| **Hủy** (màu đỏ) | Cột thao tác — tab **Đang xử lý** | Mỗi dòng có giao dịch trạng thái `pending` của chính bạn | Mở hộp xác nhận, sau đó hủy giao dịch. Chỉ hủy được giao dịch **chưa hoàn tất** và **của chính mình**. |
-| **Tải file đã ký** (biểu tượng mũi tên xuống) | Cột thao tác — tab **Đã ký** | Mỗi dòng | Tải tệp PDF đã ký về máy. Tệp được phân phát qua máy chủ proxy (không tiết lộ địa chỉ kho lưu trữ nội bộ). Tên tệp tự động thêm tiền tố `signed_`. |
-| **Ký lại** (biểu tượng làm mới) | Cột thao tác — tab **Thất bại** | Mỗi dòng | Mở lại **cửa sổ Ký số điện tử** với cùng tệp đính kèm để tạo giao dịch mới. **Bị vô hiệu hóa khi đang có 1 cửa sổ ký mở**. |
-| **Hủy ký số** (trong cửa sổ ký) | Footer cửa sổ ký | Khi giao dịch đang ở trạng thái `pending` | Hủy giao dịch hiện tại — sau khi xác nhận, trạng thái chuyển sang **Đã hủy**. |
-| **Đóng (chạy nền)** (trong cửa sổ ký) | Footer cửa sổ ký | Khi giao dịch đang ở trạng thái `pending` | Đóng cửa sổ — giao dịch tiếp tục chạy nền, hệ thống sẽ thông báo qua **chuông thông báo** khi hoàn tất. |
-| **Đóng** (trong cửa sổ ký) | Footer cửa sổ ký | Khi giao dịch ở trạng thái cuối (đã ký / thất bại / hết hạn / đã hủy) | Đóng cửa sổ. |
+| Ký số | Cột Thao tác — tab Cần ký | Luôn hiển thị; vô hiệu khi đang mở Modal ký | Mở Modal ký số. |
+| Hủy | Cột Thao tác — tab Đang xử lý | Luôn hiển thị | Mở Modal xác nhận hủy giao dịch. |
+| Tải file đã ký | Cột Thao tác — tab Đã ký | Luôn hiển thị | Tải tệp PDF đã ký từ máy chủ. |
+| Ký lại | Cột Thao tác — tab Thất bại | Luôn hiển thị; vô hiệu khi đang mở Modal ký | Mở Modal ký số để tạo giao dịch mới. |
 
----
+#### Các cột / trường dữ liệu theo tab
 
-## 6. Quy trình thao tác chính
+Tab Cần ký:
 
-### 6.1. Ký số một tệp đính kèm
+| Cột | Mô tả |
+|---|---|
+| Mã VB | Mã hiệu hoặc số văn bản gắn tệp. |
+| Tên file | Tên tệp PDF cần ký (cắt ngắn, có tooltip). |
+| Loại VB | Văn bản đi, Dự thảo, hoặc Hồ sơ công việc. |
+| Ngày tạo | Thời điểm tạo tệp (DD/MM/YYYY HH:mm). |
 
-> **Điều kiện trước khi ký** (kiểm tra ở mục 7.1, 7.2): (1) Quản trị viên đã cấu hình nhà cung cấp ký số ở trạng thái hoạt động; (2) Bạn đã cấu hình **Tài khoản ký số cá nhân** ở trang `/ky-so/tai-khoan` và đã **xác thực** thành công; (3) Tệp đính kèm đúng định dạng PDF.
+Tab Đang xử lý:
 
-1. Vào menu **Ký số > Danh sách ký số**, bấm tab **Cần ký**.
-2. Tìm dòng tương ứng với tệp cần ký.
-3. Bấm nút **Ký số** ở cột thao tác.
-4. Cửa sổ **Ký số điện tử** mở ra (xem ảnh dưới), hiển thị:
-   - **File**: tên tệp đang ký.
-   - **Nhà cung cấp**: nhãn xanh — **SmartCA VNPT** hoặc **MySign Viettel** — tùy cấu hình hệ thống.
-   - **Trạng thái**: ban đầu *"Đang khởi tạo giao dịch..."*.
+| Cột | Mô tả |
+|---|---|
+| Mã VB | Mã hiệu văn bản. |
+| Tên file | Tên tệp PDF đang ký. |
+| Nhà cung cấp | Tag xanh — VNPT SmartCA hoặc Viettel MySign. |
+| Bắt đầu lúc | Thời điểm tạo giao dịch ký (DD/MM/YYYY HH:mm). |
 
-   ![Cửa sổ Ký số điện tử — đang chờ OTP](screenshots/ky_so_danh_sach_02_sign_modal_pending.png)
+Tab Đã ký:
 
-5. Sau khoảng 0,5–1 giây, trạng thái chuyển sang **Đang chờ xác nhận OTP** kèm:
-   - **Đồng hồ đếm ngược 3:00** dạng vòng tròn ở giữa cửa sổ (xanh navy → vàng khi còn 30–60s → đỏ khi còn dưới 30s).
-   - Khung thông báo *"Chờ xác nhận OTP trên thiết bị di động"*.
-6. Mở ứng dụng **VNPT SmartCA** hoặc **Viettel MySign** trên điện thoại của bạn, vào mục thông báo / yêu cầu ký, **xác nhận OTP**.
-7. Khi nhà cung cấp ký xong, cửa sổ tự động chuyển sang trạng thái **Đã ký** (màu xanh lá), kèm thông báo *"Ký số thành công"*. File đã ký được lưu tự động vào kho tệp.
-8. Bấm **Đóng** để thoát. Tab **Cần ký** tự giảm số đếm, tab **Đã ký** tăng tương ứng.
+| Cột | Mô tả |
+|---|---|
+| Mã VB | Mã hiệu văn bản. |
+| Tên file | Tên tệp PDF gốc. |
+| Nhà cung cấp | Tag xanh lá — nhà cung cấp đã ký. |
+| Ngày ký | Thời điểm hoàn tất (DD/MM/YYYY HH:mm). |
 
-> **Mẹo**: Có thể bấm **Đóng (chạy nền)** ngay khi đang chờ OTP — giao dịch không bị hủy mà tiếp tục chạy. Khi hoàn tất, hệ thống đẩy thông báo qua **chuông thông báo** ở góc trên màn hình; hoặc bạn quay lại tab **Đã ký** sẽ thấy giao dịch xuất hiện.
+Tab Thất bại:
 
-### 6.2. Hủy một giao dịch đang xử lý
+| Cột | Mô tả |
+|---|---|
+| Mã VB | Mã hiệu văn bản. |
+| Tên file | Tên tệp PDF. |
+| Lý do lỗi | Mô tả lỗi do nhà cung cấp trả về hoặc nhãn Hết thời gian / Đã hủy / Thất bại. |
+| Thất bại lúc | Thời điểm kết thúc giao dịch (DD/MM/YYYY HH:mm). |
 
-1. Vào tab **Đang xử lý**.
-2. Tìm dòng giao dịch cần hủy.
-3. Bấm nút **Hủy** (màu đỏ) ở cột thao tác.
-4. Hộp xác nhận hiện ra với câu hỏi *"Bạn có chắc muốn hủy giao dịch ký cho file ..."*.
-5. Bấm **Hủy giao dịch** (màu đỏ) để xác nhận, hoặc **Đóng** để bỏ qua.
-6. Hệ thống thông báo **"Đã hủy giao dịch ký số"**. Giao dịch chuyển từ tab **Đang xử lý** sang tab **Thất bại** với trạng thái *Đã hủy*.
+#### Phân trang và URL
 
-> **Lưu ý**: Chỉ hủy được giao dịch **của chính mình** và **đang ở trạng thái `pending`**. Hệ thống đối chiếu `staff_id` của giao dịch với tài khoản đang đăng nhập — nếu khác sẽ trả lỗi *"Bạn không có quyền hủy giao dịch này"*.
+Phân trang đặt ở chân bảng — chuyển trang, đổi số dòng/trang (10/20/50/100), hiển thị "Tổng N giao dịch". Khi đổi tab/trang/cỡ trang, đường dẫn URL được cập nhật theo tham số `?tab=...&page=...&pageSize=...`. Tải lại trang giữ nguyên trạng thái hiển thị.
 
-### 6.3. Tải file đã ký
+Hệ thống có realtime: khi giao dịch hoàn tất ở phía nhà cung cấp, danh sách tự cập nhật mà không cần làm mới thủ công.
 
-1. Vào tab **Đã ký**.
-2. Tìm dòng giao dịch tương ứng.
-3. Bấm nút **Tải file đã ký** (biểu tượng mũi tên xuống) ở cột thao tác.
-4. Trình duyệt tải tệp PDF đã ký về máy với tên dạng `signed_<tên_file_gốc>.pdf`.
+#### Thông báo của hệ thống
 
-> **Lưu ý**: Tệp được phát qua máy chủ proxy (không phải qua liên kết tạm thời `presigned URL`). Hệ thống đặt `Cache-Control: no-store` để chống lưu cache trình duyệt — mỗi lần tải đều xác thực lại quyền sở hữu.
+| Tình huống | Thông báo |
+|---|---|
+| Tải danh sách thất bại | Không tải được danh sách |
+| Tab Cần ký trống | Bạn không có văn bản nào đang chờ ký |
+| Tab Đang xử lý trống | Không có giao dịch nào đang xử lý |
+| Tab Đã ký trống | Bạn chưa có giao dịch ký số hoàn tất |
+| Tab Thất bại trống | Không có giao dịch thất bại / hết hạn / đã hủy |
+| Tải file đã ký 403 | Bạn không có quyền tải file này |
+| Tải file đã ký 404 | File đã ký chưa sẵn sàng hoặc giao dịch không tồn tại |
+| Tải file đã ký lỗi khác | Không tải được file đã ký |
 
-### 6.4. Ký lại một giao dịch thất bại
+### 3.2. Banner cài Root CA Viettel
 
-1. Vào tab **Thất bại**.
-2. Tìm dòng giao dịch thất bại / hết hạn / đã hủy.
-3. (Khuyến nghị) Rê chuột vào cột **Lý do lỗi** để xem nguyên nhân đầy đủ.
-4. Bấm nút **Ký lại** ở cột thao tác → mở lại **cửa sổ Ký số điện tử** với cùng tệp PDF.
-5. Thực hiện tiếp các bước 5 → 8 ở mục 6.1.
+![Banner Root CA](screenshots/ky_so_danh_sach_01_main.png)
 
-> **Lưu ý**: Nút **Ký lại** tạo **giao dịch mới hoàn toàn** (transaction_id mới); giao dịch thất bại cũ vẫn lưu lại trong tab **Thất bại** để phục vụ kiểm tra / đối chiếu.
+#### Bố cục màn hình
 
----
+Banner xanh dương đặt ngay dưới tiêu đề trang. Tiêu đề: "Cần cài Root CA Viettel để Adobe Reader hiển thị chữ ký hợp lệ". Mô tả: nếu Adobe Reader báo chữ ký không xác thực khi mở tệp đã ký bằng MySign Viettel — cán bộ cài Root CA Viettel theo hướng dẫn. Hai nút thao tác phía dưới mô tả.
 
-## 7. Lưu ý / Ràng buộc nghiệp vụ
+#### Các nút chức năng
 
-### 7.1. Điều kiện hệ thống — Cấu hình nhà cung cấp
+| Nút | Vị trí | Khi nào hiển thị | Tác dụng |
+|---|---|---|---|
+| Tải Root CA (.cer) | Trong banner | Luôn hiển thị | Tải tệp `.cer` Root CA Viettel để cài vào Trusted Root trên máy. |
+| Xem hướng dẫn (PDF) | Trong banner | Luôn hiển thị | Mở tệp PDF hướng dẫn cài Root CA trong tab mới. |
 
-Trước khi user ký được, **Quản trị viên** phải cấu hình ít nhất 1 nhà cung cấp dịch vụ chứng thực (CFG-01) ở màn hình **Ký số > Cấu hình** và đặt trạng thái **Đang hoạt động**. Nếu chưa có nhà cung cấp đang hoạt động, bấm **Ký số** sẽ nhận lỗi:
+#### Các trường dữ liệu
 
-> *"Hệ thống chưa cấu hình provider ký số. Vui lòng liên hệ Quản trị viên."*
+Không có trường nhập liệu.
 
-### 7.2. Điều kiện cá nhân — Tài khoản ký số đã xác thực
+#### Thông báo của hệ thống
 
-Mỗi user phải tự cấu hình thông tin định danh (`user_id`, `credential_id`) của mình tại màn hình **Ký số > Tài khoản ký số cá nhân** (`/ky-so/tai-khoan`) và bấm **Kiểm tra** để xác thực. Nếu chưa cấu hình hoặc chưa xác thực, bấm **Ký số** sẽ nhận một trong hai lỗi:
+Banner không có thông báo riêng.
 
-- *"Bạn chưa cấu hình tài khoản ký số. Vui lòng vào "Tài khoản ký số cá nhân" để cấu hình."*
-- *"Tài khoản ký số chưa được xác thực. Vui lòng bấm "Kiểm tra" trong trang Tài khoản ký số cá nhân."*
+### 3.3. Modal Ký số
 
-### 7.3. Quyền ký theo từng tệp
+![Modal ký số](screenshots/ky_so_danh_sach_02_sign_modal_pending.png)
 
-Hệ thống chỉ cho phép ký nếu user thuộc **một trong các nhóm** sau (kiểm tra qua hàm `edoc.fn_attachment_can_sign`):
+#### Bố cục màn hình
 
-- **Người ký** (`signer`) hoặc **Người duyệt** (`approver`) được gán cho văn bản (so khớp tên không phân biệt dấu, hoa thường — UNACCENT + LOWER).
-- **Người tạo** (`created_by`) văn bản.
-- **Quản trị viên** (`isAdmin`).
+Modal rộng 560px, tiêu đề "Ký số điện tử" có biểu tượng chứng thư. Bên trong từ trên xuống:
 
-Nếu không thỏa, bấm **Ký số** sẽ nhận lỗi *"Bạn không có quyền ký file này"* (HTTP 403).
+- Dòng "File: <tên tệp>".
+- Dòng "Nhà cung cấp: <tên>" (hiển thị sau khi tạo giao dịch xong).
+- Dòng "Trạng thái: ..." kèm Tag màu — Đang khởi tạo giao dịch / Đang chờ xác nhận OTP / Đã ký / Thất bại / Hết thời gian / Đã hủy.
+- Khi đang chờ OTP — đồng hồ đếm ngược dạng vòng tròn 3:00. Vòng đổi màu theo thời gian còn lại: trên 60s — xanh navy, từ 30 đến 60s — vàng, dưới 30s — đỏ. Bên dưới có dòng nhắc "Vui lòng xác nhận OTP trên ứng dụng <nhà cung cấp> trên điện thoại".
+- Khu Alert mô tả trạng thái:
+  - Đang chờ — Alert xanh, hướng dẫn xác nhận OTP, gợi ý có thể đóng để chạy nền.
+  - Thành công — Alert xanh "Ký số thành công", nhắc đóng modal để xem tệp đã ký.
+  - Thất bại / Hết thời gian / Đã hủy — Alert đỏ hoặc vàng kèm lý do từ máy chủ.
 
-### 7.4. Không ký số văn bản đến
+Đáy modal có cụm nút thay đổi theo trạng thái.
 
-Văn bản đến (`incoming_doc`) **không được phép ký số** theo quy định nghiệp vụ cơ quan nhà nước. Nếu cố ý gửi yêu cầu, hệ thống chặn ngay và trả lỗi:
+#### Các nút chức năng
 
-> *"Không được ký số văn bản đến"*
+| Nút | Vị trí | Khi nào hiển thị | Tác dụng |
+|---|---|---|---|
+| Hủy ký số | Đáy modal | Khi giao dịch đang chờ OTP | Gửi lệnh hủy giao dịch lên máy chủ. |
+| Đóng (chạy nền) | Đáy modal | Khi giao dịch đang chờ OTP | Đóng modal nhưng không hủy — giao dịch tiếp tục chạy, Bell thông báo sẽ báo khi xong. |
+| Đóng | Đáy modal | Khi giao dịch đã kết thúc (Đã ký / Thất bại / Hết thời gian / Đã hủy) | Đóng modal. |
 
-Tab **Cần ký** trên màn hình này chỉ liệt kê tệp thuộc 3 loại được phép: **Văn bản đi**, **Dự thảo**, **Hồ sơ công việc**.
+#### Các trường dữ liệu
 
-### 7.5. Chỉ ký được file PDF
+Modal không có trường nhập liệu — toàn bộ thông tin lấy từ giao dịch ký đang chạy.
 
-Hệ thống kiểm tra phần mở rộng tệp; nếu tên tệp không kết thúc bằng `.pdf` sẽ trả lỗi:
+#### Vòng đời và thời hạn
 
-> *"Chỉ hỗ trợ ký file PDF. File hiện tại không phải định dạng PDF."*
+| Pha | Mô tả |
+|---|---|
+| Khởi tạo | Hệ thống đẩy tệp lên nhà cung cấp, lấy mã giao dịch. Có Tag "Đang khởi tạo giao dịch...". |
+| Đang chờ OTP | Đồng hồ đếm ngược 3:00 chạy. Cán bộ phải xác nhận trên điện thoại trong khoảng thời gian này. |
+| Hết thời gian | Sau 3:00 mà chưa xác nhận — modal đổi sang trạng thái Hết thời gian, ghi nhận trong tab Thất bại. |
+| Đã ký | Cán bộ xác nhận trên điện thoại — modal hiện Alert thành công. |
+| Đã hủy | Cán bộ bấm Hủy ký số — giao dịch chuyển sang Đã hủy. |
+| Thất bại | Nhà cung cấp từ chối hoặc lỗi mạng — Alert đỏ kèm lý do. |
 
-Trường hợp tệp PDF lỗi cấu trúc (corrupt) không thể chèn placeholder chữ ký, hệ thống trả:
+#### Thông báo của hệ thống
 
-> *"File PDF không hợp lệ hoặc không tương thích ký số: ..."*
+| Tình huống | Thông báo |
+|---|---|
+| Khởi tạo lỗi mạng | Không thể kết nối đến máy chủ |
+| Khởi tạo lỗi từ máy chủ | Khởi tạo ký số thất bại |
+| Phản hồi không hợp lệ | Phản hồi không hợp lệ từ máy chủ |
+| Backend báo file không phải PDF | Chỉ hỗ trợ ký file PDF. File hiện tại không phải định dạng PDF. |
+| Backend báo không có quyền ký | Bạn không có quyền ký file này |
+| Backend báo ký văn bản đến | Không được ký số văn bản đến |
+| Backend báo PDF không hợp lệ | File PDF không hợp lệ hoặc không tương thích ký số |
+| Backend báo không tải file PDF | Không thể tải file PDF từ MinIO |
+| Backend báo nhà cung cấp từ chối | Provider từ chối yêu cầu ký |
+| Hết thời gian (FE đếm ngược) | Hết thời gian chờ xác nhận OTP. Vui lòng thử lại. |
+| Ký thành công | Ký số thành công |
+| Bấm Hủy ký số thành công | Đã hủy giao dịch ký số |
+| Bấm Hủy ký số thất bại | Không thể hủy giao dịch |
 
-### 7.6. Thời hạn xác nhận OTP — 3 phút
+### 3.4. Modal Xác nhận hủy giao dịch ký số
 
-Mỗi giao dịch ký có thời hạn **180 giây** kể từ lúc gửi sang nhà cung cấp. Nếu user không xác nhận OTP trong thời gian này, giao dịch tự động chuyển sang trạng thái **Hết thời gian** (`expired`) và xuất hiện ở tab **Thất bại**. Đồng hồ đếm ngược trên cửa sổ ký:
+#### Bố cục màn hình
 
-- **Xanh navy** khi còn > 60 giây.
-- **Vàng** khi còn 30–60 giây.
-- **Đỏ** khi còn dưới 30 giây.
+Modal nhỏ chính giữa, tiêu đề "Hủy giao dịch ký số". Nội dung: "Bạn có chắc muốn hủy giao dịch ký cho file '<tên tệp>'?". Đáy có nút Hủy giao dịch (đỏ) và Đóng.
 
-### 7.7. Cài Root CA Viettel để hiển thị chữ ký hợp lệ
+#### Các nút chức năng
 
-Đối với các tệp ký bằng **Viettel MySign**, Adobe Reader có thể hiển thị cảnh báo *"chữ ký không xác thực"* nếu máy tính chưa có Root CA của Viettel trong kho chứng thư hệ thống. Cài Root CA **một lần duy nhất** trên mỗi máy tính:
+| Nút | Vị trí | Khi nào hiển thị | Tác dụng |
+|---|---|---|---|
+| Hủy giao dịch | Đáy modal | Luôn hiển thị | Gọi máy chủ hủy giao dịch ký số. |
+| Đóng | Đáy modal | Luôn hiển thị | Đóng modal, giao dịch giữ nguyên. |
 
-1. Bấm **Tải Root CA (.cer)** trên khung thông báo đầu trang.
-2. Bấm **Xem hướng dẫn (PDF)** để xem các bước cài chi tiết.
-3. Sau khi cài, mở lại tệp đã ký bằng Adobe Reader — chữ ký sẽ hiển thị tích xanh **hợp lệ**.
+#### Các trường dữ liệu
 
-### 7.8. Cập nhật theo thời gian thực
+Không có trường nhập liệu.
 
-Trang lắng nghe 2 sự kiện qua Socket.IO:
+#### Thông báo của hệ thống
 
-- `sign_completed` — kích hoạt khi nhà cung cấp ký xong và worker hoàn tất gắn chữ ký vào tệp.
-- `sign_failed` — kích hoạt khi giao dịch thất bại / hết hạn / bị hủy.
-
-Khi nhận được sự kiện của chính mình, bảng **tự làm mới** đồng thời các huy hiệu số đếm trên 4 tab cũng được cập nhật. Server lọc sự kiện theo phòng `user_{staffId}` — user khác không nhận được.
-
-### 7.9. Phạm vi cá nhân — không chia sẻ
-
-Mỗi user chỉ thấy giao dịch / tệp cần ký của chính mình. Server lấy `staffId` từ JWT của phiên đăng nhập, **không bao giờ** lấy từ tham số URL hay body — đảm bảo không thể truy cập danh sách của người khác (mitigate T-11-18).
-
-### 7.10. Tải lại danh sách
-
-Hệ thống không có nút **Làm mới** thủ công. Danh sách tự cập nhật trong các trường hợp:
-
-- Khi mở trang lần đầu.
-- Khi chuyển tab, đổi trang, đổi kích thước trang.
-- Khi nhận sự kiện Socket.IO `sign_completed` / `sign_failed`.
-- Khi thực hiện thành công thao tác **Ký số** / **Hủy** trên cùng trang.
-
-Nếu nghi ngờ dữ liệu không đồng bộ, có thể tải lại trang bằng phím **F5**.
-
-
----
-
-*Tài liệu được biên soạn dựa trên hệ thống thực tế đang triển khai. Mọi thắc mắc vui lòng liên hệ với đội phát triển để được hỗ trợ.*
+| Tình huống | Thông báo |
+|---|---|
+| Hủy thành công | Đã hủy giao dịch ký số |
+| Hủy thất bại | Không thể hủy giao dịch |
+| Backend báo không có quyền | Bạn không có quyền hủy giao dịch này |
+| Backend báo giao dịch không tồn tại | Không tìm thấy giao dịch ký số |

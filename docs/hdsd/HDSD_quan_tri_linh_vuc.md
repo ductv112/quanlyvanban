@@ -1,166 +1,118 @@
-# Hướng dẫn sử dụng: Màn hình Quản trị > Lĩnh vực
-
-Tài liệu này mô tả đầy đủ các chức năng có trong màn hình **Quản trị > Lĩnh vực** của hệ thống Quản lý văn bản điện tử (e-Office), giúp người dùng hiểu rõ cách sử dụng và quy trình nghiệp vụ.
-
----
+# Quản lý lĩnh vực
 
 ## 1. Giới thiệu
 
-Màn hình **Quản trị > Lĩnh vực** dùng để quản lý danh mục **lĩnh vực nghiệp vụ** của cơ quan — ví dụ: Tài chính, Tổ chức cán bộ, Kế hoạch đầu tư, Thanh tra, Văn hóa - Xã hội, Khoa học công nghệ... Mỗi văn bản đến, văn bản đi, dự thảo và hồ sơ công việc đều có thể được gán một lĩnh vực để thuận tiện cho việc lọc, tra cứu, thống kê và phân công xử lý.
+Lĩnh vực là danh mục phân loại văn bản theo chủ đề chuyên môn (ví dụ: Khoa học công nghệ, Tài chính, Nhân sự...). Khi tạo văn bản đến, văn bản đi hoặc văn bản dự thảo, người dùng có thể gán một hoặc nhiều lĩnh vực để thuận tiện cho việc tìm kiếm và phân loại sau này.
 
-Đây là dữ liệu danh mục dùng chung trong **phạm vi đơn vị** (mỗi đơn vị quản lý danh sách lĩnh vực riêng của mình). Mã lĩnh vực không trùng nhau trong cùng một đơn vị, nhưng có thể trùng giữa các đơn vị khác nhau.
+Người quản trị đơn vị sử dụng chức năng này để thêm, chỉnh sửa, xóa lĩnh vực và bật / tắt trạng thái hoạt động.
 
-Vì là dữ liệu nền tảng, ảnh hưởng đến cách tổ chức và thống kê văn bản, màn hình này **chỉ dành cho tài khoản Quản trị hệ thống** hoặc người được phân quyền quản trị danh mục.
+## 2. Quy trình thao tác và ràng buộc nghiệp vụ
 
----
+- Lĩnh vực được tạo và quản lý theo từng đơn vị. Người dùng chỉ thấy lĩnh vực thuộc đơn vị mình đang đăng nhập.
+- Mã lĩnh vực là bắt buộc, tối đa 20 ký tự, không được trùng lặp trong cùng đơn vị.
+- Tên lĩnh vực là bắt buộc, tối đa 200 ký tự.
+- Trường thứ tự nhận giá trị nguyên không âm, dùng để sắp xếp khi hiển thị trong các form chọn lĩnh vực.
+- Khi thêm mới, lĩnh vực được tự động đặt ở trạng thái "Hoạt động". Trạng thái chỉ có thể bật / tắt khi chỉnh sửa.
+- Lĩnh vực ở trạng thái "Ngừng" sẽ không xuất hiện trong các form chọn lĩnh vực ở văn bản đến / đi / dự thảo nhưng vẫn hiển thị trên màn hình quản trị.
+- Tìm kiếm theo từ khóa: nhập từ khóa vào ô tìm kiếm và nhấn Enter để áp dụng (không cần bấm biểu tượng kính lúp).
 
-## 2. Bố cục màn hình
+## 3. Các màn hình chức năng
 
-![Màn hình danh sách Lĩnh vực](screenshots/quan_tri_linh_vuc_01_main.png)
+### 3.1. Màn hình danh sách
 
-Màn hình bố cục đơn giản, gồm các phần chính:
+![Danh sách lĩnh vực](screenshots/linh_vuc_01_danh_sach.png)
 
-- **Phần đầu trang**: Hiển thị tiêu đề "Quản lý lĩnh vực" và dòng mô tả ngắn "Danh mục lĩnh vực văn bản trong hệ thống".
-- **Khung danh sách lĩnh vực**:
-  - Tiêu đề khung "Danh sách lĩnh vực" với biểu tượng ô vuông màu xanh teal.
-  - **Ô tìm kiếm** (placeholder "Tìm kiếm...") ở góc trên bên phải khung — có nút xóa nhanh.
-  - Nút **Thêm lĩnh vực** (biểu tượng dấu cộng, màu xanh navy) ở góc trên bên phải khung.
-  - Bảng dữ liệu liệt kê các lĩnh vực hiện có — không phân trang (hiển thị toàn bộ trên 1 trang).
-  - Mỗi dòng có nút thao tác hình **ba chấm dọc** ở cột cuối cùng, chứa các lệnh: Sửa, Xóa.
-- **Cửa sổ phụ (Drawer / Modal)**:
-  - **Drawer Thêm lĩnh vực mới / Cập nhật lĩnh vực** — mở từ bên phải khi bấm nút Thêm hoặc Sửa.
-  - **Hộp xác nhận xóa** — mở khi bấm Xóa, yêu cầu xác nhận trước khi thực hiện.
+#### Bố cục màn hình
 
----
+- Khu vực trên cùng: tiêu đề "Quản lý lĩnh vực" và mô tả ngắn.
+- Thẻ "Danh sách lĩnh vực" gồm:
+  - Bảng danh sách các lĩnh vực thuộc đơn vị hiện tại.
+  - Ô tìm kiếm và nút "Thêm lĩnh vực" ở góc phải tiêu đề thẻ.
 
-## 3. Các cột trong Bảng danh sách lĩnh vực
-
-| Tên cột | Mô tả |
-|---|---|
-| **Mã** | Mã ngắn của lĩnh vực — hiển thị in đậm, màu xanh navy. Dùng để tham chiếu nội bộ và lọc nhanh. |
-| **Tên lĩnh vực** | Tên đầy đủ của lĩnh vực. Nếu tên dài sẽ tự động cắt bớt và hiện tooltip khi rê chuột. |
-| **Thứ tự** | Số nguyên không âm, quyết định thứ tự hiển thị của lĩnh vực trong bảng và trong các ô chọn lĩnh vực ở các màn hình khác. Số nhỏ hiển thị trước. |
-| **Trạng thái** | **Hoạt động** (nhãn xanh lá) hoặc **Ngừng** (nhãn đỏ). Lĩnh vực **Ngừng** vẫn còn trong danh sách quản trị nhưng không xuất hiện trong các ô chọn lĩnh vực ở nghiệp vụ văn bản. |
-| (cột thao tác) | Nút ba chấm dọc, mở menu các lệnh: Sửa, Xóa. |
-
----
-
-## 4. Các trường nhập liệu trong cửa sổ Thêm / Cập nhật lĩnh vực
-
-![Cửa sổ Thêm lĩnh vực](screenshots/quan_tri_linh_vuc_02_add_drawer.png)
-
-Khi bấm **Thêm lĩnh vực** hoặc **Sửa**, hệ thống mở cửa sổ phía bên phải màn hình với các trường sau:
-
-| Tên trường | Bắt buộc | Mô tả & ràng buộc |
-|---|---|---|
-| **Mã** | Có | Mã ngắn dùng để tham chiếu (ví dụ: `KHCN`, `TCKH`, `TT`). Tối đa 20 ký tự. **Mã phải duy nhất trong phạm vi đơn vị** — không phân biệt chữ hoa / chữ thường. Nếu trùng, hệ thống báo lỗi "Mã lĩnh vực đã tồn tại trong đơn vị". Nếu để trống, báo "Mã lĩnh vực là bắt buộc". |
-| **Tên** | Có | Tên đầy đủ của lĩnh vực (ví dụ: "Khoa học công nghệ", "Tài chính - Kế hoạch"). Tối đa 200 ký tự. Nếu để trống, hệ thống báo "Tên lĩnh vực là bắt buộc". |
-| **Thứ tự** | Không | Số nguyên không âm, dùng để sắp xếp thứ tự hiển thị trong bảng và trong các ô chọn lĩnh vực. Số nhỏ hiển thị trước. Mặc định là 0. |
-| **Trạng thái** | Không | Công tắc bật/tắt — chỉ hiển thị khi đang **Cập nhật**, không hiển thị khi **Thêm mới** (lĩnh vực mới mặc định là **Hoạt động**). Bật = Hoạt động, Tắt = Ngừng. Khi để **Ngừng**, lĩnh vực vẫn còn trong danh sách quản trị nhưng người dùng không chọn được khi soạn văn bản. |
-
-> **Lưu ý**: Sau khi điền xong, bấm **Thêm mới** (khi tạo) hoặc **Cập nhật** (khi sửa) ở góc trên bên phải cửa sổ. Các lỗi sai (mã trùng, vượt độ dài, để trống bắt buộc) sẽ hiển thị ngay tại ô tương ứng để người dùng dễ phát hiện và sửa.
-
----
-
-## 5. Các nút chức năng
+#### Các nút chức năng
 
 | Nút | Vị trí | Khi nào hiển thị | Tác dụng |
 |---|---|---|---|
-| **Thêm lĩnh vực** | Góc trên bên phải khung "Danh sách lĩnh vực" | Luôn hiển thị | Mở cửa sổ Thêm lĩnh vực mới. |
-| **Ô tìm kiếm "Tìm kiếm..."** | Góc trên bên phải khung, bên trái nút Thêm | Luôn hiển thị | Lọc danh sách theo từ khóa nhập (so khớp trong **Mã** hoặc **Tên**). Bấm **Enter** để áp dụng. Có nút xóa nhanh (dấu nhân trong ô) để bỏ từ khóa và hiển thị lại toàn bộ. |
-| **Sửa** | Trong menu ba chấm trên mỗi dòng | Luôn hiển thị | Mở cửa sổ Cập nhật lĩnh vực với dữ liệu hiện có để chỉnh sửa. |
-| **Xóa** | Trong menu ba chấm trên mỗi dòng (mục cuối, màu đỏ) | Luôn hiển thị | Mở hộp xác nhận, sau đó xóa lĩnh vực. |
-| **Thêm mới** / **Cập nhật** | Góc trên bên phải cửa sổ Thêm/Sửa | Trong cửa sổ Thêm/Sửa | Lưu dữ liệu vừa nhập. Nhãn nút thay đổi tùy theo đang Thêm mới hay Cập nhật. |
-| **Hủy** | Góc trên bên phải cửa sổ Thêm/Sửa | Trong cửa sổ Thêm/Sửa | Đóng cửa sổ, không lưu thay đổi. |
-| **Xóa** / **Hủy** trong hộp xác nhận | Trong hộp xác nhận xóa | Khi mở hộp xác nhận | **Xóa** (màu đỏ) — thực hiện xóa. **Hủy** — đóng hộp, không xóa. |
+| Thêm lĩnh vực | Góc phải tiêu đề thẻ | Luôn hiển thị | Mở hộp thoại Thêm lĩnh vực mới |
+| Ô tìm kiếm | Góc phải tiêu đề thẻ | Luôn hiển thị | Lọc danh sách theo từ khóa, áp dụng khi nhấn Enter |
+| Biểu tượng ba chấm dọc | Cuối mỗi dòng | Luôn hiển thị | Mở menu chứa: Sửa, Xóa |
+| Sửa | Trong menu ba chấm | Luôn hiển thị | Mở hộp thoại Cập nhật lĩnh vực |
+| Xóa | Trong menu ba chấm | Luôn hiển thị | Mở hộp xác nhận xóa |
 
----
+#### Các cột / trường dữ liệu
 
-## 6. Quy trình thao tác chính
+| Cột | Ý nghĩa |
+|---|---|
+| Mã | Mã viết tắt của lĩnh vực, hiển thị in đậm màu xanh đậm |
+| Tên lĩnh vực | Tên đầy đủ của lĩnh vực |
+| Thứ tự | Số thứ tự dùng để sắp xếp khi hiển thị |
+| Trạng thái | Nhãn "Hoạt động" (xanh) hoặc "Ngừng" (đỏ) |
 
-### 6.1. Thêm mới một lĩnh vực
+#### Thông báo của hệ thống
 
-1. Bấm nút **Thêm lĩnh vực** ở góc trên bên phải khung danh sách.
-2. Trong cửa sổ **Thêm lĩnh vực mới**, điền:
-   - **Mã** (bắt buộc): tối đa 20 ký tự, không trùng với lĩnh vực nào đã có trong cùng đơn vị (ví dụ: `KHCN`).
-   - **Tên** (bắt buộc): tên đầy đủ, tối đa 200 ký tự (ví dụ: "Khoa học công nghệ").
-   - **Thứ tự** (tùy chọn): số nguyên không âm, mặc định 0.
-3. Bấm **Thêm mới**.
-4. Hệ thống thông báo **"Thêm thành công"** và đóng cửa sổ. Bảng tự động cập nhật, hiển thị lĩnh vực vừa tạo ở vị trí phù hợp theo thứ tự.
+| Tình huống | Thông báo |
+|---|---|
+| Lỗi khi tải danh sách | Lỗi tải dữ liệu |
 
-![Cửa sổ Thêm lĩnh vực đã điền dữ liệu](screenshots/quan_tri_linh_vuc_03_add_filled.png)
+### 3.2. Hộp thoại Thêm / Cập nhật lĩnh vực
 
-### 6.2. Chỉnh sửa thông tin một lĩnh vực
+![Hộp thoại thêm lĩnh vực](screenshots/linh_vuc_02_them_moi.png)
 
-1. Tìm lĩnh vực cần sửa trên bảng (có thể dùng ô tìm kiếm để thu hẹp danh sách).
-2. Trên dòng tương ứng, bấm biểu tượng **ba chấm dọc** ở cột cuối → chọn **Sửa**.
-3. Cửa sổ **Cập nhật lĩnh vực** mở ra với dữ liệu sẵn có. Sửa các thông tin cần thiết (Mã, Tên, Thứ tự, Trạng thái).
-4. Bấm **Cập nhật**.
-5. Hệ thống thông báo **"Cập nhật thành công"** và đóng cửa sổ. Bảng cập nhật ngay.
+#### Bố cục màn hình
 
-> Khi đổi **Trạng thái** từ Hoạt động sang Ngừng, lĩnh vực sẽ không còn xuất hiện trong các ô chọn lĩnh vực ở các màn hình nghiệp vụ (Văn bản đến, Văn bản đi, Hồ sơ công việc), nhưng các văn bản cũ đã gán lĩnh vực này vẫn giữ nguyên — không bị mất dữ liệu.
+- Hộp thoại trượt từ phải sang, tiêu đề "Thêm lĩnh vực mới" (khi thêm) hoặc "Cập nhật lĩnh vực" (khi sửa).
+- Thân hộp thoại chứa các trường nhập theo chiều dọc: Mã, Tên, Thứ tự. Khi đang sửa, hiện thêm trường Trạng thái.
+- Phần đầu hộp thoại có hai nút Hủy và Thêm mới / Cập nhật.
 
-### 6.3. Xóa lĩnh vực
+#### Các nút chức năng
 
-1. Tìm lĩnh vực cần xóa trên bảng.
-2. Bấm biểu tượng **ba chấm dọc** ở cột cuối → chọn **Xóa** (mục cuối cùng, màu đỏ).
-3. Hộp xác nhận hiện ra với câu hỏi *"Bạn có chắc chắn muốn xóa lĩnh vực này?"*.
+| Nút | Vị trí | Khi nào hiển thị | Tác dụng |
+|---|---|---|---|
+| Hủy | Góc phải đầu hộp thoại | Luôn hiển thị | Đóng hộp thoại, không lưu thay đổi |
+| Thêm mới | Góc phải đầu hộp thoại | Khi đang thêm | Lưu lĩnh vực mới và đóng hộp thoại |
+| Cập nhật | Góc phải đầu hộp thoại | Khi đang sửa | Lưu thay đổi và đóng hộp thoại |
 
-   ![Hộp xác nhận xóa](screenshots/quan_tri_linh_vuc_04_delete_confirm.png)
-4. Bấm **Xóa** (màu đỏ) để xác nhận, hoặc **Hủy** để bỏ qua.
-5. Nếu xóa được, hệ thống thông báo **"Xóa thành công"**. Bảng cập nhật ngay.
-6. Nếu lĩnh vực đang được tham chiếu bởi văn bản hoặc hồ sơ, hệ thống sẽ báo lỗi và không xóa được — khi đó hãy chuyển sang **đặt Trạng thái = Ngừng** thay vì xóa (xem mục 7.3).
+#### Các trường nhập
 
-### 6.4. Tìm kiếm lĩnh vực
+| Trường | Bắt buộc | Mô tả |
+|---|---|---|
+| Mã | Có | Tối đa 20 ký tự, gợi ý "VD: KHCN" |
+| Tên | Có | Tối đa 200 ký tự, gợi ý "VD: Khoa học công nghệ" |
+| Thứ tự | Không | Số nguyên không âm, mặc định 0 |
+| Trạng thái | Không | Công tắc Hoạt động / Ngừng, chỉ hiển thị khi chỉnh sửa |
 
-1. Trên ô **Tìm kiếm...** ở góc trên bên phải khung, gõ từ khóa (một phần Mã hoặc một phần Tên).
-2. Bấm **Enter** để áp dụng.
-3. Bảng sẽ chỉ hiển thị các lĩnh vực có Mã hoặc Tên chứa từ khóa.
-4. Bấm biểu tượng **dấu nhân** trong ô tìm kiếm để xóa từ khóa và hiển thị lại toàn bộ.
+#### Thông báo của hệ thống
 
----
+| Tình huống | Thông báo |
+|---|---|
+| Bỏ trống mã | Nhập mã lĩnh vực |
+| Bỏ trống tên | Nhập tên lĩnh vực |
+| Mã vượt quá độ dài cho phép | Mã lĩnh vực không được vượt quá 20 ký tự |
+| Tên vượt quá độ dài cho phép | Tên lĩnh vực không được vượt quá 200 ký tự |
+| Mã đã tồn tại trong đơn vị | Mã lĩnh vực đã tồn tại trong đơn vị |
+| Thêm thành công | Thêm thành công |
+| Cập nhật thành công | Cập nhật thành công |
 
-## 7. Lưu ý / Ràng buộc nghiệp vụ
+### 3.3. Hộp xác nhận xóa
 
-### 7.1. Mã lĩnh vực — duy nhất trong đơn vị
+![Xác nhận xóa lĩnh vực](screenshots/linh_vuc_03_xac_nhan_xoa.png)
 
-Mỗi đơn vị quản lý danh mục lĩnh vực riêng. Trong **cùng một đơn vị**, mỗi mã lĩnh vực **chỉ tồn tại một lần** (không phân biệt chữ hoa / chữ thường, đã loại khoảng trắng đầu/cuối). Hai đơn vị khác nhau có thể cùng có mã `KHCN` mà không xung đột.
+#### Bố cục màn hình
 
-Khi nhập trùng mã trong cùng đơn vị, hệ thống báo:
+- Hộp thoại nổi giữa màn hình, tiêu đề "Xác nhận xóa".
+- Nội dung: "Bạn có chắc chắn muốn xóa lĩnh vực này?".
+- Hai nút: Hủy và Xóa (màu đỏ).
 
-> *"Mã lĩnh vực đã tồn tại trong đơn vị"*
+#### Các nút chức năng
 
-Lỗi này hiển thị ngay tại ô **Mã** trong cửa sổ nhập.
+| Nút | Vị trí | Khi nào hiển thị | Tác dụng |
+|---|---|---|---|
+| Hủy | Góc phải dưới | Luôn hiển thị | Đóng hộp thoại, không xóa |
+| Xóa | Góc phải dưới, màu đỏ | Luôn hiển thị | Thực hiện xóa lĩnh vực và đóng hộp thoại |
 
-### 7.2. Giới hạn độ dài
+#### Thông báo của hệ thống
 
-- **Mã**: tối đa **20 ký tự**. Vượt quá → "Mã lĩnh vực không được vượt quá 20 ký tự".
-- **Tên**: tối đa **200 ký tự**. Vượt quá → "Tên lĩnh vực không được vượt quá 200 ký tự".
-
-Hệ thống tự động cắt giới hạn ký tự ngay khi nhập, nhưng người dùng nên cân nhắc đặt mã ngắn gọn (3-6 ký tự) và tên đầy đủ rõ nghĩa để dễ tra cứu.
-
-### 7.3. "Ngừng" hay "Xóa" — nên chọn cách nào?
-
-Nguyên tắc khuyến nghị:
-
-- **Đặt Trạng thái = Ngừng** khi lĩnh vực không còn dùng nữa nhưng đã có văn bản / hồ sơ tham chiếu — đây là cách an toàn nhất, giữ nguyên lịch sử.
-- **Xóa hẳn** chỉ áp dụng khi lĩnh vực **chưa từng được sử dụng** (mới tạo nhầm, gõ sai mã, trùng nội dung với lĩnh vực khác).
-
-Khi xóa một lĩnh vực đang còn được tham chiếu, hệ thống sẽ chặn để bảo toàn dữ liệu — thông báo trả về tùy theo ràng buộc cơ sở dữ liệu (xem bảng thông báo ở mục 7.6).
-
-### 7.4. Thứ tự sắp xếp (sort_order)
-
-Số ở trường **Thứ tự** quyết định vị trí hiển thị của lĩnh vực trong bảng quản trị **và** trong các ô chọn lĩnh vực ở các màn hình nghiệp vụ. Số nhỏ đứng trước số lớn. Khi nhiều lĩnh vực cùng số thứ tự, hệ thống tiếp tục sắp xếp theo tên (theo bảng chữ cái).
-
-Mẹo: dùng các bước nhảy 10 (10, 20, 30...) thay vì 1, 2, 3 — sau này muốn chèn thêm lĩnh vực vào giữa sẽ không phải đánh số lại toàn bộ.
-
-### 7.5. Phạm vi dữ liệu theo đơn vị
-
-Khi mở màn hình, hệ thống mặc định chỉ hiển thị danh sách lĩnh vực thuộc **đơn vị của người đăng nhập** (xác định theo phòng ban gán cho tài khoản, truy ngược lên đơn vị cha cao nhất). Người dùng không nhìn thấy danh sách lĩnh vực của đơn vị khác.
-
-Khi tạo mới, lĩnh vực sẽ tự động được gán cho đơn vị của người đăng nhập — không cần chọn đơn vị thủ công.
-
-
----
-
-*Tài liệu được biên soạn dựa trên hệ thống thực tế đang triển khai. Mọi thắc mắc vui lòng liên hệ với đội phát triển để được hỗ trợ.*
+| Tình huống | Thông báo |
+|---|---|
+| Xóa thành công | Xóa thành công |
+| Xóa thất bại | Lỗi khi xóa |

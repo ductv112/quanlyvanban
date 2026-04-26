@@ -9,7 +9,7 @@ const FULL_MD = path.join(HDSD_DIR, 'HDSD_full.md');
 const FULL_DOCX = path.join(HDSD_DIR, 'HDSD_full.docx');
 const PANDOC = 'C:\\Users\\Admin\\AppData\\Local\\Pandoc\\pandoc.exe';
 
-// Order matches HDSD_index.md sections 5.1 → 5.6
+// 20 modules — restructured rev3 (after gộp HSCV + bỏ HSCV Báo cáo dead route)
 const MODULES = [
   'HDSD_dang_nhap_va_thong_tin_ca_nhan.md',
   'HDSD_dashboard.md',
@@ -19,9 +19,7 @@ const MODULES = [
   'HDSD_van_ban_du_thao.md',
   'HDSD_van_ban_danh_dau.md',
   'HDSD_cau_hinh_gui_nhanh.md',
-  'HDSD_ho_so_cong_viec_danh_sach.md',
-  'HDSD_ho_so_cong_viec_chi_tiet.md',
-  'HDSD_ho_so_cong_viec_bao_cao.md',
+  'HDSD_ho_so_cong_viec.md',
   'HDSD_ky_so_cau_hinh.md',
   'HDSD_ky_so_tai_khoan.md',
   'HDSD_ky_so_danh_sach.md',

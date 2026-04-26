@@ -1,235 +1,162 @@
-# Hướng dẫn sử dụng: Đăng nhập và Thông tin cá nhân
-
-Tài liệu này mô tả đầy đủ hai màn hình thuộc nhóm xác thực và thông tin cá nhân của hệ thống Quản lý văn bản điện tử (e-Office): màn hình **Đăng nhập** (đường dẫn `/login`) và màn hình **Thông tin cá nhân** (đường dẫn `/thong-tin-ca-nhan`). Hai màn hình này gắn liền với mỗi cán bộ, công chức trong quá trình sử dụng hệ thống — đăng nhập là bước đầu mỗi phiên làm việc, còn Thông tin cá nhân là nơi xem thông tin tài khoản và đổi mật khẩu.
-
----
-
-# PHẦN 1 — MÀN HÌNH ĐĂNG NHẬP
+# Đăng nhập và Thông tin cá nhân
 
 ## 1. Giới thiệu
 
-Màn hình **Đăng nhập** là cửa ngõ duy nhất để truy cập vào hệ thống e-Office. Mỗi cán bộ được cấp một tài khoản riêng (tên đăng nhập + mật khẩu) tương ứng với một bản ghi nhân sự trong hệ thống — gắn với đơn vị, phòng ban, chức vụ và các vai trò (quyền) đã được Quản trị viên cấu hình sẵn.
+Hai màn hình thuộc nhóm xác thực và thông tin cá nhân là điểm bắt đầu của mọi phiên làm việc trên hệ thống Quản lý văn bản điện tử (e-Office). **Mọi cán bộ, công chức** đều sử dụng:
 
-Hệ thống chỉ cho phép thực hiện bất kỳ nghiệp vụ nào (tra cứu văn bản, đánh dấu, soạn thảo, ký số, duyệt...) sau khi người dùng đã đăng nhập thành công. Sau khi đăng nhập, hệ thống tự động chuyển vào trang **Bảng điều khiển (Dashboard)** — nơi tổng hợp công việc cần xử lý của người dùng.
+- Màn hình **Đăng nhập** (`/login`) — cửa ngõ duy nhất để truy cập hệ thống. Tài khoản (tên đăng nhập + mật khẩu) do Quản trị viên cấp, gắn với một bản ghi nhân sự thuộc một đơn vị, phòng ban, chức vụ và một hoặc nhiều vai trò.
+- Màn hình **Thông tin cá nhân** (`/thong-tin-ca-nhan`) — nơi người dùng tự xem thông tin tài khoản và đổi mật khẩu của mình.
 
-Mỗi lần đăng nhập, hệ thống ghi nhận lại nhật ký (thời gian, địa chỉ truy cập, trình duyệt) phục vụ tra cứu khi cần.
+Sau khi đăng nhập thành công, hệ thống tự đưa người dùng đến màn hình **Tổng quan (Dashboard)**. Mỗi lần đăng nhập (cả thành công và thất bại) đều được ghi nhật ký kèm địa chỉ truy cập và trình duyệt sử dụng phục vụ tra cứu khi cần.
 
----
+## 2. Quy trình thao tác và ràng buộc nghiệp vụ
 
-## 2. Bố cục màn hình
+**Quy trình đăng nhập đầu phiên làm việc:**
+1. Mở trình duyệt, truy cập đường dẫn của hệ thống. Nếu chưa đăng nhập, hệ thống tự đưa về `/login`.
+2. Nhập tên đăng nhập và mật khẩu được cấp.
+3. Tùy chọn bỏ tích **Ghi nhớ đăng nhập** nếu đang dùng máy chung.
+4. Bấm **Đăng nhập**. Hệ thống xác thực và chuyển đến trang **Tổng quan**.
+5. Khi để trình duyệt không thao tác trong thời gian dài, phiên có thể hết hạn — hệ thống tự đưa về `/login`.
+
+**Quy trình đổi mật khẩu định kỳ:**
+1. Bấm vào ảnh đại diện ở góc trên bên phải, chọn **Thông tin cá nhân**.
+2. Tab **Đổi mật khẩu** đã được mở sẵn ở cột phải.
+3. Nhập mật khẩu hiện tại, mật khẩu mới và xác nhận lại mật khẩu mới.
+4. Bấm **Đổi mật khẩu** để hoàn tất.
+
+**Quy trình đăng xuất:**
+1. Bấm vào ảnh đại diện ở góc trên bên phải, chọn **Đăng xuất**.
+2. Xác nhận trong hộp thoại hiển thị.
+3. Hệ thống đóng phiên đăng nhập và đưa về `/login`.
+
+**Ràng buộc nghiệp vụ:**
+
+- **Phạm vi tự sửa của người dùng**: chỉ tự đổi được mật khẩu. Các thông tin khác (họ tên, email, số điện thoại, ảnh đại diện, chức vụ, phòng ban, đơn vị, vai trò) chỉ Quản trị viên sửa được ở màn hình **Quản trị > Người dùng**.
+- **Trạng thái tài khoản**: tài khoản bị **khóa** hoặc **xóa** không đăng nhập được. Cần liên hệ Quản trị viên để mở khóa hoặc cấp lại.
+- **Quên mật khẩu**: hệ thống **không có** chức năng tự khôi phục mật khẩu. Người dùng cần liên hệ Quản trị viên để được đặt lại mật khẩu về mặc định **Admin@123**, sau đó tự đổi mật khẩu mới ở màn hình Thông tin cá nhân.
+- **Quy tắc mật khẩu mới**: tối thiểu 6 ký tự, bắt buộc chứa cả chữ hoa, chữ thường và chữ số. Mật khẩu mới không được trùng với mật khẩu hiện tại.
+- **Cấu hình tài khoản ký số** với nhà cung cấp (SmartCA VNPT, MySign Viettel...) đã được tách sang menu **Ký số > Tài khoản ký số cá nhân**, không nằm ở màn hình Thông tin cá nhân.
+
+## 3. Các màn hình chức năng
+
+### 3.1. Màn hình Đăng nhập
 
 ![Màn hình Đăng nhập](screenshots/auth_01_login_main.png)
 
-Màn hình được chia thành 2 phần ngang trên một trang:
+#### Bố cục màn hình
 
-- **Phần bên trái — Giới thiệu hệ thống**:
-  - Logo hệ thống (biểu tượng tài liệu được bảo vệ).
-  - Tiêu đề **"Quản lý Văn bản"** và dòng mô tả *"Hệ thống quản lý văn bản điện tử — Chuyển đổi số doanh nghiệp"*.
-  - Ba dòng giới thiệu tính năng nổi bật:
-    - **Bảo mật** — Ký số điện tử, mã hóa dữ liệu.
-    - **Liên thông** — Tích hợp LGSP quốc gia.
-    - **Cộng tác** — Quản lý hồ sơ công việc realtime.
-- **Phần bên phải — Khung nhập thông tin đăng nhập**:
-  - Tiêu đề **"Đăng nhập"** và dòng mô tả *"Nhập thông tin tài khoản để truy cập hệ thống"*.
-  - Ô nhập **Tên đăng nhập** (kèm biểu tượng người dùng).
-  - Ô nhập **Mật khẩu** (kèm biểu tượng ổ khóa, có nút bật/tắt hiển thị mật khẩu).
-  - Ô **Ghi nhớ đăng nhập** (mặc định đã tích chọn).
-  - Nút **Đăng nhập** (nút lớn, màu xanh navy).
-  - Dòng phiên bản ở chân trang: *"Phiên bản 2.0 · Chuyển đổi số Doanh nghiệp"*.
+Màn hình chia làm hai cột ngang trên cùng một trang:
 
-> **Lưu ý**: Màn hình **không có** chức năng *Quên mật khẩu* trên giao diện. Khi người dùng quên mật khẩu, cần liên hệ Quản trị viên để cấp lại.
+- **Cột trái — Giới thiệu hệ thống**: logo dạng biểu tượng tài liệu được bảo vệ, tiêu đề **"Quản lý Văn bản"**, dòng mô tả *"Hệ thống quản lý văn bản điện tử — Chuyển đổi số doanh nghiệp"* và ba dòng tính năng nổi bật: Bảo mật, Liên thông, Cộng tác.
+- **Cột phải — Khung nhập thông tin đăng nhập**: tiêu đề **"Đăng nhập"**, dòng mô tả ngắn, hai ô nhập (Tên đăng nhập và Mật khẩu), ô tích **Ghi nhớ đăng nhập**, nút **Đăng nhập** lớn màu xanh navy. Dòng *"Phiên bản 2.0 · Chuyển đổi số Doanh nghiệp"* ở chân trang.
 
----
+Trên thiết bị di động, hai cột tự xếp chồng dọc.
 
-## 3. Các trường nhập trên form đăng nhập
+#### Các nút chức năng
+
+| Nút | Vị trí | Khi nào hiển thị | Tác dụng |
+|---|---|---|---|
+| **Đăng nhập** | Cuối khung bên phải | Luôn | Xác thực tài khoản. Trong khi xử lý, nút chuyển sang trạng thái đang quay (loading) và bị khóa. Có thể dùng phím `Enter` thay thế. |
+| **Hiện/ẩn mật khẩu** (con mắt) | Bên trong ô Mật khẩu | Luôn | Bật/tắt hiển thị mật khẩu đang nhập. |
+
+#### Các trường nhập
 
 | Tên trường | Bắt buộc | Mô tả & ràng buộc |
 |---|---|---|
-| **Tên đăng nhập** | Có | Tên đăng nhập (username) đã được cấp. Phân biệt chữ hoa / chữ thường tùy cấu hình. Nếu để trống và bấm Đăng nhập, hệ thống báo *"Vui lòng nhập tên đăng nhập"*. |
-| **Mật khẩu** | Có | Mật khẩu của tài khoản. Nhập dạng ẩn (chấm tròn). Có thể bấm biểu tượng con mắt ở cuối ô để hiển thị tạm. Nếu để trống và bấm Đăng nhập, hệ thống báo *"Vui lòng nhập mật khẩu"*. |
-| **Ghi nhớ đăng nhập** | Không | Khi tích chọn (mặc định), hệ thống duy trì phiên đăng nhập lâu hơn để lần sau quay lại không phải đăng nhập ngay. Bỏ tích nếu đăng nhập trên máy dùng chung. |
+| **Tên đăng nhập** | Có | Tên đăng nhập do Quản trị viên cấp. Để trống và bấm Đăng nhập sẽ hiển thị thông báo *"Vui lòng nhập tên đăng nhập"*. |
+| **Mật khẩu** | Có | Mật khẩu của tài khoản. Nhập dạng ẩn (chấm tròn). Để trống và bấm Đăng nhập sẽ hiển thị thông báo *"Vui lòng nhập mật khẩu"*. |
+| **Ghi nhớ đăng nhập** | Không | Tích chọn để duy trì phiên đăng nhập lâu hơn cho lần truy cập kế tiếp. Mặc định đã tích. Bỏ tích nếu đang dùng máy dùng chung. |
 
----
-
-## 4. Quy trình đăng nhập
-
-1. Mở trình duyệt, truy cập đường dẫn của hệ thống — hệ thống tự đưa về trang `/login`.
-2. Nhập **Tên đăng nhập** vào ô đầu tiên.
-3. Nhập **Mật khẩu** vào ô thứ hai.
-4. (Tùy chọn) Bỏ tích **Ghi nhớ đăng nhập** nếu đang dùng máy chung.
-5. Bấm nút **Đăng nhập** (hoặc nhấn phím `Enter`).
-6. Trong khi hệ thống xử lý, nút **Đăng nhập** chuyển sang trạng thái đang quay (loading) và bị khóa, không bấm được lần thứ hai.
-7. Nếu thành công: hệ thống hiển thị thông báo **"Đăng nhập thành công"** và tự chuyển sang trang **Bảng điều khiển** (`/dashboard`).
-8. Nếu thất bại: hệ thống hiển thị thông báo lỗi tương ứng (xem mục 5), người dùng vẫn ở lại màn hình đăng nhập để nhập lại.
-
-> **Lưu ý**: Sau khi đăng nhập, nếu để trình duyệt không thao tác trong thời gian dài, hệ thống có thể yêu cầu đăng nhập lại do phiên đã hết hạn. Khi đó hệ thống tự đưa về màn hình `/login`.
-
----
-
-## 5. Các thông báo của hệ thống khi đăng nhập
+#### Thông báo của hệ thống
 
 | Tình huống | Thông báo |
 |---|---|
 | Để trống ô Tên đăng nhập | Vui lòng nhập tên đăng nhập |
 | Để trống ô Mật khẩu | Vui lòng nhập mật khẩu |
-| Bấm Đăng nhập khi cả hai ô để trống (lỗi từ máy chủ) | Vui lòng nhập tên đăng nhập và mật khẩu |
+| Bấm Đăng nhập khi cả hai ô để trống (lỗi máy chủ) | Vui lòng nhập tên đăng nhập và mật khẩu |
 | Tên đăng nhập không tồn tại | Tên đăng nhập hoặc mật khẩu không đúng |
 | Mật khẩu sai | Tên đăng nhập hoặc mật khẩu không đúng |
 | Tài khoản đã bị Quản trị viên xóa | Tài khoản đã bị xóa |
-| Tài khoản đang ở trạng thái bị khóa | Tài khoản đã bị khóa |
+| Tài khoản đang bị khóa | Tài khoản đã bị khóa |
 | Đăng nhập thành công | Đăng nhập thành công |
-| Lỗi không xác định khác từ máy chủ | Đăng nhập thất bại |
+| Lỗi không xác định khác | Đăng nhập thất bại |
 
-> **Lưu ý về bảo mật**: Khi sai mật khẩu, hệ thống hiển thị thông báo chung *"Tên đăng nhập hoặc mật khẩu không đúng"* (không nói rõ sai cái nào) để tránh bị dò mật khẩu. Mỗi lần đăng nhập (kể cả thất bại) đều được ghi nhật ký kèm địa chỉ truy cập và trình duyệt sử dụng.
-
----
-
-# PHẦN 2 — MÀN HÌNH THÔNG TIN CÁ NHÂN
-
-## 6. Giới thiệu
-
-Màn hình **Thông tin cá nhân** (đường dẫn `/thong-tin-ca-nhan`) là nơi mỗi cán bộ tự quản lý tài khoản của mình. Tại đây người dùng có thể:
-
-- Xem lại các thông tin chính của tài khoản: họ tên, tên đăng nhập, email, số điện thoại, chức vụ, phòng ban, đơn vị, vai trò (quản trị viên hay không).
-- **Đổi mật khẩu** đăng nhập của chính mình.
-
-Các thông tin về **họ tên, đơn vị, phòng ban, chức vụ, vai trò** chỉ có thể được sửa bởi **Quản trị viên** ở màn hình **Quản trị > Người dùng**, không sửa được trên màn hình này.
-
-Việc cấu hình **tài khoản ký số** với nhà cung cấp (SmartCA VNPT, MySign Viettel...) được thực hiện ở menu **Ký số → Tài khoản ký số cá nhân**, không nằm trên màn hình này.
-
----
-
-## 7. Bố cục màn hình
+### 3.2. Màn hình Thông tin cá nhân
 
 ![Màn hình Thông tin cá nhân](screenshots/thong_tin_ca_nhan_01_main.png)
 
-Màn hình được chia thành 2 cột chính:
+#### Bố cục màn hình
 
-- **Phần đầu trang**: Tiêu đề **"Thông tin cá nhân"** kèm dòng mô tả *"Xem thông tin tài khoản và đổi mật khẩu"*.
-- **Cột trái — Thông tin tài khoản (chỉ xem)**:
-  - Phần đầu thẻ (banner): ảnh đại diện kích thước lớn, họ và tên (chữ to, đậm), tên đăng nhập (kèm ký hiệu `@`), nhãn chức vụ (xanh teal), nhãn **Quản trị viên** (vàng) nếu có.
-  - Bảng thông tin gồm 7 dòng: Họ và tên, Tên đăng nhập, Email, Số điện thoại, Chức vụ, Phòng ban, Đơn vị. Các trường chưa có dữ liệu hiển thị chữ xám *"Chưa cập nhật"*.
-- **Cột phải — Khung tác vụ**: thẻ chứa duy nhất tab **Đổi mật khẩu** (biểu tượng ổ khóa) — mở sẵn.
+- **Phần đầu trang**: tiêu đề **"Thông tin cá nhân"** và dòng mô tả *"Xem thông tin tài khoản, đổi mật khẩu và quản lý ảnh chữ ký"*.
+- **Cột trái — Thẻ thông tin tài khoản (chỉ xem)**:
+  - Banner đầu thẻ: ảnh đại diện 72px, họ và tên (chữ to, đậm), tên đăng nhập kèm ký hiệu `@`, nhãn chức vụ (xanh teal) và nhãn **Quản trị viên** (vàng) nếu có.
+  - Bảng 7 dòng thông tin: Họ và tên, Tên đăng nhập, Email, Số điện thoại, Chức vụ, Phòng ban, Đơn vị. Trường chưa có dữ liệu hiển thị chữ xám *"Chưa cập nhật"*.
+- **Cột phải — Khung tác vụ**: thẻ chứa duy nhất tab **Đổi mật khẩu** (biểu tượng ổ khóa), mở sẵn.
 
----
+Trên thiết bị di động, hai cột tự xếp chồng dọc — thẻ thông tin nằm trên, khung Đổi mật khẩu nằm dưới.
 
-## 8. Các thông tin hiển thị (chỉ xem) ở cột trái
+#### Các nút chức năng
 
-| Thông tin | Mô tả |
+| Nút | Vị trí | Khi nào hiển thị | Tác dụng |
+|---|---|---|---|
+| **Đổi mật khẩu** | Cuối form ở cột phải | Luôn | Gửi yêu cầu đổi mật khẩu sau khi đã điền đủ ba ô nhập. Trong khi xử lý, nút chuyển sang trạng thái loading. |
+
+#### Các trường hiển thị (cột trái — chỉ xem)
+
+| Tên trường | Mô tả |
 |---|---|
-| **Ảnh đại diện** | Ảnh đại diện của tài khoản. Nếu chưa có sẽ hiển thị biểu tượng người mặc định. |
-| **Họ và tên** | Họ tên đầy đủ — hiển thị cả ở banner đầu thẻ và trong bảng bên dưới. |
-| **Tên đăng nhập** | Username dùng để đăng nhập hệ thống. |
-| **Email** | Địa chỉ email của tài khoản. Nếu chưa có hiển thị *"Chưa cập nhật"*. |
-| **Số điện thoại** | Số điện thoại liên hệ. Nếu chưa có hiển thị *"Chưa cập nhật"*. |
-| **Chức vụ** | Chức vụ trong cơ quan (ví dụ: Chuyên viên, Phó Trưởng phòng...). |
-| **Phòng ban** | Phòng ban đang công tác. |
-| **Đơn vị** | Đơn vị (cấp lớn — Sở, Ban, Ngành, Tổng công ty) chứa phòng ban. |
-| **Nhãn chức vụ** | Nhãn xanh teal hiển thị bên dưới tên ở banner. |
-| **Nhãn Quản trị viên** | Nhãn vàng hiển thị nếu tài khoản có quyền quản trị hệ thống. |
+| Ảnh đại diện | Ảnh đại diện của tài khoản. Nếu chưa có sẽ hiển thị biểu tượng người mặc định. |
+| Họ và tên | Họ tên đầy đủ. Hiển thị cả ở banner và trong bảng. |
+| Tên đăng nhập | Username dùng để đăng nhập. |
+| Email | Địa chỉ email. Trống → *"Chưa cập nhật"*. |
+| Số điện thoại | Số điện thoại liên hệ. Trống → *"Chưa cập nhật"*. |
+| Chức vụ | Chức vụ trong cơ quan. Trống → *"Chưa cập nhật"*. |
+| Phòng ban | Phòng ban đang công tác. Trống → *"Chưa cập nhật"*. |
+| Đơn vị | Đơn vị cấp lớn (Sở, Ban, Ngành, Tổng công ty) chứa phòng ban. Trống → *"Chưa cập nhật"*. |
+| Nhãn Chức vụ (banner) | Nhãn xanh teal. Hiển thị nếu tài khoản có chức vụ. |
+| Nhãn Quản trị viên (banner) | Nhãn vàng. Hiển thị nếu tài khoản có quyền quản trị hệ thống. |
 
-> **Lưu ý**: Người dùng **không tự sửa được** các thông tin trên (gồm họ tên, email, số điện thoại, ảnh đại diện, chức vụ, phòng ban, đơn vị, vai trò). Mọi thay đổi phải do **Quản trị viên** thực hiện ở màn hình **Quản trị > Người dùng**. Người dùng cần cập nhật email/số điện thoại liên hệ với Quản trị viên để được hỗ trợ.
-
----
-
-## 9. Các trường nhập trên Tab Đổi mật khẩu
-
-![Tab Đổi mật khẩu](screenshots/thong_tin_ca_nhan_02_change_password.png)
+#### Các trường nhập (cột phải — Tab Đổi mật khẩu)
 
 | Tên trường | Bắt buộc | Mô tả & ràng buộc |
 |---|---|---|
-| **Mật khẩu hiện tại** | Có | Mật khẩu đang sử dụng để đăng nhập. Nhập dạng ẩn. Nếu sai, hệ thống báo *"Mật khẩu hiện tại không đúng"*. |
-| **Mật khẩu mới** | Có | Mật khẩu mới muốn đặt. Yêu cầu: **tối thiểu 6 ký tự** và **bắt buộc chứa cả chữ hoa, chữ thường và số**. Không được trùng với mật khẩu hiện tại. |
-| **Xác nhận mật khẩu mới** | Có | Nhập lại đúng mật khẩu mới. Nếu khác với ô **Mật khẩu mới**, hệ thống báo *"Mật khẩu xác nhận không khớp"* ngay dưới ô. |
+| **Mật khẩu hiện tại** | Có | Mật khẩu đang dùng để đăng nhập. Nhập dạng ẩn. Sai → *"Mật khẩu hiện tại không đúng"*. |
+| **Mật khẩu mới** | Có | Mật khẩu mới muốn đặt. Tối thiểu 6 ký tự, bắt buộc chứa chữ hoa, chữ thường và chữ số. Không được trùng với mật khẩu hiện tại. |
+| **Xác nhận mật khẩu mới** | Có | Nhập lại đúng mật khẩu mới. Khác với ô Mật khẩu mới → *"Mật khẩu xác nhận không khớp"* hiển thị ngay dưới ô. |
 
-Nút **Đổi mật khẩu** nằm ở cuối form (lớn, màu xanh navy, full chiều rộng cột phải).
+#### Thông báo của hệ thống
 
----
+| Tình huống | Thông báo |
+|---|---|
+| Để trống ô Mật khẩu hiện tại | Nhập mật khẩu hiện tại |
+| Để trống ô Mật khẩu mới | Nhập mật khẩu mới |
+| Mật khẩu mới ngắn hơn 6 ký tự | Tối thiểu 6 ký tự |
+| Mật khẩu mới không có đủ chữ hoa / chữ thường / số | Phải chứa chữ hoa, chữ thường và số |
+| Để trống ô Xác nhận mật khẩu mới | Xác nhận mật khẩu mới |
+| Xác nhận mật khẩu khác mật khẩu mới | Mật khẩu xác nhận không khớp |
+| Mật khẩu mới trùng mật khẩu hiện tại | Mật khẩu mới không được trùng với mật khẩu hiện tại |
+| Mật khẩu hiện tại nhập sai | Mật khẩu hiện tại không đúng |
+| Mật khẩu mới không thỏa quy tắc (chiều dài / chữ hoa / chữ thường / số) khi máy chủ kiểm tra | Mật khẩu mới phải có ít nhất 6 ký tự, chứa chữ hoa, chữ thường và số |
+| Đổi mật khẩu thành công | Đổi mật khẩu thành công |
+| Lỗi máy chủ không xác định | Lỗi đổi mật khẩu |
 
-## 10. Quy trình đổi mật khẩu
+### 3.3. Hộp xác nhận Đăng xuất
 
-1. Đăng nhập vào hệ thống → bấm vào **ảnh đại diện** ở góc trên bên phải → chọn **Thông tin cá nhân** trong menu (hoặc truy cập trực tiếp `/thong-tin-ca-nhan`).
-2. Tab **Đổi mật khẩu** mặc định đã được mở sẵn ở cột bên phải.
-3. Đọc dòng nhắc *"Mật khẩu phải có ít nhất 6 ký tự, chứa chữ hoa, chữ thường và số."*
-4. Nhập **Mật khẩu hiện tại** (mật khẩu đang dùng).
-5. Nhập **Mật khẩu mới** đáp ứng quy tắc:
-   - Ít nhất 6 ký tự.
-   - Có ít nhất 1 chữ hoa (`A-Z`).
-   - Có ít nhất 1 chữ thường (`a-z`).
-   - Có ít nhất 1 chữ số (`0-9`).
-   - Khác với mật khẩu hiện tại.
-6. Nhập **Xác nhận mật khẩu mới** giống hệt ô **Mật khẩu mới**.
-7. Bấm nút **Đổi mật khẩu**.
-8. Nếu hợp lệ: hệ thống thông báo **"Đổi mật khẩu thành công"** và xóa sạch nội dung 3 ô. Lần đăng nhập kế tiếp sẽ phải dùng mật khẩu mới.
-9. Nếu không hợp lệ: hệ thống hiển thị thông báo lỗi tương ứng dưới ô tương ứng hoặc dạng thông báo nhanh phía trên màn hình (xem bảng ở mục 13).
+![Hộp xác nhận Đăng xuất](screenshots/thong_tin_ca_nhan_03_logout_confirm.png)
 
-> **Khuyến nghị bảo mật**:
-> - Đổi mật khẩu định kỳ (3–6 tháng/lần).
-> - Không dùng mật khẩu dễ đoán (`123456`, ngày sinh, tên...).
-> - Không dùng chung một mật khẩu trên nhiều hệ thống.
-> - Sau khi đổi mật khẩu trên máy chính, các thiết bị khác đã ghi nhớ đăng nhập sẽ không bị ảnh hưởng ngay, nhưng phiên cũ sẽ hết hạn dần — nên đăng xuất chủ động trên các thiết bị không sử dụng.
+#### Bố cục màn hình
 
----
+Hộp thoại nhỏ ở giữa màn hình, hiển thị câu hỏi *"Bạn có chắc chắn muốn đăng xuất?"* và hai nút thao tác. Hộp thoại được mở khi người dùng bấm vào ảnh đại diện ở góc trên bên phải và chọn **Đăng xuất** trong menu thả xuống.
 
-## 11. Quy trình cập nhật thông tin cá nhân
+#### Các nút chức năng
 
-Trên màn hình **Thông tin cá nhân**, người dùng **không tự sửa** được các trường dữ liệu (họ tên, email, số điện thoại, ảnh đại diện, chức vụ, phòng ban...).
+| Nút | Vị trí | Khi nào hiển thị | Tác dụng |
+|---|---|---|---|
+| **Đăng xuất** (màu đỏ) | Bên phải hộp thoại | Luôn | Đóng phiên đăng nhập, xóa thông tin tài khoản khỏi trình duyệt và đưa về `/login`. |
+| **Hủy** | Bên trái hộp thoại | Luôn | Đóng hộp thoại, giữ nguyên phiên đang đăng nhập. |
 
-Nếu cần cập nhật các thông tin này:
+#### Thông báo của hệ thống
 
-1. Liên hệ **Quản trị viên** của đơn vị (hoặc bộ phận phụ trách hệ thống e-Office).
-2. Cung cấp các nội dung cần sửa và lý do (ví dụ: thay số điện thoại liên hệ, đổi email công vụ, chuyển phòng ban...).
-3. Quản trị viên thực hiện cập nhật trên màn hình **Quản trị > Người dùng**.
-4. Sau khi Quản trị viên lưu thay đổi, người dùng tải lại trang `/thong-tin-ca-nhan` hoặc đăng nhập lại để thấy thông tin mới.
-
----
-
-## 12. Quy trình đăng xuất
-
-1. Ở góc trên bên phải màn hình (bất kỳ trang nào sau khi đã đăng nhập), bấm vào **ảnh đại diện** để mở menu thả xuống.
-2. Menu hiển thị 2 mục:
-   - **Thông tin cá nhân** — chuyển đến trang `/thong-tin-ca-nhan`.
-   - **Đăng xuất** (chữ đỏ).
-3. Bấm **Đăng xuất**.
-4. Hệ thống hiển thị hộp xác nhận với câu hỏi *"Bạn có chắc chắn muốn đăng xuất?"*.
-5. Bấm nút **Đăng xuất** (màu đỏ) để xác nhận, hoặc bấm **Hủy** để hủy bỏ.
-6. Sau khi xác nhận, hệ thống đóng phiên đăng nhập, xóa thông tin tài khoản khỏi trình duyệt và tự động chuyển về màn hình `/login`.
-
-> **Lưu ý**: Khi sử dụng máy dùng chung (máy ở phòng họp, máy của đồng nghiệp...), **luôn đăng xuất** sau khi dùng xong để tránh người khác mượn được phiên đăng nhập của mình.
-
----
-
-## 13. Lưu ý / Ràng buộc nghiệp vụ và bảng tổng hợp thông báo
-
-
-
-### 13.1. Trạng thái tài khoản — khóa, xóa
-
-- Khi tài khoản bị **khóa** (do Quản trị viên đặt) → người dùng không đăng nhập được, hệ thống báo *"Tài khoản đã bị khóa"*. Cần liên hệ Quản trị viên để mở khóa.
-- Khi tài khoản bị **xóa** → cũng không đăng nhập được, hệ thống báo *"Tài khoản đã bị xóa"*. Tài khoản đã xóa không thể tự khôi phục từ phía người dùng.
-
-### 13.2. Phiên đăng nhập tự hết hạn
-
-Vì lý do bảo mật, mỗi phiên đăng nhập có thời hạn nhất định. Khi phiên hết hạn, hệ thống tự đăng xuất và đưa về màn hình `/login`. Nếu đã tích **Ghi nhớ đăng nhập**, hệ thống có thể tự gia hạn phiên trong giới hạn cho phép — ngược lại sẽ yêu cầu đăng nhập lại sớm hơn.
-
-
-
-### 13.3. Phạm vi thay đổi thông tin
-
-| Thông tin | Người dùng tự sửa | Quản trị viên sửa |
-|---|---|---|
-| Mật khẩu | Có (Thông tin cá nhân → Đổi mật khẩu) | Có (cấp lại / đặt lại) |
-| Tài khoản ký số (SmartCA, MySign...) | Có (Ký số → Tài khoản ký số cá nhân) | — |
-| Họ và tên | Không | Có |
-| Email | Không | Có |
-| Số điện thoại | Không | Có |
-| Ảnh đại diện | Không | Có |
-| Chức vụ | Không | Có |
-| Phòng ban / Đơn vị | Không | Có |
-| Vai trò (Quản trị viên / nhóm quyền) | Không | Có |
-| Khóa / Mở khóa tài khoản | Không | Có |
-
-
----
-
-*Tài liệu được biên soạn dựa trên hệ thống thực tế đang triển khai. Mọi thắc mắc vui lòng liên hệ với đội phát triển để được hỗ trợ.*
+| Tình huống | Thông báo |
+|---|---|
+| Đăng xuất thành công | Đăng xuất thành công |

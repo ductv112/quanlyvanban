@@ -1,226 +1,166 @@
-# Hướng dẫn sử dụng: Thông báo (Chuông cá nhân + Thông báo nội bộ)
-
-Tài liệu này mô tả đầy đủ cách sử dụng tính năng thông báo của hệ thống Quản lý văn bản điện tử (e-Office), bao gồm **hai vùng tách biệt** và bổ sung cho nhau: **chuông thông báo cá nhân trên thanh đầu trang** và **trang Thông báo nội bộ** (đường dẫn `/thong-bao`).
-
----
+# Thông báo nội bộ
 
 ## 1. Giới thiệu
 
-Trong quá trình làm việc, mỗi cán bộ thường nhận được nhiều loại thông tin từ hệ thống: kết quả ký số, được giao văn bản, được giao hồ sơ công việc, được nhắc tới trong bút phê chỉ đạo, các thông báo chung do quản trị viên gửi đến đơn vị… Hệ thống chia các thông tin này thành **hai luồng riêng**, hiển thị ở hai nơi rõ ràng:
+Hệ thống có hai vùng thông báo độc lập, phục vụ hai mục đích khác nhau:
 
-- **Chuông thông báo cá nhân** trên thanh đầu trang — biểu tượng chuông kèm số đếm chưa đọc, có ở mọi màn hình. Chỉ hiển thị các sự kiện **liên quan trực tiếp đến chính người đăng nhập** (ký số của mình, được giao việc cho mình, được nhắc tên mình…). Người dùng tự thực hiện một thao tác mà sinh ra thông báo cho chính họ thì **không nhận chuông** (ví dụ: tự tạo HSCV cho mình, tự gửi văn bản lại cho mình) — đây là quy ước "không tự thông báo".
-- **Trang Thông báo nội bộ** (`/thong-bao`) — danh sách thông báo dùng chung cho **toàn bộ cán bộ trong cùng một đơn vị**, do quản trị viên hoặc cán bộ có quyền tạo (ví dụ: thông báo nghỉ lễ, lịch tập huấn, thay đổi quy trình nội bộ…). Truy cập từ menu bên trái mục **Thông báo nội bộ**.
+- **Chuông thông báo cá nhân (Bell)** — biểu tượng chuông ở góc trên bên phải của thanh tiêu đề (header). Đây là kênh **thông báo cá nhân tự động** do hệ thống sinh ra cho từng người dùng (ví dụ: ký số thành công, ký số thất bại, được giao xử lý văn bản đến, được giao việc, lãnh đạo có ý kiến chỉ đạo). Mỗi người dùng chỉ thấy thông báo của riêng mình.
+- **Trang Thông báo nội bộ** (`/thong-bao`) — danh sách các **thông báo do người (Quản trị viên) tự soạn** cho toàn đơn vị: thông báo họp, thông báo bảo trì hệ thống, thông báo nghỉ lễ, hướng dẫn... Mọi cán bộ trong cùng đơn vị đều thấy chung một danh sách này.
 
-Hai luồng này **độc lập về dữ liệu**: mở trang Thông báo nội bộ thấy 10 thông báo của đơn vị, nhưng chuông góc phải có thể vẫn trống nếu cá nhân chưa có việc gì được giao. Đây là hành vi đúng theo thiết kế, không phải lỗi.
+Nhân sự sử dụng:
+- **Mọi cán bộ** đều có chuông thông báo cá nhân và đều có thể đọc danh sách Thông báo nội bộ.
+- **Quản trị viên** có thêm quyền soạn thông báo mới ở trang Thông báo nội bộ.
 
-Hai khu vực này hiển thị **hai nguồn thông báo khác nhau** (xem mục 4), tuy đều là "thông báo" nhưng được lưu riêng để phục vụ hai mục đích khác nhau:
+Khi có thông báo mới gửi tới (qua kết nối thời gian thực với máy chủ), chuông sẽ hiện chấm đỏ kèm số đếm và một ô **toast** nhỏ trượt từ góc phải màn hình trong khoảng 3 giây.
 
-- Chuông tập trung **các thông báo cá nhân** (gắn với riêng một tài khoản — ví dụ: "Ký số thành công cho file của bạn").
-- Trang `/thong-bao` hiển thị **các thông báo theo đơn vị** (do quản trị viên hoặc văn thư đơn vị gửi tới toàn bộ nhân sự cùng đơn vị — ví dụ thông báo nội bộ).
+## 2. Quy trình thao tác và ràng buộc nghiệp vụ
 
-Việc đánh dấu đã đọc hay chưa đọc là **của riêng từng tài khoản**, không ảnh hưởng đến người khác cùng đơn vị.
+**Quy trình theo dõi thông báo cá nhân (chuông):**
 
----
+1. Quan sát chấm đỏ trên biểu tượng chuông ở header — số trên chấm đỏ là số thông báo chưa đọc (hiển thị tối đa 99+).
+2. Bấm vào biểu tượng chuông để mở dropdown hiển thị 10 thông báo gần nhất.
+3. Bấm vào một dòng thông báo — hệ thống tự đánh dấu là đã đọc và chuyển đến trang liên quan (nếu có liên kết).
+4. Bấm **Đánh dấu đã đọc tất cả** ở góc trên bên phải dropdown để xóa toàn bộ chấm đỏ.
 
-## 2. Bố cục Chuông trên thanh đầu trang
+**Quy trình theo dõi Thông báo nội bộ:**
 
-![Chuông thông báo trên thanh đầu trang](screenshots/thong_bao_01_bell_header.png)
+1. Vào menu **Thông báo nội bộ** (hoặc bấm thẻ "Thông báo chưa đọc" trên Tổng quan).
+2. Lọc theo tab **Tất cả / Chưa đọc / Đã đọc** để xem nhóm tương ứng.
+3. Bấm vào một dòng thông báo chưa đọc — hệ thống tự đánh dấu là đã đọc.
+4. Bấm **Đánh dấu đã đọc tất cả** để đánh dấu toàn bộ thông báo của đơn vị mình là đã đọc.
 
-Chuông thông báo nằm ở **góc trên bên phải mọi màn hình**, kế bên ảnh đại diện người dùng, gồm:
+**Quy trình tạo Thông báo nội bộ (chỉ Quản trị viên):**
 
-- **Biểu tượng chuông** (BellOutlined).
-- **Huy hiệu số** màu đỏ ở góc phải trên của chuông — hiển thị số thông báo **chưa đọc**. Nếu vượt quá 99, hiển thị **99+**. Khi không có thông báo chưa đọc, huy hiệu ẩn đi.
+1. Ở trang Thông báo nội bộ, bấm **Tạo thông báo** ở góc phải đầu trang. Drawer "Tạo thông báo mới" mở ra.
+2. Nhập **Tiêu đề** (tối đa 300 ký tự) và **Nội dung** (tối đa 5000 ký tự).
+3. Bấm **Tạo thông báo** trong drawer để gửi.
+4. Sau khi tạo, danh sách tự cập nhật. Toàn bộ cán bộ trong đơn vị sẽ thấy thông báo mới ở dòng đầu danh sách.
 
-Bấm vào biểu tượng chuông sẽ mở **bảng thả xuống (dropdown)** với cấu trúc:
+**Ràng buộc nghiệp vụ:**
 
-- **Phần đầu**: tiêu đề **"Thông báo"** ở bên trái, nút **"Đánh dấu đã đọc tất cả"** ở bên phải (nút này bị mờ đi khi không có thông báo chưa đọc).
-- **Phần thân**: tối đa **10 thông báo gần nhất**, sắp xếp theo thời gian — mới nhất lên đầu.
-  - Mỗi thông báo gồm: biểu tượng (xem mục 4), **tiêu đề** (in đậm nếu chưa đọc), **mô tả ngắn**, và **thời điểm tương đối** (ví dụ *"3 phút trước"*, *"2 giờ trước"*).
-  - Thông báo **chưa đọc** có nền sáng nổi bật hơn so với thông báo đã đọc.
-- Khi chưa có thông báo nào, hiển thị thông báo *"Không có thông báo"*.
+- **Quyền tạo Thông báo nội bộ**: chỉ tài khoản có quyền **Quản trị viên** thấy nút **Tạo thông báo**.
+- **Phạm vi nhìn thấy**: Thông báo nội bộ được phát hành cho **đơn vị cấp gốc** chứa phòng ban của người tạo. Người dùng thuộc cùng đơn vị (kể cả các phòng ban con) đều thấy chung. Người dùng đơn vị khác **không thấy**.
+- **Đánh dấu đã đọc**: thực hiện trên từng người dùng — mỗi cán bộ có trạng thái đọc/chưa đọc riêng cho từng thông báo của đơn vị.
+- **Người tạo lấy từ phiên đăng nhập**: hệ thống tự ghi nhận người tạo từ tài khoản đang đăng nhập, không cho phép giả mạo người tạo.
+- **Toast thời gian thực**: khi đang online, có thông báo mới sẽ hiện ô toast trượt 3 giây ở góc phải. Thông báo cá nhân (chuông) cũng đồng thời tăng số đếm chấm đỏ.
 
-Bấm vào một dòng thông báo trong bảng thả xuống sẽ:
+## 3. Các màn hình chức năng
 
-1. Đánh dấu thông báo đó là đã đọc (huy hiệu số trên chuông giảm đi 1).
-2. Đóng bảng thả xuống.
-3. **Mở thẳng tới màn hình liên quan** (ví dụ: thông báo ký số → mở tab "Đã ký" trong màn hình **Danh sách giao dịch ký số**).
+### 3.1. Chuông thông báo cá nhân ở header
 
-> **Lưu ý**: Khi có sự kiện mới (ví dụ vừa ký xong một văn bản) hệ thống sẽ **tự động cập nhật** số trên huy hiệu và hiển thị **thông báo nổi (toast)** ở góc trên bên phải trong khoảng 3 giây — không cần tải lại trang.
+![Chuông thông báo và dropdown](screenshots/thong_bao_01_bell_dropdown.png)
 
----
+#### Bố cục màn hình
 
-## 3. Bố cục Trang Thông báo nội bộ (`/thong-bao`)
+- **Biểu tượng chuông**: nằm ở góc trên bên phải của thanh tiêu đề chính. Khi có thông báo chưa đọc, một chấm đỏ nhỏ chứa số đếm xuất hiện ở góc trên phải biểu tượng (tối đa hiển thị `99+`).
+- **Dropdown khi bấm chuông**: khung trắng bo góc, đổ bóng nhẹ, chiều rộng cố định, mở từ phía dưới biểu tượng chuông. Có 3 phần:
+  - Phần đầu: dòng tiêu đề **"Thông báo"** ở trái và liên kết **Đánh dấu đã đọc tất cả** ở phải.
+  - Phần thân: tối đa 10 dòng thông báo gần nhất, mỗi dòng gồm biểu tượng theo loại + tiêu đề + nội dung tóm tắt + thời gian tương đối (ví dụ: *"5 phút trước"*).
+  - Khi đang tải: con quay loading ở giữa.
+  - Khi không có thông báo: biểu tượng rỗng và dòng *"Không có thông báo"*.
 
-![Màn hình Thông báo nội bộ](screenshots/thong_bao_02_main_page.png)
+#### Các nút chức năng
 
-Truy cập từ menu bên trái → bấm mục **Thông báo nội bộ** (biểu tượng chuông). Nếu trên menu có số đếm in đậm bên cạnh nhãn, đó là số thông báo chưa đọc của trang này (theo nguồn đơn vị).
-
-Bố cục màn hình gồm:
-
-- **Phần đầu trang**:
-  - Tiêu đề **"Thông báo nội bộ"** kèm biểu tượng chuông và dòng mô tả ngắn *"Quản lý và theo dõi các thông báo nội bộ của đơn vị"*.
-  - **Nút "Đánh dấu đã đọc tất cả"** — đánh dấu toàn bộ thông báo đang còn chưa đọc thành đã đọc.
-  - **Nút "Tạo thông báo"** (màu xanh) — chỉ hiển thị với tài khoản **Quản trị**. Người dùng thường không thấy nút này.
-- **Thanh phân loại (tab)**:
-  - **Tất cả** — hiển thị toàn bộ thông báo của đơn vị, bất kể đã đọc hay chưa.
-  - **Chưa đọc** — chỉ thông báo còn chưa đọc.
-  - **Đã đọc** — chỉ thông báo đã được đánh dấu đã đọc.
-- **Danh sách thông báo**:
-  - Mỗi thông báo gồm: biểu tượng chuông tròn, **tiêu đề** (in đậm nếu chưa đọc, kèm chấm xanh nhỏ ở đầu dòng), **thời gian** dạng `DD/MM/YYYY HH:mm` ở bên phải, **nội dung** rút gọn 2 dòng phía dưới.
-  - Bấm vào dòng thông báo còn chưa đọc → đánh dấu thành đã đọc; chấm xanh và in đậm sẽ biến mất.
-- **Phân trang**: 20 thông báo / trang. Phân trang chỉ hiển thị khi tổng số thông báo vượt quá 20.
-- **Khi danh sách trống**: hiển thị biểu tượng chuông xám lớn cùng dòng chữ *"Chưa có thông báo"* và *"Hệ thống sẽ thông báo khi có văn bản mới hoặc việc được giao."*
-
----
-
-## 4. Các loại thông báo
-
-Hệ thống phân biệt **hai nguồn thông báo** với hai vùng hiển thị khác nhau:
-
-| Nguồn | Hiển thị ở đâu | Khi nào hệ thống tạo | Bấm vào dẫn đến đâu |
+| Nút | Vị trí | Khi nào hiển thị | Tác dụng |
 |---|---|---|---|
-| **Ký số thành công** (`sign_completed`) | Chuông thông báo trên thanh đầu trang | Sau khi giao dịch ký số của chính người dùng kết thúc thành công | **Danh sách giao dịch ký số** → tab **Đã ký** |
-| **Ký số thất bại / hết hạn / đã hủy** (`sign_failed`) | Chuông thông báo trên thanh đầu trang | Khi giao dịch ký số của chính người dùng bị **thất bại**, **hết hạn** (không xác nhận trong 3 phút) hoặc **bị hủy** | **Danh sách giao dịch ký số** → tab **Thất bại** |
-| **Văn bản đến được giao cho mình** (`incoming_doc_assigned`) | Chuông thông báo trên thanh đầu trang | Khi văn thư / lãnh đạo gửi văn bản đến cho cán bộ này, hoặc khi văn bản được phân công cho cán bộ qua thao tác **Gửi** trên màn hình chi tiết VB đến | **Chi tiết Văn bản đến** liên quan |
-| **Được giao xử lý hồ sơ công việc** (`task_assigned`) | Chuông thông báo trên thanh đầu trang | Khi tạo HSCV mới với mình là người phụ trách, hoặc khi mình được **phân công thêm** vào HSCV (vai trò phụ trách hoặc phối hợp) | **Chi tiết Hồ sơ công việc** liên quan |
-| **Bút phê / ý kiến chỉ đạo gắn tên mình** (`leader_note_received`) | Chuông thông báo trên thanh đầu trang | Khi lãnh đạo có ý kiến chỉ đạo trên văn bản đến và **chỉ định đích danh** mình trong phần phân công | **Chi tiết Văn bản đến** liên quan |
-| **Thông báo nội bộ đơn vị** | Trang **Thông báo** (`/thong-bao`) | Quản trị viên hoặc cán bộ có quyền **bấm "Tạo thông báo"** trên trang này (xem mục 6.4) | Không có đường dẫn — chỉ hiển thị nội dung và đánh dấu đã đọc tại chỗ |
+| **Biểu tượng chuông** | Header (góc trên phải) | Luôn (sau khi đăng nhập) | Mở/đóng dropdown thông báo cá nhân. |
+| **Đánh dấu đã đọc tất cả** | Góc phải đầu dropdown | Luôn (vô hiệu khi không có thông báo chưa đọc) | Đánh dấu toàn bộ thông báo cá nhân là đã đọc, đặt số chấm đỏ về 0. |
+| **Một dòng thông báo** | Trong dropdown | Khi danh sách có dữ liệu | Đánh dấu thông báo đó là đã đọc và chuyển đến trang liên quan (nếu có liên kết kèm theo). Đóng dropdown. |
 
-> **Phân biệt**:
->
-> - Thông báo **ký số** là **của riêng từng người** — chỉ chính người yêu cầu ký mới thấy.
-> - Thông báo **nội bộ đơn vị** dùng chung cho toàn bộ cán bộ thuộc cùng một **đơn vị** (cấp đơn vị cha — Sở, Ban, Ngành) — ai cùng đơn vị đều thấy và mỗi người tự đánh dấu đã đọc cho riêng mình.
+#### Các trường dữ liệu (mỗi dòng thông báo)
 
-> **Phạm vi thông báo qua chuông tại phiên bản hiện tại**: chuông trên thanh đầu trang phát thông báo cá nhân cho **5 nhóm sự kiện**:
->
-> - *Ký số thành công* và *Ký số thất bại / hết hạn / đã hủy* (biểu tượng và màu riêng).
-> - *Văn bản đến vừa được giao cho mình* (`incoming_doc_assigned`) — sinh khi văn thư hoặc lãnh đạo gửi văn bản đến cho cán bộ này; bấm vào mở thẳng **chi tiết Văn bản đến**.
-> - *Được giao xử lý hồ sơ công việc* (`task_assigned`) — sinh khi tạo HSCV mới với mình là người phụ trách, hoặc khi mình được phân công thêm vào HSCV (vai trò phụ trách / phối hợp); bấm vào mở thẳng **chi tiết Hồ sơ công việc**.
-> - *Bút phê / ý kiến chỉ đạo gắn tên mình* (`leader_note_received`) — sinh khi lãnh đạo có ý kiến chỉ đạo và chỉ định đích danh; bấm vào mở thẳng **chi tiết Văn bản đến** liên quan.
->
-> Các sự kiện chưa nối vào chuông ở phiên bản này: gửi Văn bản đi, phê duyệt dự thảo, chuyển tiếp HSCV, ý kiến chuyển tiếp, lịch họp, tin nhắn nội bộ.
+| Tên trường | Mô tả |
+|---|---|
+| Biểu tượng loại | Mỗi loại có một biểu tượng riêng: dấu tích xanh (ký số thành công), dấu chéo đỏ (ký số thất bại), tài liệu xanh navy (được giao VB đến), giấy tờ teal (được giao việc), bút chì cam (lãnh đạo có ý kiến). Loại khác: chuông xanh teal mặc định. |
+| Tiêu đề | Tiêu đề thông báo, in đậm nếu chưa đọc. Cắt một dòng nếu dài. |
+| Nội dung tóm tắt | Mô tả ngắn dưới tiêu đề. Cắt một dòng. |
+| Thời gian tương đối | Hiển thị dạng "vừa xong", "5 phút trước", "2 giờ trước"... theo tiếng Việt. |
 
----
+#### Thông báo của hệ thống
 
-## 5. Các nút và thao tác
+| Tình huống | Thông báo |
+|---|---|
+| Dropdown không có dữ liệu | Không có thông báo |
+| Toast khi nhận sự kiện ký số thành công | Ký số thành công — Giao dịch #[mã] đã hoàn tất |
+| Toast khi giao dịch ký số bị hết hạn | Ký số hết hạn |
+| Toast khi giao dịch ký số bị hủy | Đã hủy ký số |
+| Toast khi ký số gặp lỗi khác | Ký số thất bại |
+| Toast khi nhận thông báo mới (giao việc, ý kiến chỉ đạo...) | Tiêu đề + mô tả của thông báo |
 
-| Nút / Thao tác | Vị trí | Khi nào hiển thị | Tác dụng |
+### 3.2. Trang danh sách Thông báo nội bộ
+
+![Trang Thông báo nội bộ](screenshots/thong_bao_02_main.png)
+
+#### Bố cục màn hình
+
+- **Phần đầu trang**: tiêu đề **"Thông báo nội bộ"** kèm biểu tượng chuông và dòng mô tả *"Quản lý và theo dõi các thông báo nội bộ của đơn vị"*. Bên phải có hai nút thao tác **Đánh dấu đã đọc tất cả** và **Tạo thông báo** (chỉ Quản trị viên).
+- **Thẻ danh sách**: thẻ trắng bo góc, có hai phần:
+  - Hàng tab lọc trên cùng: **Tất cả / Chưa đọc / Đã đọc**.
+  - Phần thân: danh sách thông báo dạng dòng, mỗi dòng có biểu tượng chuông tròn, tiêu đề, nội dung tóm tắt 2 dòng và thời gian tạo bên phải. Thông báo chưa đọc có chấm xanh và tiêu đề in đậm; thông báo đã đọc hiển thị nhạt hơn.
+  - Phân trang ở cuối nếu tổng số thông báo vượt 20 dòng.
+- **Trạng thái rỗng**: khi không có thông báo, hiển thị biểu tượng chuông xám lớn ở giữa cùng dòng *"Chưa có thông báo"* và *"Hệ thống sẽ thông báo khi có văn bản mới hoặc việc được giao."*
+
+#### Các nút chức năng
+
+| Nút | Vị trí | Khi nào hiển thị | Tác dụng |
 |---|---|---|---|
-| **Biểu tượng chuông** | Góc trên bên phải mọi màn hình | Luôn hiển thị | Bật / tắt bảng thả xuống thông báo. |
-| **Huy hiệu số (badge) trên chuông** | Trên biểu tượng chuông | Khi có thông báo chưa đọc | Hiển thị số thông báo cá nhân chưa đọc (tối đa hiển thị **99+**). |
-| **Đánh dấu đã đọc tất cả** (trong bảng thả xuống) | Phần đầu của bảng thả xuống | Luôn hiển thị; mờ đi nếu không có thông báo chưa đọc | Đánh dấu toàn bộ thông báo cá nhân thành đã đọc. Huy hiệu trên chuông trở về 0. |
-| **Bấm vào một dòng thông báo** (trong bảng thả xuống) | Trong bảng thả xuống | Luôn hiển thị | Đánh dấu dòng đó là đã đọc, đóng bảng và **chuyển tới màn hình liên quan** (nếu thông báo có gắn đường dẫn). |
-| **Mục "Thông báo" trong menu bên trái** | Menu chính bên trái | Luôn hiển thị | Mở **trang Thông báo** (`/thong-bao`). |
-| **Tab Tất cả / Chưa đọc / Đã đọc** | Phần đầu trang Thông báo | Luôn hiển thị | Lọc danh sách hiển thị bên dưới theo trạng thái đọc. |
-| **Đánh dấu đã đọc tất cả** (trang Thông báo) | Góc trên bên phải trang Thông báo | Luôn hiển thị | Đánh dấu toàn bộ thông báo đơn vị còn chưa đọc thành đã đọc. Hệ thống báo **"Đã đánh dấu tất cả là đã đọc"**. |
-| **Tạo thông báo** (trang Thông báo) | Góc trên bên phải trang Thông báo | **Chỉ Quản trị viên** (admin) | Mở cửa sổ phụ để tạo thông báo nội bộ mới gửi cho toàn đơn vị. |
-| **Bấm vào một dòng thông báo** (trang Thông báo) | Bất kỳ dòng nào trong danh sách | Luôn hiển thị | Đánh dấu dòng đó là đã đọc (chấm xanh và in đậm biến mất). |
-| **Nút Hủy** (cửa sổ Tạo thông báo) | Góc trên bên phải cửa sổ phụ | Trong cửa sổ Tạo thông báo | Đóng cửa sổ, không lưu. |
-| **Nút Tạo thông báo** (trong cửa sổ phụ) | Góc trên bên phải cửa sổ phụ | Trong cửa sổ Tạo thông báo | Lưu và phát hành thông báo cho đơn vị. |
+| **Đánh dấu đã đọc tất cả** | Góc phải đầu trang | Luôn | Đánh dấu mọi thông báo nội bộ trong phạm vi đơn vị mình là đã đọc. Trong khi xử lý, nút chuyển sang loading. |
+| **Tạo thông báo** | Góc phải đầu trang | Chỉ khi tài khoản có quyền **Quản trị viên** | Mở drawer "Tạo thông báo mới". |
+| **Tab Tất cả / Chưa đọc / Đã đọc** | Đầu thẻ danh sách | Luôn | Lọc danh sách theo trạng thái đọc. Khi đổi tab, danh sách tải lại từ trang 1. |
+| **Một dòng thông báo (chưa đọc)** | Trong danh sách | Khi tab cho phép | Đánh dấu thông báo đó là đã đọc — chấm xanh và đậm chữ biến mất, không chuyển trang. |
+| **Phân trang** | Cuối thẻ | Khi tổng số > 20 | Chuyển trang. Mỗi trang 20 dòng. |
 
----
+#### Các cột / trường dữ liệu
 
-## 6. Quy trình thao tác
+| Tên trường | Mô tả |
+|---|---|
+| Biểu tượng | Hình tròn nhạt với biểu tượng chuông teal — đánh dấu đây là một thông báo nội bộ. |
+| Tiêu đề | Tiêu đề thông báo. In đậm nếu chưa đọc, có thêm chấm xanh phía trước. |
+| Nội dung tóm tắt | Hai dòng đầu của nội dung, bị cắt với dấu `...` nếu dài. |
+| Thời gian tạo | Bên phải dòng. Hiển thị định dạng `DD/MM/YYYY HH:mm`. |
 
-### 6.1. Xem nhanh thông báo cá nhân qua chuông
+#### Thông báo của hệ thống
 
-1. Trên thanh đầu trang, để ý **huy hiệu số** trên biểu tượng chuông — đó là số thông báo chưa đọc.
-2. Bấm vào **biểu tượng chuông**.
-3. Bảng thả xuống mở ra với 10 thông báo gần nhất. Các thông báo chưa đọc có **tiêu đề in đậm** và nền nổi bật hơn.
-4. Đọc nhanh tiêu đề, mô tả ngắn và thời gian *"x phút/giờ/ngày trước"* để nắm tình hình.
+| Tình huống | Thông báo |
+|---|---|
+| Đánh dấu đã đọc tất cả thành công | Đã đánh dấu tất cả là đã đọc |
+| Đánh dấu đã đọc tất cả thất bại | Thao tác thất bại. Vui lòng thử lại. |
+| Danh sách trống | Chưa có thông báo + dòng phụ "Hệ thống sẽ thông báo khi có văn bản mới hoặc việc được giao." |
 
-### 6.2. Mở chi tiết một thông báo cá nhân
+### 3.3. Drawer Tạo thông báo (Quản trị viên)
 
-1. Trong bảng thả xuống của chuông, **bấm vào dòng thông báo** muốn xem.
-2. Hệ thống đồng thời thực hiện 3 việc:
-   - Đánh dấu thông báo đó là đã đọc.
-   - Giảm huy hiệu trên chuông đi 1.
-   - Chuyển sang màn hình liên quan (ví dụ: thông báo ký số sẽ mở **Danh sách giao dịch ký số**).
-3. Tại màn hình liên quan, có thể xem chi tiết và thực hiện thao tác tiếp theo (xem file đã ký, kiểm tra lý do thất bại…).
+![Drawer Tạo thông báo mới](screenshots/thong_bao_03_create_drawer.png)
 
-### 6.3. Đánh dấu đã đọc tất cả
+#### Bố cục màn hình
 
-**Cách 1 — từ chuông**:
+- Drawer trượt từ phải, rộng 720px, có dải gradient xanh navy ở phần đầu. Tiêu đề **"Tạo thông báo mới"** ở góc trái đầu drawer.
+- Phần đầu drawer (extra) có hai nút **Hủy** (viền trắng trên nền gradient) và **Tạo thông báo** (nút đặc, màu sáng).
+- Phần thân: form 2 trường dọc — Tiêu đề (input một dòng kèm bộ đếm ký tự), Nội dung (vùng nhập 6 dòng kèm bộ đếm ký tự).
+- Drawer chỉ mở được nếu tài khoản có quyền Quản trị viên (vì nút **Tạo thông báo** chỉ hiển thị với nhóm này).
 
-1. Bấm vào biểu tượng chuông.
-2. Bấm **"Đánh dấu đã đọc tất cả"** ở phần đầu bảng thả xuống.
-3. Toàn bộ thông báo trong danh sách trở thành đã đọc, huy hiệu trên chuông biến mất.
+#### Các nút chức năng
 
-**Cách 2 — từ trang Thông báo**:
+| Nút | Vị trí | Khi nào hiển thị | Tác dụng |
+|---|---|---|---|
+| **Tạo thông báo** | Góc phải đầu drawer | Luôn (khi drawer mở) | Kiểm tra ràng buộc → gửi yêu cầu tạo thông báo. Trong khi xử lý, nút chuyển sang loading. Thành công → đóng drawer, xóa form, tải lại danh sách. |
+| **Hủy** | Góc phải đầu drawer (cạnh Tạo) | Luôn (khi drawer mở) | Đóng drawer mà không tạo gì. |
+| **Đóng (X)** | Góc trên trái drawer | Luôn | Đóng drawer mà không tạo gì. |
 
-1. Vào menu bên trái → **Thông báo**.
-2. Bấm nút **"Đánh dấu đã đọc tất cả"** ở góc trên bên phải.
-3. Hệ thống thông báo **"Đã đánh dấu tất cả là đã đọc"**, danh sách cập nhật ngay.
+#### Các trường nhập
 
-> Hai nút này hoạt động trên **hai nguồn dữ liệu khác nhau**: nút trên chuông áp dụng cho thông báo cá nhân (ký số), nút trên trang `/thong-bao` áp dụng cho thông báo đơn vị. Cần thực hiện cả hai nếu muốn xóa hết huy hiệu chưa đọc ở cả hai nơi.
+| Tên trường | Bắt buộc | Mô tả & ràng buộc |
+|---|---|---|
+| **Tiêu đề** | Có | Tối đa 300 ký tự. Bộ đếm ký tự hiển thị ở góc phải ô nhập. Bỏ trống → *"Vui lòng nhập tiêu đề"*. Vượt 300 ký tự sẽ bị từ chối ở máy chủ. |
+| **Nội dung** | Có | Vùng nhập 6 dòng. Tối đa 5000 ký tự, có bộ đếm. Bỏ trống → *"Vui lòng nhập nội dung"*. |
 
-### 6.4. Tạo thông báo nội bộ (chỉ Quản trị viên)
+#### Thông báo của hệ thống
 
-![Cửa sổ Tạo thông báo mới](screenshots/thong_bao_03_create_drawer.png)
-
-1. Vào menu bên trái → **Thông báo**.
-2. Bấm nút **Tạo thông báo** (màu xanh) ở góc trên bên phải. Cửa sổ phụ mở ra từ bên phải.
-3. Trong cửa sổ, điền:
-   - **Tiêu đề** (bắt buộc) — tối đa **300 ký tự**, có hiển thị số ký tự đã nhập.
-   - **Nội dung** (bắt buộc) — vùng văn bản 6 dòng, tối đa **5.000 ký tự**, có hiển thị số ký tự đã nhập.
-4. Bấm **Tạo thông báo**. Hệ thống thông báo **"Tạo thông báo thành công"** và đóng cửa sổ. Danh sách tự động tải lại — thông báo vừa tạo xuất hiện ở đầu danh sách.
-5. Nếu bấm **Hủy** thì đóng cửa sổ và không lưu.
-
-> Thông báo này được phát hành cho **toàn bộ cán bộ cùng đơn vị (đơn vị cha)** với người tạo. Mỗi người sẽ thấy thông báo trong trang Thông báo của mình ở trạng thái chưa đọc; sau khi bấm vào / đánh dấu đã đọc thì thông báo trở thành đã đọc **chỉ với riêng người đó**.
-
-### 6.5. Lọc thông báo trên trang Thông báo
-
-1. Vào trang **Thông báo**.
-2. Bấm tab tương ứng:
-   - **Tất cả** — toàn bộ.
-   - **Chưa đọc** — chỉ thông báo chưa đọc.
-   - **Đã đọc** — chỉ thông báo đã đọc.
-3. Danh sách bên dưới được lọc lại ngay. Trang số quay về 1 mỗi khi đổi tab.
-
----
-
-## 7. Lưu ý / Ràng buộc nghiệp vụ
-
-### 7.1. Hai vùng thông báo độc lập
-
-Chuông trên thanh đầu trang và trang `/thong-bao` đọc **hai nguồn dữ liệu khác nhau**:
-
-- **Chuông** → các thông báo cá nhân (kết quả ký số…).
-- **Trang `/thong-bao`** → các thông báo nội bộ đơn vị do người có quyền tạo thủ công.
-
-Vì vậy, nếu chỉ vào trang `/thong-bao` và đánh dấu đã đọc tất cả, **huy hiệu trên chuông không bị giảm**. Ngược lại, đánh dấu đã đọc trong chuông cũng không ảnh hưởng đến danh sách trên trang `/thong-bao`.
-
-### 7.2. Tự động cập nhật khi có thông báo mới
-
-Khi có sự kiện mới (kết thúc một giao dịch ký số…), hệ thống đồng thời:
-
-1. **Lưu lại** thông báo vào hệ thống — kể cả khi người dùng đang ngoại tuyến cũng thấy được khi đăng nhập lại.
-2. **Tự động cập nhật** số trên huy hiệu của chuông và (nếu đang mở bảng thả xuống) làm mới danh sách.
-3. **Hiển thị thông báo nổi (toast)** trong khoảng 3 giây ở góc trên bên phải, kèm tiêu đề và mô tả ngắn.
-
-Người dùng không cần làm mới (F5) để thấy thông báo mới.
-
-### 7.3. Phạm vi cá nhân của trạng thái đọc
-
-Mỗi thông báo có một trạng thái **đã đọc / chưa đọc** **riêng cho từng tài khoản**. Người này đánh dấu đã đọc không ảnh hưởng đến người khác — kể cả khi cùng nhận một thông báo nội bộ đơn vị.
-
-### 7.4. Quyền tạo thông báo nội bộ
-
-Nút **Tạo thông báo** trên trang `/thong-bao` chỉ hiển thị với tài khoản có vai trò **Quản trị**. Người dùng thường không thấy nút này và không tự tạo được. Nếu cần phát hành thông báo cho đơn vị, liên hệ với cán bộ phụ trách hoặc văn thư.
-
-### 7.5. Giới hạn ký tự khi tạo thông báo
-
-- **Tiêu đề**: tối đa **300 ký tự**, không được để trống.
-- **Nội dung**: tối đa **5.000 ký tự**, không được để trống.
-
-Nếu để trống một trong hai, hệ thống báo **"Vui lòng nhập tiêu đề"** hoặc **"Vui lòng nhập nội dung"** ngay dưới ô tương ứng.
-
-### 7.6. Hiển thị tối đa 10 trong chuông, 20 trong trang
-
-- Bảng thả xuống của chuông chỉ hiển thị **10 thông báo cá nhân gần nhất**. Thông báo cá nhân (ký số) cũ hơn 10 mục **không có giao diện để xem lại** — chuông không có nút "Xem tất cả" và cũng không có trang riêng cho danh sách thông báo cá nhân. Trang `/thong-bao` (mở từ menu **Thông báo**) chỉ hiển thị **thông báo nội bộ đơn vị**, **không** liệt kê thông báo ký số. Vì vậy: khi cần tra cứu lịch sử các giao dịch ký số đã xảy ra, hãy vào thẳng **Ký số > Danh sách giao dịch** và lọc theo tab **Đã ký** / **Thất bại** thay vì tìm trên chuông.
-- Trang `/thong-bao` hiển thị **20 thông báo / trang** với phân trang đầy đủ.
-
-
----
-
-*Tài liệu được biên soạn dựa trên hệ thống thực tế đang triển khai. Mọi thắc mắc vui lòng liên hệ với đội phát triển để được hỗ trợ.*
+| Tình huống | Thông báo |
+|---|---|
+| Bỏ trống ô Tiêu đề | Vui lòng nhập tiêu đề |
+| Bỏ trống ô Nội dung | Vui lòng nhập nội dung |
+| Tiêu đề rỗng (sau khi xóa khoảng trắng) ở máy chủ | Tiêu đề thông báo là bắt buộc |
+| Tiêu đề vượt quá 300 ký tự | Tiêu đề không được vượt quá 300 ký tự |
+| Nội dung rỗng (sau khi xóa khoảng trắng) ở máy chủ | Nội dung thông báo là bắt buộc |
+| Tạo thông báo thành công | Tạo thông báo thành công |
+| Tạo thông báo thất bại do lỗi không xác định | Tạo thông báo thất bại. Vui lòng thử lại. |

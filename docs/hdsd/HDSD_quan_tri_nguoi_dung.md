@@ -1,266 +1,295 @@
-# Hướng dẫn sử dụng: Màn hình Quản trị > Người dùng
+# Quản trị người dùng
 
-Tài liệu này mô tả đầy đủ các chức năng có trong màn hình **Quản trị > Người dùng** của hệ thống Quản lý văn bản điện tử (e-Office), giúp người dùng hiểu rõ cách sử dụng và quy trình nghiệp vụ.
+## Giới thiệu
 
----
+Module Quản trị người dùng là nơi quản trị viên tạo và quản lý toàn bộ tài khoản đăng nhập hệ thống — từ chuyên viên xử lý văn bản, văn thư, lãnh đạo đến quản trị viên. Mỗi người dùng được gán: đơn vị, phòng ban, chức vụ, nhóm quyền và trạng thái hoạt động.
 
-## 1. Giới thiệu
+Truy cập: menu **Quản trị → Người dùng**.
 
-Màn hình **Quản trị > Người dùng** dùng để quản lý toàn bộ tài khoản truy cập hệ thống e-Office: cán bộ, công chức, viên chức của các đơn vị / phòng ban. Đây là màn hình **quan trọng nhất phần Quản trị** vì nó quyết định **ai được vào hệ thống**, **vào với danh nghĩa nào**, **làm việc trong đơn vị nào** và **được phép làm gì** thông qua các nhóm quyền đã gán.
+Đối tượng sử dụng: quản trị viên hệ thống.
 
-Vì là dữ liệu nhạy cảm liên quan tới tài khoản và mật khẩu nên màn hình này **chỉ dành cho tài khoản Quản trị hệ thống**. Người dùng thông thường không truy cập được vào đây.
+## Quy trình thao tác và ràng buộc nghiệp vụ
 
-Mỗi thay đổi trên màn hình này đều ảnh hưởng đến phiên đăng nhập, phân quyền, định tuyến văn bản và các luồng nghiệp vụ liên quan tới người dùng đó. Cần thao tác cẩn thận, đặc biệt ở các chức năng **Khóa tài khoản**, **Reset mật khẩu**, **Phân quyền** và **Xóa người dùng**.
+Quy trình chuẩn khi tạo người dùng mới:
 
----
+1. Đảm bảo đơn vị, phòng ban, chức vụ và nhóm quyền cần thiết đã có trong hệ thống.
+2. Vào màn hình Quản trị → Người dùng, chọn đơn vị/phòng ban từ cây trái (giúp hệ thống tự gán đơn vị, phòng ban cho người dùng mới).
+3. Bấm **Thêm người dùng**, điền thông tin tài khoản (username, mật khẩu, họ tên, email, SDT, đơn vị, phòng ban, chức vụ).
+4. Sau khi tạo xong, vào menu ba chấm chọn **Phân quyền** để gán nhóm quyền cho người dùng.
+5. Khi tài khoản nghỉ việc tạm thời: dùng **Khóa tài khoản**. Khi mất mật khẩu: dùng **Reset mật khẩu** đưa về mặc định.
 
-## 2. Bố cục màn hình
+Ràng buộc nghiệp vụ:
 
-![Màn hình danh sách Người dùng](screenshots/quan_tri_nguoi_dung_01_main.png)
+- **Tên đăng nhập** phải duy nhất, từ 3 ký tự trở lên, chỉ chứa chữ cái, số, dấu chấm, gạch ngang. Sau khi tạo không thể đổi.
+- **Mật khẩu** tối thiểu 6 ký tự, phải chứa chữ hoa, chữ thường và số. Nếu để trống khi tạo mới, hệ thống đặt mặc định **Admin@123**.
+- **Email** phải đúng định dạng và duy nhất trong hệ thống.
+- **Số điện thoại** và **Số di động** phải có 8–15 ký tự (số, dấu cộng/trừ, ngoặc đơn).
+- **Đơn vị** và **Phòng ban** là bắt buộc — phòng ban được lọc theo đơn vị đã chọn.
+- **Họ và tên đệm** + **Tên** là bắt buộc.
+- Khi tài khoản bị **Khóa**, người dùng không thể đăng nhập nhưng vẫn còn dữ liệu lịch sử.
+- **Reset mật khẩu** đưa mật khẩu về **Admin@123** (theo cấu hình hệ thống).
+- Quản trị viên không nên xóa tài khoản đã từng xử lý văn bản — nên Khóa thay vì Xóa để giữ lịch sử.
 
-Màn hình được chia thành 2 cột chính cùng phần đầu trang:
+## Các màn hình chức năng
 
-- **Phần đầu trang**: Hiển thị tiêu đề "Quản lý người dùng" và dòng mô tả ngắn "Quản lý tài khoản người dùng trong hệ thống".
-- **Cột trái — Đơn vị / Phòng ban (cây phân cấp)**:
-  - Ô tìm kiếm nhanh ở phía trên cây.
-  - Cây phân cấp đơn vị / phòng ban (mặc định mở rộng tất cả các nhánh).
-  - Nút **Tải lại** (biểu tượng mũi tên xoay tròn) ở góc trên bên phải để tải lại cây sau khi có thay đổi.
-  - Bấm vào một nhánh trên cây sẽ lọc bảng bên phải chỉ hiển thị các người dùng thuộc nhánh đó.
-- **Cột phải — Danh sách người dùng**:
-  - Thanh lọc nhanh: ô tìm kiếm theo họ tên / username + bộ lọc trạng thái (Tất cả / Hoạt động / Đã khóa).
-  - Bảng dữ liệu hiển thị các người dùng tương ứng với nhánh đã chọn (mặc định hiển thị toàn bộ).
-  - Nút **Thêm người dùng** (biểu tượng dấu cộng, màu xanh) ở góc trên bên phải bảng để mở cửa sổ thêm mới.
-  - Mỗi dòng có nút thao tác hình **ba chấm dọc** ở cột cuối cùng, chứa các lệnh: Sửa thông tin, Phân quyền, Khóa / Mở khóa tài khoản, Reset mật khẩu, Xóa người dùng.
-  - Phía dưới bảng có thanh phân trang (mặc định 20 bản ghi / trang).
-- **Cửa sổ phụ (Drawer / Modal)**:
-  - **Drawer Thêm người dùng / Sửa người dùng** — mở ra từ bên phải khi bấm Thêm hoặc Sửa.
-  - **Drawer Phân quyền** — mở ra từ bên phải khi bấm Phân quyền, hiển thị danh sách nhóm quyền có thể gán.
-  - **Hộp xác nhận Reset mật khẩu** và **Hộp xác nhận xóa** — mở khi bấm chức năng tương ứng, yêu cầu xác nhận trước khi thực hiện.
+### Màn hình danh sách người dùng
 
----
+![Danh sách người dùng](screenshots/quan_tri_nguoi_dung_01_danh_sach.png)
 
-## 3. Các cột trong Bảng danh sách người dùng
+#### Bố cục màn hình
 
-| Tên cột | Mô tả |
-|---|---|
-| **Ảnh đại diện** | Hiển thị ảnh đại diện (avatar) của người dùng. Nếu chưa có ảnh, hệ thống hiển thị biểu tượng người trên nền xanh navy. |
-| **Họ tên** | Họ và tên đầy đủ của người dùng (hệ thống tự ghép từ "Họ và tên đệm" + "Tên"), in đậm, màu xanh navy. |
-| **Mã NV** | Mã nhân viên do hệ thống tự sinh khi tạo mới (định dạng `NVxxxxxx`). In đậm, màu xanh navy. |
-| **Username** | Tên đăng nhập dùng để vào hệ thống. Luôn ở dạng chữ thường, không có khoảng trắng. |
-| **Chức vụ** | Tên chức vụ hiện tại của người dùng (lấy từ danh mục Chức vụ). Có thể trống nếu chưa gán. |
-| **Phòng ban** | Tên phòng ban (hoặc đơn vị) trực tiếp của người dùng. |
-| **Email** | Địa chỉ email công vụ. Nếu dài sẽ tự động cắt và hiện tooltip khi rê chuột. |
-| **SDT** | Hiển thị **đồng thời** số điện thoại bàn (dòng trên) và số di động (dòng dưới, in nhỏ màu xám). Nếu chỉ có một trong hai thì chỉ hiển thị số đó. Nếu cả hai đều trống, hiển thị dấu gạch ngang `—`. |
-| **Trạng thái** | **Hoạt động** (nhãn xanh lá) hoặc **Đã khóa** (nhãn đỏ). Tài khoản bị khóa sẽ không thể đăng nhập hệ thống. |
-| (cột thao tác) | Nút ba chấm dọc, mở menu các lệnh: Sửa thông tin, Phân quyền, Khóa / Mở khóa tài khoản, Reset mật khẩu, Xóa người dùng. |
+Màn hình chia hai phần:
 
----
+- **Bên trái** — Cây Đơn vị / Phòng ban: hiển thị toàn bộ cây cơ cấu, có ô tìm kiếm theo tên và nút Tải lại. Click vào nút bất kỳ sẽ lọc danh sách bên phải.
+- **Bên phải** — Bảng danh sách người dùng: gồm thanh lọc (tìm kiếm + chọn trạng thái) và bảng dữ liệu có phân trang.
 
-## 4. Các trường nhập liệu trong cửa sổ Thêm / Sửa người dùng
+Trên cùng là tiêu đề trang **Quản lý người dùng** kèm dòng mô tả ngắn.
 
-![Cửa sổ Thêm người dùng](screenshots/quan_tri_nguoi_dung_02_add_drawer.png)
-
-Khi bấm **Thêm người dùng** hoặc **Sửa thông tin**, hệ thống mở cửa sổ phía bên phải màn hình, được chia thành 2 cột thông tin.
-
-### 4.1. Cột trái — Thông tin tài khoản và cá nhân
-
-| Tên trường | Bắt buộc | Mô tả & ràng buộc |
-|---|---|---|
-| **Tên đăng nhập** | Có | Tên dùng để đăng nhập vào hệ thống. Tối thiểu 3 ký tự, tối đa 50 ký tự. **Chỉ chấp nhận chữ cái, số, dấu chấm `.`, gạch dưới `_`, gạch ngang `-`** — không có khoảng trắng, không có dấu tiếng Việt. Hệ thống sẽ tự chuyển về chữ thường. **Phải duy nhất trong toàn hệ thống** — nếu trùng báo "Tên đăng nhập đã tồn tại". Trường này **không sửa được sau khi đã tạo** (bị mờ đi khi sửa). |
-| **Mật khẩu** | Không (chỉ hiện khi tạo mới) | Mật khẩu khởi tạo cho tài khoản. Tối thiểu 6 ký tự, **phải chứa cả chữ hoa, chữ thường và số**. Tối đa 50 ký tự. Nếu để trống, hệ thống dùng mật khẩu mặc định **`Admin@123`**. Người dùng sẽ được yêu cầu đổi mật khẩu trong lần đăng nhập đầu tiên. Trường này **không hiển thị trong cửa sổ Sửa** — muốn đặt lại mật khẩu phải dùng chức năng "Reset mật khẩu" ở menu ba chấm. |
-| **Họ và tên đệm** | Có | Phần Họ và Tên đệm (ví dụ: `Nguyễn Văn`). Tối đa 50 ký tự. Để trống sẽ báo "Họ và tên là bắt buộc". |
-| **Tên** | Có | Phần Tên (ví dụ: `An`). Tối đa 50 ký tự. Hệ thống tự ghép thành "Họ tên đầy đủ" để hiển thị trên bảng. Để trống sẽ báo "Họ và tên là bắt buộc". |
-| **Email** | Không | Email công vụ. Tối đa 100 ký tự. Phải đúng định dạng email (có `@` và phần đuôi tên miền). Sai định dạng báo "Email không đúng định dạng". **Phải duy nhất trong toàn hệ thống** — nếu trùng (kể cả khác chữ hoa / chữ thường) sẽ báo "Email đã được sử dụng". |
-| **Số điện thoại** | Không | Số điện thoại bàn / cơ quan. Tối đa 20 ký tự. Chấp nhận chữ số, dấu cộng `+`, dấu trừ `-`, khoảng trắng và ngoặc tròn `(`, `)`. Độ dài hợp lệ từ 8 đến 15 ký tự. Sai định dạng báo "Số điện thoại không đúng định dạng". |
-| **Di động** | Không | Số điện thoại di động. Tối đa 20 ký tự. Quy tắc định dạng giống Số điện thoại. Sai định dạng báo "Số di động không đúng định dạng". |
-
-### 4.2. Cột phải — Tổ chức và thông tin cá nhân
-
-| Tên trường | Bắt buộc | Mô tả & ràng buộc |
-|---|---|---|
-| **Đơn vị** | Có | Đơn vị (cấp Sở / Ban / Ngành) mà người dùng trực thuộc. Ô chọn dạng cây phân cấp, có nút xóa nhanh. Khi chọn đơn vị, danh sách "Phòng ban" bên dưới sẽ tự động cập nhật. Khi đang chọn một nhánh trên cây bên trái rồi mới bấm Thêm, ô này sẽ được điền sẵn nhánh đang chọn. Để trống báo "Đơn vị và phòng ban là bắt buộc". |
-| **Phòng ban** | Có | Phòng ban trực tiếp trong đơn vị đã chọn. Chỉ có thể chọn sau khi đã chọn Đơn vị. Khi đổi Đơn vị, ô này sẽ tự xóa giá trị cũ. Để trống báo "Đơn vị và phòng ban là bắt buộc". |
-| **Chức vụ** | Không | Chức vụ chính thức của người dùng (lấy từ danh mục Chức vụ). |
-| **Giới tính** | Không (mặc định: Nam) | Chọn một trong ba: **Nam** / **Nữ** / **Khác**. |
-| **Ngày sinh** | Không | Ngày sinh của người dùng, định dạng `DD/MM/YYYY`. |
-| **Địa chỉ** | Không | Địa chỉ liên hệ. Không giới hạn cứng nhưng khuyến nghị tối đa 500 ký tự (có hiển thị bộ đếm ký tự). |
-
-> **Lưu ý**: Sau khi điền xong, bấm **Thêm mới** (khi tạo) hoặc **Cập nhật** (khi sửa) ở góc trên bên phải cửa sổ. Các thông báo sai định dạng sẽ hiển thị ngay dưới ô nhập tương ứng để dễ phát hiện và sửa.
-
-### 4.3. Cửa sổ Phân quyền
-
-![Cửa sổ Phân quyền người dùng](screenshots/quan_tri_nguoi_dung_03_phan_quyen.png)
-
-Cửa sổ này không có trường nhập tự do mà gồm danh sách thẻ chọn (checkbox card):
-
-| Mục | Mô tả |
-|---|---|
-| **Tiêu đề** | "Phân quyền: <Họ tên người dùng>". |
-| **Dòng mô tả** | "Chọn nhóm quyền cho người dùng <Họ tên> (<username>)". |
-| **Danh sách nhóm quyền** | Mỗi nhóm quyền hiển thị thành 1 thẻ vuông gồm tên nhóm (in đậm) và mô tả (chữ xám). Bấm vào thẻ hoặc tích vào ô vuông để chọn / bỏ chọn. Thẻ được chọn có viền và nền xanh teal nhạt. Một người dùng có thể được gán **nhiều nhóm quyền cùng lúc**. |
-
----
-
-## 5. Các nút chức năng
+#### Các nút chức năng
 
 | Nút | Vị trí | Khi nào hiển thị | Tác dụng |
 |---|---|---|---|
-| **Thêm người dùng** | Góc trên bên phải bảng danh sách | Luôn hiển thị | Mở cửa sổ Thêm người dùng. Nếu đang chọn một nhánh trên cây, đơn vị / phòng ban tương ứng sẽ được điền sẵn vào form. |
-| **Tải lại** (biểu tượng mũi tên xoay tròn) | Góc trên bên phải khung "Đơn vị / Phòng ban" | Luôn hiển thị | Tải lại toàn bộ cây đơn vị từ máy chủ. Dùng khi nghi ngờ dữ liệu không đồng bộ. |
-| **Ô tìm kiếm "Tìm kiếm..."** trong cây | Phía trên cây phân cấp | Luôn hiển thị | Lọc các nhánh trên cây theo từ khóa nhập. Có nút xóa nhanh. |
-| **Ô tìm kiếm "Tìm kiếm họ tên, username..."** | Phía trên bảng | Luôn hiển thị | Tìm theo họ tên đầy đủ, tên đăng nhập, email hoặc mã nhân viên. Bấm Enter hoặc biểu tượng kính lúp để tìm. |
-| **Bộ lọc trạng thái** | Cạnh ô tìm kiếm | Luôn hiển thị | Lọc theo trạng thái tài khoản: Tất cả / Hoạt động / Đã khóa. |
-| **Sửa thông tin** | Trong menu ba chấm trên mỗi dòng | Luôn hiển thị | Mở cửa sổ Sửa người dùng với dữ liệu sẵn có. Tên đăng nhập và Mật khẩu **không sửa được** ở đây. |
-| **Phân quyền** | Trong menu ba chấm trên mỗi dòng | Luôn hiển thị | Mở cửa sổ Phân quyền để gán / bỏ gán các nhóm quyền cho người dùng. |
-| **Khóa tài khoản** | Trong menu ba chấm trên mỗi dòng | Khi tài khoản đang ở trạng thái **Hoạt động** | Khóa tài khoản — người dùng không thể đăng nhập cho tới khi mở khóa lại. |
-| **Mở khóa tài khoản** | Trong menu ba chấm trên mỗi dòng | Khi tài khoản đang ở trạng thái **Đã khóa** | Mở khóa tài khoản, đưa về trạng thái **Hoạt động**. |
-| **Reset mật khẩu** | Trong menu ba chấm trên mỗi dòng | Luôn hiển thị | Mở hộp xác nhận, sau đó đặt lại mật khẩu của người dùng về **`Admin@123`**. Người dùng phải đổi mật khẩu trong lần đăng nhập tiếp theo. |
-| **Xóa người dùng** | Trong menu ba chấm trên mỗi dòng (mục cuối, màu đỏ) | Luôn hiển thị | Mở hộp xác nhận, sau đó xóa người dùng (xóa mềm — xem mục 7). |
-| **Thêm mới** / **Cập nhật** | Góc trên bên phải cửa sổ Thêm/Sửa | Trong cửa sổ Thêm/Sửa | Lưu dữ liệu vừa nhập. Nhãn nút thay đổi tùy theo đang Thêm mới hay Cập nhật. |
-| **Hủy** | Góc trên bên phải cửa sổ Thêm/Sửa | Trong cửa sổ Thêm/Sửa | Đóng cửa sổ, không lưu thay đổi. |
-| **Lưu** | Góc trên bên phải cửa sổ Phân quyền | Trong cửa sổ Phân quyền | Lưu danh sách nhóm quyền đã chọn cho người dùng. |
-| **Reset** / **Hủy** trong hộp Reset mật khẩu | Trong hộp xác nhận | Khi mở hộp xác nhận | **Reset** — xác nhận đặt lại mật khẩu. **Hủy** — đóng hộp, không thực hiện. |
-| **Xóa** / **Hủy** trong hộp Xác nhận xóa | Trong hộp xác nhận | Khi mở hộp xác nhận | **Xóa** (màu đỏ) — thực hiện xóa. **Hủy** — đóng hộp, không xóa. |
+| Tải lại | Góc phải card cây trái | Luôn hiển thị | Tải lại cây đơn vị/phòng ban |
+| Tìm kiếm | Thanh lọc trong card phải | Luôn hiển thị | Lọc theo họ tên, username, gõ Enter để tìm |
+| Lọc theo trạng thái | Thanh lọc, bên phải ô tìm kiếm | Luôn hiển thị | Tất cả / Hoạt động / Đã khóa |
+| Thêm người dùng | Header card phải, góc phải | Luôn hiển thị | Mở Drawer thêm người dùng mới |
+| Sửa thông tin | Trong menu ba chấm cuối mỗi dòng | Mọi dòng | Mở Drawer chỉnh sửa thông tin người dùng |
+| Phân quyền | Trong menu ba chấm cuối mỗi dòng | Mọi dòng | Mở Drawer chọn nhóm quyền cho người dùng |
+| Khóa tài khoản | Trong menu ba chấm cuối mỗi dòng | Khi tài khoản đang Hoạt động | Khóa tài khoản |
+| Mở khóa tài khoản | Trong menu ba chấm cuối mỗi dòng | Khi tài khoản Đã khóa | Mở khóa tài khoản |
+| Reset mật khẩu | Trong menu ba chấm cuối mỗi dòng | Mọi dòng | Mở hộp xác nhận đặt lại mật khẩu về mặc định |
+| Xóa người dùng | Trong menu ba chấm cuối mỗi dòng | Mọi dòng | Mở hộp xác nhận xóa người dùng |
 
----
+#### Các cột / trường dữ liệu
 
-## 6. Quy trình thao tác chính
+| Cột | Ý nghĩa |
+|---|---|
+| Ảnh | Avatar người dùng (icon mặc định nếu chưa có ảnh) |
+| Họ tên | Họ và tên đầy đủ, in đậm màu xanh navy |
+| Mã NV | Mã nhân viên do hệ thống tự sinh |
+| Username | Tên đăng nhập |
+| Chức vụ | Tên chức vụ hiện tại |
+| Phòng ban | Tên phòng ban đang thuộc về |
+| Email | Email liên hệ |
+| SDT | Hiển thị 2 dòng — số điện thoại bàn ở dòng trên (đậm), số di động ở dòng dưới (xám nhỏ). Nếu cả hai trống, hiển thị dấu gạch — |
+| Trạng thái | Hoạt động (xanh) / Đã khóa (đỏ) |
 
-### 6.1. Thêm mới một người dùng
+#### Thông báo của hệ thống
 
-1. (Tùy chọn) Trên cây bên trái, bấm chọn nhánh đơn vị / phòng ban muốn thêm người dùng vào — khi đó ô "Đơn vị" và "Phòng ban" trong cửa sổ thêm sẽ được điền sẵn.
-2. Bấm nút **Thêm người dùng** ở góc trên bên phải bảng.
-3. Trong cửa sổ Thêm người dùng, điền đầy đủ thông tin **Tên đăng nhập**, **Họ và tên đệm**, **Tên**, **Đơn vị** và **Phòng ban** (các trường bắt buộc).
-4. (Tùy chọn) Nhập **Mật khẩu** khởi tạo. Nếu để trống, hệ thống sẽ dùng mặc định `Admin@123`.
-5. Điền các thông tin còn lại (Email, SDT, Chức vụ, Giới tính, Ngày sinh, Địa chỉ) tùy nhu cầu.
-6. Bấm **Thêm mới**.
-7. Hệ thống thông báo **"Thêm thành công"** và đóng cửa sổ. Bảng bên phải tự động cập nhật.
+| Tình huống | Thông báo |
+|---|---|
+| Tải cây không thành công | Lỗi tải cây đơn vị |
+| Tải bảng không thành công | Lỗi tải dữ liệu |
+| Khóa thành công | Đã khóa |
+| Mở khóa thành công | Đã mở khóa |
 
-> Sau khi tạo xong, để gán quyền cho người dùng, vào menu ba chấm → **Phân quyền** (xem mục 6.5).
+### Màn hình Thêm người dùng mới
 
-### 6.2. Chỉnh sửa thông tin một người dùng
+![Drawer thêm người dùng](screenshots/quan_tri_nguoi_dung_02_drawer_them.png)
 
-1. Tìm người dùng cần sửa trên bảng (có thể chọn nhánh trên cây hoặc dùng ô tìm kiếm).
-2. Trên dòng tương ứng, bấm biểu tượng **ba chấm dọc** ở cột cuối → chọn **Sửa thông tin**.
-3. Cửa sổ **Sửa người dùng** mở ra với dữ liệu sẵn có. Tiêu đề có dạng "Sửa người dùng — <Mã NV>".
-4. Sửa các thông tin cần thiết. Lưu ý: **Tên đăng nhập** không sửa được, **Mật khẩu** không hiện ở cửa sổ này.
-5. Bấm **Cập nhật**.
-6. Hệ thống thông báo **"Cập nhật thành công"** và đóng cửa sổ.
+Mở khi nhấn nút **Thêm người dùng**. Drawer trượt từ phải vào, tiêu đề **Thêm người dùng mới**, nền gradient xanh navy.
 
-> Đổi **Đơn vị** sẽ làm rỗng ô **Phòng ban** — phải chọn lại Phòng ban mới trước khi lưu.
+#### Bố cục màn hình
 
-### 6.3. Khóa / Mở khóa tài khoản
+Drawer rộng 720px, chia làm 2 cột:
 
-1. Tìm người dùng cần khóa hoặc mở khóa.
-2. Bấm biểu tượng **ba chấm dọc** ở cột cuối.
-3. Bấm **Khóa tài khoản** (nếu đang Hoạt động) hoặc **Mở khóa tài khoản** (nếu đang Đã khóa).
-4. Hệ thống thông báo **"Đã khóa"** hoặc **"Đã mở khóa"** tương ứng. Cột **Trạng thái** trên bảng cập nhật ngay.
+**Cột trái** (7 trường, hiển thị thông tin tài khoản và liên hệ):
 
-> **Khóa tài khoản** ngăn người dùng đăng nhập nhưng giữ nguyên toàn bộ dữ liệu lịch sử (văn bản đã xử lý, hồ sơ đã ký...). Dùng khi cán bộ nghỉ việc, nghỉ thai sản, đi học dài hạn — hoặc khi nghi ngờ tài khoản bị lộ thông tin đăng nhập.
+1. Tên đăng nhập.
+2. Mật khẩu (chỉ có khi thêm mới).
+3. Họ và tên đệm.
+4. Tên.
+5. Email.
+6. Số điện thoại.
+7. Di động.
 
-### 6.4. Đặt lại (Reset) mật khẩu
+**Cột phải** (6 trường, hiển thị thông tin tổ chức và cá nhân):
 
-1. Tìm người dùng cần đặt lại mật khẩu.
-2. Bấm biểu tượng **ba chấm dọc** ở cột cuối → chọn **Reset mật khẩu**.
-3. Hộp xác nhận hiện ra với câu hỏi *"Mật khẩu của "<Họ tên>" sẽ được đặt về mặc định (Admin@123)?"*.
-4. Bấm **Reset** để xác nhận, hoặc **Hủy** để bỏ qua.
-5. Hệ thống thông báo **"Đã reset mật khẩu"**. Người dùng phải dùng mật khẩu **`Admin@123`** để đăng nhập và sẽ được yêu cầu đổi mật khẩu mới ngay sau đó.
+1. Đơn vị.
+2. Phòng ban.
+3. Chức vụ.
+4. Giới tính (Radio: Nam / Nữ / Khác).
+5. Ngày sinh.
+6. Địa chỉ.
 
-> Chức năng này dùng khi người dùng quên mật khẩu hoặc tài khoản nghi ngờ bị xâm nhập. **Quản trị viên không xem được mật khẩu cũ** — hệ thống chỉ cho phép đặt lại về giá trị mặc định.
+Nếu trước khi mở Drawer đã chọn 1 phòng ban trong cây trái, hệ thống tự gán Đơn vị + Phòng ban tương ứng.
 
-### 6.5. Phân quyền cho người dùng
+#### Các nút chức năng
 
-1. Tìm người dùng cần phân quyền.
-2. Bấm biểu tượng **ba chấm dọc** ở cột cuối → chọn **Phân quyền**.
-3. Cửa sổ **Phân quyền** mở ra hiển thị tất cả các nhóm quyền có trong hệ thống.
-4. Tích chọn các nhóm quyền muốn gán cho người dùng (có thể chọn nhiều nhóm cùng lúc). Bấm vào thẻ hoặc ô vuông trong thẻ.
-5. Bấm nút **Lưu** ở góc trên bên phải.
-6. Hệ thống thông báo **"Lưu phân quyền thành công"** và đóng cửa sổ.
+| Nút | Vị trí | Khi nào hiển thị | Tác dụng |
+|---|---|---|---|
+| Hủy | Header drawer (góc phải trên) | Luôn hiển thị | Đóng drawer, không lưu thay đổi |
+| Thêm mới | Header drawer (góc phải trên) | Luôn hiển thị | Lưu người dùng mới, đóng drawer khi thành công |
 
-> Việc gán nhóm quyền quyết định người dùng được vào những menu nào, làm được những thao tác nghiệp vụ gì (gửi văn bản đến, ký số, lập sổ, duyệt ngân sách...). Cần làm theo đúng quy chế phân quyền của cơ quan.
+#### Các cột / trường dữ liệu
 
-### 6.6. Xóa người dùng
+| Trường | Bắt buộc | Ý nghĩa |
+|---|---|---|
+| Tên đăng nhập | Có | Tối thiểu 3, tối đa 50 ký tự. Chỉ chứa chữ cái, số, dấu chấm, gạch ngang. Phải duy nhất |
+| Mật khẩu | Không | Tối thiểu 6 ký tự, phải có chữ hoa, chữ thường, số. Để trống = Admin@123 |
+| Họ và tên đệm | Có | Tối đa 50 ký tự, ví dụ "Nguyễn Văn" |
+| Tên | Có | Tối đa 50 ký tự, ví dụ "An" |
+| Email | Không | Phải đúng định dạng. Nếu nhập, không được trùng với người dùng khác |
+| Số điện thoại | Không | 8–15 ký tự gồm số, dấu +, -, khoảng trắng, ngoặc đơn |
+| Di động | Không | Tương tự Số điện thoại |
+| Đơn vị | Có | Chọn từ cây đơn vị (TreeSelect) |
+| Phòng ban | Có | Chọn từ Select. Danh sách lọc theo Đơn vị đã chọn — đổi Đơn vị sẽ xóa giá trị Phòng ban |
+| Chức vụ | Không | Chọn từ Select danh sách chức vụ đang hoạt động |
+| Giới tính | Không | Mặc định Nam |
+| Ngày sinh | Không | Định dạng ngày/tháng/năm |
+| Địa chỉ | Không | Tối đa 500 ký tự, hiển thị bộ đếm ký tự |
 
-1. Tìm người dùng cần xóa.
-2. Bấm biểu tượng **ba chấm dọc** ở cột cuối → chọn **Xóa người dùng** (mục cuối, màu đỏ).
-3. Hộp xác nhận hiện ra với câu hỏi *"Bạn có chắc chắn muốn xóa "<Họ tên>"?"*.
+#### Thông báo của hệ thống
 
-   ![Hộp xác nhận xóa người dùng](screenshots/quan_tri_nguoi_dung_04_delete_confirm.png)
-4. Bấm **Xóa** (màu đỏ) để xác nhận, hoặc **Hủy** để bỏ qua.
-5. Nếu xóa được, hệ thống thông báo **"Xóa thành công"**.
+| Tình huống | Thông báo |
+|---|---|
+| Bỏ trống Tên đăng nhập | Nhập tên đăng nhập |
+| Tên đăng nhập dưới 3 ký tự | Tối thiểu 3 ký tự |
+| Tên đăng nhập sai định dạng (frontend) | Chỉ chứa chữ cái, số, dấu chấm, gạch ngang |
+| Tên đăng nhập sai định dạng (server) | Tên đăng nhập chỉ chứa chữ cái, số, dấu chấm, gạch ngang |
+| Tên đăng nhập dưới 3 ký tự (server) | Tên đăng nhập phải có ít nhất 3 ký tự |
+| Tên đăng nhập đã tồn tại | Tên đăng nhập đã tồn tại (inline ở trường) |
+| Mật khẩu dưới 6 ký tự | Tối thiểu 6 ký tự |
+| Mật khẩu thiếu hoa/thường/số | Phải chứa chữ hoa, chữ thường và số |
+| Mật khẩu sai (server) | Mật khẩu phải có ít nhất 6 ký tự, chứa chữ hoa, chữ thường và số |
+| Bỏ trống Họ và tên đệm | Nhập họ và tên đệm |
+| Bỏ trống Tên | Nhập tên |
+| Họ tên rỗng (server) | Họ và tên là bắt buộc |
+| Email sai định dạng (frontend) | Email không hợp lệ |
+| Email sai định dạng (server) | Email không đúng định dạng |
+| Email trùng | Email đã được sử dụng (inline ở trường Email) |
+| SDT sai định dạng (frontend) | Số điện thoại không đúng định dạng |
+| SDT sai định dạng (server) | Số điện thoại không đúng định dạng |
+| Di động sai định dạng | Số di động không đúng định dạng |
+| Bỏ trống Đơn vị | Chọn đơn vị |
+| Bỏ trống Phòng ban | Chọn phòng ban |
+| Đơn vị/Phòng ban rỗng (server) | Đơn vị và phòng ban là bắt buộc |
+| Lưu thành công | Thêm thành công |
 
-> **Quan trọng**: Hệ thống thực hiện **xóa mềm** — tài khoản không bị xóa hẳn khỏi cơ sở dữ liệu mà được đánh dấu là đã xóa. Người dùng không còn truy cập được hệ thống và không hiển thị trong các danh sách nghiệp vụ. Tuy nhiên, dữ liệu lịch sử (văn bản đã ký, đã xử lý) vẫn được giữ nguyên để tra cứu / kiểm toán.
+### Màn hình Sửa người dùng
 
----
+![Drawer sửa người dùng](screenshots/quan_tri_nguoi_dung_03_drawer_sua.png)
 
-## 7. Lưu ý / Ràng buộc nghiệp vụ
+Mở khi chọn **Sửa thông tin** trong menu ba chấm. Tiêu đề **Sửa người dùng — <Mã NV>**.
 
-### 7.1. Tên đăng nhập là khóa duy nhất, không sửa được sau khi tạo
+#### Bố cục màn hình
 
-Mỗi tên đăng nhập chỉ tồn tại đúng **một lần** trong toàn hệ thống (so sánh **không phân biệt chữ hoa / chữ thường**). Khi tạo trùng, hệ thống báo:
+Bố cục giống Drawer Thêm với hai khác biệt:
 
-> *"Tên đăng nhập đã tồn tại"*
+- Trường **Tên đăng nhập** bị khóa, không cho chỉnh sửa.
+- Không có trường **Mật khẩu** (mật khẩu được đổi qua chức năng Reset mật khẩu hoặc người dùng tự đổi).
 
-Sau khi đã tạo, ô **Tên đăng nhập** trong cửa sổ Sửa sẽ bị mờ đi — không thể sửa lại được. Lý do: tên đăng nhập gắn với toàn bộ phiên đăng nhập, lịch sử thao tác và các bản ghi liên quan, nếu đổi sẽ phá vỡ tính toàn vẹn dữ liệu. Nếu cần đổi, phải tạo tài khoản mới và xóa tài khoản cũ.
+Toàn bộ trường còn lại được tải sẵn dữ liệu hiện tại — hệ thống gọi API chi tiết để lấy đủ thông tin (username, họ tên, email, SDT, di động, giới tính, ngày sinh, địa chỉ, đơn vị, phòng ban, chức vụ).
 
-### 7.2. Quy tắc đặt mật khẩu
+#### Các nút chức năng
 
-Mật khẩu (cả khi tạo mới và khi đổi mật khẩu) phải:
+| Nút | Vị trí | Khi nào hiển thị | Tác dụng |
+|---|---|---|---|
+| Hủy | Header drawer (góc phải trên) | Luôn hiển thị | Đóng drawer, không lưu thay đổi |
+| Cập nhật | Header drawer (góc phải trên) | Luôn hiển thị | Lưu thay đổi, đóng drawer khi thành công |
 
-- **Tối thiểu 6 ký tự**.
-- **Chứa cả chữ hoa, chữ thường và số**.
+#### Thông báo của hệ thống
 
-Nếu vi phạm, hệ thống báo: *"Mật khẩu phải có ít nhất 6 ký tự, chứa chữ hoa, chữ thường và số"*.
+| Tình huống | Thông báo |
+|---|---|
+| Tải chi tiết không thành công | Lỗi tải chi tiết người dùng |
+| Cập nhật thành công | Cập nhật thành công |
+| Email trùng người khác | Email đã được sử dụng |
 
-Mật khẩu mặc định cho tài khoản mới và sau khi reset là **`Admin@123`**. Người dùng sẽ được hệ thống nhắc đổi mật khẩu trong lần đăng nhập đầu tiên (cờ "đã đổi mật khẩu" được đặt thành chưa).
+Các thông báo còn lại giống Drawer Thêm.
 
-### 7.3. Email phải duy nhất nếu có
+### Màn hình Phân quyền cho người dùng
 
-Nếu có nhập email, mỗi email chỉ tồn tại đúng một lần trong toàn hệ thống (không phân biệt chữ hoa / chữ thường). Trùng email sẽ báo:
+![Drawer phân quyền người dùng](screenshots/quan_tri_nguoi_dung_04_drawer_phan_quyen.png)
 
-> *"Email đã được sử dụng"*
+Mở khi chọn **Phân quyền** trong menu ba chấm. Tiêu đề **Phân quyền: <Họ tên>**.
 
-Email không bắt buộc nhưng nên có để hệ thống gửi thông báo, nhắc lịch họp và các email tự động khác.
+#### Bố cục màn hình
 
-### 7.4. Đơn vị và Phòng ban phải đi đôi
+Drawer rộng 480px, gồm:
 
-Một người dùng **luôn phải thuộc cả Đơn vị (cấp lớn) và Phòng ban (cấp trực thuộc)**. Hệ thống tự lấy Đơn vị từ vị trí của Phòng ban trong cây tổ chức, nhưng vẫn yêu cầu nhập rõ ràng cả 2. Để trống một trong hai sẽ báo:
+- Dòng mô tả ngắn cho biết đang phân quyền cho ai (họ tên + username).
+- Danh sách các nhóm quyền hiển thị dưới dạng card — mỗi card có 1 ô checkbox + tên nhóm + mô tả ngắn.
+- Khi click vào card hoặc vào checkbox, nhóm quyền được chọn/bỏ chọn — card đổi màu nền và viền sang xanh teal khi được chọn.
 
-> *"Đơn vị và phòng ban là bắt buộc"*
+#### Các nút chức năng
 
-Khi đổi Đơn vị, danh sách Phòng ban sẽ được làm mới — phải chọn lại Phòng ban tương ứng trước khi lưu.
+| Nút | Vị trí | Khi nào hiển thị | Tác dụng |
+|---|---|---|---|
+| Lưu | Header drawer (góc phải trên) | Luôn hiển thị | Lưu danh sách nhóm quyền đã chọn |
 
-### 7.5. Định dạng Tên đăng nhập
+#### Các cột / trường dữ liệu
 
-- **Chỉ chấp nhận**: chữ cái Latin (a-z, A-Z), số (0-9), dấu chấm `.`, dấu gạch dưới `_`, dấu gạch ngang `-`.
-- **Không chấp nhận**: dấu tiếng Việt, khoảng trắng, ký tự đặc biệt (`@`, `#`, `!`, `*`, ...).
-- **Tối thiểu 3 ký tự**, tối đa 50 ký tự.
+| Trường | Ý nghĩa |
+|---|---|
+| Tên nhóm quyền | Tên nhóm, in đậm màu xanh navy |
+| Mô tả | Dòng giải thích ngắn về nhóm quyền (nếu có) |
+| Trạng thái chọn | Card được chọn có nền xanh nhạt, viền xanh teal |
 
-Hệ thống tự chuyển về **chữ thường** khi lưu (`Nguyen.A` → `nguyen.a`).
+Hệ thống tự lưu lại danh sách nhóm quyền hiện tại của người dùng khi mở Drawer, người dùng chỉ cần tích/bỏ tích và nhấn Lưu.
 
-### 7.6. Định dạng SDT, Di động, Email
+#### Thông báo của hệ thống
 
-- **SDT** và **Di động**: chỉ chấp nhận chữ số, dấu `+`, `-`, khoảng trắng và ngoặc tròn `(`, `)`. Độ dài hợp lệ từ 8 đến 15 ký tự.
-- **Email**: phải đúng định dạng chuẩn (có `@` và phần đuôi tên miền).
+| Tình huống | Thông báo |
+|---|---|
+| Tải dữ liệu không thành công | Lỗi tải nhóm quyền |
+| Lưu thành công | Lưu phân quyền thành công |
+| Lưu không thành công | Lỗi lưu phân quyền |
 
-Sai định dạng sẽ thấy thông báo đỏ ngay dưới ô nhập.
+### Hộp xác nhận Reset mật khẩu
 
-### 7.7. Mã nhân viên do hệ thống tự sinh
+![Modal xác nhận reset mật khẩu](screenshots/quan_tri_nguoi_dung_05_modal_reset.png)
 
-Trường **Mã NV** (mã nhân viên) **không nhập tay** — hệ thống tự sinh khi tạo mới theo định dạng **`NV` + 6 chữ số** (ví dụ: `NV000123`). Mã này dùng để tham chiếu nội bộ và in trên các báo cáo.
+Hiển thị khi chọn **Reset mật khẩu** trong menu ba chấm.
 
-### 7.8. Tách biệt rõ "Sửa thông tin" và các thao tác bảo mật
+#### Bố cục màn hình
 
-Để bảo đảm an toàn, các thao tác liên quan tới mật khẩu / phân quyền **không nằm trong cửa sổ Sửa** mà tách thành các chức năng riêng:
+Modal nhỏ nằm giữa màn hình:
 
-- **Đổi mật khẩu của người khác** → chỉ qua "Reset mật khẩu" (về `Admin@123`).
-- **Đổi mật khẩu của chính mình** → qua menu cá nhân, yêu cầu nhập mật khẩu hiện tại.
-- **Đổi nhóm quyền** → qua "Phân quyền".
-- **Khóa / Mở khóa** → qua "Khóa tài khoản" / "Mở khóa tài khoản".
+- Tiêu đề: **Reset mật khẩu**.
+- Nội dung: dòng văn bản hỏi xác nhận, có nêu rõ tên người dùng và mật khẩu mặc định sau khi reset.
+- Hai nút ở chân: **Hủy** và **Reset**.
 
-Quản trị viên **không thể xem mật khẩu** của bất kỳ người dùng nào — kể cả của chính mình. Hệ thống chỉ lưu giá trị đã được biến đổi một chiều.
+#### Các nút chức năng
 
+| Nút | Vị trí | Khi nào hiển thị | Tác dụng |
+|---|---|---|---|
+| Hủy | Chân modal, bên trái | Luôn hiển thị | Đóng modal, không reset |
+| Reset | Chân modal, bên phải | Luôn hiển thị | Đặt lại mật khẩu về mặc định Admin@123 |
 
----
+#### Thông báo của hệ thống
 
-*Tài liệu được biên soạn dựa trên hệ thống thực tế đang triển khai. Mọi thắc mắc vui lòng liên hệ với đội phát triển để được hỗ trợ.*
+| Tình huống | Thông báo |
+|---|---|
+| Nội dung modal | Mật khẩu của "<Họ tên>" sẽ được đặt về mặc định (Admin@123)? |
+| Reset thành công | Đã reset mật khẩu |
+| Reset không thành công | Lỗi reset mật khẩu |
+
+### Hộp xác nhận xóa người dùng
+
+![Modal xác nhận xóa người dùng](screenshots/quan_tri_nguoi_dung_06_modal_xoa.png)
+
+Hiển thị khi chọn **Xóa người dùng** trong menu ba chấm.
+
+#### Bố cục màn hình
+
+Modal nhỏ nằm giữa màn hình:
+
+- Tiêu đề: **Xác nhận xóa**.
+- Nội dung: dòng văn bản hỏi xác nhận có nêu rõ họ tên người dùng.
+- Hai nút ở chân: **Hủy** và **Xóa** (nút Xóa màu đỏ).
+
+#### Các nút chức năng
+
+| Nút | Vị trí | Khi nào hiển thị | Tác dụng |
+|---|---|---|---|
+| Hủy | Chân modal, bên trái | Luôn hiển thị | Đóng modal, không xóa |
+| Xóa | Chân modal, bên phải | Luôn hiển thị | Gọi API xóa người dùng |
+
+#### Thông báo của hệ thống
+
+| Tình huống | Thông báo |
+|---|---|
+| Nội dung modal | Bạn có chắc chắn muốn xóa "<Họ tên>"? |
+| Xóa thành công | Xóa thành công |
+| Xóa không thành công | Lỗi khi xóa |
