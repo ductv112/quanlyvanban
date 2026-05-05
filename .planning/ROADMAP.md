@@ -70,7 +70,13 @@ Detail: `.planning/milestones/v3.0-phases/`, audit: `.planning/milestones/v3.0-M
   4. 5 user fixture (`test_admin`, `test_vanthu`, `test_lanhdao`, `test_canbo`, `test_canbo_x`) đăng nhập được với `Test@123`; 5 file `tests/.auth/<role>.json` được auto-gen ở `globalSetup` để E2E reuse session.
   5. Mock SmartCA (8181) + MySign (8182) + LGSP (8183) tự boot trong CI; gửi 3 scenario `X-Mock-Scenario` (`timeout`, `invalid_cert`, `provider_down`) trả đúng status code và payload — backend không cần kết nối real provider.
   6. QA mới (chưa biết Playwright) đọc `docs/automation-test/README.md` chạy được test đầu tiên trong ≤ 30 phút; smoke run xong sinh `<date>_results.xlsx` đúng 30 dòng `Pass`.
-**Plans:** TBD — chạy `/gsd-plan-phase 21` khi sẵn sàng.
+**Plans:** 6 plans (4 waves)
+- [ ] 21-01-PLAN.md — Wave 1: Test infrastructure (Playwright + Vitest + supertest install + config)
+- [ ] 21-02-PLAN.md — Wave 1: DB strategy + 003_test_fixtures.sql + reset script
+- [ ] 21-03-PLAN.md — Wave 2: Mock servers (SmartCA 8181 + MySign 8182 + LGSP 8183)
+- [ ] 21-04-PLAN.md — Wave 2: Auth fixtures + storage state per role (globalSetup)
+- [ ] 21-05-PLAN.md — Wave 3: Smoke 30 TC P-High + Excel parser MVP + onboarding README
+- [ ] 21-06-PLAN.md — Wave 4: CI workflow test-pr.yml (3 job parallel)
 **Phase directory:** `.planning/phases/21-automation-foundation/`
 **UI hint:** yes
 
