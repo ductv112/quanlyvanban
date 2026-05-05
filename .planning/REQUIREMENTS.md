@@ -70,14 +70,15 @@
 
 ---
 
-## Phase mapping (preliminary — confirmed by roadmapper)
+## Phase mapping (final — confirmed by roadmapper 2026-05-05)
 
-| Phase | REQ-IDs | Days |
-|-------|---------|------|
-| 21 — Foundation | AUTO-01..11, RPT-01, RPT-07, CI-01, CI-02, CI-06, CI-07 | 3 |
-| 22 — Regression backbone | REG-01..10, CI-03, CI-04, RPT-02..04, RPT-06 | 5 |
-| 23 — E2E + Concurrent + Hybrid | E2E-01..07, CI-05, CI-08, RPT-05 | 3 |
-| 25+ (reserve) | Bug fix discovered từ regression — `/gsd-insert-phase` khi cần | TBD |
+| Phase | REQ-IDs | Days | Total |
+|-------|---------|------|-------|
+| 21 — Automation Foundation | AUTO-01..11, RPT-01, RPT-07, CI-01, CI-02, CI-06, CI-07 | 3 | 17 |
+| 22 — Regression Backbone | REG-01..10, CI-03, CI-04, RPT-02, RPT-03, RPT-04, RPT-06 | 5 | 16 |
+| 23 — E2E + Concurrent + Hybrid | E2E-01..07, CI-05, CI-08, RPT-05 | 3 | 10 |
+| **TOTAL** | **43 REQ-IDs** | **11** | **43/43 (100%)** |
+| 25+ (reserve) | Bug fix discovered từ regression — `/gsd-insert-phase` khi cần | TBD | 0 |
 
 > **Phase 24** (LGSP "Từ chối tiếp nhận") thuộc backlog ngoài v3.1 — kích hoạt v3.2 hoặc chèn urgent qua `/gsd-insert-phase` nếu LGSP production cần.
 
@@ -113,8 +114,55 @@
 
 | REQ-ID | Phase | Plan | Status |
 |--------|-------|------|--------|
-| (sẽ điền sau khi roadmapper map xong)|
+| AUTO-01 | 21 | TBD | Active |
+| AUTO-02 | 21 | TBD | Active |
+| AUTO-03 | 21 | TBD | Active |
+| AUTO-04 | 21 | TBD | Active |
+| AUTO-05 | 21 | TBD | Active |
+| AUTO-06 | 21 | TBD | Active |
+| AUTO-07 | 21 | TBD | Active |
+| AUTO-08 | 21 | TBD | Active |
+| AUTO-09 | 21 | TBD | Active |
+| AUTO-10 | 21 | TBD | Active |
+| AUTO-11 | 21 | TBD | Active |
+| REG-01 | 22 | TBD | Active |
+| REG-02 | 22 | TBD | Active |
+| REG-03 | 22 | TBD | Active |
+| REG-04 | 22 | TBD | Active |
+| REG-05 | 22 | TBD | Active |
+| REG-06 | 22 | TBD | Active |
+| REG-07 | 22 | TBD | Active |
+| REG-08 | 22 | TBD | Active |
+| REG-09 | 22 | TBD | Active |
+| REG-10 | 22 | TBD | Active |
+| E2E-01 | 23 | TBD | Active |
+| E2E-02 | 23 | TBD | Active |
+| E2E-03 | 23 | TBD | Active |
+| E2E-04 | 23 | TBD | Active |
+| E2E-05 | 23 | TBD | Active |
+| E2E-06 | 23 | TBD | Active |
+| E2E-07 | 23 | TBD | Active |
+| CI-01 | 21 | TBD | Active |
+| CI-02 | 21 | TBD | Active |
+| CI-03 | 22 | TBD | Active |
+| CI-04 | 22 | TBD | Active |
+| CI-05 | 23 | TBD | Active |
+| CI-06 | 21 | TBD | Active |
+| CI-07 | 21 | TBD | Active |
+| CI-08 | 23 | TBD | Active |
+| RPT-01 | 21 | TBD | Active |
+| RPT-02 | 22 | TBD | Active |
+| RPT-03 | 22 | TBD | Active |
+| RPT-04 | 22 | TBD | Active |
+| RPT-05 | 23 | TBD | Active |
+| RPT-06 | 22 | TBD | Active |
+| RPT-07 | 21 | TBD | Active |
+
+**Coverage:** 43/43 REQ-IDs mapped (100%) — no orphans, no duplicates.
+**Phase 21 (Foundation):** 17 REQ-IDs (AUTO×11 + RPT×2 + CI×4)
+**Phase 22 (Regression Backbone):** 16 REQ-IDs (REG×10 + CI×2 + RPT×4)
+**Phase 23 (E2E + Concurrent + Hybrid):** 10 REQ-IDs (E2E×7 + CI×2 + RPT×1)
 
 ---
 
-*Last updated: 2026-05-05 — v3.1 milestone started, requirements defined from AUTOMATION_TEST_PLAN.md*
+*Last updated: 2026-05-05 — Roadmap v3.1 created, 43 REQ-IDs mapped 100% across 3 phases (21-23)*

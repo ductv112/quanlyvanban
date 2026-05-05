@@ -11,7 +11,8 @@ Rebuild hệ thống quản lý văn bản điện tử (.NET cũ) thành stack 
 - ✅ **v1.0 MVP** — Phases 1-7 (shipped 2026-04-18) — `.planning/milestones/v1.0-phases/`
 - ✅ **v2.0 Tích hợp ký số 2 kênh** — Phases 8-14 + 11.1 (shipped 2026-04-23) — `.planning/milestones/v2.0-ROADMAP.md`
 - ✅ **v3.0 Chuẩn hoá quy trình văn bản** — Phases 15-20 (shipped 2026-04-24) — `.planning/milestones/v3.0-ROADMAP.md`
-- 📋 **v3.1+** — Defer items (drafting recipients structured, admin CRUD inter_orgs, multi-level approval...)
+- 🚧 **v3.1 Automation Test Suite + Bug Fix** — Phases 21-23 (started 2026-05-05)
+- 📋 **v3.2+** — Defer items (drafting recipients structured, admin CRUD inter_orgs, multi-level approval...) + Phase 24 LGSP "Từ chối tiếp nhận"
 
 ## Phases
 
@@ -47,7 +48,62 @@ Detail: `.planning/milestones/v3.0-phases/`, audit: `.planning/milestones/v3.0-M
 | 1-7 | v1.0 | Complete | 2026-04-14 → 2026-04-18 |
 | 8-14 + 11.1 | v2.0 | Complete | 2026-04-21 → 2026-04-23 |
 | 15-20 | v3.0 | Complete | 2026-04-23 → 2026-04-24 |
-| 21+ | v3.1+ | Planning | — |
+| 21-23 | v3.1 | In Progress | 2026-05-05 → — |
+| 24+ | v3.2+ | Planning | — |
+
+## v3.1 Automation Test Suite + Bug Fix (Phases 21-23) — IN PROGRESS
+
+**Started:** 2026-05-05
+**Source plan:** [`.planning/AUTOMATION_TEST_PLAN.md`](AUTOMATION_TEST_PLAN.md)
+**Estimated:** 11 working days (~2.5 sprint weeks)
+**Goal:** Tự động hoá ≥ 95% bộ 847 TC ([`docs/hdsd/20260505_Testcase_QLVB_V2.xlsx`](../docs/hdsd/20260505_Testcase_QLVB_V2.xlsx)) chạy regression < 45 phút mỗi đêm; CI gate smoke 30 TC < 8 phút trên PR; Pass/Fail map ngược về cột "Trạng thái" Excel; bug nào phát hiện → fix bằng phase chèn (`/gsd-insert-phase`).
+
+### Phase 21: Automation Foundation
+**Goal:** Một QA mới clone repo + chạy 1 lệnh là có smoke 30 TC P-High xanh trên local < 5 phút và CI block PR khi smoke fail.
+**Depends on:** Nothing (first phase v3.1)
+**Estimated:** 3 working days
+**Requirements (17):** AUTO-01, AUTO-02, AUTO-03, AUTO-04, AUTO-05, AUTO-06, AUTO-07, AUTO-08, AUTO-09, AUTO-10, AUTO-11, RPT-01, RPT-07, CI-01, CI-02, CI-06, CI-07
+**Success criteria** (what must be TRUE):
+  1. `npm run test:smoke` chạy local PASS 30/30 trong < 5 phút trên máy mới (clone xong, không setup tay).
+  2. Mở 1 PR test → workflow `Test PR` chạy 3 job song song (build-check + integration-tests + e2e-smoke) hoàn tất < 8 phút trên `ubuntu-latest`; cố tình break 1 test → PR bị block đỏ.
+  3. Test DB `qlvb_test` tách hẳn `qlvb_dev`; `npm run test:db:reset` (apply schema + seed 001 + seed 003) chạy lại N lần liên tiếp đều xong < 30 giây, không có lỗi sequence/duplicate.
+  4. 5 user fixture (`test_admin`, `test_vanthu`, `test_lanhdao`, `test_canbo`, `test_canbo_x`) đăng nhập được với `Test@123`; 5 file `tests/.auth/<role>.json` được auto-gen ở `globalSetup` để E2E reuse session.
+  5. Mock SmartCA (8181) + MySign (8182) + LGSP (8183) tự boot trong CI; gửi 3 scenario `X-Mock-Scenario` (`timeout`, `invalid_cert`, `provider_down`) trả đúng status code và payload — backend không cần kết nối real provider.
+  6. QA mới (chưa biết Playwright) đọc `docs/automation-test/README.md` chạy được test đầu tiên trong ≤ 30 phút; smoke run xong sinh `<date>_results.xlsx` đúng 30 dòng `Pass`.
+**Plans:** TBD — chạy `/gsd-plan-phase 21` khi sẵn sàng.
+**Phase directory:** `.planning/phases/21-automation-foundation/`
+**UI hint:** yes
+
+### Phase 22: Regression Backbone
+**Goal:** Mỗi đêm 00:00 ICT chạy được toàn bộ regression Wave a-g (815/847 TC) < 45 phút và file Excel kết quả + Slack summary tự động về tay QA lead trước giờ làm.
+**Depends on:** Phase 21 (test infrastructure + mock servers + Excel parser MVP + CI workflow `test-pr.yml`)
+**Estimated:** 5 working days
+**Requirements (16):** REG-01, REG-02, REG-03, REG-04, REG-05, REG-06, REG-07, REG-08, REG-09, REG-10, CI-03, CI-04, RPT-02, RPT-03, RPT-04, RPT-06
+**Success criteria** (what must be TRUE):
+  1. Nightly job `test-nightly.yml` (cron `0 17 * * *` UTC = 00:00 ICT) chạy 815 TC Wave a-g hoàn tất < 45 phút trên `ubuntu-latest`; chạy 7 đêm liên tiếp đều xanh.
+  2. Pyramid phân bố thực tế đo bằng đếm `test()` block: 50 unit ± 10% / 464 integration ± 10% / 383 E2E ± 10%; lint check title `^TC-[A-Z0-9-]+` chạy trong CI và fail nếu có test thiếu TC-ID.
+  3. File `<YYYYMMDD>_Testcase_QLVB_V2_results.xlsx` được commit vào branch `test-results/<YYYYMMDD>` mỗi đêm; cột `Trạng thái` / `Run date` / `Duration` / `Error msg` đầy đủ cho 815 dòng; TC-ID test có nhưng không có trong Excel → cảnh báo "TC chưa tracking", TC trong Excel không có test → đánh "Not run".
+  4. Coverage report cuối nightly print đúng số liệu: tổng 847 TC, auto coverage % thực tế, hybrid count, "Not run" count với lý do (HYBRID weekly hay missing automation).
+  5. Slack `#qlvb-qa` nhận message tự động vào 00:00 ICT mỗi ngày: total / pass / fail / skip / duration / link Excel artifact; nightly fail → alert kèm link artifact để QA truy lỗi sáng hôm sau.
+  6. Flaky rate < 1% sau 7 nightly liên tiếp; test fail không reproducible bị tag `@flaky` và quarantine ra khỏi gate, không che fail thật.
+**Plans:** TBD — chạy `/gsd-plan-phase 22` khi sẵn sàng.
+**Phase directory:** `.planning/phases/22-regression-backbone/`
+**UI hint:** yes
+
+### Phase 23: E2E + Concurrent + Hybrid
+**Goal:** Coverage cuối milestone đạt 100% (843 auto + 4 hybrid weekly) — bao gồm full luồng VB đến → giao việc → ký số → phát hành VB đi, race condition đa tab, perf k6, và 1 lần/tuần test thật trên staging với SmartCA/LGSP real.
+**Depends on:** Phase 22 (regression baseline xanh, mock fidelity validated, Excel parser ổn định)
+**Estimated:** 3 working days
+**Requirements (10):** E2E-01, E2E-02, E2E-03, E2E-04, E2E-05, E2E-06, E2E-07, CI-05, CI-08, RPT-05
+**Success criteria** (what must be TRUE):
+  1. 17/19 TC Wave h (E2E flow) chạy auto với mock — luồng "VB đến → giao việc → tạo dự thảo → ký số → phát hành VB đi" pass đầu cuối; TC-E2E-EXT-004 dừng MinIO container runtime → backend trả 503 + form data giữ nguyên.
+  2. 10/13 TC Wave i concurrent chạy được với Playwright multi-context (2 user cùng edit 1 record race condition, multi-tab session); concurrent test chạy `workers: 1` để không nhiễu shared runner.
+  3. Workflow `test-weekly-hybrid.yml` (cron `0 18 * * 1` UTC = Thứ Hai 01:00 ICT) chạy 4 TC trên staging với credentials thật từ secret store: TC-E2E-EXT-001 (SmartCA real handshake) + TC-E2E-EXT-003 (LGSP real submit) + TC-CONC-PERF-001/002/003 (k6 ramp-up 100 vUser/30s, gate p95 < 800ms).
+  4. 110 TC UI category có visual snapshot baseline trong `tests/__snapshots__/`; diff > 0.1% pixel báo fail; fail trong CI tự động upload Playwright trace + screenshot + video làm artifact, retain 7 ngày, link trace gắn vào PR comment.
+  5. Coverage cuối nightly = 100% (843 auto + 4 hybrid weekly = 847/847 TC); auto coverage drop < 95% bất kỳ đêm nào → Slack alert đỏ tag QA lead trong vòng 1 giờ sau nightly kết thúc.
+**Plans:** TBD — chạy `/gsd-plan-phase 23` khi sẵn sàng.
+**Phase directory:** `.planning/phases/23-e2e-concurrent-hybrid/`
+**UI hint:** yes
 
 ## v3.1+ Backlog (chờ kích hoạt milestone)
 
