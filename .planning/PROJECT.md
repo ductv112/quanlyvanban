@@ -8,23 +8,24 @@ Hệ thống quản lý văn bản điện tử (e-Office) dành cho cơ quan nh
 
 Luồng văn bản đến → xử lý → văn bản đi phải hoạt động đúng nghiệp vụ cơ quan nhà nước — đây là flow cốt lõi mà mọi công chức sử dụng hàng ngày.
 
-## Current Milestone: v3.0 Chuẩn hoá quy trình văn bản
+## Current Milestone: v3.1 Automation Test Suite + Bug Fix
 
-**Goal:** Chuẩn hoá data model 3 bảng văn bản (incoming/outgoing/drafting) đúng nghiệp vụ source .NET cũ — tách rõ "Cơ quan ban hành" vs "Nơi gửi" vs "Nơi nhận", auto-sinh văn bản đến khi gửi nội bộ, real LGSP HTTP client thay mock, gộp menu Liên thông vào VB đến với source_type filter.
+**Goal:** Tự động hoá ≥ 95% bộ 847 TC ([`docs/hdsd/20260505_Testcase_QLVB_V2.xlsx`](docs/hdsd/20260505_Testcase_QLVB_V2.xlsx)) chạy regression < 45 phút mỗi đêm; CI gate smoke 30 TC < 8 phút trên PR; Pass/Fail map ngược cột "Trạng thái" trong Excel; phát hiện bug nào → fix bằng phase chèn (`/gsd-insert-phase`).
 
-**Target features (6 phases):**
-- Phase 15: Audit & design data model — phân tích gap 3 bảng + design schema mới (recipients table, source_type flag, gộp inter_incoming_docs vào incoming_docs)
-- Phase 16: Schema rebuild v3.0 — bump master schema → `000_schema_v3.0.sql`, drop bảng inter riêng, reset DB clean
-- Phase 17: Tách bước Ban hành/Gửi + Auto-sinh Incoming nội bộ + Approver/Approved 1 cấp
-- Phase 18: Real LGSP HTTP client (OAuth2 + REST tới `apiltvb.langson.gov.vn`) + worker BullMQ polling thật
-- Phase 19: UI rewrite 3 màn (soạn thảo/đi/đến) + gộp menu Liên thông vào VB đến với badge source_type
-- Phase 20: Regression + UAT toàn bộ — verify HSCV, ký số, báo cáo không vỡ
+**Target features (3 phase chính + reserve slot bug fix):**
+- Phase 21: Foundation (3d) — Setup Playwright + Vitest + supertest, 4 user fixture (admin/vanthu/lanhdao/canbo + canboX cross-unit), mock SmartCA/LGSP/MinIO offline, smoke 30 TC P-High, Excel report parser MVP, CI `test-pr.yml`.
+- Phase 22: Regression backbone (5d) — Cover Wave a-g (815/847 TC), CI `test-nightly.yml` cron 00:00 ICT, Excel sync đầy đủ cột Trạng thái + Run date + Duration + Error msg + Trace link.
+- Phase 23: E2E + Concurrent + Hybrid (3d) — Wave h (17 auto + 2 hybrid weekly SmartCA/LGSP real), Wave i (10 auto + 3 perf k6 weekly), 110 UI category visual snapshot, hybrid weekly job, onboarding doc QA team.
+- Phase 24+ (reserve): Bug fix khám phá từ regression — chèn bằng `/gsd-insert-phase` khi cần.
 
-**Quyết định v3.0 (chốt 2026-04-23):**
-- Reset DB clean (không cần migration script preserve data cũ)
-- Gộp `inter_incoming_docs` vào `incoming_docs` với `source_type ENUM('internal','external_lgsp','manual')`
-- Bỏ menu `/van-ban-lien-thong` riêng — gộp vào `/van-ban-den` với filter
-- Approver/Approved 1 cấp boolean (như source .NET cũ), không multi-level workflow
+**Quyết định v3.1 (chốt 2026-05-05):**
+- Framework: Playwright (E2E) + Vitest+supertest (Integration) + k6 (Perf) — KHÔNG dùng Cypress
+- Pyramid: 50 unit / 464 integration / 383 E2E (cover 847 TC + 50 helper unit)
+- Test DB: layered seed (`003_test_fixtures.sql`), TX rollback (integration), template-DB clone (E2E parallel)
+- Mock fidelity: SmartCA + MySign + LGSP mock server; MinIO/MongoDB/Redis dùng container thật
+- CI runners: ubuntu-latest only (Windows runner UTF-8 risk với tiếng Việt có dấu)
+- Hybrid weekly trên staging: 4 TC (SmartCA real handshake, LGSP real submit, k6 perf × 3)
+- Source of truth: [`.planning/AUTOMATION_TEST_PLAN.md`](.planning/AUTOMATION_TEST_PLAN.md) (research artifact)
 
 ## Requirements
 
@@ -67,7 +68,14 @@ Luồng văn bản đến → xử lý → văn bản đi phải hoạt động 
 - ✓ UI-* (8): Form 3 màn đồng bộ + recipient picker + bỏ menu Liên thông + tracking inline — v3.0 Phase 19
 - ✓ QA-* (3): Regression 27/27 endpoints + 17 bugs UAT fixed — v3.0 Phase 20
 
-### Active (v3.1+ backlog)
+### Active (v3.1 — Automation Test Suite, in progress 2026-05-05)
+
+- [ ] AUTO-* (foundation): Setup Playwright + Vitest + supertest + mock servers + 4 user fixtures + smoke 30 TC P-High + Excel report parser — Phase 21
+- [ ] REG-* (regression): 815/847 TC cover Wave a-g + nightly cron + Excel sync đầy đủ — Phase 22
+- [ ] E2E-* (end-to-end): 17 E2E + 10 concurrent + 110 UI visual + hybrid weekly + onboarding doc QA — Phase 23
+- [ ] CI-* (CI/CD): `test-pr.yml` (smoke gate < 8') + `test-nightly.yml` (full < 45') + `test-weekly-hybrid.yml` (SmartCA/LGSP real + k6 perf) — Phase 21-23
+
+### Deferred (v3.2+ backlog)
 
 - [ ] Drafting recipients structured + carry-over Outgoing khi Release
 - [ ] Trang admin CRUD `inter_organizations` + button "Sync from LGSP"
@@ -75,6 +83,9 @@ Luồng văn bản đến → xử lý → văn bản đi phải hoạt động 
 - [ ] Cleanup 2 modal legacy v1.0 (Gửi liên thông + Gửi trục CP)
 - [ ] Default expired_date theo config sổ văn bản
 - [ ] Worker LGSP startup script + monitoring production
+- [ ] Visual regression pixel-diff (chỉ 110 functional UI test trong v3.1)
+- [ ] Accessibility (a11y) test với axe-core
+- [ ] Mobile responsive E2E full suite
 
 ### Out of Scope
 
@@ -121,6 +132,11 @@ Luồng văn bản đến → xử lý → văn bản đi phải hoạt động 
 | **v3.0: Bỏ menu Liên thông riêng** | VB liên thông bản chất là VB đến (chỉ khác nguồn), gộp giảm điều hướng + 1 chỗ xử lý | — Pending |
 | **v3.0: Tách 2 bước Ban hành / Gửi** | Đúng nghiệp vụ source .NET cũ (`Prc_DraftingDocReleased` vs `Prc_UserOutgoingDocSend`) | — Pending |
 | **v3.0: Approver/Approved 1 cấp boolean** | Source cũ chỉ làm 1 cấp duyệt đơn giản, không cần multi-level workflow | — Pending |
+| **v3.1: Playwright + Vitest+supertest + k6** (KHÔNG Cypress) | Multi-tab native cho 13 concurrent TC, upload tiếng Việt UTF-8, 4 role parallel, k6 cho 3 perf TC; Cypress yếu trên multi-tab + license | — Pending |
+| **v3.1: Pyramid 50 unit / 464 integration / 383 E2E** | 280 Pos + 184 Neg không cần UI → integration nhanh 5×; UI/Boundary form/Permission/E2E/Concurrent → cần browser thật | — Pending |
+| **v3.1: Mock SmartCA/MySign/LGSP server riêng** | Tránh phụ thuộc real provider trong CI; scenario qua header `X-Mock-Scenario`; MinIO/MongoDB/Redis dùng container thật | — Pending |
+| **v3.1: CI ubuntu-latest only** | Windows runner risk UTF-8 corrupt với tiếng Việt có dấu (CLAUDE.md pitfall #1) | — Pending |
+| **v3.1: Hybrid weekly trên staging** | 4 TC giữ real (SmartCA/LGSP/k6 perf × 3) — tránh mock drift, giữ tốc độ CI | — Pending |
 
 ## Evolution
 
@@ -140,4 +156,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-23 — Milestone v2.0 shipped, v3.0 (Chuẩn hoá quy trình văn bản) started*
+*Last updated: 2026-05-05 — Milestone v3.0 shipped, v3.1 (Automation Test Suite + Bug Fix) started*

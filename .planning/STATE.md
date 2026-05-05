@@ -1,13 +1,13 @@
 ---
 gsd_state_version: 1.0
-milestone: planning-next
-milestone_name: chờ-milestone-mới
-status: v3.0 archived 2026-04-24
-stopped_at: Milestone v3.0 shipped + tagged + pushed to GitHub
-last_updated: "2026-04-25T05:30:00.000Z"
-last_activity: 2026-04-25
+milestone: v3.1
+milestone_name: automation-test-suite
+status: Defining requirements
+stopped_at: Milestone v3.1 (Automation Test Suite + Bug Fix) started — đang define requirements
+last_updated: "2026-05-05T00:00:00.000Z"
+last_activity: 2026-05-05
 progress:
-  total_phases: 0
+  total_phases: 3
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -21,7 +21,14 @@ progress:
 See: .planning/PROJECT.md
 
 **Core value:** Luồng văn bản đến → xử lý → văn bản đi phải hoạt động đúng nghiệp vụ cơ quan nhà nước
-**Current focus:** v3.0 SHIPPED. Chờ user định hướng milestone tiếp theo (v3.1+)
+**Current focus:** v3.1 — Automation Test Suite cho 847 TC + reserve slot cho bug fix khám phá từ regression. Source plan: [`.planning/AUTOMATION_TEST_PLAN.md`](AUTOMATION_TEST_PLAN.md).
+
+## Current Position
+
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements for v3.1 Automation Test Suite
+Last activity: 2026-05-05 — Milestone v3.1 started
 
 ## Performance Metrics
 
@@ -38,11 +45,16 @@ See: .planning/PROJECT.md
 - Default expired_date theo config sổ văn bản
 - Worker LGSP startup script production deploy
 
+## Roadmap Evolution
+
+- 2026-05-05: Phase 21 added (LGSP "Từ chối tiếp nhận") — sau renumber thành Phase 24 cùng ngày để nhường slot 21-23 cho v3.1 Automation Test. Phase dir: `.planning/phases/24-hoan-thien-nghiep-vu-tu-choi-tiep-nhan-vb-lien-thong-lgsp-st/`. Lý do gốc: phát hiện trong session review HDSD_full mục 4.3.7 — implementation "Chuyển lại VB" chỉ cosmetic (insert leader_note + flip approved=false), KHÔNG gọi LGSP `update-status` 02 → đơn vị gửi không nhận tín hiệu. Demo cuối tuần (2026-04-18/19) GIỮ NGUYÊN — phase này hoàn thiện khi tích hợp LGSP production thật.
+- 2026-05-05: Milestone v3.1 (Automation Test Suite + Bug Fix) started — phase 21-23 cho automation test 847 TC + reserve slot 25+ cho bug fix khám phá từ regression. Source plan: `.planning/AUTOMATION_TEST_PLAN.md`.
+
 ## Session Continuity
 
-Last session: 2026-04-25
-Stopped at: Quick task 260425-g4z hoàn tất — fix HSCV (3 commit atomic + smoke test 16/16 PASS), sẵn sàng deploy prod
-Resume: `/gsd-new-milestone` để bắt đầu v3.1 hoặc `/gsd-discuss-phase` cho work hiện tại
+Last session: 2026-05-05
+Stopped at: Milestone v3.1 mới khởi tạo — đã update PROJECT.md + STATE.md, đang generate REQUIREMENTS.md và spawn roadmapper cho 3 phase 21-23
+Resume: `/gsd-discuss-phase 21` để bắt đầu Phase 21 Foundation, hoặc tiếp tục flow `/gsd-new-milestone` đang chạy
 
 ### Quick Tasks Completed
 
