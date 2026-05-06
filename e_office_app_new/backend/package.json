@@ -6,8 +6,8 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "test:unit": "vitest run --reporter=default --reporter=json --outputFile=tests/results/vitest-unit.json",
-    "test:integration": "vitest run --config vitest.integration.config.ts --reporter=default --reporter=json --outputFile=tests/results/vitest-integration.json",
+    "test:unit": "vitest run --reporter=default --reporter=json --outputFile=tests/results/vitest-unit.json --passWithNoTests",
+    "test:integration": "vitest run --config vitest.integration.config.ts --reporter=default --reporter=json --outputFile=tests/results/vitest-integration.json --passWithNoTests",
     "test:watch": "vitest",
     "test:db:reset": "tsx tools/test-db-reset.ts"
   },

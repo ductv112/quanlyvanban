@@ -1,0 +1,5 @@
+results/
+coverage/
+*.json
+!fixtures/**/*.json
+.auth/
