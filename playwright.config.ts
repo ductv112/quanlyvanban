@@ -20,8 +20,10 @@ export default defineConfig({
     ['json', { outputFile: 'tests/results/playwright-results.json' }],
     ['html', { outputFolder: 'tests/results/playwright-report', open: 'never' }],
   ],
-  // globalSetup placeholder — se duoc implement o plan 21-04 (auth fixtures)
-  // globalSetup: require.resolve('./tests/globalSetup.ts'),
+  // globalSetup: login 5 user fixture + save tests/.auth/<role>.json (Plan 21-04)
+  // CJS context (root khong "type":"module") -> dung path.resolve thay vi require.resolve
+  globalSetup: path.resolve(__dirname, 'tests/globalSetup.ts'),
+  globalTeardown: path.resolve(__dirname, 'tests/globalTeardown.ts'),
   use: {
     baseURL: BASE_URL,
     actionTimeout: 10000,
