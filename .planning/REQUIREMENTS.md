@@ -22,7 +22,7 @@
 - [x] **AUTO-08**: Mock LGSP server (port 8183) emulate SOAP envelope với 4 status code (success + 3 error) — phục vụ TC liên thông
 - [x] **AUTO-09**: Test isolation: integration tests dùng `BEGIN`/`ROLLBACK` per `describe` block, E2E tests dùng template-DB clone per worker (`CREATE DATABASE qlvb_test_w1 TEMPLATE qlvb_baseline`)
 - [x] **AUTO-10**: Storage state per role: 5 file `tests/.auth/<role>.json` được auto-gen trong `globalSetup` để E2E reuse session, không phải re-login mỗi test
-- [ ] **AUTO-11**: Smoke suite gồm 30 TC P-High cover 6 module trọng yếu (Auth 5, VB đến 8, VB đi 5, HSCV 5, Admin 4, Dashboard 3) chạy local < 5 phút PASS 30/30
+- [x] **AUTO-11**: Smoke suite gồm 30 TC P-High cover 6 module trọng yếu (Auth 5, VB đến 8, VB đi 5, HSCV 5, Admin 4, Dashboard 3) chạy local < 5 phút PASS 30/30
 
 ### REG — Regression Coverage (Wave a-g, 815/847 TC)
 
@@ -60,13 +60,13 @@
 
 ### RPT — Reporting & Excel Sync
 
-- [ ] **RPT-01**: Tool `tools/test-report/sync-to-excel.js` đọc 2 input (`playwright-results.json` + `vitest-results.json`) + Excel template gốc, output `docs/hdsd/<YYYYMMDD>_Testcase_QLVB_V2_results.xlsx` với 5 cột mới: Trạng thái / Run date / Duration / Error msg / Trace link
+- [x] **RPT-01**: Tool `tools/test-report/sync-to-excel.js` đọc 2 input (`playwright-results.json` + `vitest-results.json`) + Excel template gốc, output `docs/hdsd/<YYYYMMDD>_Testcase_QLVB_V2_results.xlsx` với 5 cột mới: Trạng thái / Run date / Duration / Error msg / Trace link
 - [ ] **RPT-02**: Mapping TC-ID → row dùng regex `^(TC-[A-Z0-9-]+)` extract từ test title — TC nào không có trong Excel → report cảnh báo "TC chưa tracking", TC trong Excel không có test → đánh "Not run"
 - [ ] **RPT-03**: Sau mỗi nightly run, file Excel được commit về branch `test-results/<YYYYMMDD>` — team tester có lịch sử so sánh tuần
 - [ ] **RPT-04**: Coverage report cuối nightly print đúng số liệu: tổng 847 TC, auto coverage %, hybrid count, "Not run" count với lý do (HYBRID weekly hay missing automation)
 - [ ] **RPT-05**: Coverage drop alert: nếu auto coverage < 95% sau nightly → Slack alert đỏ + tag QA lead để truy nguyên nhân
 - [ ] **RPT-06**: Báo cáo Pass/Fail summary đẩy Slack `#qlvb-qa` mỗi 00:00 ICT với format: total / pass / fail / skip / duration / link Excel artifact
-- [ ] **RPT-07**: Onboarding doc `docs/automation-test/README.md` ≤ 30 phút để QA member mới (chưa biết Playwright) chạy được test đầu tiên — bao gồm setup local DB test, run smoke, đọc trace fail
+- [x] **RPT-07**: Onboarding doc `docs/automation-test/README.md` ≤ 30 phút để QA member mới (chưa biết Playwright) chạy được test đầu tiên — bao gồm setup local DB test, run smoke, đọc trace fail
 
 ---
 
