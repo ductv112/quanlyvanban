@@ -12,7 +12,7 @@
 
 ### AUTO — Automation Infrastructure (foundation)
 
-- [ ] **AUTO-01**: Dev cài đặt được toàn bộ test stack (Playwright + Vitest + supertest + k6 + nock + wait-on) qua `npm install` 1 lần — không cần config thủ công
+- [x] **AUTO-01**: Dev cài đặt được toàn bộ test stack (Playwright + Vitest + supertest + k6 + nock + wait-on) qua `npm install` 1 lần — không cần config thủ công
 - [ ] **AUTO-02**: Test DB tách biệt hoàn toàn với dev DB (`qlvb_test` vs `qlvb_dev`) — script `npm run test:db:reset` apply schema + seed 001 + seed 003 trong < 30 giây
 - [ ] **AUTO-03**: File `database/seed/003_test_fixtures.sql` idempotent với guard `app.environment != 'prod'` — chạy nhiều lần không lỗi sequence/duplicate, tuyệt đối không apply được lên prod
 - [ ] **AUTO-04**: 5 user fixture chuẩn (`test_admin`, `test_vanthu`, `test_lanhdao`, `test_canbo`, `test_canbo_x`) đăng nhập được với password `Test@123` — phục vụ test 4 vai trò + cross-unit isolation
@@ -114,7 +114,7 @@
 
 | REQ-ID | Phase | Plan | Status |
 |--------|-------|------|--------|
-| AUTO-01 | 21 | TBD | Active |
+| AUTO-01 | 21 | 21-01 | Complete |
 | AUTO-02 | 21 | TBD | Active |
 | AUTO-03 | 21 | TBD | Active |
 | AUTO-04 | 21 | TBD | Active |

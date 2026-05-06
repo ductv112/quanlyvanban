@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
 milestone: v3.1
-milestone_name: automation-test-suite
-status: Roadmap defined — phases 21-23 ready for planning
-stopped_at: Roadmap v3.1 created (Phases 21-23) — sẵn sàng `/gsd-plan-phase 21`
-last_updated: "2026-05-05T00:00:00.000Z"
-last_activity: 2026-05-05
+milestone_name: Automation Test Suite + Bug Fix
+status: executing
+stopped_at: Completed 21-01-PLAN.md (test stack install)
+last_updated: "2026-05-06T03:50:19.090Z"
+last_activity: 2026-05-06
 progress:
   total_phases: 3
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  total_plans: 6
+  completed_plans: 1
+  percent: 17
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md
 
 **Core value:** Luồng văn bản đến → xử lý → văn bản đi phải hoạt động đúng nghiệp vụ cơ quan nhà nước
-**Current focus:** v3.1 — Automation Test Suite cho 847 TC + reserve slot cho bug fix khám phá từ regression. Source plan: [`.planning/AUTOMATION_TEST_PLAN.md`](AUTOMATION_TEST_PLAN.md).
+**Current focus:** Phase 21 — automation-foundation
 
 ## Current Position
 
-Phase: 21 (not started yet, planned)
-Plan: —
-Status: Roadmap v3.1 defined — 3 phases (21 Foundation / 22 Regression Backbone / 23 E2E + Concurrent + Hybrid). Phase 24 (LGSP "Từ chối tiếp nhận") giữ trong v3.2+ backlog.
-Last activity: 2026-05-05 — Roadmap v3.1 created, 43 REQ-IDs mapped 100% across 3 phases
+Phase: 21 (automation-foundation) — EXECUTING
+Plan: 2 of 6
+Status: Ready to execute
+Last activity: 2026-05-06
 
 ## Performance Metrics
 
@@ -54,8 +54,8 @@ Last activity: 2026-05-05 — Roadmap v3.1 created, 43 REQ-IDs mapped 100% acros
 
 ## Session Continuity
 
-Last session: 2026-05-05
-Stopped at: Roadmap v3.1 đã tạo xong — ROADMAP.md có section v3.1 với 3 phases chi tiết, REQUIREMENTS.md đã fill traceability 43 dòng, phase directories `.planning/phases/{21,22,23}-*` đã tạo
+Last session: 2026-05-06T03:50:19.076Z
+Stopped at: Completed 21-01-PLAN.md (test stack install)
 Resume: `/gsd-plan-phase 21` để bắt đầu Phase 21 Foundation, hoặc `/gsd-discuss-phase 21` nếu cần discuss trước
 
 ### Quick Tasks Completed
@@ -63,3 +63,4 @@ Resume: `/gsd-plan-phase 21` để bắt đầu Phase 21 Foundation, hoặc `/gs
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 260425-g4z | Fix HSCV: consolidate 4 archive migrations + fix SP status flow (5-step) + smoke test | 2026-04-25 | fb53494 | [260425-g4z-fix-hscv-consolidate-4-archive-migration](./quick/260425-g4z-fix-hscv-consolidate-4-archive-migration/) |
+| Phase 21 P01 | 12min | 3 tasks | 11 files |
