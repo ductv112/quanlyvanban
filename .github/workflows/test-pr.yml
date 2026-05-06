@@ -1,0 +1,397 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Test PR — gate workflow cho mọi PR vào main
+# ─────────────────────────────────────────────────────────────────────────────
+# Phase 21 Plan 06 (REQ CI-01, CI-02, CI-06, CI-07).
+#
+# 2 job mới chạy SONG SONG cùng existing build-check.yml (build-check chạy
+# qua workflow file riêng — không override). Tổng cộng PR sẽ thấy 4 status check:
+#   1. "Build Check / Backend TS + Build"      (từ build-check.yml — existing)
+#   2. "Build Check / Frontend Next.js Build"  (từ build-check.yml — existing)
+#   3. "Test PR / Integration Tests"           (job 1 file này — mới)
+#   4. "Test PR / E2E Smoke (30 TC P-High)"    (job 2 file này — mới)
+#
+# Critical CI rules:
+#  - BẮT BUỘC ubuntu-latest cho mọi job (CLAUDE.md pitfall #1: Windows runner
+#    UTF-8 encoding bug với tiếng Việt có dấu).
+#  - BẮT BUỘC NODE_ENV=development trước npm install/ci (CLAUDE.md pitfall #2:
+#    set NODE_ENV=production trước install sẽ thiếu typescript/vitest/playwright CLI).
+#  - Cancel in-flight runs khi PR có push mới (concurrency.cancel-in-progress).
+#  - Timeout < 8 phút mỗi job (CI-02 acceptance — set timeout-minutes 7+8).
+#  - Upload Playwright trace + log làm artifact retain 7 ngày khi fail.
+#
+# Created: 2026-05-06
+# ─────────────────────────────────────────────────────────────────────────────
+
+name: Test PR
+
+# Trigger: PR vào main (smoke gate). KHÔNG trigger trên push main vì tốn quota.
+on:
+  pull_request:
+    branches: [main]
+
+# Cancel in-flight khi PR có push mới — tránh tốn quota CI
+concurrency:
+  group: test-pr-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '20'
+  PG_DATABASE: qlvb_test
+  PG_USER: qlvb_admin
+  PG_PASSWORD: dev_password
+  # Test secrets — deterministic (KHÔNG dùng cho prod, chỉ CI test)
+  SIGNING_SECRET_KEY: qlvb-test-signing-key-32chars-fixed-for-deterministic-tests
+  JWT_SECRET: qlvb-test-jwt-secret-32chars-fixed-for-deterministic-testing
+
+jobs:
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Job 1: Integration Tests (Vitest + supertest)
+  # ═══════════════════════════════════════════════════════════════════════════
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: qlvb_test
+          POSTGRES_USER: qlvb_admin
+          POSTGRES_PASSWORD: dev_password
+          POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U qlvb_admin -d qlvb_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+      minio:
+        image: bitnami/minio:latest
+        env:
+          MINIO_ROOT_USER: qlvb_admin
+          MINIO_ROOT_PASSWORD: QlvbMinio2026
+          MINIO_DEFAULT_BUCKETS: documents-test
+        ports:
+          - 9000:9000
+        options: >-
+          --health-cmd "curl -f http://localhost:9000/minio/health/live"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup test stack (no Playwright)
+        uses: ./.github/actions/setup-test-stack
+        with:
+          install-playwright: 'false'
+
+      - name: Wait for service containers
+        run: npx wait-on tcp:5432 tcp:6379 tcp:9000 --timeout 60000
+
+      - name: Apply DB schema + seed test fixtures
+        env:
+          PGPASSWORD: ${{ env.PG_PASSWORD }}
+        run: |
+          set -euo pipefail
+          # 1) Schemas + extensions
+          psql -h localhost -U qlvb_admin -d qlvb_test -v ON_ERROR_STOP=1 \
+            -f e_office_app_new/database/init/01_create_schemas.sql
+
+          # 2) Master schema v3.0 (idempotent — tables + SPs + triggers)
+          psql -h localhost -U qlvb_admin -d qlvb_test -v ON_ERROR_STOP=1 \
+            -c "SET app.signing_secret_key='${SIGNING_SECRET_KEY}';" \
+            -f e_office_app_new/database/schema/000_schema_v3.0.sql
+
+          # 3) Seed 001 — required (admin + roles + rights + 2 providers)
+          psql -h localhost -U qlvb_admin -d qlvb_test -v ON_ERROR_STOP=1 \
+            -c "SET app.signing_secret_key='${SIGNING_SECRET_KEY}'; SET app.environment='test';" \
+            -f e_office_app_new/database/seed/001_required_data.sql
+
+          # 4) Seed 003 — test fixtures (6 user + 16 fixture data, idempotent + ENV guard)
+          psql -h localhost -U qlvb_admin -d qlvb_test -v ON_ERROR_STOP=1 \
+            -c "SET app.environment='test'; SET app.signing_secret_key='${SIGNING_SECRET_KEY}';" \
+            -f e_office_app_new/database/seed/003_test_fixtures.sql
+
+      - name: Verify fixtures applied (≥6 test users)
+        env:
+          PGPASSWORD: ${{ env.PG_PASSWORD }}
+        run: |
+          COUNT=$(psql -h localhost -U qlvb_admin -d qlvb_test -t -A -c "SELECT COUNT(*) FROM public.staff WHERE id BETWEEN 9001 AND 9099")
+          echo "Test user count: $COUNT"
+          if [ "$COUNT" -lt "6" ]; then
+            echo "FAIL: expected >=6 test users, found $COUNT"
+            exit 1
+          fi
+
+      - name: Boot mock servers (background)
+        working-directory: tools/mocks
+        run: |
+          npx tsx start.ci.ts
+          # start.ci.ts EXIT 0 sau khi 3 mock UP — mocks tiếp tục background nhờ child.unref()
+          # Double-check 3 health endpoint
+          npx wait-on http://localhost:8181/health http://localhost:8182/health http://localhost:8183/health --timeout 30000
+
+      - name: Boot backend (background)
+        env:
+          PG_HOST: localhost
+          PG_PORT: '5432'
+          PG_DATABASE: qlvb_test
+          PG_USER: qlvb_admin
+          PG_PASSWORD: ${{ env.PG_PASSWORD }}
+          REDIS_HOST: localhost
+          REDIS_PORT: '6379'
+          MINIO_ENDPOINT: localhost
+          MINIO_PORT: '9000'
+          MINIO_ACCESS_KEY: qlvb_admin
+          MINIO_SECRET_KEY: QlvbMinio2026
+          MINIO_BUCKET: documents-test
+          MINIO_USE_SSL: 'false'
+          JWT_SECRET: ${{ env.JWT_SECRET }}
+          SIGNING_SECRET_KEY: ${{ env.SIGNING_SECRET_KEY }}
+          NODE_ENV: development
+          SMARTCA_BASE_URL: http://localhost:8181
+          MYSIGN_BASE_URL: http://localhost:8182
+          LGSP_ENDPOINT: http://localhost:8183
+          MOCK_EXTERNAL: 'true'
+          SIGNING_MOCK_MODE: 'true'
+          WORKER_ENABLED: 'false'
+          PORT: '4000'
+          CORS_ORIGIN: http://localhost:3000
+        working-directory: e_office_app_new/backend
+        run: |
+          nohup npm run dev > /tmp/backend.log 2>&1 &
+          echo "Backend pid: $!"
+          npx wait-on http://localhost:4000/api/health --timeout 60000
+
+      - name: Run integration tests
+        env:
+          PG_HOST: localhost
+          PG_PORT: '5432'
+          PG_DATABASE: qlvb_test
+          PG_USER: qlvb_admin
+          PG_PASSWORD: ${{ env.PG_PASSWORD }}
+          BACKEND_URL: http://localhost:4000
+          PLAYWRIGHT_API_URL: http://localhost:4000
+        working-directory: e_office_app_new/backend
+        run: npm run test:integration
+
+      - name: Upload integration test results + logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-results-${{ github.run_id }}
+          path: |
+            e_office_app_new/backend/tests/results/
+            /tmp/backend.log
+            /tmp/qlvb-mocks.log
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Cleanup
+        if: always()
+        run: |
+          [ -f /tmp/qlvb-mocks.pid ] && kill $(cat /tmp/qlvb-mocks.pid) 2>/dev/null || true
+          pkill -f "tsx watch" 2>/dev/null || true
+          pkill -f "node.*server" 2>/dev/null || true
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Job 2: E2E Smoke (Playwright, 30 TC @smoke @P-High)
+  # ═══════════════════════════════════════════════════════════════════════════
+  e2e-smoke:
+    name: E2E Smoke (30 TC P-High)
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: qlvb_test
+          POSTGRES_USER: qlvb_admin
+          POSTGRES_PASSWORD: dev_password
+          POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U qlvb_admin -d qlvb_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+      minio:
+        image: bitnami/minio:latest
+        env:
+          MINIO_ROOT_USER: qlvb_admin
+          MINIO_ROOT_PASSWORD: QlvbMinio2026
+          MINIO_DEFAULT_BUCKETS: documents-test
+        ports:
+          - 9000:9000
+        options: >-
+          --health-cmd "curl -f http://localhost:9000/minio/health/live"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup test stack (with Playwright Chromium)
+        uses: ./.github/actions/setup-test-stack
+        with:
+          install-playwright: 'true'
+
+      - name: Install frontend deps
+        working-directory: e_office_app_new/frontend
+        env:
+          NODE_ENV: development
+        run: npm ci
+
+      - name: Wait for service containers
+        run: npx wait-on tcp:5432 tcp:6379 tcp:9000 --timeout 60000
+
+      - name: Apply DB schema + seed test fixtures
+        env:
+          PGPASSWORD: ${{ env.PG_PASSWORD }}
+        run: |
+          set -euo pipefail
+          psql -h localhost -U qlvb_admin -d qlvb_test -v ON_ERROR_STOP=1 \
+            -f e_office_app_new/database/init/01_create_schemas.sql
+          psql -h localhost -U qlvb_admin -d qlvb_test -v ON_ERROR_STOP=1 \
+            -c "SET app.signing_secret_key='${SIGNING_SECRET_KEY}';" \
+            -f e_office_app_new/database/schema/000_schema_v3.0.sql
+          psql -h localhost -U qlvb_admin -d qlvb_test -v ON_ERROR_STOP=1 \
+            -c "SET app.signing_secret_key='${SIGNING_SECRET_KEY}'; SET app.environment='test';" \
+            -f e_office_app_new/database/seed/001_required_data.sql
+          psql -h localhost -U qlvb_admin -d qlvb_test -v ON_ERROR_STOP=1 \
+            -c "SET app.environment='test'; SET app.signing_secret_key='${SIGNING_SECRET_KEY}';" \
+            -f e_office_app_new/database/seed/003_test_fixtures.sql
+
+      - name: Boot mock servers (background)
+        working-directory: tools/mocks
+        run: |
+          npx tsx start.ci.ts
+          npx wait-on http://localhost:8181/health http://localhost:8182/health http://localhost:8183/health --timeout 30000
+
+      - name: Build backend (production output)
+        env:
+          NODE_ENV: development
+        working-directory: e_office_app_new/backend
+        run: npm run build
+
+      - name: Boot backend (background, production mode)
+        env:
+          PG_HOST: localhost
+          PG_PORT: '5432'
+          PG_DATABASE: qlvb_test
+          PG_USER: qlvb_admin
+          PG_PASSWORD: ${{ env.PG_PASSWORD }}
+          REDIS_HOST: localhost
+          REDIS_PORT: '6379'
+          MINIO_ENDPOINT: localhost
+          MINIO_PORT: '9000'
+          MINIO_ACCESS_KEY: qlvb_admin
+          MINIO_SECRET_KEY: QlvbMinio2026
+          MINIO_BUCKET: documents-test
+          MINIO_USE_SSL: 'false'
+          JWT_SECRET: ${{ env.JWT_SECRET }}
+          SIGNING_SECRET_KEY: ${{ env.SIGNING_SECRET_KEY }}
+          NODE_ENV: production
+          SMARTCA_BASE_URL: http://localhost:8181
+          MYSIGN_BASE_URL: http://localhost:8182
+          LGSP_ENDPOINT: http://localhost:8183
+          MOCK_EXTERNAL: 'true'
+          SIGNING_MOCK_MODE: 'true'
+          WORKER_ENABLED: 'false'
+          PORT: '4000'
+          CORS_ORIGIN: http://localhost:3000
+        working-directory: e_office_app_new/backend
+        run: |
+          nohup npm start > /tmp/backend.log 2>&1 &
+          echo "Backend pid: $!"
+          npx wait-on http://localhost:4000/api/health --timeout 60000
+
+      - name: Build frontend (production)
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:4000
+          NODE_ENV: development
+        working-directory: e_office_app_new/frontend
+        run: npm run build
+
+      - name: Boot frontend (background, production mode)
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:4000
+          NODE_ENV: production
+          PORT: '3000'
+        working-directory: e_office_app_new/frontend
+        run: |
+          nohup npm start > /tmp/frontend.log 2>&1 &
+          echo "Frontend pid: $!"
+          npx wait-on http://localhost:3000 --timeout 90000
+
+      - name: Run smoke tests (30 TC @smoke)
+        env:
+          PLAYWRIGHT_BASE_URL: http://localhost:3000
+          PLAYWRIGHT_API_URL: http://localhost:4000
+          CI: 'true'
+        run: npx playwright test --grep @smoke
+
+      - name: Sync results to Excel (non-blocking)
+        if: always()
+        working-directory: tools/test-report
+        run: npx tsx sync-to-excel.ts || echo "Excel sync failed (non-blocking)"
+
+      - name: Upload Playwright trace + reports (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-trace-${{ github.run_id }}
+          path: |
+            tests/results/
+            playwright-report/
+            /tmp/backend.log
+            /tmp/frontend.log
+            /tmp/qlvb-mocks.log
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Upload Excel results (always)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: excel-results-${{ github.run_id }}
+          path: docs/hdsd/*_Testcase_QLVB_V2_results.xlsx
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Cleanup
+        if: always()
+        run: |
+          [ -f /tmp/qlvb-mocks.pid ] && kill $(cat /tmp/qlvb-mocks.pid) 2>/dev/null || true
+          pkill -f "next" 2>/dev/null || true
+          pkill -f "node.*server" 2>/dev/null || true
