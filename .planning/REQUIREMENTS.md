@@ -49,13 +49,13 @@
 
 ### CI — CI/CD Integration
 
-- [ ] **CI-01**: Workflow `test-pr.yml` trigger trên mọi PR — chạy integration tests + e2e-smoke (30 TC) trên ubuntu-latest với services postgres/redis/minio — block merge nếu fail
-- [ ] **CI-02**: Workflow `test-pr.yml` chạy < 8 phút từ push → kết quả — không vượt quota CI free tier
+- [x] **CI-01**: Workflow `test-pr.yml` trigger trên mọi PR — chạy integration tests + e2e-smoke (30 TC) trên ubuntu-latest với services postgres/redis/minio — block merge nếu fail
+- [x] **CI-02**: Workflow `test-pr.yml` chạy < 8 phút từ push → kết quả — không vượt quota CI free tier
 - [ ] **CI-03**: Workflow `test-nightly.yml` trigger cron `0 17 * * *` UTC (00:00 ICT) — chạy đầy đủ 815 TC + integration + smoke trên ubuntu-latest
 - [ ] **CI-04**: Workflow `test-nightly.yml` chạy < 45 phút — fail thì Slack `#qlvb-qa` nhận alert kèm link artifact
 - [ ] **CI-05**: Workflow `test-weekly-hybrid.yml` trigger cron `0 18 * * 1` UTC (Thứ Hai 01:00 ICT) — chạy 4 TC hybrid trên staging với cert/credentials thật từ secret store
-- [ ] **CI-06**: Workflow chỉ dùng `runs-on: ubuntu-latest` — KHÔNG dùng `windows-latest` (rủi ro UTF-8 corrupt với tiếng Việt có dấu, theo CLAUDE.md pitfall #1)
-- [ ] **CI-07**: PR gate gồm 3 job song song: build-check (đã có) + integration-tests (mới) + e2e-smoke (mới) — fail bất kỳ job nào → block merge
+- [x] **CI-06**: Workflow chỉ dùng `runs-on: ubuntu-latest` — KHÔNG dùng `windows-latest` (rủi ro UTF-8 corrupt với tiếng Việt có dấu, theo CLAUDE.md pitfall #1)
+- [x] **CI-07**: PR gate gồm 3 job song song: build-check (đã có) + integration-tests (mới) + e2e-smoke (mới) — fail bất kỳ job nào → block merge
 - [ ] **CI-08**: Mỗi test fail trong CI tự động upload Playwright trace + screenshot + video làm artifact, retain 7 ngày, link trace có trong PR comment
 
 ### RPT — Reporting & Excel Sync
