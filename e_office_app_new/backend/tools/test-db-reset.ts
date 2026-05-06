@@ -24,7 +24,7 @@
  */
 
 import { Client } from 'pg';
-import { execFileSync } from 'child_process';
+import { execFileSync, execSync } from 'child_process';
 import { config as dotenvConfig } from 'dotenv';
 import path from 'path';
 import fs from 'fs';
@@ -77,6 +77,46 @@ function prelude(file: string): string {
   return '';
 }
 
+// Auto-detect Docker container chay psql
+// Priority order:
+//   1. PG_DOCKER_CONTAINER env set -> docker mode (explicit, fastest)
+//   2. USE_DOCKER_PSQL=true env -> force docker mode (default container name)
+//   3. Linux + /var/run/docker.sock exists -> docker mode (legacy auto-detect)
+//   4. Windows + container 'qlvb_postgres' running -> docker mode (Windows fallback)
+//   5. Otherwise -> direct psql CLI
+function detectDockerMode(): { useDocker: boolean; container: string } {
+  const explicitContainer = process.env.PG_DOCKER_CONTAINER;
+  if (explicitContainer) {
+    return { useDocker: true, container: explicitContainer };
+  }
+  if (process.env.USE_DOCKER_PSQL === 'true') {
+    return { useDocker: true, container: 'qlvb_postgres' };
+  }
+  // Linux: check unix socket
+  if (process.platform !== 'win32' && fs.existsSync('/var/run/docker.sock')) {
+    return { useDocker: true, container: 'qlvb_postgres' };
+  }
+  // Windows: probe `docker ps` for qlvb_postgres container
+  if (process.platform === 'win32') {
+    try {
+      const out = execSync('docker ps -q -f name=qlvb_postgres', {
+        stdio: ['ignore', 'pipe', 'pipe'],
+        encoding: 'utf-8',
+        timeout: 5000,
+      });
+      if (out.trim().length > 0) {
+        console.log(
+          '[test-db-reset] Auto-detected Docker container qlvb_postgres on Windows',
+        );
+        return { useDocker: true, container: 'qlvb_postgres' };
+      }
+    } catch {
+      // docker CLI not in PATH or daemon down -> fallback to direct psql
+    }
+  }
+  return { useDocker: false, container: 'qlvb_postgres' };
+}
+
 async function main(): Promise<void> {
   const start = Date.now();
   console.log(`[test-db-reset] Target DB: ${PG_DATABASE}@${PG_HOST}:${PG_PORT}`);
@@ -119,10 +159,13 @@ async function main(): Promise<void> {
 
   // 3. Apply 4 SQL files via psql CLI (faster than pg lib for big schema files)
   // Auto-detect psql trong docker hoac local
-  const useDocker = process.env.USE_DOCKER_PSQL === 'true' ||
-    (!process.env.USE_DOCKER_PSQL && fs.existsSync('/var/run/docker.sock')) ||
-    process.env.PG_DOCKER_CONTAINER !== undefined;
-  const dockerContainer = process.env.PG_DOCKER_CONTAINER || 'qlvb_postgres';
+  // Priority order:
+  //   1. PG_DOCKER_CONTAINER env set -> docker mode (explicit, fastest)
+  //   2. USE_DOCKER_PSQL=true env -> force docker mode (default container name)
+  //   3. Linux + /var/run/docker.sock exists -> docker mode (legacy auto-detect)
+  //   4. Windows + container 'qlvb_postgres' running -> docker mode (Windows fallback)
+  //   5. Otherwise -> direct psql CLI
+  const { useDocker, container: dockerContainer } = detectDockerMode();
 
   for (const sqlFile of SQL_FILES) {
     const fileName = path.basename(sqlFile);
@@ -133,7 +176,7 @@ async function main(): Promise<void> {
     const fullSql = (prelude(sqlFile) ? prelude(sqlFile) + '\n' : '') + sqlContent;
 
     try {
-      if (useDocker && process.env.PG_DOCKER_CONTAINER) {
+      if (useDocker) {
         // Docker exec mode
         execFileSync(
           'docker',
