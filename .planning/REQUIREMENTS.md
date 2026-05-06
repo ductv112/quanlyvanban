@@ -13,14 +13,14 @@
 ### AUTO — Automation Infrastructure (foundation)
 
 - [x] **AUTO-01**: Dev cài đặt được toàn bộ test stack (Playwright + Vitest + supertest + k6 + nock + wait-on) qua `npm install` 1 lần — không cần config thủ công
-- [ ] **AUTO-02**: Test DB tách biệt hoàn toàn với dev DB (`qlvb_test` vs `qlvb_dev`) — script `npm run test:db:reset` apply schema + seed 001 + seed 003 trong < 30 giây
-- [ ] **AUTO-03**: File `database/seed/003_test_fixtures.sql` idempotent với guard `app.environment != 'prod'` — chạy nhiều lần không lỗi sequence/duplicate, tuyệt đối không apply được lên prod
-- [ ] **AUTO-04**: 5 user fixture chuẩn (`test_admin`, `test_vanthu`, `test_lanhdao`, `test_canbo`, `test_canbo_x`) đăng nhập được với password `Test@123` — phục vụ test 4 vai trò + cross-unit isolation
-- [ ] **AUTO-05**: 16 fixture data seed (5 VB đến đa status + 3 VB đi + 2 dự thảo + 1 HSCV active + 1 HSCV closed + 3 notification + 1 user khoá) — đủ chất liệu test status flow
+- [x] **AUTO-02**: Test DB tách biệt hoàn toàn với dev DB (`qlvb_test` vs `qlvb_dev`) — script `npm run test:db:reset` apply schema + seed 001 + seed 003 trong < 30 giây
+- [x] **AUTO-03**: File `database/seed/003_test_fixtures.sql` idempotent với guard `app.environment != 'prod'` — chạy nhiều lần không lỗi sequence/duplicate, tuyệt đối không apply được lên prod
+- [x] **AUTO-04**: 5 user fixture chuẩn (`test_admin`, `test_vanthu`, `test_lanhdao`, `test_canbo`, `test_canbo_x`) đăng nhập được với password `Test@123` — phục vụ test 4 vai trò + cross-unit isolation
+- [x] **AUTO-05**: 16 fixture data seed (5 VB đến đa status + 3 VB đi + 2 dự thảo + 1 HSCV active + 1 HSCV closed + 3 notification + 1 user khoá) — đủ chất liệu test status flow
 - [ ] **AUTO-06**: Mock SmartCA server (port 8181) emulate đủ 4 endpoint (`/auth`, `/sign`, `/verify`, `/cert/:userId`) + 3 scenario qua header `X-Mock-Scenario` (`timeout`, `invalid_cert`, `provider_down`)
 - [ ] **AUTO-07**: Mock MySign server (port 8182) tương tự SmartCA — backup provider scenarios
 - [ ] **AUTO-08**: Mock LGSP server (port 8183) emulate SOAP envelope với 4 status code (success + 3 error) — phục vụ TC liên thông
-- [ ] **AUTO-09**: Test isolation: integration tests dùng `BEGIN`/`ROLLBACK` per `describe` block, E2E tests dùng template-DB clone per worker (`CREATE DATABASE qlvb_test_w1 TEMPLATE qlvb_baseline`)
+- [x] **AUTO-09**: Test isolation: integration tests dùng `BEGIN`/`ROLLBACK` per `describe` block, E2E tests dùng template-DB clone per worker (`CREATE DATABASE qlvb_test_w1 TEMPLATE qlvb_baseline`)
 - [ ] **AUTO-10**: Storage state per role: 5 file `tests/.auth/<role>.json` được auto-gen trong `globalSetup` để E2E reuse session, không phải re-login mỗi test
 - [ ] **AUTO-11**: Smoke suite gồm 30 TC P-High cover 6 module trọng yếu (Auth 5, VB đến 8, VB đi 5, HSCV 5, Admin 4, Dashboard 3) chạy local < 5 phút PASS 30/30
 
