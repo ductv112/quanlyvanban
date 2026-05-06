@@ -455,6 +455,99 @@ test.describe('E2E — Full lifecycle <scenario>', () => {
 
 ---
 
+## 8.5. CI integration
+
+QLVB CI workflow `.github/workflows/test-pr.yml` (Phase 21-06) chạy tự động trên mỗi PR + có thể trigger thủ công.
+
+### 8.5.1. Workflow trigger
+
+| Sự kiện | Action |
+|---------|--------|
+| `pull_request` opened/synchronize trên `main` | Auto-run 3 job parallel |
+| `workflow_dispatch` (manual) | Run từ GitHub UI hoặc `gh` CLI |
+| `push` trên branch không phải `main` | KHÔNG run (chỉ PR mới run — tránh tốn minute) |
+
+### 8.5.2. 3 job parallel
+
+| Job | Thời gian | Công việc |
+|-----|-----------|-----------|
+| **build-check** | ~3 phút | TS check backend + frontend (`tsc --noEmit`) + lint + Next.js build |
+| **integration-tests** | ~5 phút | Vitest integration (Phase 22 sẽ wire — Phase 21 stub) |
+| **e2e-smoke** | ~6 phút | Playwright smoke 30 TC P-High (`npm run test:smoke`) + Excel sync |
+
+**Total wall time:** ~6-8 phút (3 job song song, max trong nhánh dài nhất). PR fail bất kỳ job nào → block merge.
+
+### 8.5.3. Trigger workflow thủ công
+
+**Từ GitHub UI:**
+1. Repo → Tab "Actions" → Workflow "Test PR"
+2. Click "Run workflow" → Chọn branch → Click "Run workflow" button
+3. Workflow run xuất hiện ngay đầu list
+
+**Từ `gh` CLI** (preferred — không cần switch context):
+```powershell
+# Trigger trên branch hiện tại
+gh workflow run test-pr.yml --ref $(git branch --show-current)
+
+# Trigger trên branch khác
+gh workflow run test-pr.yml --ref feature/xyz
+
+# Watch tiến trình
+gh run watch
+```
+
+### 8.5.4. Đọc artifact khi CI fail
+
+Khi job `e2e-smoke` fail, CI upload 2 artifact:
+
+| Artifact | Nội dung | Cách dùng |
+|----------|----------|-----------|
+| `playwright-report` | HTML trace viewer + screenshots khi fail | Download → unzip → mở `index.html` trong browser → time-travel debug |
+| `test-results-excel` | `<YYYYMMDD>_Testcase_QLVB_V2_results.xlsx` | Download → mở Excel → filter cột "Trạng thái" = Fail |
+
+**Cách download artifact:**
+
+**Từ GitHub UI:**
+1. Click vào run fail → Scroll xuống section "Artifacts" → Click tên artifact để download .zip
+
+**Từ `gh` CLI:**
+```powershell
+# List run gần đây
+gh run list --workflow=test-pr.yml --limit 5
+
+# Download artifact của run cụ thể
+gh run download <run-id>
+# Mặc định save vào current dir, sub-folder theo tên artifact
+```
+
+### 8.5.5. Local smoke vs CI smoke — sự khác biệt
+
+| Khía cạnh | Local | CI ubuntu-latest |
+|-----------|-------|------------------|
+| Postgres | Docker container `qlvb_postgres` | Service container PostgreSQL native |
+| `PG_DOCKER_CONTAINER` env | Set (Windows) hoặc auto-detect | KHÔNG set (psql native trong PATH) |
+| Workers | 4 (default) | 2 (giới hạn để tránh OOM trên runner 7GB RAM) |
+| Browser | Chromium từ Playwright local install | Chromium từ `npx playwright install --with-deps` step |
+| Frontend | `npm run dev` (Next.js dev mode) | `npm run dev` (giống local) |
+| Backend | `npm run dev` (tsx watch) | `npm run dev` (giống local) |
+| Test DB reset | Mỗi lần chạy manual | Reset auto trong workflow step trước test |
+
+**Quy tắc:** Test PASS local → 95% PASS CI. 5% fail do font/locale render khác (CI ubuntu không có font Việt) → fix bằng `data-testid` thay vì `getByText('Tiếng Việt')`.
+
+### 8.5.6. Khi muốn skip CI cho 1 commit
+
+**KHÔNG khuyến khích**, nhưng nếu cần (VD: docs-only commit):
+
+```powershell
+git commit -m "docs: update README [skip ci]"
+# Hoặc:
+git commit -m "docs: update README" --allow-empty -m "[skip ci]"
+```
+
+Tag `[skip ci]` trong commit message → workflow KHÔNG trigger. Lưu ý: nếu commit này merge vào PR có code change, CI sẽ vẫn chạy ở commit khác.
+
+---
+
 ## 9. Tài nguyên
 
 - [Playwright official docs](https://playwright.dev/docs/intro)
