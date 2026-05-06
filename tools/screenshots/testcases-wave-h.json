@@ -1,0 +1,249 @@
+{
+  "wave": "H",
+  "title": "End-to-End Workflow testcases — Luồng nghiệp vụ xuyên suốt nhiều module",
+  "generated_at": "2026-05-05",
+  "purpose": "Lấp gap E2E (0 → ~20 TC). Test Core Value: VB đến → xử lý → VB đi → ký số → phát hành",
+  "source": "CLAUDE.md Core Value + HDSD_full.md Phần I (luồng văn bản hành chính)",
+  "test_environment": "Cần 4 tài khoản: vanthu (Văn thư), lanhdao (Lãnh đạo có ký số), canbo (Cán bộ thường), admin",
+  "modules": [
+    {
+      "module": "E2E - Core Document Flow",
+      "description": "Luồng VB đến → giao việc → xử lý → tạo dự thảo → ký số → phát hành VB đi",
+      "testcases": [
+        {
+          "id": "TC-E2E-CDF-001",
+          "screen": "Multi-screen workflow",
+          "category": "E2E",
+          "priority": "High",
+          "title": "[FULL FLOW] VB đến → giao việc → tạo dự thảo → ký số → phát hành VB đi",
+          "preconditions": "DB clean, có đủ 4 tài khoản (vanthu, lanhdao, canbo, admin), đã cấu hình ký số SmartCA và lanhdao đã link tài khoản ký số.",
+          "steps": "PHẦN 1 — VĂN THƯ TIẾP NHẬN VB ĐẾN:\n1. Đăng nhập 'vanthu', vào /van-ban-den\n2. Bấm '+ Thêm văn bản'\n3. Nhập: notation='100/QĐ-CV', sổ='Sổ VB đến 2026', loại='Quyết định', lĩnh vực='Tổ chức', trích yếu='Test E2E flow', đơn vị phát hành='Bộ Nội vụ', ngày nhận=hôm nay, người ký='Nguyễn Văn X'\n4. Đính kèm 1 file PDF\n5. Lưu → ghi nhận id_VB_DEN\n\nPHẦN 2 — VĂN THƯ CHUYỂN LÊN LÃNH ĐẠO:\n6. Mở chi tiết VB\n7. Bấm 'Gửi' → chọn 'lanhdao' làm người xử lý\n8. Lưu\n\nPHẦN 3 — LÃNH ĐẠO GIAO VIỆC:\n9. Logout, đăng nhập 'lanhdao', vào /van-ban-den\n10. Mở VB vừa nhận\n11. Bấm 'Giao việc' → chọn 'canbo'\n12. Nhập ý kiến chỉ đạo, deadline\n13. Lưu\n\nPHẦN 4 — CÁN BỘ XỬ LÝ + TẠO DỰ THẢO:\n14. Logout, đăng nhập 'canbo', vào /van-ban-den\n15. Mở VB được giao\n16. Bấm 'Tiếp nhận'\n17. Bấm 'Tạo dự thảo phản hồi'\n18. Nhập: notation='200/QĐ-PH', loại='Quyết định', trích yếu='Phản hồi VB 100', người ký dự kiến='lanhdao'\n19. Đính kèm file Word dự thảo\n20. Lưu dự thảo → ghi nhận id_DUTHAO\n21. Bấm 'Trình duyệt' → chọn 'lanhdao'\n\nPHẦN 5 — LÃNH ĐẠO KÝ SỐ:\n22. Logout, đăng nhập 'lanhdao', vào /van-ban-du-thao\n23. Mở dự thảo cần duyệt\n24. Bấm 'Ký số' → mở modal SmartCA\n25. Nhập OTP/PIN từ provider\n26. Confirm ký\n\nPHẦN 6 — VĂN THƯ PHÁT HÀNH VB ĐI:\n27. Logout, đăng nhập 'vanthu', vào /van-ban-di hoặc /van-ban-du-thao\n28. Mở dự thảo đã ký\n29. Bấm 'Phát hành' → chọn sổ VB đi, nhập số/ký hiệu chính thức\n30. Lưu → VB đi xuất hiện trong danh sách",
+          "expected": "Toàn flow chạy không lỗi. Verify:\n- VB đến hiển thị trạng thái 'Đã xử lý' / 'Hoàn thành'\n- VB đi mới có file PDF đã ký số (chứa chữ ký digital)\n- Lịch sử xử lý VB đến ghi đầy đủ 6 bước (vanthu → lanhdao → canbo → lanhdao ký → vanthu phát hành)\n- HSCV (nếu có liên kết) cập nhật đúng\n- Notification gửi đến đúng người mỗi bước\n- Audit log MongoDB có record cho mỗi action",
+          "notes": "TC quan trọng nhất — verify Core Value của hệ thống."
+        },
+        {
+          "id": "TC-E2E-CDF-002",
+          "screen": "Multi-screen",
+          "category": "E2E",
+          "priority": "High",
+          "title": "VB đến → Văn thư từ chối tiếp nhận (sai địa chỉ) → return về đơn vị gửi",
+          "preconditions": "VB đến vừa được nhận qua LGSP, chưa xử lý",
+          "steps": "1. Văn thư đăng nhập\n2. Mở VB từ LGSP\n3. Phát hiện sai địa chỉ\n4. Bấm 'Từ chối/Trả về' với lý do\n5. Verify VB chuyển trạng thái 'Đã trả về'",
+          "expected": "VB không vào sổ chính thức. Notification gửi đơn vị gửi. Lý do từ chối lưu lịch sử.",
+          "notes": ""
+        },
+        {
+          "id": "TC-E2E-CDF-003",
+          "screen": "Multi-screen",
+          "category": "E2E",
+          "priority": "High",
+          "title": "Lãnh đạo từ chối duyệt dự thảo → Cán bộ chỉnh sửa → trình lại",
+          "preconditions": "Cán bộ đã trình dự thảo cho lãnh đạo lần 1",
+          "steps": "1. Lãnh đạo đăng nhập, mở dự thảo\n2. Bấm 'Từ chối duyệt' với lý do 'Cần bổ sung phụ lục'\n3. Logout\n4. Cán bộ đăng nhập\n5. Mở dự thảo trạng thái 'Bị từ chối'\n6. Đọc lý do\n7. Sửa nội dung, đính file mới\n8. Trình lại\n9. Logout\n10. Lãnh đạo đăng nhập, duyệt + ký số",
+          "expected": "Vòng lặp duyệt-từ chối-sửa-trình lại hoạt động đúng. Lịch sử ghi 2 lần trình duyệt. File đính kèm có 2 version (hoặc thay thế).",
+          "notes": ""
+        },
+        {
+          "id": "TC-E2E-CDF-004",
+          "screen": "Multi-screen",
+          "category": "E2E",
+          "priority": "High",
+          "title": "VB đi đã ký → Phát hành qua LGSP → đơn vị nhận thấy ngay trong VB đến",
+          "preconditions": "Cả 2 đơn vị có cấu hình LGSP. VB đi đã ký xong.",
+          "steps": "1. Văn thư đơn vị A đăng nhập\n2. Mở VB đi đã ký\n3. Bấm 'Gửi LGSP' → chọn đơn vị B\n4. Submit\n5. Logout\n6. Văn thư đơn vị B đăng nhập\n7. Vào VB đến\n8. Quan sát có VB mới (kèm gói LGSP)",
+          "expected": "VB tới đơn vị B trong vòng 1-3 phút. Hiển thị tag 'LGSP'. Đầy đủ metadata (đơn vị gửi, ngày, file đính kèm).",
+          "notes": ""
+        },
+        {
+          "id": "TC-E2E-CDF-005",
+          "screen": "Multi-screen",
+          "category": "E2E",
+          "priority": "Medium",
+          "title": "Lãnh đạo ủy quyền (delegation) cho cấp phó khi đi công tác",
+          "preconditions": "Lãnh đạo đi công tác 5 ngày, cấp phó cần xử lý thay",
+          "steps": "1. Lãnh đạo (hoặc admin) tạo delegation: from_staff=Lãnh đạo, to_staff=Cấp phó, start_date=2026-05-06, end_date=2026-05-10\n2. Logout\n3. Cấp phó đăng nhập trong khoảng thời gian uỷ quyền\n4. Vào VB đến — quan sát có VB của Lãnh đạo không\n5. Cấp phó xử lý 1 VB",
+          "expected": "Cấp phó xử lý được như Lãnh đạo. Lịch sử ghi rõ 'Xử lý theo ủy quyền'.",
+          "notes": "Test edoc.delegations table."
+        },
+        {
+          "id": "TC-E2E-CDF-006",
+          "screen": "Multi-screen",
+          "category": "E2E",
+          "priority": "Medium",
+          "title": "Sau end_date của ủy quyền, cấp phó không xử lý được VB của Lãnh đạo nữa",
+          "preconditions": "Delegation end_date = hôm qua",
+          "steps": "1. Cấp phó đăng nhập\n2. Vào VB đến\n3. Quan sát còn thấy VB của Lãnh đạo không",
+          "expected": "Không thấy nữa. Quyền tự động hết hạn theo end_date.",
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "module": "E2E - HSCV Workflow",
+      "description": "Luồng Hồ sơ công việc xuyên suốt: tạo → thêm VB → chuyển tiếp → kết thúc",
+      "testcases": [
+        {
+          "id": "TC-E2E-HSCV-001",
+          "screen": "Multi-screen",
+          "category": "E2E",
+          "priority": "High",
+          "title": "[FULL FLOW] Tạo HSCV → thêm VB đến/đi → giao thành viên → kết thúc → báo cáo",
+          "preconditions": "Có 1 VB đến + 1 VB đi cùng chủ đề",
+          "steps": "1. Cán bộ đăng nhập, vào /ho-so-cong-viec\n2. Bấm '+ Tạo hồ sơ'\n3. Nhập: name='Hồ sơ XYZ', loại='QĐ', lĩnh vực='Tổ chức', start_date=hôm nay, end_date=+30d, chủ trì=mình, người tham gia=2 cán bộ khác\n4. Lưu → ghi nhận id_HSCV\n5. Mở chi tiết HSCV\n6. Tab 'File' → Bấm 'Thêm văn bản từ hệ thống' → tìm VB đến vừa nhận → Add\n7. Tab 'File' → tương tự, Add VB đi\n8. Tab 'Cán bộ' → quan sát 3 thành viên\n9. Tab 'Thông tin' → bấm 'Chuyển tiếp' → chọn lãnh đạo\n10. Logout\n11. Lãnh đạo đăng nhập, mở HSCV, bấm 'Phê duyệt'\n12. Logout\n13. Cán bộ đăng nhập, mở HSCV\n14. Bấm 'Hoàn thành' với ghi chú\n15. Vào /ho-so-cong-viec/bao-cao\n16. Filter theo cán bộ + tháng",
+          "expected": "HSCV chuyển trạng thái 'Đã hoàn thành'. progress=100%. Báo cáo hiển thị HSCV trong thống kê. VB đến/đi liên kết với HSCV qua handling_doc_links.",
+          "notes": ""
+        },
+        {
+          "id": "TC-E2E-HSCV-002",
+          "screen": "Multi-screen",
+          "category": "E2E",
+          "priority": "Medium",
+          "title": "Tạo HSCV con từ HSCV cha (parent_id) — kế thừa thông tin",
+          "preconditions": "HSCV cha đã tồn tại",
+          "steps": "1. Mở HSCV cha\n2. Bấm 'Tạo hồ sơ con' (nếu có)\n3. Verify một số field auto-fill từ cha\n4. Lưu",
+          "expected": "HSCV con có parent_id và root_id. Cây phân cấp HSCV hiển thị đúng.",
+          "notes": "Test handling_docs.parent_id, root_id."
+        },
+        {
+          "id": "TC-E2E-HSCV-003",
+          "screen": "Multi-screen",
+          "category": "E2E",
+          "priority": "Medium",
+          "title": "Hủy HSCV với lý do — KHÔNG xóa, chỉ chuyển trạng thái",
+          "preconditions": "HSCV đang xử lý",
+          "steps": "1. Cán bộ chủ trì mở HSCV\n2. Bấm 'Hủy hồ sơ' với lý do 'Trùng với HSCV khác'\n3. Confirm",
+          "expected": "HSCV chuyển trạng thái 'Đã hủy'. Vẫn còn trong DB (cancel_reason, cancel_by, cancel_at). Không xuất hiện trong danh sách 'Đang xử lý'.",
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "module": "E2E - Notification & Audit",
+      "description": "Verify notification + audit log đi kèm các action",
+      "testcases": [
+        {
+          "id": "TC-E2E-NA-001",
+          "screen": "Multi-screen",
+          "category": "E2E",
+          "priority": "High",
+          "title": "Mỗi action quan trọng tạo notification cho người liên quan",
+          "preconditions": "Lãnh đạo và Cán bộ đăng nhập 2 trình duyệt khác nhau",
+          "steps": "1. Văn thư tạo VB đến + gửi cho Lãnh đạo\n2. Quan sát chuông thông báo của Lãnh đạo\n3. Lãnh đạo giao việc cho Cán bộ\n4. Quan sát chuông Cán bộ\n5. Cán bộ tạo dự thảo + trình\n6. Quan sát chuông Lãnh đạo\n7. Lãnh đạo ký số\n8. Quan sát chuông Văn thư",
+          "expected": "Mỗi action có ít nhất 1 notification đến đúng người. Click notification dẫn đến đúng VB/HSCV.",
+          "notes": ""
+        },
+        {
+          "id": "TC-E2E-NA-002",
+          "screen": "Multi-screen",
+          "category": "E2E",
+          "priority": "Medium",
+          "title": "Audit log MongoDB ghi nhận đầy đủ các action xuyên flow",
+          "preconditions": "Đã chạy E2E full flow ở TC-E2E-CDF-001",
+          "steps": "1. Connect MongoDB qua Compass hoặc shell\n2. Query collection audit_log với incoming_doc_id = id_VB_DEN từ TC-E2E-CDF-001\n3. Đếm số record và xem chi tiết",
+          "expected": "Có ≥ 6 record (mỗi action 1 record). Mỗi record có timestamp, staff_id, action, before/after state.",
+          "notes": ""
+        },
+        {
+          "id": "TC-E2E-NA-003",
+          "screen": "Dashboard",
+          "category": "E2E",
+          "priority": "Medium",
+          "title": "Dashboard widget cập nhật đúng sau khi xử lý VB",
+          "preconditions": "Trước khi chạy flow, Dashboard hiển thị 'VB chờ xử lý: 5'",
+          "steps": "1. Văn thư xử lý 1 VB hết flow\n2. Refresh Dashboard",
+          "expected": "Widget 'VB chờ xử lý' giảm còn 4. Widget 'VB đã xử lý' tăng 1. Stats real-time chính xác.",
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "module": "E2E - Integration External",
+      "description": "Verify integration với services bên ngoài",
+      "testcases": [
+        {
+          "id": "TC-E2E-EXT-001",
+          "screen": "Modal ký số",
+          "category": "E2E",
+          "priority": "High",
+          "title": "Ký số với SmartCA VNPT — full handshake",
+          "preconditions": "Cấu hình SmartCA active. Lãnh đạo đã link tài khoản.",
+          "steps": "1. Lãnh đạo mở dự thảo cần ký\n2. Bấm 'Ký số'\n3. Modal hiển thị, chọn provider SmartCA\n4. Backend gọi SmartCA API → VNPT gửi push notification về app SmartCA mobile\n5. Lãnh đạo confirm trên mobile\n6. Frontend nhận callback",
+          "expected": "PDF được ký digital signature. Verify bằng pdf-lib hoặc Adobe Reader thấy chữ ký hợp lệ.",
+          "notes": "Cần test với SmartCA test environment."
+        },
+        {
+          "id": "TC-E2E-EXT-002",
+          "screen": "Modal ký số",
+          "category": "E2E",
+          "priority": "High",
+          "title": "Ký số fail — provider trả error → flow rollback",
+          "preconditions": "Mock SmartCA trả error",
+          "steps": "1. Lãnh đạo bấm Ký số\n2. SmartCA timeout / reject\n3. Quan sát UI",
+          "expected": "Modal hiển thị 'Ký số thất bại: <reason>'. Dự thảo KHÔNG bị thay đổi trạng thái. Có thể retry.",
+          "notes": ""
+        },
+        {
+          "id": "TC-E2E-EXT-003",
+          "screen": "Modal LGSP",
+          "category": "E2E",
+          "priority": "High",
+          "title": "Gửi LGSP fail (đơn vị nhận chưa cấu hình) → báo lỗi rõ",
+          "preconditions": "Đơn vị B chưa có lgsp_system_id",
+          "steps": "1. Văn thư A gửi VB đi qua LGSP đến đơn vị B",
+          "expected": "Báo lỗi 'Đơn vị nhận chưa cấu hình LGSP' hoặc 'Không tìm thấy đơn vị'. VB không bị mất.",
+          "notes": ""
+        },
+        {
+          "id": "TC-E2E-EXT-004",
+          "screen": "MinIO",
+          "category": "E2E",
+          "priority": "Medium",
+          "title": "Upload file → MinIO offline → fallback hợp lý",
+          "preconditions": "Stop MinIO container",
+          "steps": "1. Văn thư upload file đính kèm",
+          "expected": "Hệ thống báo 'Lỗi lưu trữ file. Vui lòng thử lại'. KHÔNG tạo VB rỗng. Restart MinIO sẽ cho phép retry.",
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "module": "E2E - Multi-Role Journey",
+      "description": "User journey theo từng vai trò trong 1 ngày làm việc",
+      "testcases": [
+        {
+          "id": "TC-E2E-MR-001",
+          "screen": "Full session",
+          "category": "E2E",
+          "priority": "Medium",
+          "title": "Văn thư 1 buổi sáng: nhận 5 VB → vào sổ → phân loại → chuyển lãnh đạo",
+          "preconditions": "Sáng đầu tuần, có 5 VB chưa xử lý từ LGSP",
+          "steps": "1. Đăng nhập 8h\n2. Mở chuông notification, đọc 5 thông báo\n3. Vào VB đến, lần lượt mở từng VB, vào sổ\n4. Mỗi VB chuyển cho Lãnh đạo phù hợp\n5. Cuối buổi quay lại Dashboard kiểm tra số VB còn pending",
+          "expected": "5 VB đều được vào sổ chính thức. Dashboard hiển thị 0 VB chờ xử lý. Time tracking < 30 phút.",
+          "notes": "Smoke test cho persona Văn thư."
+        },
+        {
+          "id": "TC-E2E-MR-002",
+          "screen": "Full session",
+          "category": "E2E",
+          "priority": "Medium",
+          "title": "Lãnh đạo 1 ngày: 10 VB chờ ký → ký bulk → kết thúc",
+          "preconditions": "10 dự thảo cần ký",
+          "steps": "1. Lãnh đạo đăng nhập\n2. Vào /ky-so/danh-sach\n3. Filter trạng thái 'Chờ ký'\n4. Tích chọn 10 VB\n5. Bấm 'Ký bulk' (nếu có) hoặc ký lần lượt\n6. Verify cuối buổi 10 VB đều đã ký",
+          "expected": "Bulk sign hoặc sequential sign hoạt động ổn định. Không lỗi giữa chừng. Audit log đủ 10 record.",
+          "notes": ""
+        },
+        {
+          "id": "TC-E2E-MR-003",
+          "screen": "Full session",
+          "category": "E2E",
+          "priority": "Medium",
+          "title": "Cán bộ 1 ngày: nhận giao việc → tra cứu HSCV liên quan → tạo dự thảo phản hồi → trình",
+          "preconditions": "Có VB được giao + 1 HSCV cũ liên quan",
+          "steps": "1. Cán bộ đăng nhập\n2. Mở VB được giao\n3. Tra cứu HSCV cũ qua search\n4. Mở HSCV cũ tham khảo\n5. Quay lại VB, bấm tạo dự thảo\n6. Soạn dự thảo, đính file\n7. Trình lãnh đạo",
+          "expected": "Toàn flow mượt. Không cần copy-paste data thủ công giữa các màn hình.",
+          "notes": ""
+        }
+      ]
+    }
+  ]
+}

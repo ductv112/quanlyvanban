@@ -1,0 +1,170 @@
+{
+  "wave": "I",
+  "title": "Concurrent / Session / Race-condition testcases",
+  "generated_at": "2026-05-05",
+  "purpose": "Lấp gap edge cases thời gian thực: 2 user cùng edit, token expire mid-flow, multi-tab session",
+  "source": "Best practice multi-user web app + JWT access/refresh token rotation",
+  "modules": [
+    {
+      "module": "Concurrent - Session & Token",
+      "description": "Hành vi token expiry, multi-tab, refresh flow",
+      "testcases": [
+        {
+          "id": "TC-CONC-ST-001",
+          "screen": "Multi-tab",
+          "category": "Concurrent",
+          "priority": "High",
+          "title": "Mở 2 tab, logout tab 1 — tab 2 tự logout khi gọi API",
+          "preconditions": "User đăng nhập trong tab A và tab B",
+          "steps": "1. Tab A: bấm Logout\n2. Tab B: thực hiện 1 thao tác (mở VB / save form)\n3. Quan sát",
+          "expected": "Tab B nhận 401 khi gọi API (refresh token đã revoke). Auto redirect /login. Hiển thị message 'Phiên đăng nhập đã hết hạn'.",
+          "notes": ""
+        },
+        {
+          "id": "TC-CONC-ST-002",
+          "screen": "Long-idle",
+          "category": "Concurrent",
+          "priority": "High",
+          "title": "Để trang idle 20 phút (access_token expired) → user thao tác → auto refresh + tiếp tục",
+          "preconditions": "User đăng nhập, để trang yên 20 phút",
+          "steps": "1. Đăng nhập\n2. Không thao tác 20 phút (vượt 15 phút TTL access token)\n3. Thực hiện 1 thao tác mới (click menu / save)\n4. Quan sát Network tab",
+          "expected": "Frontend phát hiện 401, auto gọi /api/auth/refresh, nhận token mới, retry request gốc. User KHÔNG bị logout, không thấy gián đoạn.",
+          "notes": "JWT 15min, refresh 7d theo CLAUDE.md."
+        },
+        {
+          "id": "TC-CONC-ST-003",
+          "screen": "Long-idle",
+          "category": "Concurrent",
+          "priority": "High",
+          "title": "Để trang idle 8 ngày (cả refresh token cũng hết) → bắt buộc đăng nhập lại",
+          "preconditions": "User đăng nhập, để máy 8 ngày (vượt 7d refresh TTL)",
+          "steps": "1. Đăng nhập\n2. Để 8 ngày\n3. Thao tác",
+          "expected": "Refresh fail 401. Frontend redirect /login với message 'Phiên đã hết hạn, vui lòng đăng nhập lại'.",
+          "notes": "Có thể test bằng cách sửa thời gian DB của refresh token."
+        },
+        {
+          "id": "TC-CONC-ST-004",
+          "screen": "Login",
+          "category": "Concurrent",
+          "priority": "Medium",
+          "title": "User đăng nhập trên 2 thiết bị → cả 2 đều hoạt động (multi-device)",
+          "preconditions": "Cùng user, 2 trình duyệt khác nhau",
+          "steps": "1. Đăng nhập trình duyệt 1\n2. Đăng nhập trình duyệt 2\n3. Cả 2 thực hiện thao tác cùng lúc",
+          "expected": "Cả 2 session đều OK. Mỗi session có refresh token riêng trong DB.",
+          "notes": ""
+        },
+        {
+          "id": "TC-CONC-ST-005",
+          "screen": "Logout all",
+          "category": "Concurrent",
+          "priority": "Medium",
+          "title": "Logout tất cả thiết bị từ 1 nơi (nếu có chức năng)",
+          "preconditions": "User đăng nhập 3 thiết bị",
+          "steps": "1. Vào Thông tin cá nhân → 'Đăng xuất tất cả thiết bị' (nếu có)\n2. 2 thiết bị còn lại thao tác",
+          "expected": "Tất cả 3 session bị invalidate. Phải đăng nhập lại trên mọi máy.",
+          "notes": "Nếu chưa có chức năng này, ghi nhận làm enhancement."
+        }
+      ]
+    },
+    {
+      "module": "Concurrent - Race conditions",
+      "description": "2 user cùng edit / cùng action 1 record",
+      "testcases": [
+        {
+          "id": "TC-CONC-RC-001",
+          "screen": "Drawer sửa VB đến",
+          "category": "Concurrent",
+          "priority": "High",
+          "title": "2 văn thư cùng sửa 1 VB đến — last write wins hoặc lock",
+          "preconditions": "VB id=100. User A và User B cùng đơn vị, đều có quyền sửa.",
+          "steps": "1. User A mở drawer Sửa VB 100, sửa abstract = 'A'\n2. User B mở drawer Sửa VB 100, sửa abstract = 'B'\n3. User B bấm Lưu trước\n4. User A bấm Lưu sau",
+          "expected": "Tùy cơ chế:\n- Last write wins: VB.abstract = 'A' (lỗi mất data B)\n- Optimistic lock: User A bị báo 'Dữ liệu đã được người khác cập nhật, vui lòng tải lại'\n- Pessimistic lock: User B không thể save khi A đang sửa\nGhi nhận hành vi thực tế và đối chiếu nghiệp vụ.",
+          "notes": "Quan trọng — cần discuss với BA về expected behavior."
+        },
+        {
+          "id": "TC-CONC-RC-002",
+          "screen": "Modal phê duyệt",
+          "category": "Concurrent",
+          "priority": "High",
+          "title": "2 lãnh đạo cùng phê duyệt 1 dự thảo — chỉ 1 succeed",
+          "preconditions": "Dự thảo cho phép nhiều lãnh đạo phê duyệt",
+          "steps": "1. Lãnh đạo A và B cùng mở dự thảo, cùng bấm 'Phê duyệt'\n2. Quan sát",
+          "expected": "1 succeed, 1 báo 'Dự thảo đã được phê duyệt bởi <user>'. Trạng thái không bị lặp.",
+          "notes": ""
+        },
+        {
+          "id": "TC-CONC-RC-003",
+          "screen": "Modal ký số",
+          "category": "Concurrent",
+          "priority": "High",
+          "title": "User bấm 'Ký số' 2 lần liên tiếp (double click)",
+          "preconditions": "Dự thảo chờ ký",
+          "steps": "1. Lãnh đạo bấm Ký số\n2. Modal mở → bấm Confirm\n3. Trước khi response về, bấm Confirm lần nữa (nếu nút chưa disabled)",
+          "expected": "Nút phải disabled ngay sau click 1. KHÔNG được tạo 2 record ký số. Chỉ 1 chữ ký.",
+          "notes": ""
+        },
+        {
+          "id": "TC-CONC-RC-004",
+          "screen": "Modal xóa",
+          "category": "Concurrent",
+          "priority": "High",
+          "title": "User A xóa VB, User B đang xem chi tiết VB đó",
+          "preconditions": "User A và B cùng có quyền",
+          "steps": "1. User B mở chi tiết VB 100\n2. User A xóa VB 100\n3. User B bấm 'Tải lại' / 'Sửa' / 'Refresh'",
+          "expected": "User B nhận 404 'Văn bản không tồn tại'. Frontend redirect về danh sách + thông báo lý do.",
+          "notes": ""
+        },
+        {
+          "id": "TC-CONC-RC-005",
+          "screen": "Notation sequential",
+          "category": "Concurrent",
+          "priority": "High",
+          "title": "2 văn thư cùng tạo VB đi trong cùng sổ → notation auto-increment không trùng",
+          "preconditions": "Sổ VB đi 2026 hiện có notation cao nhất 99",
+          "steps": "1. User A và B cùng mở drawer tạo VB đi\n2. Cả 2 bấm Lưu gần như đồng thời",
+          "expected": "1 VB có number=100, 1 VB có number=101. KHÔNG trùng. (Test PostgreSQL sequence atomic.)",
+          "notes": "Verify SP dùng sequence hoặc serializable transaction."
+        }
+      ]
+    },
+    {
+      "module": "Concurrent - Performance",
+      "description": "Load và stress edge cases",
+      "testcases": [
+        {
+          "id": "TC-CONC-PERF-001",
+          "screen": "Danh sách",
+          "category": "Concurrent",
+          "priority": "Medium",
+          "title": "Danh sách VB đến có 10000 records — phân trang hoạt động OK",
+          "preconditions": "DB có 10000 VB đến trong đơn vị",
+          "steps": "1. Vào /van-ban-den\n2. Quan sát thời gian load\n3. Click trang 100\n4. Click trang cuối",
+          "expected": "Mỗi trang load < 2s. Pagination chính xác. Không treo trình duyệt.",
+          "notes": ""
+        },
+        {
+          "id": "TC-CONC-PERF-002",
+          "screen": "Search",
+          "category": "Concurrent",
+          "priority": "Medium",
+          "title": "Search trong 10000 VB — kết quả < 3s",
+          "preconditions": "DB lớn",
+          "steps": "1. Search 'quyết định'\n2. Đo thời gian",
+          "expected": "Kết quả trong 3s nhờ index pg_trgm.",
+          "notes": ""
+        },
+        {
+          "id": "TC-CONC-PERF-003",
+          "screen": "Multi-user",
+          "category": "Concurrent",
+          "priority": "Medium",
+          "title": "100 user đồng thời đăng nhập → backend không sập",
+          "preconditions": "Có công cụ load test (k6/wrk)",
+          "steps": "1. Chạy script: 100 concurrent login với accounts khác nhau\n2. Đo response time + error rate",
+          "expected": "100% success rate. P95 < 500ms.",
+          "notes": "Cần dev/devops chạy."
+        }
+      ]
+    }
+  ]
+}
