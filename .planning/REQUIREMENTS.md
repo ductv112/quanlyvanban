@@ -21,7 +21,7 @@
 - [x] **AUTO-07**: Mock MySign server (port 8182) tương tự SmartCA — backup provider scenarios
 - [x] **AUTO-08**: Mock LGSP server (port 8183) emulate SOAP envelope với 4 status code (success + 3 error) — phục vụ TC liên thông
 - [x] **AUTO-09**: Test isolation: integration tests dùng `BEGIN`/`ROLLBACK` per `describe` block, E2E tests dùng template-DB clone per worker (`CREATE DATABASE qlvb_test_w1 TEMPLATE qlvb_baseline`)
-- [ ] **AUTO-10**: Storage state per role: 5 file `tests/.auth/<role>.json` được auto-gen trong `globalSetup` để E2E reuse session, không phải re-login mỗi test
+- [x] **AUTO-10**: Storage state per role: 5 file `tests/.auth/<role>.json` được auto-gen trong `globalSetup` để E2E reuse session, không phải re-login mỗi test
 - [ ] **AUTO-11**: Smoke suite gồm 30 TC P-High cover 6 module trọng yếu (Auth 5, VB đến 8, VB đi 5, HSCV 5, Admin 4, Dashboard 3) chạy local < 5 phút PASS 30/30
 
 ### REG — Regression Coverage (Wave a-g, 815/847 TC)
