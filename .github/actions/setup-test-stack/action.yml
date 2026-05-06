@@ -7,7 +7,7 @@
 #
 # CLAUDE.md pitfall #2: NODE_ENV=development BẮT BUỘC khi npm install/ci để
 # có đầy đủ devDependencies (typescript, vitest, tsx, playwright). KHÔNG dùng
-# --omit=dev / --production khi install.
+# install flags loại bỏ dev deps khi cài.
 #
 # Usage trong workflow:
 #   steps:
