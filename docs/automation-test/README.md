@@ -303,6 +303,140 @@ page.locator('div > div > button:nth-child(2)')  // brittle XPath/selector chain
 
 ---
 
+### 7.5. Add test mới (boilerplate)
+
+Khi QA muốn thêm TC mới (smoke / integration / E2E), copy 1 trong 3 template dưới đây:
+
+#### 7.5.1. Smoke E2E (Playwright) — UI flow
+
+File path: `tests/smoke/<module>.spec.ts`
+
+```typescript
+import { test, expect } from '@playwright/test';
+import { storageStateFor } from '../fixtures/auth';
+import { TEST_USERS } from '../../e_office_app_new/backend/tests/fixtures/users';
+import { TEST_DOCS } from '../../e_office_app_new/backend/tests/fixtures/docs';
+
+// Dùng storage state per role để skip login
+test.use({ storageState: storageStateFor('vanthu') });
+
+test.describe('Smoke — <Module name>', () => {
+  test('TC-XXX-NNN <Mô tả tiếng Việt> @smoke @P-High', async ({ page }) => {
+    // Arrange: navigate
+    await page.goto('/<route-vietnamese>');
+
+    // Act: tương tác UI
+    const button = page.getByRole('button', { name: /<button-text>/i });
+    await button.click();
+
+    // Assert: verify state
+    await expect(page.locator('.ant-drawer-content').first()).toBeVisible({ timeout: 5000 });
+
+    // Optional: dùng fixture data
+    const adminUser = TEST_USERS.admin;  // { username: 'test_admin', password: 'Test@123', ... }
+    const docId = TEST_DOCS.incoming.new.id;  // 90001
+  });
+});
+```
+
+**Convention:**
+- File 1 module/spec (auth.spec.ts, incoming-doc.spec.ts, etc.)
+- Title BẮT BUỘC bắt đầu `TC-XXX-NNN ` (regex `^(TC-[A-Z0-9-]+)`)
+- Tag `@smoke` để filter (PR gate run smoke)
+- Tag `@P-High` cho priority (per Excel column)
+- Dùng `test.use({ storageState })` ở top file (KHÔNG login lại trong test)
+
+#### 7.5.2. Integration test (Vitest + supertest) — API contract
+
+File path: `e_office_app_new/backend/tests/integration/<module>/<endpoint>.test.ts`
+
+```typescript
+import { describe, test, expect, beforeAll, afterAll } from 'vitest';
+import request from 'supertest';
+import { app } from '@/server';  // backend Express app
+import { TEST_USERS } from '../../fixtures/users';
+import { withTransaction, closeTestPool } from '../../helpers/db';
+
+describe('TC-API-NNN <Endpoint description>', () => {
+  let token: string;
+
+  beforeAll(async () => {
+    const res = await request(app)
+      .post('/api/auth/login')
+      .send({ username: TEST_USERS.vanthu.username, password: TEST_USERS.vanthu.password });
+    token = res.body.accessToken;
+  });
+
+  afterAll(async () => {
+    await closeTestPool();
+  });
+
+  test('TC-API-NNN-001 GET /api/<route> trả 200 + data shape đúng', async () => {
+    await withTransaction(async () => {
+      const res = await request(app)
+        .get('/api/<route>')
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty('items');
+      expect(Array.isArray(res.body.items)).toBe(true);
+    });
+    // withTransaction auto-rollback → DB không thay đổi
+  });
+});
+```
+
+**Convention:**
+- 1 file test/endpoint
+- Dùng `withTransaction()` cho tests modify DB (auto rollback)
+- Login 1 lần ở `beforeAll`, reuse `token` cho các test trong describe
+- TC-ID `TC-API-XXX` cho integration (vs `TC-AUTH/VBD/HSCV` cho UI smoke)
+
+#### 7.5.3. E2E full flow (Playwright) — Multi-step business
+
+File path: `tests/e2e/<scenario>.spec.ts` (Phase 23 backlog — example structure)
+
+```typescript
+import { test, expect } from '@playwright/test';
+import { storageStateFor } from '../fixtures/auth';
+
+test.describe('E2E — Full lifecycle <scenario>', () => {
+  test('TC-E2E-NNN <Scenario name> @e2e @P-High', async ({ browser }) => {
+    // 2 contexts cho 2 user khác nhau
+    const vanthuCtx = await browser.newContext({ storageState: storageStateFor('vanthu') });
+    const lanhdaoCtx = await browser.newContext({ storageState: storageStateFor('lanhdao') });
+
+    const vanthuPage = await vanthuCtx.newPage();
+    const lanhdaoPage = await lanhdaoCtx.newPage();
+
+    // Step 1: vanthu vào sổ VB đến
+    await vanthuPage.goto('/van-ban-den');
+    // ... click Vào sổ, fill form, save
+
+    // Step 2: lanhdao phê duyệt
+    await lanhdaoPage.goto('/van-ban-den');
+    // ... click VB vừa tạo, approve
+
+    // Cleanup
+    await vanthuCtx.close();
+    await lanhdaoCtx.close();
+  });
+});
+```
+
+#### 7.5.4. Checklist trước khi commit test mới
+
+- [ ] Test title có TC-ID prefix (`TC-XXX-NNN `)
+- [ ] Tag `@smoke` / `@regression` / `@e2e` theo loại
+- [ ] Tag priority `@P-High` / `@P-Medium` / `@P-Low`
+- [ ] Dùng `getByRole` / `getByLabel` / `[data-testid]` thay vì raw `text=` hay CSS class
+- [ ] TC-ID đã có trong `docs/hdsd/20260505_Testcase_QLVB_V2.xlsx` template (Excel parser warn nếu thiếu)
+- [ ] Chạy local: `npx playwright test --grep <TC-ID>` PASS
+- [ ] Nếu test modify DB → dùng `withTransaction()` (integration) hoặc reset DB sau (E2E)
+- [ ] Comment Vietnamese có dấu OK trong test title (UI render đúng cho Vietnamese QA review)
+
+---
+
 ## 8. Troubleshooting
 
 | Vấn đề | Nguyên nhân | Fix |
