@@ -72,22 +72,22 @@ INSERT INTO public.staff (
 ) VALUES
   (9001, 1, 1, 1, 'TEST001', 'test_admin',
    '$2b$10$y/GpbkimP4hyef0/QLVNwuW2xb4tbDNuKREpqenGy7WMnN8QtXsOe',
-   true,  'TEST', 'Quan tri',     1, 'test_admin@test.local',   '0900000001', '0900000001', false),
+   true,  'TEST', 'Quản trị',    1, 'test_admin@test.local',   '0900000001', '0900000001', false),
   (9002, 2, 2, 6, 'TEST002', 'test_vanthu',
    '$2b$10$y/GpbkimP4hyef0/QLVNwuW2xb4tbDNuKREpqenGy7WMnN8QtXsOe',
-   false, 'TEST', 'Van thu',      2, 'test_vanthu@test.local',  '0900000002', '0900000002', false),
+   false, 'TEST', 'Văn thư',     2, 'test_vanthu@test.local',  '0900000002', '0900000002', false),
   (9003, 2, 2, 1, 'TEST003', 'test_lanhdao',
    '$2b$10$y/GpbkimP4hyef0/QLVNwuW2xb4tbDNuKREpqenGy7WMnN8QtXsOe',
-   false, 'TEST', 'Lanh dao',     1, 'test_lanhdao@test.local', '0900000003', '0900000003', false),
+   false, 'TEST', 'Lãnh đạo',    1, 'test_lanhdao@test.local', '0900000003', '0900000003', false),
   (9004, 2, 2, 5, 'TEST004', 'test_canbo',
    '$2b$10$y/GpbkimP4hyef0/QLVNwuW2xb4tbDNuKREpqenGy7WMnN8QtXsOe',
-   false, 'TEST', 'Can bo',       1, 'test_canbo@test.local',   '0900000004', '0900000004', false),
+   false, 'TEST', 'Cán bộ',      1, 'test_canbo@test.local',   '0900000004', '0900000004', false),
   (9005, 3, 3, 5, 'TEST005', 'test_canbo_x',
    '$2b$10$y/GpbkimP4hyef0/QLVNwuW2xb4tbDNuKREpqenGy7WMnN8QtXsOe',
-   false, 'TEST', 'CB don vi khac', 2, 'test_canbo_x@test.local', '0900000005', '0900000005', false),
+   false, 'TEST', 'Cán bộ đơn vị khác', 2, 'test_canbo_x@test.local', '0900000005', '0900000005', false),
   (9099, 2, 2, 5, 'TEST099', 'test_locked',
    '$2b$10$y/GpbkimP4hyef0/QLVNwuW2xb4tbDNuKREpqenGy7WMnN8QtXsOe',
-   false, 'TEST', 'User da khoa', 1, 'test_locked@test.local',  '0900000099', '0900000099', true)
+   false, 'TEST', 'User đã khóa', 1, 'test_locked@test.local',  '0900000099', '0900000099', true)
 ON CONFLICT (id) DO UPDATE SET
   password_hash = EXCLUDED.password_hash,
   is_locked = EXCLUDED.is_locked,
