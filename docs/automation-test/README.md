@@ -307,6 +307,7 @@ page.locator('div > div > button:nth-child(2)')  // brittle XPath/selector chain
 
 | Vấn đề | Nguyên nhân | Fix |
 |--------|-------------|-----|
+| `Error: spawnSync psql ENOENT` khi chạy `npm run test:db:reset` trên Windows | psql CLI không có trong PATH + auto-detect Docker probe fail (docker daemon down hoặc container `qlvb_postgres` không chạy) | (1) Verify Docker Desktop đang chạy + container `qlvb_postgres` UP: `docker ps --filter name=qlvb_postgres`. (2) Set explicit `PG_DOCKER_CONTAINER=qlvb_postgres` trong `e_office_app_new/backend/.env.test` (template `.env.test.example` đã pre-set — copy lại nếu lỡ xoá). (3) Restart Docker Desktop nếu container không list. |
 | `[globalSetup] Backend không phản hồi tại http://localhost:4000` | Backend chưa chạy hoặc PG_DATABASE sai | Bước 3 Terminal 1 — set `PG_DATABASE=qlvb_test` rồi `npm run dev` |
 | `Login fail cho admin (test_admin)` | Test DB chưa seed fixture | Bước 2 — `npm run test:db:reset` |
 | `Cannot find module '@playwright/test'` | Chưa install root deps | Root dir: `npm install && npx playwright install chromium` |
