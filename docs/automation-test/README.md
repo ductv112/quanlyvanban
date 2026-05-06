@@ -59,11 +59,28 @@ cd ../..
 
 ### 1.3. Setup .env.test
 
+Template `.env.test.example` nằm trong `e_office_app_new/backend/`. Copy thành `.env.test`:
+
+**Windows (PowerShell):**
 ```powershell
-# Backend test config
-Copy-Item .env.test.example e_office_app_new/backend/.env.test
-# File đã có sẵn: qlvb_test DB + mock URLs + JWT secret
+cd e_office_app_new/backend
+Copy-Item .env.test.example .env.test
+cd ../..
 ```
+
+**Linux/macOS:**
+```bash
+cd e_office_app_new/backend
+cp .env.test.example .env.test
+cd ../..
+```
+
+**File đã có sẵn:** qlvb_test DB credential + mock URLs (8181/8182/8183) + JWT secret + signing key.
+
+> **Windows + Docker Desktop dev — IMPORTANT:**
+> Template đã pre-set `PG_DOCKER_CONTAINER=qlvb_postgres`. **KHÔNG xóa dòng này** trên Windows.
+> Phase 21-07 đã thêm auto-detect Docker trên Windows trong `test-db-reset.ts`, nhưng explicit set qua env nhanh hơn (~50ms) và tránh phụ thuộc `docker ps` trong PATH.
+> CI ubuntu-latest dùng psql native — comment hoặc xóa dòng này nếu chạy CI local mà KHÔNG có Docker container `qlvb_postgres`.
 
 ### 1.4. Boot Docker services
 
