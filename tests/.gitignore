@@ -1,0 +1,4 @@
+results/
+.auth/
+__snapshots__/*.png-actual.png
+__snapshots__/*.png-diff.png

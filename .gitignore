@@ -49,3 +49,10 @@ docs/Function list & Estimate.xlsx
 
 # Doc tích hợp ký số MySign Viettel (~400MB — SDK + demo code) — chỉ giữ local
 docs/huong_dan_tich_hop_ky_so_MySign_Viettel/
+
+# Test artifacts (Phase 21+ automation suite)
+tests/results/
+tests/.auth/
+tests/coverage/
+playwright-report/
+.env.test
