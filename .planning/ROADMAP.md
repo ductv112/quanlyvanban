@@ -81,36 +81,70 @@ Detail: `.planning/milestones/v3.0-phases/`, audit: `.planning/milestones/v3.0-M
 **Phase directory:** `.planning/phases/21-automation-foundation/`
 **UI hint:** yes
 
-### Phase 22: Regression Backbone
-**Goal:** Mỗi đêm 00:00 ICT chạy được toàn bộ regression Wave a-g (815/847 TC) < 45 phút và file Excel kết quả + Slack summary tự động về tay QA lead trước giờ làm.
-**Depends on:** Phase 21 (test infrastructure + mock servers + Excel parser MVP + CI workflow `test-pr.yml`)
-**Estimated:** 5 working days
-**Requirements (16):** REG-01, REG-02, REG-03, REG-04, REG-05, REG-06, REG-07, REG-08, REG-09, REG-10, CI-03, CI-04, RPT-02, RPT-03, RPT-04, RPT-06
-**Success criteria** (what must be TRUE):
-  1. Nightly job `test-nightly.yml` (cron `0 17 * * *` UTC = 00:00 ICT) chạy 815 TC Wave a-g hoàn tất < 45 phút trên `ubuntu-latest`; chạy 7 đêm liên tiếp đều xanh.
-  2. Pyramid phân bố thực tế đo bằng đếm `test()` block: 50 unit ± 10% / 464 integration ± 10% / 383 E2E ± 10%; lint check title `^TC-[A-Z0-9-]+` chạy trong CI và fail nếu có test thiếu TC-ID.
-  3. File `<YYYYMMDD>_Testcase_QLVB_V2_results.xlsx` được commit vào branch `test-results/<YYYYMMDD>` mỗi đêm; cột `Trạng thái` / `Run date` / `Duration` / `Error msg` đầy đủ cho 815 dòng; TC-ID test có nhưng không có trong Excel → cảnh báo "TC chưa tracking", TC trong Excel không có test → đánh "Not run".
-  4. Coverage report cuối nightly print đúng số liệu: tổng 847 TC, auto coverage % thực tế, hybrid count, "Not run" count với lý do (HYBRID weekly hay missing automation).
-  5. Slack `#qlvb-qa` nhận message tự động vào 00:00 ICT mỗi ngày: total / pass / fail / skip / duration / link Excel artifact; nightly fail → alert kèm link artifact để QA truy lỗi sáng hôm sau.
-  6. Flaky rate < 1% sau 7 nightly liên tiếp; test fail không reproducible bị tag `@flaky` và quarantine ra khỏi gate, không che fail thật.
-**Plans:** TBD — chạy `/gsd-plan-phase 22` khi sẵn sàng.
-**Phase directory:** `.planning/phases/22-regression-backbone/`
-**UI hint:** yes
+> **2026-05-06 RE-SCOPE:** Phase 22+23 ban đầu over-engineered (CI nightly + Slack + k6 weekly + visual regression). User clarified intent thật: **Claude (AI) làm tester thủ công execute 847 TC theo Excel + fill Pass/Fail + log bug → user duyệt → fix → re-test**. Không cần CI/CD vì không có team. Tách Phase 22→30 thành 9 batch theo wave (mỗi wave = 1 phase execute) + reserve phase fix bug.
 
-### Phase 23: E2E + Concurrent + Hybrid
-**Goal:** Coverage cuối milestone đạt 100% (843 auto + 4 hybrid weekly) — bao gồm full luồng VB đến → giao việc → ký số → phát hành VB đi, race condition đa tab, perf k6, và 1 lần/tuần test thật trên staging với SmartCA/LGSP real.
-**Depends on:** Phase 22 (regression baseline xanh, mock fidelity validated, Excel parser ổn định)
-**Estimated:** 3 working days
-**Requirements (10):** E2E-01, E2E-02, E2E-03, E2E-04, E2E-05, E2E-06, E2E-07, CI-05, CI-08, RPT-05
-**Success criteria** (what must be TRUE):
-  1. 17/19 TC Wave h (E2E flow) chạy auto với mock — luồng "VB đến → giao việc → tạo dự thảo → ký số → phát hành VB đi" pass đầu cuối; TC-E2E-EXT-004 dừng MinIO container runtime → backend trả 503 + form data giữ nguyên.
-  2. 10/13 TC Wave i concurrent chạy được với Playwright multi-context (2 user cùng edit 1 record race condition, multi-tab session); concurrent test chạy `workers: 1` để không nhiễu shared runner.
-  3. Workflow `test-weekly-hybrid.yml` (cron `0 18 * * 1` UTC = Thứ Hai 01:00 ICT) chạy 4 TC trên staging với credentials thật từ secret store: TC-E2E-EXT-001 (SmartCA real handshake) + TC-E2E-EXT-003 (LGSP real submit) + TC-CONC-PERF-001/002/003 (k6 ramp-up 100 vUser/30s, gate p95 < 800ms).
-  4. 110 TC UI category có visual snapshot baseline trong `tests/__snapshots__/`; diff > 0.1% pixel báo fail; fail trong CI tự động upload Playwright trace + screenshot + video làm artifact, retain 7 ngày, link trace gắn vào PR comment.
-  5. Coverage cuối nightly = 100% (843 auto + 4 hybrid weekly = 847/847 TC); auto coverage drop < 95% bất kỳ đêm nào → Slack alert đỏ tag QA lead trong vòng 1 giờ sau nightly kết thúc.
-**Plans:** TBD — chạy `/gsd-plan-phase 23` khi sẵn sàng.
-**Phase directory:** `.planning/phases/23-e2e-concurrent-hybrid/`
-**UI hint:** yes
+### Phase 22: Execute Wave a (Auth + Admin) — 83 TC
+**Goal:** Claude execute 83 TC Wave a (đăng nhập + quản trị đơn vị/người dùng/vai trò/danh mục) → fill Pass/Fail vào Excel → log bug.
+**Depends on:** Phase 21 (test DB + 6 user fixture + Excel sync tool)
+**Estimated:** 1 session (~2 giờ)
+**Requirements:** REG-01
+**Success criteria:**
+  1. Toàn bộ 83 TC có cột "Trạng thái" trong Excel (Pass/Fail/Skip kèm reason)
+  2. Bug list ghi riêng (severity blocker/major/minor/cosmetic) — nộp user duyệt fix scope
+  3. Tỷ lệ Pass đầu tiên (chưa fix bug) ≥ 80% — nếu < 80% → có vấn đề lớn cần audit Phase 1 trước khi tiếp tục
+**Source:** `tools/screenshots/testcases-wave-a.json` (83 TC structured)
+**Phase directory:** `.planning/phases/22-execute-wave-a/`
+
+### Phase 23: Execute Wave b (Văn bản đến + đi) — 181 TC
+**Goal:** Execute 181 TC CRUD VB đến/đi + attachment + status flow.
+**Depends on:** Phase 22 (xác nhận Auth+Admin stable trước khi test luồng VB)
+**Estimated:** 1-2 session (~4 giờ)
+**Requirements:** REG-02
+**Source:** `tools/screenshots/testcases-wave-b.json`
+**Phase directory:** `.planning/phases/23-execute-wave-b/`
+
+### Phase 24: Execute Wave c (HSCV + Dự thảo + Ký số DS) — 203 TC
+**Goal:** Execute 203 TC HSCV/dự thảo/danh sách ký số. Mock SmartCA active.
+**Depends on:** Phase 23 + mock SmartCA boot
+**Estimated:** 1-2 session (~5 giờ)
+**Requirements:** REG-03
+**Source:** `tools/screenshots/testcases-wave-c.json`
+**Phase directory:** `.planning/phases/24-execute-wave-c/`
+
+> **Lưu ý renumber:** Phase 24 LGSP "Từ chối tiếp nhận" cũ → Phase 31 (đẩy xuống cuối backlog).
+
+### Phase 25: Execute Wave d (Boundary form fields) — 126 TC
+**Goal:** Execute 126 TC boundary kiểu input form (max length, special char, empty).
+**Source:** `tools/screenshots/testcases-wave-d.json`
+**Phase directory:** `.planning/phases/25-execute-wave-d/`
+
+### Phase 26: Execute Wave e (4 Danh mục) — 75 TC
+**Goal:** Execute 75 TC CRUD Sổ VB / Loại VB / Lĩnh vực / Người ký.
+**Source:** `tools/screenshots/testcases-wave-e.json`
+**Phase directory:** `.planning/phases/26-execute-wave-e/`
+
+### Phase 27: Execute Wave f (Boundary VARCHAR + upload) — 97 TC
+**Goal:** Execute 97 TC boundary VARCHAR theo DB schema + file upload limits.
+**Source:** `tools/screenshots/testcases-wave-f.json`
+**Phase directory:** `.planning/phases/27-execute-wave-f/`
+
+### Phase 28: Execute Wave g (Permission cross-unit + role matrix) — 50 TC
+**Goal:** Execute 50 TC quyền 4 role × cross-unit isolation. Login đa user concurrent.
+**Source:** `tools/screenshots/testcases-wave-g.json`
+**Phase directory:** `.planning/phases/28-execute-wave-g/`
+
+### Phase 29: Execute Wave h (E2E flow xuyên module) — 19 TC
+**Goal:** Execute 19 TC luồng đầu cuối "VB đến → giao việc → ký số → phát hành VB đi". Mock SmartCA + LGSP active.
+**Source:** `tools/screenshots/testcases-wave-h.json`
+**Phase directory:** `.planning/phases/29-execute-wave-h/`
+
+### Phase 30: Execute Wave i (Concurrent + race + perf) — 13 TC
+**Goal:** Execute 13 TC concurrent (2 user cùng edit, multi-tab) + perf cơ bản (response time < 800ms).
+**Source:** `tools/screenshots/testcases-wave-i.json`
+**Phase directory:** `.planning/phases/30-execute-wave-i/`
+
+### Phase 31+: Bug fix loop (insert dynamic)
+Sau mỗi Wave execute → bug list. User duyệt → tôi insert phase fix qua `/gsd-insert-phase` (vd 22.1 fix Auth bug discovered từ Phase 22).
 
 ## v3.1+ Backlog (chờ kích hoạt milestone)
 

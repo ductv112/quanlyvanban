@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
 milestone: v3.1
-milestone_name: Automation Test Suite + Bug Fix
-status: verifying
-stopped_at: Completed 21-06-PLAN.md (CI workflow test-pr.yml). Phase 21 ready for verification.
-last_updated: "2026-05-06T05:10:53.428Z"
+milestone_name: Manual Test Execution + Bug Fix (re-scoped 2026-05-06)
+status: phase_21_done_re_scoped_executing
+stopped_at: Re-scope cleanup done. Phase 21 (infra) DONE. Ready Batch 1 = Phase 22 Execute Wave a (83 TC Auth+Admin).
+last_updated: "2026-05-06T16:50:00.000Z"
 last_activity: 2026-05-06
 progress:
-  total_phases: 3
+  total_phases: 10
   completed_phases: 1
-  total_plans: 6
-  completed_plans: 6
-  percent: 100
+  total_plans: 7
+  completed_plans: 7
+  percent: 10
 ---
 
 # Project State
