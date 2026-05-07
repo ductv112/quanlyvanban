@@ -256,8 +256,18 @@ async function syncToExcel(): Promise<void> {
   // Open Excel template
   const wb = new ExcelJS.Workbook();
   await wb.xlsx.readFile(EXCEL_TEMPLATE);
-  const sheet = wb.worksheets[0];
+  // Find sheet có column "TC ID" (skip "Tóm tắt" summary sheet)
+  let sheet = wb.worksheets.find(ws => {
+    const header = ws.getRow(1);
+    let hasTcId = false;
+    header.eachCell(c => {
+      const v = String(c.value || '').trim().toLowerCase();
+      if (v === 'tc id' || v === 'tc-id' || v === 'tcid' || v.includes('tc id')) hasTcId = true;
+    });
+    return hasTcId;
+  }) || wb.worksheets[0];
   if (!sheet) throw new Error('No worksheet found in template');
+  console.log(`[sync] Using sheet: ${sheet.name} (${sheet.rowCount} rows)`);
 
   // Find header row + TC-ID column
   const headerRow = sheet.getRow(1);
