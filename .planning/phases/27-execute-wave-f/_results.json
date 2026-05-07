@@ -1,0 +1,170 @@
+{
+  "total": 27,
+  "pass": 22,
+  "fail": 4,
+  "skip": 1,
+  "cases": [
+    {
+      "id": "TC-BND-AUTH-001",
+      "verdict": "PASS",
+      "note": "HTTP 200 | {'changed': True}",
+      "expected": "Mật khẩu 6 ký tự + chữ hoa + chữ thường + số → SUCCESS"
+    },
+    {
+      "id": "TC-BND-AUTH-002",
+      "verdict": "PASS",
+      "note": "HTTP 400 | Mật khẩu mới phải có ít nhất 6 ký tự, chứa chữ hoa, chữ thường và số",
+      "expected": "Mật khẩu 5 ký tự → REJECT 400"
+    },
+    {
+      "id": "TC-BND-AUTH-003",
+      "verdict": "PASS",
+      "note": "HTTP 400 | Mật khẩu mới phải có ít nhất 6 ký tự, chứa chữ hoa, chữ thường và số",
+      "expected": "6 ký tự, không có chữ hoa → REJECT"
+    },
+    {
+      "id": "TC-BND-AUTH-004",
+      "verdict": "PASS",
+      "note": "HTTP 400 | Mật khẩu mới phải có ít nhất 6 ký tự, chứa chữ hoa, chữ thường và số",
+      "expected": "6 ký tự, không có số → REJECT"
+    },
+    {
+      "id": "TC-BND-AUTH-005",
+      "verdict": "PASS",
+      "note": "HTTP 400 | Mật khẩu mới không được trùng với mật khẩu hiện tại",
+      "expected": "Mật khẩu mới = cũ → REJECT 'không được trùng'"
+    },
+    {
+      "id": "TC-BND-AUTH-006",
+      "verdict": "SKIP",
+      "note": "Backend không có field confirmPassword - chỉ FE validate",
+      "expected": "FE-only check"
+    },
+    {
+      "id": "TC-BND-NOTIF-001",
+      "verdict": "PASS",
+      "note": "HTTP 201 | {'id': '90004'}",
+      "expected": "title = 200 ký tự (DB VARCHAR(300) nên OK) → SUCCESS"
+    },
+    {
+      "id": "TC-BND-NOTIF-002",
+      "verdict": "FAIL",
+      "note": "HTTP 201 - server accept 201 chars (DB=VARCHAR(300), route limit=300, TC giả định 200)",
+      "expected": "TC giả định DB=200, thực tế DB=300 + route limit=300 → server CHẤP NHẬN 201 ký tự"
+    },
+    {
+      "id": "TC-BND-NOTIF-003",
+      "verdict": "PASS",
+      "note": "HTTP 201 | {'id': '90006'}",
+      "expected": "title = 1 ký tự → SUCCESS (no min length)"
+    },
+    {
+      "id": "TC-BND-NOTIF-004",
+      "verdict": "PASS",
+      "note": "HTTP 201 | {'id': '90007'}",
+      "expected": "content = 5000 ký tự (TEXT) → SUCCESS"
+    },
+    {
+      "id": "TC-BND-QTDV-001",
+      "verdict": "PASS",
+      "note": "HTTP 201 | {'id': 101}",
+      "expected": "code = 50 ký tự (đúng biên VARCHAR(50)) → SUCCESS"
+    },
+    {
+      "id": "TC-BND-QTDV-002",
+      "verdict": "PASS",
+      "note": "HTTP 500 | value too long for type character varying(50)",
+      "expected": "code = 51 ký tự → REJECT (overflow VARCHAR(50))"
+    },
+    {
+      "id": "TC-BND-QTDV-003",
+      "verdict": "PASS",
+      "note": "HTTP 201 | {'id': 102}",
+      "expected": "name=200, name_en=200 → SUCCESS"
+    },
+    {
+      "id": "TC-BND-QTDV-004",
+      "verdict": "PASS",
+      "note": "HTTP 201 | {'id': 103}",
+      "expected": "abb_name = 20 ký tự (biên trên VARCHAR(20)) → SUCCESS"
+    },
+    {
+      "id": "TC-BND-QTDV-005",
+      "verdict": "PASS",
+      "note": "HTTP 500 | value too long for type character varying(20)",
+      "expected": "abb_name = 21 ký tự → REJECT (overflow VARCHAR(20))"
+    },
+    {
+      "id": "TC-BND-QTDV-006",
+      "verdict": "PASS",
+      "note": "HTTP 201 | {'id': 104}",
+      "expected": "phone format hợp lệ (số/+/-/space/parens) → SUCCESS"
+    },
+    {
+      "id": "TC-BND-QTDV-007",
+      "verdict": "FAIL",
+      "note": "HTTP 201 - backend không có format validation, chấp nhận \"0912abc678\"",
+      "expected": "TC expect reject; backend không validate phone format → BACKEND CHẤP NHẬN (FE-only validation)"
+    },
+    {
+      "id": "TC-BND-QTDV-008",
+      "verdict": "PASS",
+      "note": "HTTP 201 | {'id': 106}",
+      "expected": "email = 97 ký tự, format OK → SUCCESS"
+    },
+    {
+      "id": "TC-BND-QTDV-009",
+      "verdict": "FAIL",
+      "note": "HTTP 201 - backend không validate email format, chấp nhận \"abc.gmail.com\"",
+      "expected": "TC expect reject; backend không validate email format → BACKEND CHẤP NHẬN (FE-only)"
+    },
+    {
+      "id": "TC-BND-QTDV-010",
+      "verdict": "PASS",
+      "note": "HTTP 201 | {'id': 108}",
+      "expected": "lgsp_system_id=50 + lgsp_secret_key=100 → field bị bỏ qua (route không destructure) nhưng dept tạo OK"
+    },
+    {
+      "id": "TC-BND-QTCV-001",
+      "verdict": "PASS",
+      "note": "HTTP 201 | {'id': 11}",
+      "expected": "name = 100 ký tự (biên trên VARCHAR(100)) → SUCCESS"
+    },
+    {
+      "id": "TC-BND-QTCV-002",
+      "verdict": "PASS",
+      "note": "HTTP 500 | value too long for type character varying(100)",
+      "expected": "name = 101 ký tự → REJECT (overflow VARCHAR(100))"
+    },
+    {
+      "id": "TC-BND-QTCV-003",
+      "verdict": "PASS",
+      "note": "HTTP 201 | {'id': 12}",
+      "expected": "code = 20 ký tự (biên trên VARCHAR(20)) → SUCCESS"
+    },
+    {
+      "id": "TC-BND-QTCV-004",
+      "verdict": "PASS",
+      "note": "HTTP 400 | Tên chức vụ là bắt buộc",
+      "expected": "name rỗng → REJECT 'Tên chức vụ là bắt buộc'"
+    },
+    {
+      "id": "TC-BND-QTNQ-001",
+      "verdict": "FAIL",
+      "note": "HTTP 500 - DB roles.name=VARCHAR(100), TC giả định 200 lỗi schema",
+      "expected": "TC says 200 chars OK, nhưng DB roles.name=VARCHAR(100) → SERVER REJECT (TC outdated)"
+    },
+    {
+      "id": "TC-BND-QTNQ-002",
+      "verdict": "PASS",
+      "note": "HTTP 200 | {'assigned': True}",
+      "expected": "Gán 0 quyền (rightIds=[]) → TC chấp nhận OK hoặc reject 'phải chọn 1+'"
+    },
+    {
+      "id": "TC-BND-QTNQ-003",
+      "verdict": "PASS",
+      "note": "HTTP 200 | {'assigned': True}",
+      "expected": "Gán TẤT CẢ (22) quyền → SUCCESS"
+    }
+  ]
+}
