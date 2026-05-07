@@ -39,7 +39,7 @@ import notificationRoutes from './routes/notification.js';
 import bellNotificationsRoutes from './routes/notifications.js';  // Phase 13 — personal bell
 import sendConfigRoutes from './routes/send-config.js';
 import profileRoutes from './routes/profile.js';
-import { authenticate, requireRoles } from './middleware/auth.js';
+import { authenticate, requireRoles, requireRolesOrNext } from './middleware/auth.js';
 import { initSocket } from './lib/socket.js';
 import { ensureBucket } from './lib/minio/client.js';
 import { startSigningWorker, stopSigningWorker } from './workers/signing-poll.worker.js';
@@ -67,11 +67,14 @@ app.use(pinoHttp({ logger }));
 app.use('/api/health', healthRoutes);
 app.use('/api/auth', authRoutes);
 
-// Phase 17 v3.0: 2 endpoints GET don-vi public cho non-admin (recipient picker)
-// Mount TRƯỚC /api/quan-tri admin guard — longer-prefix-wins
+// Phase 31 fix(BUG-CATALOG-SHADOW): admin routes MUST mount BEFORE publicCatalog
+// to avoid public-catalog shadowing admin endpoints (e.g. /nguoi-dung w/ is_locked filter).
+// Use requireRolesOrNext so non-admin users fall THROUGH to publicCatalog (read-only picker)
+// instead of getting 403. Admin users hit full admin handler.
+app.use('/api/quan-tri', authenticate, requireRolesOrNext('Quản trị hệ thống'), adminRoutes);
+app.use('/api/quan-tri', authenticate, requireRolesOrNext('Quản trị hệ thống'), adminCatalogRoutes);
+// Public catalog SAU — chỉ catch khi admin routes không match HOẶC user không phải admin
 app.use('/api/quan-tri', authenticate, publicCatalogRoutes);
-app.use('/api/quan-tri', authenticate, requireRoles('Quản trị hệ thống'), adminRoutes);
-app.use('/api/quan-tri', authenticate, requireRoles('Quản trị hệ thống'), adminCatalogRoutes);
 
 // --- Module routes ---
 app.use('/api/van-ban-den', authenticate, incomingDocRoutes);
