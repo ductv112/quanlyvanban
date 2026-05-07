@@ -145,7 +145,19 @@ router.post('/', async (req: Request, res: Response) => {
     }
 
     // ---- 1. Provider active check (Admin đã cấu hình CFG-01?)
-    const active = await getActiveProviderWithCredentials();
+    // BUG-KS-003: catch decrypt error friendly thay vì 500 raw
+    let active;
+    try {
+      active = await getActiveProviderWithCredentials();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      req.log?.warn({ err }, 'Provider credentials decrypt failed');
+      res.status(400).json({
+        success: false,
+        message: 'Provider chưa được cấu hình credentials hợp lệ. Vui lòng liên hệ Quản trị viên: ' + msg,
+      });
+      return;
+    }
     if (!active) {
       res.status(400).json({
         success: false,

@@ -1,10 +1,24 @@
 // Public catalog routes — readable cho mọi user authenticated
 // Phase 17 v3.0: cần cho recipient picker (multi-select departments) trong form VB đi
 import { Router, type Request, type Response } from 'express';
+import type { AuthRequest } from '../middleware/auth.js';
 import { rawQuery } from '../lib/db/query.js';
 import { handleDbError } from '../lib/error-handler.js';
+import { rightRepository } from '../repositories/right.repository.js';
 
 const router = Router();
+
+// BUG-VT-005: GET /chuc-nang/menu — non-admin user phải fetch được menu của chính họ
+// Mounted ở public-catalog (sau requireRolesOrNext) nên non-admin sẽ rơi vào đây.
+router.get('/chuc-nang/menu', async (req: Request, res: Response) => {
+  try {
+    const { staffId } = (req as AuthRequest).user;
+    const data = await rightRepository.getByStaff(staffId);
+    res.json({ success: true, data });
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
 
 interface DeptRow {
   id: number;
@@ -61,7 +75,6 @@ router.get('/don-vi/tree', async (_req: Request, res: Response) => {
 
 // Phase 19 v3.0 fix: catalog read endpoints cho non-admin (form CRUD VB cần)
 // Logic copy từ admin-catalog.ts nhưng KHÔNG yêu cầu admin role.
-import type { AuthRequest } from '../middleware/auth.js';
 import { resolveAncestorUnit } from '../lib/department-subtree.js';
 
 // GET /so-van-ban — list sổ văn bản
