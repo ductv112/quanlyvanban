@@ -1,6 +1,7 @@
 import { Router, type Request, type Response } from 'express';
 import type { AuthRequest } from '../middleware/auth.js';
 import { upload } from '../middleware/upload.js';
+import { loadDocAndCanEdit } from '../middleware/doc-edit-guard.js';
 import { outgoingDocRepository } from '../repositories/outgoing-doc.repository.js';
 import { incomingDocRepository } from '../repositories/incoming-doc.repository.js';
 import { uploadFile, deleteFile, getFileUrl, streamFileToResponse } from '../lib/minio/client.js';
@@ -510,7 +511,17 @@ router.get('/:id/dinh-kem', async (req: Request, res: Response) => {
   }
 });
 
-router.post('/:id/dinh-kem', upload.single('file'), async (req: Request, res: Response) => {
+router.post(
+  '/:id/dinh-kem',
+  // Phase 31 fix(BUG-VB-DI-001): chặn upload attachment lên VB đã duyệt/phát hành
+  loadDocAndCanEdit(async (id) => {
+    const rows = await rawQuery<{ id: number; approved: boolean }>(
+      `SELECT id, approved FROM edoc.outgoing_docs WHERE id = $1`, [id],
+    );
+    return rows[0] ?? null;
+  }),
+  upload.single('file'),
+  async (req: Request, res: Response) => {
   try {
     const { staffId } = (req as AuthRequest).user;
     const docId = Number(req.params.id);
@@ -539,7 +550,16 @@ router.post('/:id/dinh-kem', upload.single('file'), async (req: Request, res: Re
   }
 });
 
-router.delete('/:id/dinh-kem/:attachmentId', async (req: Request, res: Response) => {
+router.delete(
+  '/:id/dinh-kem/:attachmentId',
+  // Phase 31 fix(BUG-VB-DI-002): chặn xóa attachment trên VB đã duyệt/phát hành
+  loadDocAndCanEdit(async (id) => {
+    const rows = await rawQuery<{ id: number; approved: boolean }>(
+      `SELECT id, approved FROM edoc.outgoing_docs WHERE id = $1`, [id],
+    );
+    return rows[0] ?? null;
+  }),
+  async (req: Request, res: Response) => {
   try {
     const result = await outgoingDocRepository.deleteAttachment(Number(req.params.attachmentId));
     if (!result.success) {
