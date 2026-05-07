@@ -121,6 +121,26 @@ app.use((err: Error, _req: express.Request, res: express.Response, _next: expres
   logger.error(err);
   // NEVER expose raw DB errors to client
   const isDev = process.env.NODE_ENV !== 'production';
+
+  // Phase 31 fix(BUG-F-VB-006): map multer/upload validation errors → 400
+  // (fileFilter rejection cb(new Error(...)) bubbles up here as plain Error)
+  const errAny = err as any;
+  const msg = err.message || '';
+  if (errAny?.code === 'LIMIT_FILE_SIZE') {
+    res.status(400).json({ success: false, message: 'File vượt quá kích thước cho phép' });
+    return;
+  }
+  // Multer fileFilter rejection (custom whitelist message in Vietnamese)
+  if (msg.startsWith('Loại file không được phép tải lên')) {
+    res.status(400).json({ success: false, message: msg });
+    return;
+  }
+  // Generic MulterError
+  if (errAny?.name === 'MulterError') {
+    res.status(400).json({ success: false, message: 'Lỗi tải file: ' + msg });
+    return;
+  }
+
   res.status(500).json({
     success: false,
     message: isDev ? err.message : 'Có lỗi xảy ra, vui lòng thử lại sau'
