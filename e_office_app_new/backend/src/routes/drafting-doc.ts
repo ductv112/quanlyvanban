@@ -231,10 +231,27 @@ router.post('/', async (req: Request, res: Response) => {
       res.status(400).json({ success: false, message: 'Trích yếu nội dung là bắt buộc' });
       return;
     }
+    // BUG-DT-003: validate abstract length ≤ 2000
+    if (body.abstract.trim().length > 2000) {
+      res.status(400).json({ success: false, message: 'Trích yếu nội dung không được vượt quá 2000 ký tự' });
+      return;
+    }
     if (!body.doc_book_id) {
       res.status(400).json({ success: false, message: 'Sổ văn bản là bắt buộc' });
       return;
     }
+    // BUG-DT-001: drafting_unit_id required
+    if (!body.drafting_unit_id) {
+      res.status(400).json({ success: false, message: 'Đơn vị dự thảo là bắt buộc' });
+      return;
+    }
+    // BUG-DT-004: validate recipients length ≤ 2000
+    if (body.recipients && String(body.recipients).length > 2000) {
+      res.status(400).json({ success: false, message: 'Nơi nhận không được vượt quá 2000 ký tự' });
+      return;
+    }
+    // BUG-DT-002: drafting_user_id auto-fill từ JWT nếu missing
+    const draftingUserId = body.drafting_user_id ? Number(body.drafting_user_id) : staffId;
 
     const result = await draftingDocRepository.create({
       unitId: ancestorUnitId,
@@ -245,7 +262,7 @@ router.post('/', async (req: Request, res: Response) => {
       documentCode: body.document_code || null,
       abstract: body.abstract.trim(),
       draftingUnitId: body.drafting_unit_id ? Number(body.drafting_unit_id) : undefined,
-      draftingUserId: body.drafting_user_id ? Number(body.drafting_user_id) : undefined,
+      draftingUserId,
       publishUnitId: body.publish_unit_id ? Number(body.publish_unit_id) : undefined,
       publishDate: body.publish_date || null,
       signer: body.signer || null,
@@ -322,8 +339,18 @@ router.put('/:id', async (req: Request, res: Response) => {
       res.status(400).json({ success: false, message: 'Trích yếu nội dung là bắt buộc' });
       return;
     }
+    // BUG-DT-003: validate abstract length ≤ 2000
+    if (body.abstract.trim().length > 2000) {
+      res.status(400).json({ success: false, message: 'Trích yếu nội dung không được vượt quá 2000 ký tự' });
+      return;
+    }
     if (!body.doc_book_id) {
       res.status(400).json({ success: false, message: 'Sổ văn bản là bắt buộc' });
+      return;
+    }
+    // BUG-DT-004: validate recipients length ≤ 2000
+    if (body.recipients && String(body.recipients).length > 2000) {
+      res.status(400).json({ success: false, message: 'Nơi nhận không được vượt quá 2000 ký tự' });
       return;
     }
 

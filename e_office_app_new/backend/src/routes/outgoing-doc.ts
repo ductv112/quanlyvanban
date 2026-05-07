@@ -280,6 +280,11 @@ router.post('/', async (req: Request, res: Response) => {
       res.status(400).json({ success: false, message: 'Trích yếu nội dung là bắt buộc' });
       return;
     }
+    // BUG-VB-DI-003: validate abstract length ≤ 2000
+    if (body.abstract.trim().length > 2000) {
+      res.status(400).json({ success: false, message: 'Trích yếu nội dung không được vượt quá 2000 ký tự' });
+      return;
+    }
     if (!body.doc_book_id) {
       res.status(400).json({ success: false, message: 'Sổ văn bản là bắt buộc' });
       return;
@@ -377,6 +382,11 @@ router.put('/:id', async (req: Request, res: Response) => {
 
     if (!body.abstract?.trim()) {
       res.status(400).json({ success: false, message: 'Trích yếu nội dung là bắt buộc' });
+      return;
+    }
+    // BUG-VB-DI-003: validate abstract length ≤ 2000
+    if (body.abstract.trim().length > 2000) {
+      res.status(400).json({ success: false, message: 'Trích yếu nội dung không được vượt quá 2000 ký tự' });
       return;
     }
     if (!body.doc_book_id) {

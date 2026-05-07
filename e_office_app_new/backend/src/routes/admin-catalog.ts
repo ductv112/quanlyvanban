@@ -107,6 +107,11 @@ router.post('/so-van-ban', async (req: Request, res: Response) => {
       res.status(400).json({ success: false, message: 'Loại văn bản là bắt buộc' });
       return;
     }
+    // BUG-DMSV-002: validate description ≤ 500 ký tự
+    if (description && String(description).length > 500) {
+      res.status(400).json({ success: false, message: 'Mô tả không được vượt quá 500 ký tự' });
+      return;
+    }
 
     const result = await docBookRepository.create(
       type_id,
@@ -140,6 +145,19 @@ router.put('/so-van-ban/:id', async (req: Request, res: Response) => {
     if (name.trim().length > 200) {
       res.status(400).json({ success: false, message: 'Tên sổ văn bản không được vượt quá 200 ký tự' });
       return;
+    }
+    // BUG-DMSV-002: validate description ≤ 500 ký tự
+    if (description && String(description).length > 500) {
+      res.status(400).json({ success: false, message: 'Mô tả không được vượt quá 500 ký tự' });
+      return;
+    }
+    // BUG-DMSV-003: validate sort_order >= 0
+    if (sort_order !== undefined && sort_order !== null) {
+      const so = Number(sort_order);
+      if (!Number.isFinite(so) || so < 0) {
+        res.status(400).json({ success: false, message: 'Thứ tự phải lớn hơn hoặc bằng 0' });
+        return;
+      }
     }
 
     const result = await docBookRepository.update(

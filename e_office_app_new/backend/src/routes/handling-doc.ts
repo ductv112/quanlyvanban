@@ -377,6 +377,11 @@ router.post('/:id/y-kien', async (req: Request, res: Response) => {
       res.status(400).json({ success: false, message: 'Nội dung ý kiến là bắt buộc' });
       return;
     }
+    // BUG-HSCV-WF-003: validate ≤ 2000 ký tự
+    if (content.trim().length > 2000) {
+      res.status(400).json({ success: false, message: 'Nội dung ý kiến không được vượt quá 2000 ký tự' });
+      return;
+    }
 
     const result = await handlingDocRepository.createOpinion(
       docId, staffId, content.trim(), opinion_type || 'general',
@@ -584,6 +589,11 @@ router.patch('/:id/trang-thai', async (req: Request, res: Response) => {
       res.status(400).json({ success: false, message: 'Lý do là bắt buộc khi từ chối hoặc trả về' });
       return;
     }
+    // BUG-HSCV-WF-002: validate reason ≤ 500 ký tự
+    if (reason && reason.toString().trim().length > 500) {
+      res.status(400).json({ success: false, message: 'Lý do không được vượt quá 500 ký tự' });
+      return;
+    }
 
     let result;
     switch (action) {
@@ -785,6 +795,11 @@ router.post('/:id/huy', async (req: Request, res: Response) => {
     }
     if (!reason) {
       res.status(400).json({ success: false, message: 'Vui lòng nhập lý do hủy' });
+      return;
+    }
+    // BUG-HSCV-WF-002: validate reason ≤ 500 ký tự
+    if (reason.length > 500) {
+      res.status(400).json({ success: false, message: 'Lý do hủy không được vượt quá 500 ký tự' });
       return;
     }
     const result = await handlingDocRepository.cancel(id, staffId, reason);

@@ -411,6 +411,11 @@ router.post('/nguoi-dung', async (req: Request, res: Response) => {
       res.status(400).json({ success: false, message: 'Tên đăng nhập phải có ít nhất 3 ký tự' });
       return;
     }
+    // BUG-F-ND-001: validate username ≤ 50 ký tự (DB VARCHAR(50))
+    if (username.trim().length > 50) {
+      res.status(400).json({ success: false, message: 'Tên đăng nhập không được vượt quá 50 ký tự' });
+      return;
+    }
     if (!/^[a-zA-Z0-9._-]+$/.test(username.trim())) {
       res.status(400).json({ success: false, message: 'Tên đăng nhập chỉ chứa chữ cái, số, dấu chấm, gạch ngang' });
       return;

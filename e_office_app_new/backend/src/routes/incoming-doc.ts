@@ -298,9 +298,29 @@ router.post('/', async (req: Request, res: Response) => {
       res.status(400).json({ success: false, message: 'Trích yếu nội dung là bắt buộc' });
       return;
     }
+    // BUG-VB-DEN-001: validate abstract length ≤ 2000
+    if (body.abstract.trim().length > 2000) {
+      res.status(400).json({ success: false, message: 'Trích yếu nội dung không được vượt quá 2000 ký tự' });
+      return;
+    }
     if (!body.doc_book_id) {
       res.status(400).json({ success: false, message: 'Sổ văn bản là bắt buộc' });
       return;
+    }
+    // BUG-F-VB-001: validate number_paper > 0
+    if (body.number_paper !== undefined && body.number_paper !== null) {
+      const np = Number(body.number_paper);
+      if (!Number.isFinite(np) || np <= 0) {
+        res.status(400).json({ success: false, message: 'Số trang phải lớn hơn 0' });
+        return;
+      }
+    }
+    // BUG-F-VB-002: validate expired_date >= received_date
+    if (body.expired_date && body.received_date) {
+      if (new Date(body.expired_date) < new Date(body.received_date)) {
+        res.status(400).json({ success: false, message: 'Ngày hết hạn phải lớn hơn hoặc bằng ngày tiếp nhận' });
+        return;
+      }
     }
     // BUG-PERM-002: Validate doc_book_id thuộc đơn vị user (cross-unit tampering)
     {
@@ -449,9 +469,21 @@ router.put('/:id', async (req: Request, res: Response) => {
       res.status(400).json({ success: false, message: 'Trích yếu nội dung là bắt buộc' });
       return;
     }
+    // BUG-VB-DEN-001: validate abstract length ≤ 2000
+    if (body.abstract.trim().length > 2000) {
+      res.status(400).json({ success: false, message: 'Trích yếu nội dung không được vượt quá 2000 ký tự' });
+      return;
+    }
     if (!body.doc_book_id) {
       res.status(400).json({ success: false, message: 'Sổ văn bản là bắt buộc' });
       return;
+    }
+    // BUG-F-VB-002: validate expired_date >= received_date
+    if (body.expired_date && body.received_date) {
+      if (new Date(body.expired_date) < new Date(body.received_date)) {
+        res.status(400).json({ success: false, message: 'Ngày hết hạn phải lớn hơn hoặc bằng ngày tiếp nhận' });
+        return;
+      }
     }
 
     const result = await incomingDocRepository.update(id, {
@@ -889,6 +921,15 @@ router.post('/:id/giao-viec', async (req: Request, res: Response) => {
     }
     if (!Array.isArray(curator_ids) || curator_ids.length === 0) {
       res.status(400).json({ success: false, message: 'Vui lòng chọn ít nhất một người thực hiện' });
+      return;
+    }
+    // BUG-VB-DEN-003: end_date là bắt buộc cho giao việc
+    if (!end_date) {
+      res.status(400).json({ success: false, message: 'Hạn xử lý (ngày kết thúc) là bắt buộc' });
+      return;
+    }
+    if (start_date && end_date && new Date(end_date) < new Date(start_date)) {
+      res.status(400).json({ success: false, message: 'Hạn xử lý phải lớn hơn hoặc bằng ngày bắt đầu' });
       return;
     }
 
