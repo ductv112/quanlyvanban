@@ -2,7 +2,6 @@ import { createHash } from 'node:crypto';
 import { authRepository } from '../repositories/auth.repository.js';
 import { verifyPassword } from '../lib/auth/password.js';
 import { signAccessToken, signRefreshToken, verifyToken } from '../lib/auth/jwt.js';
-import type { TokenPayload } from '../lib/auth/jwt.js';
 import { getFileUrl } from '../lib/minio/client.js';
 
 function hashToken(token: string): string {
@@ -107,19 +106,20 @@ export const authService = {
 
   async refresh(oldRefreshToken: string): Promise<{ accessToken: string; refreshToken: string }> {
     // Verify JWT signature first
-    let payload: TokenPayload;
     try {
-      payload = await verifyToken(oldRefreshToken);
+      await verifyToken(oldRefreshToken);
     } catch {
       throw new AuthError('Refresh token không hợp lệ', 401);
     }
 
-    // Check token in DB
+    // Phase 31 Fix B4: Atomic consume — token được mark revoked + return staff trong cùng UPDATE...RETURNING.
+    // Replay attack (concurrent /refresh hoặc /refresh lần 2 với cùng token): UPDATE không match row chưa
+    // revoke -> SP return rỗng -> 401. Single-use guarantee tại DB layer.
     const tokenHash = hashToken(oldRefreshToken);
-    const staff = await authRepository.verifyRefreshToken(tokenHash);
+    const staff = await authRepository.consumeRefreshToken(tokenHash);
 
     if (!staff) {
-      throw new AuthError('Refresh token đã hết hạn hoặc bị thu hồi', 401);
+      throw new AuthError('Refresh token không hợp lệ hoặc đã được sử dụng', 401);
     }
 
     if (staff.is_locked || staff.is_deleted) {
@@ -129,10 +129,7 @@ export const authService = {
 
     const roles = parseRoles(staff.roles);
 
-    // Revoke old token
-    await authRepository.revokeRefreshToken(tokenHash);
-
-    // Issue new tokens (token rotation)
+    // Issue new tokens (token rotation) — old token đã được consume atomic ở trên
     const accessToken = await signAccessToken({
       staffId: staff.staff_id,
       departmentId: staff.department_id,

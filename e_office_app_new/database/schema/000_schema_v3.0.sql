@@ -28134,6 +28134,57 @@ BEGIN
 END;
 $func$;
 
+-- ============================================================================
+-- Phase 31 Group B Fix B4: BUG-PERM-008 Refresh token rotation atomic consume
+-- ============================================================================
+CREATE OR REPLACE FUNCTION public.fn_auth_consume_refresh_token(p_token_hash character varying)
+RETURNS TABLE(staff_id integer, username character varying, full_name character varying, email character varying, phone character varying, image character varying, is_admin boolean, is_locked boolean, is_deleted boolean, department_id integer, unit_id integer, position_name character varying, department_name character varying, unit_name character varying, roles text)
+LANGUAGE plpgsql
+AS $func$
+DECLARE
+  v_staff_id INTEGER;
+BEGIN
+  UPDATE public.refresh_tokens
+    SET revoked_at = NOW()
+    WHERE token_hash = p_token_hash
+      AND revoked_at IS NULL
+      AND expires_at > NOW()
+    RETURNING refresh_tokens.staff_id INTO v_staff_id;
+
+  IF v_staff_id IS NULL THEN
+    RETURN;
+  END IF;
+
+  RETURN QUERY
+  SELECT
+    s.id              AS staff_id,
+    s.username,
+    s.full_name::VARCHAR,
+    s.email::VARCHAR,
+    COALESCE(s.phone, s.mobile)::VARCHAR AS phone,
+    s.image::VARCHAR,
+    s.is_admin,
+    s.is_locked,
+    s.is_deleted,
+    s.department_id,
+    s.unit_id,
+    p.name::VARCHAR   AS position_name,
+    d.name::VARCHAR   AS department_name,
+    u.name::VARCHAR   AS unit_name,
+    COALESCE(
+      (SELECT string_agg(r.name, ',')
+       FROM public.role_of_staff ros
+       JOIN public.roles r ON r.id = ros.role_id
+       WHERE ros.staff_id = s.id),
+      ''
+    )::TEXT AS roles
+  FROM public.staff s
+  LEFT JOIN public.positions p ON p.id = s.position_id
+  LEFT JOIN public.departments d ON d.id = s.department_id
+  LEFT JOIN public.departments u ON u.id = s.unit_id
+  WHERE s.id = v_staff_id;
+END;
+$func$;
 
 -- ============================================================================
 -- Phase 31 Group B Fix B3 helper: fn_auth_get_password_hash
