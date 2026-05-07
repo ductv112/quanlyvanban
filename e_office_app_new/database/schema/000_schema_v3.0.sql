@@ -5742,7 +5742,7 @@ $$;
 -- Name: fn_lgsp_tracking_create(bigint, bigint, character varying, character varying, character varying, text, integer); Type: FUNCTION; Schema: edoc; Owner: -
 --
 
-CREATE OR REPLACE FUNCTION edoc.fn_lgsp_tracking_create(p_outgoing_doc_id bigint DEFAULT NULL::bigint, p_incoming_doc_id bigint DEFAULT NULL::bigint, p_direction character varying DEFAULT 'send'::character varying, p_dest_org_code character varying DEFAULT NULL::character varying, p_dest_org_name character varying DEFAULT NULL::character varying, p_edxml_content text DEFAULT NULL::text, p_created_by integer DEFAULT NULL::integer) RETURNS TABLE(success boolean, message text, id bigint)
+CREATE OR REPLACE FUNCTION edoc.fn_lgsp_tracking_create(p_outgoing_doc_id bigint DEFAULT NULL::bigint, p_incoming_doc_id bigint DEFAULT NULL::bigint, p_direction character varying DEFAULT 'send'::character varying, p_dest_org_code character varying DEFAULT NULL::character varying, p_dest_org_name character varying DEFAULT NULL::character varying, p_edxml_content text DEFAULT NULL::text, p_created_by integer DEFAULT NULL::integer, p_channel character varying DEFAULT 'lgsp'::character varying) RETURNS TABLE(success boolean, message text, id bigint)
     LANGUAGE plpgsql
     AS $$
 DECLARE
@@ -5750,11 +5750,11 @@ DECLARE
 BEGIN
   INSERT INTO edoc.lgsp_tracking (
     outgoing_doc_id, incoming_doc_id, direction, dest_org_code, dest_org_name,
-    edxml_content, status, created_by
+    edxml_content, status, created_by, channel
   )
   VALUES (
     p_outgoing_doc_id, p_incoming_doc_id, p_direction, p_dest_org_code, p_dest_org_name,
-    p_edxml_content, 'pending', p_created_by
+    p_edxml_content, 'pending', p_created_by, COALESCE(p_channel, 'lgsp')
   )
   RETURNING edoc.lgsp_tracking.id INTO v_id;
 
@@ -28011,3 +28011,46 @@ UPDATE edoc.handling_docs SET status = 3, updated_at = NOW() WHERE status = 2;
 UPDATE edoc.handling_docs h
 SET unit_id = public.fn_get_ancestor_unit(h.department_id), updated_at = NOW()
 WHERE h.unit_id <> public.fn_get_ancestor_unit(h.department_id);
+
+-- ============================================================================
+-- Phase 31 Group B Fix B1: BUG-E2E-018 LGSP fn_lgsp_tracking_create signature mismatch
+-- ============================================================================
+-- Backend repo goi SP voi 8 args (last param = channel 'lgsp'/'cp'),
+-- nhung SP cu chi co 7 args -> moi call fail.
+-- Fix: them column "channel" vao bang lgsp_tracking + DROP SP cu (7 args)
+--      + tao lai SP voi 8 args (param p_channel cuoi).
+-- Idempotent: ADD COLUMN IF NOT EXISTS, DROP FUNCTION IF EXISTS specific signature.
+-- ============================================================================
+ALTER TABLE edoc.lgsp_tracking ADD COLUMN IF NOT EXISTS channel VARCHAR(10) DEFAULT 'lgsp';
+
+-- Drop SP cu signature 7 args (neu ton tai) de tranh overload
+DROP FUNCTION IF EXISTS edoc.fn_lgsp_tracking_create(bigint, bigint, character varying, character varying, character varying, text, integer);
+
+CREATE OR REPLACE FUNCTION edoc.fn_lgsp_tracking_create(
+  p_outgoing_doc_id bigint DEFAULT NULL::bigint,
+  p_incoming_doc_id bigint DEFAULT NULL::bigint,
+  p_direction character varying DEFAULT 'send'::character varying,
+  p_dest_org_code character varying DEFAULT NULL::character varying,
+  p_dest_org_name character varying DEFAULT NULL::character varying,
+  p_edxml_content text DEFAULT NULL::text,
+  p_created_by integer DEFAULT NULL::integer,
+  p_channel character varying DEFAULT 'lgsp'::character varying
+) RETURNS TABLE(success boolean, message text, id bigint)
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  v_id BIGINT;
+BEGIN
+  INSERT INTO edoc.lgsp_tracking (
+    outgoing_doc_id, incoming_doc_id, direction, dest_org_code, dest_org_name,
+    edxml_content, status, created_by, channel
+  )
+  VALUES (
+    p_outgoing_doc_id, p_incoming_doc_id, p_direction, p_dest_org_code, p_dest_org_name,
+    p_edxml_content, 'pending', p_created_by, COALESCE(p_channel, 'lgsp')
+  )
+  RETURNING edoc.lgsp_tracking.id INTO v_id;
+
+  RETURN QUERY SELECT true, 'Tạo tracking liên thông thành công'::TEXT, v_id;
+END;
+$$;
