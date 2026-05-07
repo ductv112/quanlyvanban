@@ -468,7 +468,10 @@ router.put('/:id', async (req: Request, res: Response) => {
     // Existing row lookup — need current encrypted secret if body omits it
     const existing: SigningProviderConfigFullRow | null =
       await signingProviderConfigRepository.getByCode(body.provider_code);
-    if (!existing || existing.id !== id) {
+    // Phase 31 fix(BIGINT pitfall #9): existing.id từ DB BIGINT là string,
+    // id từ req.params là number → so sánh strict (!==) luôn fail → PUT trả 404 sai.
+    // Resolves: BUG-KS-CFG-001, BUG-KS-TK-001, BUG-F-KS-001
+    if (!existing || Number(existing.id) !== Number(id)) {
       res.status(404).json({ success: false, message: 'Không tìm thấy cấu hình' });
       return;
     }
