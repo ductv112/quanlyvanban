@@ -28093,3 +28093,64 @@ BEGIN
 END;
 $$;
 
+-- ============================================================================
+-- Phase 31 Group B Fix B3: BUG-001 Missing change-password endpoint
+-- ============================================================================
+CREATE OR REPLACE FUNCTION public.fn_staff_change_password(
+  p_staff_id BIGINT,
+  p_old_hash TEXT,
+  p_new_hash TEXT
+)
+RETURNS TABLE(success BOOLEAN, message TEXT)
+LANGUAGE plpgsql
+AS $func$
+DECLARE
+  v_current_hash VARCHAR(200);
+BEGIN
+  SELECT password_hash INTO v_current_hash
+    FROM public.staff
+    WHERE id = p_staff_id AND is_deleted = FALSE;
+
+  IF v_current_hash IS NULL THEN
+    RETURN QUERY SELECT FALSE, E'Khong tim thay nguoi dung'::TEXT;
+    RETURN;
+  END IF;
+
+  IF v_current_hash <> p_old_hash THEN
+    RETURN QUERY SELECT FALSE, E'Mat khau cu khong dung'::TEXT;
+    RETURN;
+  END IF;
+
+  UPDATE public.staff
+    SET password_hash = p_new_hash,
+        updated_at = NOW()
+    WHERE id = p_staff_id;
+
+  UPDATE public.refresh_tokens
+    SET revoked_at = NOW()
+    WHERE staff_id = p_staff_id AND revoked_at IS NULL;
+
+  RETURN QUERY SELECT TRUE, E'Doi mat khau thanh cong'::TEXT;
+END;
+$func$;
+
+
+-- ============================================================================
+-- Phase 31 Group B Fix B3 helper: fn_auth_get_password_hash
+-- ============================================================================
+-- Goi tu route /api/auth/change-password de bcrypt-compare old password.
+-- Tuan thu project rule "all data access via SP" -- KHONG dung rawQuery.
+-- ============================================================================
+-- Note: staff.id la INTEGER, p_staff_id phai dung type de tranh "function does not exist (unknown)" loi.
+-- DROP signature BIGINT cu (neu da apply phien ban truoc) de tranh overload ambiguous.
+DROP FUNCTION IF EXISTS public.fn_auth_get_password_hash(BIGINT);
+
+CREATE OR REPLACE FUNCTION public.fn_auth_get_password_hash(p_staff_id INTEGER)
+RETURNS TABLE(password_hash character varying)
+LANGUAGE sql STABLE
+AS $$
+  SELECT s.password_hash
+    FROM public.staff s
+    WHERE s.id = p_staff_id AND s.is_deleted = FALSE
+    LIMIT 1;
+$$;
