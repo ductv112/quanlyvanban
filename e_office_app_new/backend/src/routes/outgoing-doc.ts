@@ -309,6 +309,8 @@ router.post('/', async (req: Request, res: Response) => {
       expiredDate: body.expired_date || null,
       recipients: body.recipients || null,
       createdBy: staffId,
+      // BUG-F-VB-004: tránh silent drop approver
+      approver: body.approver ? String(body.approver).slice(0, 255) : undefined,
     });
 
     if (!result.success) {
@@ -405,6 +407,8 @@ router.put('/:id', async (req: Request, res: Response) => {
       expiredDate: body.expired_date || null,
       recipients: body.recipients || null,
       updatedBy: staffId,
+      // BUG-F-VB-004: tránh silent drop approver
+      approver: body.approver !== undefined ? String(body.approver).slice(0, 255) : undefined,
     });
 
     if (!result.success) {

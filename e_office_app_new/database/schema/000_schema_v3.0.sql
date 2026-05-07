@@ -6849,7 +6849,7 @@ $$;
 -- Name: fn_outgoing_doc_create(integer, timestamp with time zone, integer, character varying, character varying, character varying, text, integer, integer, integer, timestamp with time zone, character varying, timestamp with time zone, integer, integer, integer, smallint, smallint, integer, integer, timestamp with time zone, text, integer); Type: FUNCTION; Schema: edoc; Owner: -
 --
 
-CREATE OR REPLACE FUNCTION edoc.fn_outgoing_doc_create(p_unit_id integer, p_received_date timestamp with time zone, p_number integer, p_sub_number character varying, p_notation character varying, p_document_code character varying, p_abstract text, p_drafting_unit_id integer DEFAULT NULL::integer, p_drafting_user_id integer DEFAULT NULL::integer, p_publish_unit_id integer DEFAULT NULL::integer, p_publish_date timestamp with time zone DEFAULT NULL::timestamp with time zone, p_signer character varying DEFAULT NULL::character varying, p_sign_date timestamp with time zone DEFAULT NULL::timestamp with time zone, p_doc_book_id integer DEFAULT NULL::integer, p_doc_type_id integer DEFAULT NULL::integer, p_doc_field_id integer DEFAULT NULL::integer, p_secret_id smallint DEFAULT 1, p_urgent_id smallint DEFAULT 1, p_number_paper integer DEFAULT 1, p_number_copies integer DEFAULT 1, p_expired_date timestamp with time zone DEFAULT NULL::timestamp with time zone, p_recipients text DEFAULT NULL::text, p_created_by integer DEFAULT NULL::integer) RETURNS TABLE(success boolean, message text, id bigint)
+CREATE OR REPLACE FUNCTION edoc.fn_outgoing_doc_create(p_unit_id integer, p_received_date timestamp with time zone, p_number integer, p_sub_number character varying, p_notation character varying, p_document_code character varying, p_abstract text, p_drafting_unit_id integer DEFAULT NULL::integer, p_drafting_user_id integer DEFAULT NULL::integer, p_publish_unit_id integer DEFAULT NULL::integer, p_publish_date timestamp with time zone DEFAULT NULL::timestamp with time zone, p_signer character varying DEFAULT NULL::character varying, p_sign_date timestamp with time zone DEFAULT NULL::timestamp with time zone, p_doc_book_id integer DEFAULT NULL::integer, p_doc_type_id integer DEFAULT NULL::integer, p_doc_field_id integer DEFAULT NULL::integer, p_secret_id smallint DEFAULT 1, p_urgent_id smallint DEFAULT 1, p_number_paper integer DEFAULT 1, p_number_copies integer DEFAULT 1, p_expired_date timestamp with time zone DEFAULT NULL::timestamp with time zone, p_recipients text DEFAULT NULL::text, p_created_by integer DEFAULT NULL::integer, p_department_id integer DEFAULT NULL::integer, p_approver character varying DEFAULT NULL::character varying) RETURNS TABLE(success boolean, message text, id bigint)
     LANGUAGE plpgsql
     AS $$
 DECLARE v_id BIGINT;
@@ -6868,22 +6868,27 @@ BEGIN
     p_number := edoc.fn_outgoing_doc_get_next_number(p_doc_book_id, p_unit_id);
   END IF;
 
+  -- Resolve department_id from created_by if not provided
+  IF p_department_id IS NULL AND p_created_by IS NOT NULL THEN
+    SELECT s.department_id INTO p_department_id FROM public.staff s WHERE s.id = p_created_by;
+  END IF;
+
   INSERT INTO edoc.outgoing_docs (
-    unit_id, received_date, number, sub_number, notation, document_code,
+    unit_id, department_id, received_date, number, sub_number, notation, document_code,
     abstract, drafting_unit_id, drafting_user_id, publish_unit_id, publish_date,
     signer, sign_date, expired_date,
     number_paper, number_copies, secret_id, urgent_id,
     recipients, doc_book_id, doc_type_id, doc_field_id,
-    created_by, updated_by
+    approver, created_by, updated_by
   ) VALUES (
-    p_unit_id, COALESCE(p_received_date, NOW()), p_number,
+    p_unit_id, COALESCE(p_department_id, p_unit_id), COALESCE(p_received_date, NOW()), p_number,
     NULLIF(TRIM(p_sub_number), ''), NULLIF(TRIM(p_notation), ''), NULLIF(TRIM(p_document_code), ''),
     TRIM(p_abstract), p_drafting_unit_id, p_drafting_user_id, p_publish_unit_id, p_publish_date,
     NULLIF(TRIM(p_signer), ''), p_sign_date, p_expired_date,
     COALESCE(p_number_paper, 1), COALESCE(p_number_copies, 1),
     COALESCE(p_secret_id, 1), COALESCE(p_urgent_id, 1),
     NULLIF(TRIM(p_recipients), ''), p_doc_book_id, p_doc_type_id, p_doc_field_id,
-    p_created_by, p_created_by
+    NULLIF(TRIM(p_approver), ''), p_created_by, p_created_by
   )
   RETURNING edoc.outgoing_docs.id INTO v_id;
 
@@ -7283,7 +7288,7 @@ $$;
 -- Name: fn_outgoing_doc_update(bigint, timestamp with time zone, integer, character varying, character varying, character varying, text, integer, integer, integer, timestamp with time zone, character varying, timestamp with time zone, integer, integer, integer, smallint, smallint, integer, integer, timestamp with time zone, text, integer); Type: FUNCTION; Schema: edoc; Owner: -
 --
 
-CREATE OR REPLACE FUNCTION edoc.fn_outgoing_doc_update(p_id bigint, p_received_date timestamp with time zone, p_number integer, p_sub_number character varying, p_notation character varying, p_document_code character varying, p_abstract text, p_drafting_unit_id integer DEFAULT NULL::integer, p_drafting_user_id integer DEFAULT NULL::integer, p_publish_unit_id integer DEFAULT NULL::integer, p_publish_date timestamp with time zone DEFAULT NULL::timestamp with time zone, p_signer character varying DEFAULT NULL::character varying, p_sign_date timestamp with time zone DEFAULT NULL::timestamp with time zone, p_doc_book_id integer DEFAULT NULL::integer, p_doc_type_id integer DEFAULT NULL::integer, p_doc_field_id integer DEFAULT NULL::integer, p_secret_id smallint DEFAULT 1, p_urgent_id smallint DEFAULT 1, p_number_paper integer DEFAULT 1, p_number_copies integer DEFAULT 1, p_expired_date timestamp with time zone DEFAULT NULL::timestamp with time zone, p_recipients text DEFAULT NULL::text, p_updated_by integer DEFAULT NULL::integer) RETURNS TABLE(success boolean, message text)
+CREATE OR REPLACE FUNCTION edoc.fn_outgoing_doc_update(p_id bigint, p_received_date timestamp with time zone, p_number integer, p_sub_number character varying, p_notation character varying, p_document_code character varying, p_abstract text, p_drafting_unit_id integer DEFAULT NULL::integer, p_drafting_user_id integer DEFAULT NULL::integer, p_publish_unit_id integer DEFAULT NULL::integer, p_publish_date timestamp with time zone DEFAULT NULL::timestamp with time zone, p_signer character varying DEFAULT NULL::character varying, p_sign_date timestamp with time zone DEFAULT NULL::timestamp with time zone, p_doc_book_id integer DEFAULT NULL::integer, p_doc_type_id integer DEFAULT NULL::integer, p_doc_field_id integer DEFAULT NULL::integer, p_secret_id smallint DEFAULT 1, p_urgent_id smallint DEFAULT 1, p_number_paper integer DEFAULT 1, p_number_copies integer DEFAULT 1, p_expired_date timestamp with time zone DEFAULT NULL::timestamp with time zone, p_recipients text DEFAULT NULL::text, p_updated_by integer DEFAULT NULL::integer, p_approver character varying DEFAULT NULL::character varying) RETURNS TABLE(success boolean, message text)
     LANGUAGE plpgsql
     AS $$
 DECLARE v_approved BOOLEAN;
@@ -7330,6 +7335,7 @@ BEGIN
     number_copies     = COALESCE(p_number_copies, 1),
     expired_date      = p_expired_date,
     recipients        = NULLIF(TRIM(p_recipients), ''),
+    approver          = COALESCE(NULLIF(TRIM(p_approver), ''), approver),
     updated_by        = p_updated_by,
     updated_at        = NOW()
   WHERE edoc.outgoing_docs.id = p_id;
@@ -15577,7 +15583,8 @@ CREATE TABLE IF NOT EXISTS public.staff (
     is_admin boolean DEFAULT false,
     first_name character varying(50),
     last_name character varying(50) NOT NULL,
-    full_name character varying(100) GENERATED ALWAYS AS (
+    -- BUG-F-ND-002: widen từ 100→150 để fit first_name(50) + ' ' + last_name(50) = 101 ký tự
+    full_name character varying(150) GENERATED ALWAYS AS (
 CASE
     WHEN (first_name IS NOT NULL) THEN ((((first_name)::text || ' '::text) || (last_name)::text))::character varying
     ELSE last_name
