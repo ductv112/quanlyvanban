@@ -1440,9 +1440,32 @@ $$;
 CREATE OR REPLACE FUNCTION edoc.fn_doc_book_delete(p_id integer) RETURNS TABLE(success boolean, message text)
     LANGUAGE plpgsql
     AS $$
+DECLARE v_ref_count INT;
 BEGIN
   IF NOT EXISTS(SELECT 1 FROM edoc.doc_books WHERE id = p_id AND is_deleted = FALSE) THEN
     RETURN QUERY SELECT FALSE, 'Không tìm thấy sổ văn bản'::TEXT;
+    RETURN;
+  END IF;
+
+  -- BUG-DMSV-004: Block delete khi sổ văn bản đang được tham chiếu bởi VB
+  SELECT COUNT(*) INTO v_ref_count FROM edoc.incoming_docs WHERE doc_book_id = p_id;
+  IF v_ref_count > 0 THEN
+    RETURN QUERY SELECT FALSE, ('Không thể xóa: sổ đang được dùng bởi ' || v_ref_count || ' văn bản đến')::TEXT;
+    RETURN;
+  END IF;
+  SELECT COUNT(*) INTO v_ref_count FROM edoc.outgoing_docs WHERE doc_book_id = p_id;
+  IF v_ref_count > 0 THEN
+    RETURN QUERY SELECT FALSE, ('Không thể xóa: sổ đang được dùng bởi ' || v_ref_count || ' văn bản đi')::TEXT;
+    RETURN;
+  END IF;
+  SELECT COUNT(*) INTO v_ref_count FROM edoc.drafting_docs WHERE doc_book_id = p_id;
+  IF v_ref_count > 0 THEN
+    RETURN QUERY SELECT FALSE, ('Không thể xóa: sổ đang được dùng bởi ' || v_ref_count || ' văn bản dự thảo')::TEXT;
+    RETURN;
+  END IF;
+  SELECT COUNT(*) INTO v_ref_count FROM edoc.handling_docs WHERE doc_book_id = p_id;
+  IF v_ref_count > 0 THEN
+    RETURN QUERY SELECT FALSE, ('Không thể xóa: sổ đang được dùng bởi ' || v_ref_count || ' hồ sơ công việc')::TEXT;
     RETURN;
   END IF;
 
@@ -2312,7 +2335,7 @@ $$;
 CREATE OR REPLACE FUNCTION edoc.fn_doc_type_delete(p_id integer) RETURNS TABLE(success boolean, message text)
     LANGUAGE plpgsql
     AS $$
-DECLARE v_child_count INT;
+DECLARE v_child_count INT; v_ref_count INT;
 BEGIN
   IF NOT EXISTS(SELECT 1 FROM edoc.doc_types WHERE id = p_id AND is_deleted = FALSE) THEN
     RETURN QUERY SELECT FALSE, 'Không tìm thấy loại văn bản'::TEXT;
@@ -2324,6 +2347,28 @@ BEGIN
 
   IF v_child_count > 0 THEN
     RETURN QUERY SELECT FALSE, ('Không thể xóa: còn '|| v_child_count ||' loại văn bản con')::TEXT;
+    RETURN;
+  END IF;
+
+  -- BUG-DMLV-003: Block delete khi loại văn bản đang được tham chiếu bởi VB
+  SELECT COUNT(*) INTO v_ref_count FROM edoc.incoming_docs WHERE doc_type_id = p_id;
+  IF v_ref_count > 0 THEN
+    RETURN QUERY SELECT FALSE, ('Không thể xóa: loại đang được dùng bởi ' || v_ref_count || ' văn bản đến')::TEXT;
+    RETURN;
+  END IF;
+  SELECT COUNT(*) INTO v_ref_count FROM edoc.outgoing_docs WHERE doc_type_id = p_id;
+  IF v_ref_count > 0 THEN
+    RETURN QUERY SELECT FALSE, ('Không thể xóa: loại đang được dùng bởi ' || v_ref_count || ' văn bản đi')::TEXT;
+    RETURN;
+  END IF;
+  SELECT COUNT(*) INTO v_ref_count FROM edoc.drafting_docs WHERE doc_type_id = p_id;
+  IF v_ref_count > 0 THEN
+    RETURN QUERY SELECT FALSE, ('Không thể xóa: loại đang được dùng bởi ' || v_ref_count || ' văn bản dự thảo')::TEXT;
+    RETURN;
+  END IF;
+  SELECT COUNT(*) INTO v_ref_count FROM edoc.handling_docs WHERE doc_type_id = p_id;
+  IF v_ref_count > 0 THEN
+    RETURN QUERY SELECT FALSE, ('Không thể xóa: loại đang được dùng bởi ' || v_ref_count || ' hồ sơ công việc')::TEXT;
     RETURN;
   END IF;
 
