@@ -61,7 +61,12 @@ router.get('/unread-count', async (req: Request, res: Response) => {
 // ============================================================
 router.post('/', async (req: Request, res: Response) => {
   try {
-    const { staffId, departmentId } = (req as AuthRequest).user;
+    const { staffId, departmentId, isAdmin, roles } = (req as AuthRequest).user;
+    // BUG-004: Chỉ Quản trị hệ thống hoặc Lãnh đạo được tạo thông báo
+    if (!isAdmin && !roles?.some((r: string) => r === 'Quản trị hệ thống' || r === 'Ban Lãnh đạo')) {
+      res.status(403).json({ success: false, message: 'Không có quyền tạo thông báo (yêu cầu vai trò Quản trị hệ thống hoặc Ban Lãnh đạo)' });
+      return;
+    }
     const ancestorUnitId = await resolveAncestorUnit(departmentId);
     const { title, content, notice_type } = req.body;
 

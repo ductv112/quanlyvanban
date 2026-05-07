@@ -104,7 +104,13 @@ router.post('/', async (req: Request, res: Response) => {
   const startedAt = Date.now();
   try {
     // SECURITY T-11-01: staffId CHỈ từ JWT, không bao giờ từ body
-    const { staffId } = (req as AuthRequest).user;
+    const { staffId, isAdmin, roles } = (req as AuthRequest).user;
+    // BUG-PERM-005: defense-in-depth — yêu cầu role Ban Lãnh đạo hoặc Quản trị hệ thống
+    // (DB ACL canSign vẫn enforce per-attachment, nhưng RBAC layer block sớm)
+    if (!isAdmin && !roles?.some((r: string) => r === 'Ban Lãnh đạo' || r === 'Quản trị hệ thống')) {
+      res.status(403).json({ success: false, message: 'Không có quyền ký số (yêu cầu vai trò Ban Lãnh đạo hoặc Quản trị hệ thống)' });
+      return;
+    }
     const {
       attachment_id,
       attachment_type,

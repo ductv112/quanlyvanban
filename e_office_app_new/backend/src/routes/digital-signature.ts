@@ -124,10 +124,17 @@ router.get('/doc/:docId/:docType', async (req: Request, res: Response) => {
 
 // ============================================================
 // GET /:id — Lay chu ky so theo ID
+// BUG-PERM-006: validate numeric id trước khi gọi DB để tránh shadowing
+// path khác (VD: /tai-khoan-ca-nhan) gây "invalid bigint NaN" 500
 // ============================================================
 router.get('/:id', async (req: Request, res: Response) => {
   try {
-    const id = Number(req.params.id);
+    const idStr = String(req.params.id);
+    if (!/^\d+$/.test(idStr)) {
+      res.status(404).json({ success: false, message: 'Đường dẫn không hợp lệ' });
+      return;
+    }
+    const id = Number(idStr);
     const row = await digitalSignatureRepository.getById(id);
 
     if (!row) {

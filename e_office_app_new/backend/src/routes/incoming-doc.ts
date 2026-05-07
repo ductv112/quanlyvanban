@@ -285,7 +285,12 @@ router.get('/so-den-tiep-theo', async (req: Request, res: Response) => {
 // POST / — Tạo VB đến
 router.post('/', async (req: Request, res: Response) => {
   try {
-    const { staffId, departmentId } = (req as AuthRequest).user;
+    const { staffId, departmentId, isAdmin, roles } = (req as AuthRequest).user;
+    // BUG-PERM-003: Chỉ Văn thư hoặc Quản trị hệ thống được tạo VB đến
+    if (!isAdmin && !roles?.some((r: string) => r === 'Văn thư' || r === 'Quản trị hệ thống')) {
+      res.status(403).json({ success: false, message: 'Không có quyền tạo văn bản đến (yêu cầu vai trò Văn thư hoặc Quản trị hệ thống)' });
+      return;
+    }
     const ancestorUnitId = await resolveAncestorUnit(departmentId);
     const body = req.body;
 
@@ -296,6 +301,20 @@ router.post('/', async (req: Request, res: Response) => {
     if (!body.doc_book_id) {
       res.status(400).json({ success: false, message: 'Sổ văn bản là bắt buộc' });
       return;
+    }
+    // BUG-PERM-002: Validate doc_book_id thuộc đơn vị user (cross-unit tampering)
+    {
+      const docBookRows = await rawQuery<{ unit_id: number }>(
+        'SELECT unit_id FROM edoc.doc_books WHERE id = $1', [Number(body.doc_book_id)],
+      );
+      if (docBookRows.length === 0) {
+        res.status(400).json({ success: false, message: 'Sổ văn bản không tồn tại' });
+        return;
+      }
+      if (!isAdmin && Number(docBookRows[0].unit_id) !== Number(ancestorUnitId)) {
+        res.status(403).json({ success: false, message: 'Sổ văn bản không thuộc đơn vị của bạn' });
+        return;
+      }
     }
 
     const result = await incomingDocRepository.create({
@@ -351,6 +370,25 @@ router.get('/:id', async (req: Request, res: Response) => {
     if (!doc) {
       res.status(404).json({ success: false, message: 'Không tìm thấy văn bản đến' });
       return;
+    }
+    // BUG-PERM-001: Cross-unit guard — chỉ admin hoặc cùng đơn vị mới xem được
+    // Recipient ở đơn vị khác cũng được phép (qua user_incoming_docs)
+    if (!isAdmin) {
+      const ancestorUnitId = await resolveAncestorUnit(departmentId);
+      if (Number(doc.unit_id) !== Number(ancestorUnitId)) {
+        // Check nếu user là recipient → cho phép
+        const recipientRows = await rawQuery<{ exists: boolean }>(
+          `SELECT EXISTS(
+             SELECT 1 FROM edoc.user_incoming_docs
+             WHERE incoming_doc_id = $1 AND staff_id = $2
+           ) AS exists`,
+          [id, staffId],
+        );
+        if (!recipientRows[0]?.exists) {
+          res.status(403).json({ success: false, message: 'Không có quyền xem văn bản đến này' });
+          return;
+        }
+      }
     }
     // Lấy extra_fields + rejection info + sub_number (Phase 20 v3.0)
     const extraRows = await rawQuery<{ extra_fields: Record<string, unknown>; rejected_by: number | null; rejection_reason: string | null; sub_number: string | null }>(
@@ -461,7 +499,12 @@ router.put('/:id', async (req: Request, res: Response) => {
 // DELETE /:id — Xóa VB đến
 router.delete('/:id', async (req: Request, res: Response) => {
   try {
-    const { staffId, departmentId, isAdmin } = (req as AuthRequest).user;
+    const { staffId, departmentId, isAdmin, roles } = (req as AuthRequest).user;
+    // BUG-PERM-004: Chỉ Văn thư hoặc Quản trị hệ thống được xóa VB đến
+    if (!isAdmin && !roles?.some((r: string) => r === 'Văn thư' || r === 'Quản trị hệ thống')) {
+      res.status(403).json({ success: false, message: 'Không có quyền xóa văn bản đến (yêu cầu vai trò Văn thư hoặc Quản trị hệ thống)' });
+      return;
+    }
     const id = Number(req.params.id);
     const loaded = await loadDocAndPerms(id, { staffId, departmentId, isAdmin });
     if (!loaded) { res.status(404).json({ success: false, message: 'Không tìm thấy văn bản đến' }); return; }

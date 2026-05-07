@@ -185,7 +185,13 @@ router.get('/:id', async (req: Request, res: Response) => {
   try {
     // T-02-07: filter by ancestor unit to prevent cross-tenant access
     const { departmentId, isAdmin } = (req as AuthRequest).user;
-    const id = Number(req.params.id);
+    // BUG-PERM-007: validate numeric id để tránh path shadowing (VD: /bao-cao)
+    const idStr = String(req.params.id);
+    if (!/^\d+$/.test(idStr)) {
+      res.status(404).json({ success: false, message: 'Đường dẫn không hợp lệ' });
+      return;
+    }
+    const id = Number(idStr);
     const doc = await handlingDocRepository.getById(id);
     if (!doc) {
       res.status(404).json({ success: false, message: 'Không tìm thấy hồ sơ công việc' });
