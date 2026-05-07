@@ -273,7 +273,8 @@ router.post('/', async (req: Request, res: Response) => {
       secretId: body.secret_id ? Number(body.secret_id) : 1,
       urgentId: body.urgent_id ? Number(body.urgent_id) : 1,
       numberPaper: body.number_paper ? Number(body.number_paper) : 1,
-      numberCopies: body.number_copies ? Number(body.number_copies) : 1,
+      // BUG-F-DT-001: cho phép number_copies = 0 (không coerce silent)
+      numberCopies: (body.number_copies !== undefined && body.number_copies !== null) ? Math.max(0, Number(body.number_copies)) : 1,
       expiredDate: body.expired_date || null,
       recipients: body.recipients || null,
       createdBy: staffId,
@@ -373,7 +374,8 @@ router.put('/:id', async (req: Request, res: Response) => {
       secretId: body.secret_id ? Number(body.secret_id) : 1,
       urgentId: body.urgent_id ? Number(body.urgent_id) : 1,
       numberPaper: body.number_paper ? Number(body.number_paper) : 1,
-      numberCopies: body.number_copies ? Number(body.number_copies) : 1,
+      // BUG-F-DT-001: cho phép number_copies = 0 (không coerce silent)
+      numberCopies: (body.number_copies !== undefined && body.number_copies !== null) ? Math.max(0, Number(body.number_copies)) : 1,
       expiredDate: body.expired_date || null,
       recipients: body.recipients || null,
       updatedBy: staffId,

@@ -291,6 +291,12 @@ router.post('/:id/phan-cong', async (req: Request, res: Response) => {
       res.status(400).json({ success: false, message: 'Không được phân công quá 50 cán bộ cùng lúc' });
       return;
     }
+    // BUG-HSCV-WF-004: cảnh báo duplicate staff_ids trong cùng request
+    const uniqueIds = new Set(staff_ids.map(Number));
+    if (uniqueIds.size !== staff_ids.length) {
+      res.status(400).json({ success: false, message: 'Danh sách cán bộ phân công có giá trị trùng — vui lòng kiểm tra lại' });
+      return;
+    }
 
     const result = await handlingDocRepository.assignStaff(
       docId,

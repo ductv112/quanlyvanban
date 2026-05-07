@@ -122,6 +122,25 @@ router.post('/don-vi', async (req: Request, res: Response) => {
       }
     }
 
+    // BUG-F-003: validate email format
+    if (email && String(email).trim()) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(String(email).trim())) {
+        res.status(400).json({ success: false, message: 'Email đơn vị không đúng định dạng' });
+        return;
+      }
+    }
+    // BUG-F-002: validate phone/fax format
+    const phoneRegex = /^[0-9+\-\s()]{6,20}$/;
+    if (phone && String(phone).trim() && !phoneRegex.test(String(phone).trim())) {
+      res.status(400).json({ success: false, message: 'Số điện thoại đơn vị không đúng định dạng' });
+      return;
+    }
+    if (fax && String(fax).trim() && !phoneRegex.test(String(fax).trim())) {
+      res.status(400).json({ success: false, message: 'Số fax không đúng định dạng' });
+      return;
+    }
+
     const id = await departmentRepository.create(
       parent_id ?? null, code, name, name_en ?? '', short_name ?? '', abb_name ?? '',
       is_unit ?? false, level ?? 0, sort_order ?? 0, phone ?? '', fax ?? '',

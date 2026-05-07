@@ -1088,6 +1088,13 @@ router.post('/:id/gui-lien-thong', async (req: Request, res: Response) => {
       res.status(400).json({ success: false, message: 'Vui lòng chọn ít nhất một đơn vị' });
       return;
     }
+    // BUG-VB-DEN-004: validate cấu trúc {code, name} cho mỗi org
+    for (const org of org_codes) {
+      if (!org || typeof org !== 'object' || typeof (org as any).code !== 'string' || typeof (org as any).name !== 'string') {
+        res.status(400).json({ success: false, message: 'Danh sách đơn vị nhận liên thông không hợp lệ' });
+        return;
+      }
+    }
     const results = [];
     for (const org of org_codes as { code: string; name: string }[]) {
       const result = await incomingDocRepository.sendLgsp({
