@@ -63,6 +63,36 @@ export function handleDbError(error: unknown, res: Response): void {
     return;
   }
 
+  // PostgreSQL string_data_right_truncation (error code 22001)
+  // Phase 31 fix(BUG-*-LONG-INPUT): map raw "value too long for type character varying(N)"
+  // → 400 + Vietnamese msg (instead of 500 PG raw leak).
+  // Resolves: BUG-DV-002, BUG-CV-001, BUG-VT-002, BUG-F-004, BUG-F-007, BUG-F-HSCV-001
+  if (err?.code === '22001') {
+    res.status(400).json({
+      success: false,
+      message: 'Dữ liệu nhập vào quá dài, vượt giới hạn cho phép',
+    });
+    return;
+  }
+
+  // PostgreSQL invalid_text_representation (22P02) — common when frontend sends string for int/numeric
+  if (err?.code === '22P02') {
+    res.status(400).json({
+      success: false,
+      message: 'Dữ liệu nhập vào không đúng định dạng',
+    });
+    return;
+  }
+
+  // PostgreSQL check_violation (23514) — e.g. CHECK constraint failed
+  if (err?.code === '23514') {
+    res.status(400).json({
+      success: false,
+      message: 'Dữ liệu nhập vào không hợp lệ, vi phạm ràng buộc',
+    });
+    return;
+  }
+
   // Default — hide raw error in production
   const isDev = process.env.NODE_ENV !== 'production';
   res.status(500).json({
