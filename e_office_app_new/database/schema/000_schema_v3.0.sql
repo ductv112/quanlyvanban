@@ -28054,3 +28054,42 @@ BEGIN
   RETURN QUERY SELECT true, 'Tạo tracking liên thông thành công'::TEXT, v_id;
 END;
 $$;
+
+-- ============================================================================
+-- Phase 31 Group B Fix B2: BUG-CONC-003 Notation race condition outgoing doc
+-- ============================================================================
+-- Note: EXTRACT(YEAR FROM timestamptz) la STABLE (depend on session timezone) -- Postgres reject in INDEX expr.
+-- Workaround: dung helper IMMUTABLE wrapper + index tren wrapper.
+CREATE OR REPLACE FUNCTION edoc.fn_year_of_timestamp(ts timestamp with time zone)
+RETURNS INT
+LANGUAGE sql IMMUTABLE PARALLEL SAFE STRICT
+AS $$ SELECT EXTRACT(YEAR FROM ts AT TIME ZONE 'UTC')::INT $$;
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_outgoing_docs_book_unit_number_year
+  ON edoc.outgoing_docs (doc_book_id, unit_id, number, edoc.fn_year_of_timestamp(received_date))
+  WHERE number IS NOT NULL;
+
+CREATE OR REPLACE FUNCTION edoc.fn_outgoing_doc_get_next_number(
+  p_doc_book_id INT,
+  p_unit_id     INT DEFAULT NULL,
+  p_dept_id     INT DEFAULT NULL
+)
+RETURNS INT
+LANGUAGE plpgsql
+AS $$
+DECLARE v_max INT; v_unit_id INT;
+BEGIN
+  IF p_dept_id IS NOT NULL THEN v_unit_id := public.fn_get_ancestor_unit(p_dept_id);
+  ELSE v_unit_id := p_unit_id; END IF;
+
+  PERFORM 1 FROM edoc.doc_books WHERE id = p_doc_book_id FOR UPDATE;
+
+  SELECT COALESCE(MAX(number), 0) INTO v_max
+  FROM edoc.outgoing_docs
+  WHERE doc_book_id = p_doc_book_id
+    AND unit_id = v_unit_id
+    AND EXTRACT(YEAR FROM received_date) = EXTRACT(YEAR FROM NOW());
+  RETURN v_max + 1;
+END;
+$$;
+
