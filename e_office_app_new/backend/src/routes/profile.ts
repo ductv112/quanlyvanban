@@ -5,6 +5,7 @@ import { type AuthRequest } from '../middleware/auth.js';
 import { upload } from '../middleware/upload.js';
 import { uploadFile, getFileUrl } from '../lib/minio/client.js';
 import { profileRepository } from '../repositories/profile.repository.js';
+import { staffRepository } from '../repositories/staff.repository.js';
 
 /**
  * /api/ho-so-ca-nhan/* — routes cho profile cá nhân.
@@ -15,8 +16,88 @@ import { profileRepository } from '../repositories/profile.repository.js';
 const router = Router();
 
 const SIGN_PHONE_PATTERN = /^[0-9+\-\s()]*$/;
+const PHONE_PATTERN = /^[0-9+\-\s()]{0,50}$/;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_SIGN_IMAGE_SIZE = 2 * 1024 * 1024; // 2MB
 const PRESIGNED_EXPIRY_SECONDS = 3600;
+
+// PATCH /thong-tin — Cập nhật thông tin cá nhân (BUG #13)
+// Chỉ cho phép update các field cá nhân: first_name, last_name, email, phone, mobile, address.
+// Các field nhạy cảm (department_id, unit_id, position_id, is_admin...) giữ nguyên giá trị cũ.
+router.patch('/thong-tin', async (req: Request, res: Response) => {
+  try {
+    const { staffId } = (req as AuthRequest).user;
+
+    const { first_name, last_name, email, phone, mobile, address } = req.body || {};
+
+    // Validate
+    if (!first_name || typeof first_name !== 'string' || first_name.trim().length === 0) {
+      res.status(400).json({ success: false, message: 'Tên không được để trống' });
+      return;
+    }
+    if (!last_name || typeof last_name !== 'string' || last_name.trim().length === 0) {
+      res.status(400).json({ success: false, message: 'Họ không được để trống' });
+      return;
+    }
+    if (first_name.length > 100 || last_name.length > 100) {
+      res.status(400).json({ success: false, message: 'Họ và tên tối đa 100 ký tự' });
+      return;
+    }
+    if (email && (typeof email !== 'string' || !EMAIL_PATTERN.test(email))) {
+      res.status(400).json({ success: false, message: 'Email không hợp lệ' });
+      return;
+    }
+    if (phone && (typeof phone !== 'string' || !PHONE_PATTERN.test(phone))) {
+      res.status(400).json({ success: false, message: 'Số điện thoại không hợp lệ' });
+      return;
+    }
+    if (mobile && (typeof mobile !== 'string' || !PHONE_PATTERN.test(mobile))) {
+      res.status(400).json({ success: false, message: 'Số di động không hợp lệ' });
+      return;
+    }
+
+    // Lấy thông tin hiện tại để giữ nguyên field nhạy cảm
+    const current = await staffRepository.getById(staffId);
+    if (!current) {
+      res.status(404).json({ success: false, message: 'Không tìm thấy người dùng' });
+      return;
+    }
+
+    const ok = await staffRepository.update(
+      staffId,
+      current.department_id,
+      current.unit_id,
+      current.position_id,
+      first_name.trim(),
+      last_name.trim(),
+      current.gender,
+      current.birth_date || null,
+      (email ?? '').trim(),
+      (phone ?? '').trim(),
+      (mobile ?? '').trim(),
+      (address ?? '').trim(),
+      current.id_card || '',
+      current.id_card_date || null,
+      current.id_card_place || '',
+      current.is_admin,
+      current.is_represent_unit,
+      current.is_represent_department,
+      staffId, // updated_by = self
+    );
+
+    if (!ok) {
+      res.status(400).json({ success: false, message: 'Cập nhật thất bại' });
+      return;
+    }
+
+    res.json({ success: true, message: 'Cập nhật thông tin thành công' });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: err instanceof Error ? err.message : 'Có lỗi xảy ra',
+    });
+  }
+});
 
 // PATCH /chu-ky-so — Cập nhật sign_phone (và optional sign_ca)
 router.patch('/chu-ky-so', async (req: Request, res: Response) => {

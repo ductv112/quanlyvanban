@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
-  Card, Row, Col, Descriptions, Avatar, Form, Input, Button, App, Tag, Tabs, Upload, Space, Alert,
+  Card, Row, Col, Descriptions, Avatar, Form, Input, Button, App, Tag, Tabs, Upload, Space, Alert, Modal,
 } from 'antd';
 import type { UploadFile, UploadProps } from 'antd';
 import {
@@ -17,15 +17,20 @@ import { api } from '@/lib/api';
 const MAX_SIGN_IMAGE_SIZE = 2 * 1024 * 1024; // 2MB
 
 export default function ProfilePage() {
-  const { message } = App.useApp();
-  const { user, fetchMe } = useAuthStore();
+  const { message, modal } = App.useApp();
+  const { user, fetchMe, logout } = useAuthStore();
   const [form] = Form.useForm();
   const [signForm] = Form.useForm();
+  const [editForm] = Form.useForm();
   const [saving, setSaving] = useState(false);
   const [savingSignature, setSavingSignature] = useState(false);
   const [signatureFile, setSignatureFile] = useState<File | null>(null);
   // Chỉ track signatureFile — cấu hình tài khoản ký số đã migrate sang /ky-so/tai-khoan
   const hasImageChange = signatureFile !== null;
+
+  // BUG #13: Sửa thông tin tài khoản
+  const [editOpen, setEditOpen] = useState(false);
+  const [savingEdit, setSavingEdit] = useState(false);
 
   useEffect(() => {
     if (!user) fetchMe();
@@ -39,14 +44,62 @@ export default function ProfilePage() {
         oldPassword: values.oldPassword,
         newPassword: values.newPassword,
       });
-      message.success('Đổi mật khẩu thành công');
+      // BUG #12: sau khi đổi mật khẩu thành công → modal thông báo + đăng xuất + redirect login
       form.resetFields();
+      modal.success({
+        title: 'Đổi mật khẩu thành công',
+        content: 'Vui lòng đăng nhập lại với mật khẩu mới.',
+        okText: 'Đăng nhập lại',
+        centered: true,
+        maskClosable: false,
+        onOk: async () => {
+          await logout();
+        },
+      });
     } catch (err: any) {
       if (err?.response) {
         message.error(err?.response?.data?.message || 'Lỗi đổi mật khẩu');
       }
     } finally {
       setSaving(false);
+    }
+  };
+
+  // BUG #13: Mở modal sửa thông tin
+  const openEditProfile = () => {
+    if (!user) return;
+    // Tách full_name thành first_name + last_name (Vietnamese: last_name = họ, first_name = tên)
+    const parts = (user.fullName || '').trim().split(/\s+/);
+    const last = parts.length > 1 ? parts.slice(0, -1).join(' ') : '';
+    const first = parts.length > 0 ? parts[parts.length - 1] : user.fullName;
+    editForm.setFieldsValue({
+      first_name: first,
+      last_name: last,
+      email: user.email || '',
+      phone: user.phone || '',
+    });
+    setEditOpen(true);
+  };
+
+  const handleSaveProfile = async () => {
+    try {
+      const values = await editForm.validateFields();
+      setSavingEdit(true);
+      await api.patch('/ho-so-ca-nhan/thong-tin', {
+        first_name: values.first_name,
+        last_name: values.last_name,
+        email: values.email || '',
+        phone: values.phone || '',
+      });
+      message.success('Cập nhật thông tin thành công');
+      await fetchMe();
+      setEditOpen(false);
+    } catch (err: any) {
+      if (err?.response) {
+        message.error(err?.response?.data?.message || 'Cập nhật thất bại');
+      }
+    } finally {
+      setSavingEdit(false);
     }
   };
 
@@ -266,6 +319,15 @@ export default function ProfilePage() {
           <Card
             variant="borderless"
             className="page-card"
+            extra={
+              <Button
+                type="primary"
+                icon={<EditOutlined />}
+                onClick={openEditProfile}
+              >
+                Sửa thông tin
+              </Button>
+            }
           >
             {/* Profile header */}
             <div className="profile-header">
@@ -355,6 +417,69 @@ export default function ProfilePage() {
           </Card>
         </Col>
       </Row>
+
+      {/* BUG #13: Modal sửa thông tin tài khoản */}
+      <Modal
+        title="Sửa thông tin tài khoản"
+        open={editOpen}
+        onCancel={() => setEditOpen(false)}
+        onOk={handleSaveProfile}
+        okText="Lưu"
+        cancelText="Hủy"
+        confirmLoading={savingEdit}
+        maskClosable={false}
+        destroyOnHidden
+        width={520}
+      >
+        <Form form={editForm} layout="vertical" autoComplete="off" style={{ marginTop: 12 }}>
+          <Row gutter={12}>
+            <Col span={12}>
+              <Form.Item
+                label="Họ"
+                name="last_name"
+                rules={[
+                  { required: true, message: 'Nhập họ' },
+                  { max: 100, message: 'Tối đa 100 ký tự' },
+                ]}
+              >
+                <Input placeholder="Nhập họ" maxLength={100} />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                label="Tên"
+                name="first_name"
+                rules={[
+                  { required: true, message: 'Nhập tên' },
+                  { max: 100, message: 'Tối đa 100 ký tự' },
+                ]}
+              >
+                <Input placeholder="Nhập tên" maxLength={100} />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Form.Item
+            label="Email"
+            name="email"
+            rules={[
+              { type: 'email', message: 'Email không hợp lệ' },
+              { max: 200, message: 'Tối đa 200 ký tự' },
+            ]}
+          >
+            <Input placeholder="Nhập email" maxLength={200} prefix={<MailOutlined />} />
+          </Form.Item>
+          <Form.Item
+            label="Số điện thoại"
+            name="phone"
+            rules={[
+              { pattern: /^[0-9+\-\s()]*$/, message: 'Số điện thoại không hợp lệ' },
+              { max: 50, message: 'Tối đa 50 ký tự' },
+            ]}
+          >
+            <Input placeholder="Nhập số điện thoại" maxLength={50} prefix={<PhoneOutlined />} />
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 }
