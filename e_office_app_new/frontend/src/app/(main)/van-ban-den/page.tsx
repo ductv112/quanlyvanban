@@ -14,6 +14,7 @@ import {
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth.store';
 import { buildTree, flattenTreeForSelect } from '@/lib/tree-utils';
+import { confirmCloseIfDirty } from '@/lib/form-confirm';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import dayjs from 'dayjs';
 
@@ -181,6 +182,11 @@ export default function IncomingDocPage() {
     if (searchParams.get('edit')) router.replace(pathname);
   };
 
+  // BUG #34: hỏi xác nhận khi click Hủy nếu form đã thay đổi dữ liệu
+  const handleCancelDrawer = () => {
+    confirmCloseIfDirty(form, modal, () => closeDrawer());
+  };
+
   const fetchNextNumber = async (docBookId: number) => {
     try {
       const { data: res } = await api.get('/van-ban-den/so-den-tiep-theo', { params: { doc_book_id: docBookId } });
@@ -191,15 +197,22 @@ export default function IncomingDocPage() {
   const openDrawer = async (record?: IncomingDoc) => {
     if (record) {
       setEditingRecord(record);
+      // BUG #40: list endpoint không trả về `sub_number`, `sents` → fetch full detail
+      // từ /van-ban-den/:id để form có đủ data khi sửa.
+      let fullRecord: any = record;
+      try {
+        const { data: detailRes } = await api.get(`/van-ban-den/${record.id}`);
+        if (detailRes?.data) fullRecord = { ...record, ...detailRes.data };
+      } catch { /* fallback dùng list record */ }
       form.setFieldsValue({
-        ...record,
-        received_date: record.received_date ? dayjs(record.received_date) : dayjs(),
-        publish_date: record.publish_date ? dayjs(record.publish_date) : null,
-        sign_date: record.sign_date ? dayjs(record.sign_date) : null,
-        expired_date: record.expired_date ? dayjs(record.expired_date) : null,
+        ...fullRecord,
+        received_date: fullRecord.received_date ? dayjs(fullRecord.received_date) : dayjs(),
+        publish_date: fullRecord.publish_date ? dayjs(fullRecord.publish_date) : null,
+        sign_date: fullRecord.sign_date ? dayjs(fullRecord.sign_date) : null,
+        expired_date: fullRecord.expired_date ? dayjs(fullRecord.expired_date) : null,
         // publish_unit + sents lưu DB là string, Select mode="tags" cần array → wrap
-        publish_unit: record.publish_unit ? [record.publish_unit] : [],
-        sents: (record as any).sents ? [(record as any).sents] : [],
+        publish_unit: fullRecord.publish_unit ? [fullRecord.publish_unit] : [],
+        sents: fullRecord.sents ? [fullRecord.sents] : [],
       });
     } else {
       setEditingRecord(null);
@@ -297,14 +310,24 @@ export default function IncomingDocPage() {
   };
 
   const handleExportExcel = async () => {
+    // IMP #2: nếu danh sách rỗng → toast + KHÔNG xuất file rỗng
+    if (!data || data.length === 0) {
+      message.warning('Không có dữ liệu để xuất');
+      return;
+    }
     try {
       const params: Record<string, unknown> = {};
-      if (filterDocBookId) params.doc_book_id = filterDocBookId;
-      if (filterDocTypeId) params.doc_type_id = filterDocTypeId;
-      if (keyword) params.keyword = keyword;
-      if (filterDateRange) {
-        params.from_date = filterDateRange[0].startOf('day').toISOString();
-        params.to_date = filterDateRange[1].endOf('day').toISOString();
+      // BUG #36, #37: nếu user đã tick checkbox → chỉ xuất các bản ghi đã chọn (mọi trang)
+      if (selectedRowKeys.length > 0) {
+        params.ids = selectedRowKeys.join(',');
+      } else {
+        if (filterDocBookId) params.doc_book_id = filterDocBookId;
+        if (filterDocTypeId) params.doc_type_id = filterDocTypeId;
+        if (keyword) params.keyword = keyword;
+        if (filterDateRange) {
+          params.from_date = filterDateRange[0].startOf('day').toISOString();
+          params.to_date = filterDateRange[1].endOf('day').toISOString();
+        }
       }
       const response = await api.get('/van-ban-den/xuat-excel', { params, responseType: 'blob' });
       const url = window.URL.createObjectURL(new Blob([response.data]));
@@ -411,7 +434,7 @@ export default function IncomingDocPage() {
     >
       <div className="list-filter-bar">
         <Row gutter={[10, 10]}>
-          <Col span={6}><Input.Search placeholder="Tìm kiếm trích yếu, ký hiệu..." allowClear onSearch={(val) => { setKeyword(val); setPage(1); }} /></Col>
+          <Col span={6}><Input.Search placeholder="Tìm kiếm trích yếu, ký hiệu..." allowClear value={keyword} onChange={(e) => setKeyword(e.target.value)} onSearch={(val) => { setKeyword(val); setPage(1); }} /></Col>
           {user?.isAdmin && <Col span={4}><TreeSelect style={{ width: '100%' }} placeholder="Phòng ban" allowClear showSearch treeNodeFilterProp="title" treeData={deptTreeData} value={filterDeptId} onChange={(val) => { setFilterDeptId(val); setPage(1); }} /></Col>}
           <Col span={4}><Select style={{ width: '100%' }} placeholder="Sổ văn bản" allowClear options={docBooks} value={filterDocBookId} onChange={(val) => { setFilterDocBookId(val); setPage(1); }} /></Col>
           <Col span={4}><Select style={{ width: '100%' }} placeholder="Loại văn bản" allowClear options={docTypes} value={filterDocTypeId} onChange={(val) => { setFilterDocTypeId(val); setPage(1); }} /></Col>
@@ -432,14 +455,15 @@ export default function IncomingDocPage() {
 
       <Drawer forceRender
         title={editingRecord ? 'Sửa văn bản đến' : 'Thêm văn bản đến'}
-        size={800} open={drawerOpen} onClose={() => closeDrawer()}
+        size={800} open={drawerOpen} onClose={() => handleCancelDrawer()}
         rootClassName="drawer-gradient"
-        extra={<Space><Button onClick={() => closeDrawer()} ghost style={{ borderColor: 'rgba(255,255,255,0.6)', color: '#fff' }}>Hủy</Button><Button type="primary" loading={saving} onClick={handleSave}>{editingRecord ? 'Cập nhật' : 'Tạo mới'}</Button></Space>}
+        extra={<Space><Button onClick={() => handleCancelDrawer()} ghost style={{ borderColor: 'rgba(255,255,255,0.6)', color: '#fff' }}>Hủy</Button><Button type="primary" loading={saving} onClick={handleSave}>{editingRecord ? 'Cập nhật' : 'Tạo mới'}</Button></Space>}
       >
         <Form form={form} layout="vertical" autoComplete="off">
           <Row gutter={16}>
-            <Col span={9}><Form.Item name="doc_book_id" label="Sổ văn bản" rules={[{ required: true, message: 'Bắt buộc' }]}><Select placeholder="Chọn sổ văn bản" options={docBooks} onChange={(val) => { if (val && !editingRecord) fetchNextNumber(val); }} /></Form.Item></Col>
-            <Col span={5}><Form.Item name="number" label="Số đến"><InputNumber style={{ width: '100%' }} min={1} /></Form.Item></Col>
+            <Col span={9}><Form.Item name="doc_book_id" label="Sổ văn bản" rules={[{ required: true, message: 'Bắt buộc' }]}><Select placeholder="Chọn sổ văn bản" allowClear options={docBooks} onChange={(val) => { if (val && !editingRecord) fetchNextNumber(val); }} /></Form.Item></Col>
+            {/* BUG #35: số đến disable + auto-fill từ "sổ văn bản" qua API so-den-tiep-theo (đã có trong fetchNextNumber). User không tự nhập số. */}
+            <Col span={5}><Form.Item name="number" label="Số đến" tooltip="Hệ thống tự cấp số tiếp theo của sổ văn bản. Không nhập tay."><InputNumber style={{ width: '100%' }} min={1} placeholder="Tự cấp" disabled /></Form.Item></Col>
             <Col span={4}><Form.Item name="sub_number" label="Số phụ"><Input placeholder="VD: a, b, c" maxLength={20} /></Form.Item></Col>
             <Col span={6}><Form.Item name="received_date" label="Ngày đến" rules={[{ required: true, message: 'Ngày đến là bắt buộc' }]}><DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" /></Form.Item></Col>
           </Row>
@@ -471,7 +495,7 @@ export default function IncomingDocPage() {
             <Col span={6}><Form.Item name="urgent_id" label="Độ khẩn" initialValue={1}><Select options={[{ value: 1, label: 'Thường' }, { value: 2, label: 'Khẩn' }, { value: 3, label: 'Hỏa tốc' }]} /></Form.Item></Col>
             <Col span={6}><Form.Item name="number_paper" label="Số tờ" initialValue={1}><InputNumber style={{ width: '100%' }} min={0} /></Form.Item></Col>
             <Col span={6}><Form.Item name="number_copies" label="Số bản" initialValue={1}><InputNumber style={{ width: '100%' }} min={0} /></Form.Item></Col>
-            <Col span={6}><Form.Item name="is_received_paper" label="Bản giấy"><Select options={[{ value: false, label: 'Chưa nhận' }, { value: true, label: 'Đã nhận' }]} /></Form.Item></Col>
+            <Col span={6}><Form.Item name="is_received_paper" label="Bản giấy"><Select placeholder="Chọn trạng thái bản giấy" allowClear options={[{ value: false, label: 'Chưa nhận' }, { value: true, label: 'Đã nhận' }]} /></Form.Item></Col>
           </Row>
           <Row gutter={16}>
             <Col span={12}><Form.Item name="document_code" label="Mã văn bản (số CV gốc bên gửi)"><Input placeholder="VD: 123/CV-BNV" maxLength={100} /></Form.Item></Col>

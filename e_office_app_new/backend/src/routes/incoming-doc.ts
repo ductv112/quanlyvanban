@@ -901,13 +901,19 @@ router.patch('/:id/huy-duyet', async (req: Request, res: Response) => {
 });
 
 // PATCH /:id/nhan-ban-giay
+// BUG #41: cho phép cả văn thư (canEdit — người ĐĂNG KÝ VB đến / cùng đơn vị handle_document)
+// đánh dấu nhận bản giấy, không chỉ leader (canApprove). Lý do nghiệp vụ: văn thư mới là
+// người trực tiếp nhận bản giấy ở phòng văn thư, không phải lãnh đạo.
 router.patch('/:id/nhan-ban-giay', async (req: Request, res: Response) => {
   try {
     const { staffId, departmentId, isAdmin } = (req as AuthRequest).user;
     const docId = Number(req.params.id);
     const loaded = await loadDocAndPerms(docId, { staffId, departmentId, isAdmin });
     if (!loaded) { res.status(404).json({ success: false, message: 'Không tìm thấy văn bản đến' }); return; }
-    if (!loaded.perms.canApprove) { res.status(403).json({ success: false, message: 'Không có quyền xác nhận nhận bản giấy' }); return; }
+    if (!loaded.perms.canApprove && !loaded.perms.canEdit) {
+      res.status(403).json({ success: false, message: 'Không có quyền xác nhận nhận bản giấy' });
+      return;
+    }
     const { received_paper_date } = req.body;
     const result = await incomingDocRepository.receivePaper(docId, staffId, received_paper_date || undefined);
     if (!result.success) {
