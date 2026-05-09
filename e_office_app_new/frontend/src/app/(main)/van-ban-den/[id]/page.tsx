@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   Card, Tag, Button, Space, Row, Col, Timeline, Avatar,
   Upload, Modal, Input, Popconfirm, Checkbox, Empty, Spin, App,
-  Badge, Typography, Flex, Dropdown, Drawer, Form, DatePicker, Select, InputNumber,
+  Badge, Typography, Flex, Dropdown, Drawer, Form, DatePicker, Select, InputNumber, Tooltip,
 } from 'antd';
 import {
   ArrowLeftOutlined, CheckCircleOutlined, CloseCircleOutlined, SendOutlined,
@@ -98,6 +98,8 @@ export default function IncomingDocDetailPage() {
   const [sendModalOpen, setSendModalOpen] = useState(false);
   const [sendableStaff, setSendableStaff] = useState<SendableStaff[]>([]);
   const [selectedStaffIds, setSelectedStaffIds] = useState<number[]>([]);
+  // IMP #3: tập staff_id đã được gửi trước đó → checkbox disabled + tooltip "Đã gửi"
+  const [alreadySentIds, setAlreadySentIds] = useState<Set<number>>(new Set());
   const [sending, setSending] = useState(false);
   const [noteContent, setNoteContent] = useState('');
   const [addingNote, setAddingNote] = useState(false);
@@ -348,7 +350,22 @@ export default function IncomingDocDetailPage() {
   };
 
   // Send
-  const openSendModal = async () => { try { const { data: res } = await api.get(`/van-ban-den/${docId}/danh-sach-gui`); setSendableStaff(res.data || []); setSelectedStaffIds([]); setSendModalOpen(true); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } };
+  const openSendModal = async () => {
+    try {
+      // IMP #3: fetch song song danh sách có thể gửi + danh sách đã gửi để disable checkbox
+      const [resSendable, resRecipients] = await Promise.all([
+        api.get(`/van-ban-den/${docId}/danh-sach-gui`),
+        api.get(`/van-ban-den/${docId}/nguoi-nhan`).catch(() => ({ data: { data: [] } })),
+      ]);
+      setSendableStaff(resSendable.data?.data || []);
+      const sent: { staff_id: number }[] = resRecipients.data?.data || [];
+      setAlreadySentIds(new Set(sent.map((r) => Number(r.staff_id))));
+      setSelectedStaffIds([]);
+      setSendModalOpen(true);
+    } catch (e: any) {
+      message.error(e?.response?.data?.message || 'Lỗi');
+    }
+  };
   const handleSend = async () => {
     if (selectedStaffIds.length === 0) { message.warning('Chọn ít nhất một người nhận'); return; }
     setSending(true);
@@ -527,7 +544,8 @@ export default function IncomingDocDetailPage() {
               )}
               <Button icon={<CommentOutlined />} onClick={() => document.getElementById('note-input')?.focus()}>Bút phê</Button>
               <Dropdown menu={{ items: [
-                ...(!doc.is_received_paper && (doc.permissions?.canApprove ?? false) ? [{ key: 'paper', icon: <InboxOutlined />, label: 'Nhận bản giấy', onClick: handleReceivePaper }] : []),
+                // BUG #41: cho phép cả văn thư (canEdit) đánh dấu nhận bản giấy, không chỉ leader (canApprove)
+                ...(!doc.is_received_paper && ((doc.permissions?.canApprove ?? false) || (doc.permissions?.canEdit ?? false)) ? [{ key: 'paper', icon: <InboxOutlined />, label: 'Nhận bản giấy', onClick: handleReceivePaper }] : []),
                 ...((doc.permissions?.canApprove ?? false) ? [{ key: 'unapprove', icon: <CloseCircleOutlined />, label: 'Hủy duyệt', danger: true, onClick: handleHuyDuyet }] : []),
                 ...((doc.permissions?.canRetract ?? false) ? [{ key: 'retract', icon: <RollbackOutlined />, label: 'Thu hồi', onClick: handleRetract }] : []),
               ] }}>
@@ -799,22 +817,48 @@ export default function IncomingDocDetailPage() {
       </Row>
 
       {/* ====== MODAL GỬI ====== */}
-      <Modal title="Gửi văn bản" open={sendModalOpen} onCancel={() => setSendModalOpen(false)} onOk={handleSend} okText={`Gửi (${selectedStaffIds.length})`} cancelText="Hủy" confirmLoading={sending} width={560}>
+      <Modal title="Gửi văn bản" open={sendModalOpen} onCancel={() => setSendModalOpen(false)} onOk={handleSend} okText={`Gửi (${selectedStaffIds.length})`} cancelText="Hủy" confirmLoading={sending} width={560} maskClosable={false}>
         <div style={{ marginBottom: 12 }}>
-          <Checkbox checked={selectedStaffIds.length === sendableStaff.length && sendableStaff.length > 0} indeterminate={selectedStaffIds.length > 0 && selectedStaffIds.length < sendableStaff.length} onChange={(e) => setSelectedStaffIds(e.target.checked ? sendableStaff.map(s => s.staff_id) : [])}>Chọn tất cả</Checkbox>
+          {/* IMP #3: "Chọn tất cả" chỉ áp dụng cho cán bộ CHƯA được gửi */}
+          {(() => {
+            const selectableStaff = sendableStaff.filter((s) => !alreadySentIds.has(s.staff_id));
+            const selectedSelectable = selectedStaffIds.filter((id) => !alreadySentIds.has(id));
+            return (
+              <Checkbox
+                checked={selectedSelectable.length === selectableStaff.length && selectableStaff.length > 0}
+                indeterminate={selectedSelectable.length > 0 && selectedSelectable.length < selectableStaff.length}
+                onChange={(e) => setSelectedStaffIds(e.target.checked ? selectableStaff.map((s) => s.staff_id) : [])}
+                disabled={selectableStaff.length === 0}
+              >
+                Chọn tất cả
+              </Checkbox>
+            );
+          })()}
         </div>
         <div style={{ maxHeight: 400, overflowY: 'auto' }}>
           {Object.entries(sendableStaff.reduce<Record<string, SendableStaff[]>>((acc, s) => { const d = s.department_name || 'Khác'; if (!acc[d]) acc[d] = []; acc[d].push(s); return acc; }, {})).map(([dept, staff]) => (
             <div key={dept} style={{ marginBottom: 12 }}>
               <Text strong style={{ fontSize: 13, color: '#1B3A5C' }}>{dept}</Text>
               <div style={{ paddingLeft: 8, marginTop: 4 }}>
-                {staff.map((s) => (
-                  <div key={s.staff_id} style={{ padding: '2px 0' }}>
-                    <Checkbox checked={selectedStaffIds.includes(s.staff_id)} onChange={(e) => setSelectedStaffIds(prev => e.target.checked ? [...prev, s.staff_id] : prev.filter(id => id !== s.staff_id))}>
+                {staff.map((s) => {
+                  // IMP #3: cán bộ đã được gửi → disabled + tooltip "Đã gửi"
+                  const sent = alreadySentIds.has(s.staff_id);
+                  const cb = (
+                    <Checkbox
+                      checked={selectedStaffIds.includes(s.staff_id) || sent}
+                      disabled={sent}
+                      onChange={(e) => setSelectedStaffIds((prev) => e.target.checked ? [...prev, s.staff_id] : prev.filter((id) => id !== s.staff_id))}
+                    >
                       {s.full_name} {s.position_name ? <Text type="secondary">({s.position_name})</Text> : ''}
+                      {sent && <Text type="secondary" style={{ marginLeft: 6, fontSize: 12 }}>— Đã gửi</Text>}
                     </Checkbox>
-                  </div>
-                ))}
+                  );
+                  return (
+                    <div key={s.staff_id} style={{ padding: '2px 0' }}>
+                      {sent ? <Tooltip title="Văn bản đã được gửi cho cán bộ này">{cb}</Tooltip> : cb}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           ))}
@@ -834,8 +878,7 @@ export default function IncomingDocDetailPage() {
             <Button onClick={() => { setGiaoViecOpen(false); giaoViecForm.resetFields(); }} ghost style={{ borderColor: 'rgba(255,255,255,0.6)', color: '#fff' }}>Hủy</Button>
             <Button type="primary" loading={giaoViecSaving} onClick={handleGiaoViec}>Tạo và giao việc</Button>
           </Space>
-        }
-      >
+        } maskClosable={false}>
         <Form form={giaoViecForm} layout="vertical" validateTrigger="onSubmit" autoComplete="off">
           <Form.Item
             name="name"
@@ -916,8 +959,7 @@ export default function IncomingDocDetailPage() {
         okText="Chuyển lại"
         cancelText="Hủy"
         confirmLoading={chuyenLaiSaving}
-        width={480}
-      >
+        width={480} maskClosable={false}>
         <Form form={chuyenLaiForm} layout="vertical" validateTrigger="onSubmit" style={{ marginTop: 16 }}>
           <Form.Item
             name="reason"
@@ -956,8 +998,7 @@ export default function IncomingDocDetailPage() {
         onOk={handleLinkHscv}
         confirmLoading={hscvSaving}
         okText="Thêm vào HSCV"
-        cancelText="Hủy"
-      >
+        cancelText="Hủy" maskClosable={false}>
         <Select
           style={{ width: '100%', marginTop: 8 }}
           placeholder="Chọn hồ sơ công việc..."
@@ -977,8 +1018,7 @@ export default function IncomingDocDetailPage() {
         onOk={handleSendLgsp}
         confirmLoading={lgspSending}
         okText="Gửi liên thông"
-        cancelText="Hủy"
-      >
+        cancelText="Hủy" maskClosable={false}>
         <Select
           mode="multiple"
           style={{ width: '100%', marginTop: 8 }}
@@ -995,8 +1035,7 @@ export default function IncomingDocDetailPage() {
       <Drawer
         title="Chuyển lưu trữ" open={archiveModalOpen} onClose={() => setArchiveModalOpen(false)}
         size={640} rootClassName="drawer-gradient" forceRender
-        extra={<Space><Button onClick={() => setArchiveModalOpen(false)}>Hủy</Button><Button type="primary" onClick={handleArchive} loading={archiveSaving}>Chuyển lưu trữ</Button></Space>}
-      >
+        extra={<Space><Button onClick={() => setArchiveModalOpen(false)}>Hủy</Button><Button type="primary" onClick={handleArchive} loading={archiveSaving}>Chuyển lưu trữ</Button></Space>} maskClosable={false}>
         <Form form={archiveForm} layout="vertical">
           <Row gutter={16}>
             <Col span={12}><Form.Item name="warehouse_id" label="Kho lưu trữ" rules={[{ required: true, message: 'Vui lòng chọn kho lưu trữ' }]}><Select placeholder="Chọn kho..." allowClear options={warehouseOptions} /></Form.Item></Col>

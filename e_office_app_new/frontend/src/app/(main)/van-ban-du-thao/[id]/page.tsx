@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   Card, Tag, Button, Space, Row, Col, Timeline, Avatar,
   Upload, Modal, Input, Popconfirm, Checkbox, Empty, Spin, App,
-  Badge, Typography, Flex, Dropdown,
+  Badge, Typography, Flex, Dropdown, Tooltip,
 } from 'antd';
 import {
   ArrowLeftOutlined, CheckCircleOutlined, CloseCircleOutlined, SendOutlined,
@@ -173,7 +173,24 @@ export default function DraftingDocDetailPage() {
   const handleDeleteAttachment = async (att: Attachment) => { try { await api.delete(`/van-ban-du-thao/${docId}/dinh-kem/${att.id}`); message.success('Đã xóa'); fetchAttachments(); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } };
 
   // Send
-  const openSendModal = async () => { try { const { data: res } = await api.get(`/van-ban-du-thao/${docId}/danh-sach-gui`); setSendableStaff(res.data || []); setSelectedStaffIds([]); setSendModalOpen(true); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } };
+  const openSendModal = async () => {
+    try {
+      // IMP #3: refresh recipients để có danh sách "đã gửi" mới nhất + sendable
+      const [resSendable, resRecipients] = await Promise.all([
+        api.get(`/van-ban-du-thao/${docId}/danh-sach-gui`),
+        api.get(`/van-ban-du-thao/${docId}/nguoi-nhan`).catch(() => ({ data: { data: [] } })),
+      ]);
+      setSendableStaff(resSendable.data?.data || []);
+      const sent: Recipient[] = resRecipients.data?.data || [];
+      setRecipients(sent);
+      setSelectedStaffIds([]);
+      setSendModalOpen(true);
+    } catch (e: any) {
+      message.error(e?.response?.data?.message || 'Lỗi');
+    }
+  };
+  // IMP #3: compute alreadySentIds từ recipients (luôn fresh)
+  const alreadySentIds = React.useMemo(() => new Set(recipients.map((r) => Number(r.staff_id))), [recipients]);
   const handleSend = async () => {
     if (selectedStaffIds.length === 0) { message.warning('Chọn ít nhất một người nhận'); return; }
     setSending(true);
@@ -509,22 +526,48 @@ export default function DraftingDocDetailPage() {
       </Row>
 
       {/* ====== MODAL GỬI ====== */}
-      <Modal title="Gửi văn bản dự thảo" open={sendModalOpen} onCancel={() => setSendModalOpen(false)} onOk={handleSend} okText={`Gửi (${selectedStaffIds.length})`} cancelText="Hủy" confirmLoading={sending} width={560}>
+      <Modal title="Gửi văn bản dự thảo" open={sendModalOpen} onCancel={() => setSendModalOpen(false)} onOk={handleSend} okText={`Gửi (${selectedStaffIds.length})`} cancelText="Hủy" confirmLoading={sending} width={560} maskClosable={false}>
         <div style={{ marginBottom: 12 }}>
-          <Checkbox checked={selectedStaffIds.length === sendableStaff.length && sendableStaff.length > 0} indeterminate={selectedStaffIds.length > 0 && selectedStaffIds.length < sendableStaff.length} onChange={(e) => setSelectedStaffIds(e.target.checked ? sendableStaff.map(s => s.staff_id) : [])}>Chọn tất cả</Checkbox>
+          {(() => {
+            // IMP #3: chỉ "Chọn tất cả" cho cán bộ chưa được gửi
+            const selectableStaff = sendableStaff.filter((s) => !alreadySentIds.has(s.staff_id));
+            const selectedSelectable = selectedStaffIds.filter((id) => !alreadySentIds.has(id));
+            return (
+              <Checkbox
+                checked={selectedSelectable.length === selectableStaff.length && selectableStaff.length > 0}
+                indeterminate={selectedSelectable.length > 0 && selectedSelectable.length < selectableStaff.length}
+                onChange={(e) => setSelectedStaffIds(e.target.checked ? selectableStaff.map((s) => s.staff_id) : [])}
+                disabled={selectableStaff.length === 0}
+              >
+                Chọn tất cả
+              </Checkbox>
+            );
+          })()}
         </div>
         <div style={{ maxHeight: 400, overflowY: 'auto' }}>
           {Object.entries(sendableStaff.reduce<Record<string, SendableStaff[]>>((acc, s) => { const d = s.department_name || 'Khác'; if (!acc[d]) acc[d] = []; acc[d].push(s); return acc; }, {})).map(([dept, staff]) => (
             <div key={dept} style={{ marginBottom: 12 }}>
               <Text strong style={{ fontSize: 13, color: '#1B3A5C' }}>{dept}</Text>
               <div style={{ paddingLeft: 8, marginTop: 4 }}>
-                {staff.map((s) => (
-                  <div key={s.staff_id} style={{ padding: '2px 0' }}>
-                    <Checkbox checked={selectedStaffIds.includes(s.staff_id)} onChange={(e) => setSelectedStaffIds(prev => e.target.checked ? [...prev, s.staff_id] : prev.filter(id => id !== s.staff_id))}>
+                {staff.map((s) => {
+                  // IMP #3: cán bộ đã được gửi → disabled + tooltip
+                  const sent = alreadySentIds.has(s.staff_id);
+                  const cb = (
+                    <Checkbox
+                      checked={selectedStaffIds.includes(s.staff_id) || sent}
+                      disabled={sent}
+                      onChange={(e) => setSelectedStaffIds((prev) => e.target.checked ? [...prev, s.staff_id] : prev.filter((id) => id !== s.staff_id))}
+                    >
                       {s.full_name} {s.position_name ? <Text type="secondary">({s.position_name})</Text> : ''}
+                      {sent && <Text type="secondary" style={{ marginLeft: 6, fontSize: 12 }}>— Đã gửi</Text>}
                     </Checkbox>
-                  </div>
-                ))}
+                  );
+                  return (
+                    <div key={s.staff_id} style={{ padding: '2px 0' }}>
+                      {sent ? <Tooltip title="Văn bản đã được gửi cho cán bộ này">{cb}</Tooltip> : cb}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           ))}
@@ -541,8 +584,7 @@ export default function DraftingDocDetailPage() {
         okType="danger"
         cancelText="Hủy"
         confirmLoading={rejecting}
-        width={480}
-      >
+        width={480} maskClosable={false}>
         <div style={{ marginBottom: 8, fontSize: 13, color: '#595959' }}>
           Nhập lý do từ chối (không bắt buộc):
         </div>
