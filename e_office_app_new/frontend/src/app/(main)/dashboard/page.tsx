@@ -248,17 +248,17 @@ export default function DashboardPage() {
       </div>
 
       {/* ===== SECTION 1: Stat Cards (8 cards, 1 row on desktop) ===== */}
-      <Row gutter={[12, 12]} style={{ marginBottom: 24 }}>
+      <Row gutter={[12, 12]} style={{ marginBottom: 24 }} align="stretch">
         {statCards.map((card) => (
-          <Col xs={12} sm={6} lg={3} key={card.key}>
+          <Col xs={12} sm={6} lg={3} key={card.key} style={{ display: 'flex' }}>
             {cardLoading ? (
-              <Skeleton.Button active block style={{ height: 80, borderRadius: 12 }} />
+              <Skeleton.Button active block style={{ height: 92, borderRadius: 12 }} />
             ) : (
               <Card
                 className="stat-card"
                 variant="borderless"
                 onClick={() => router.push(card.route)}
-                style={{ boxShadow: `0 4px 12px ${card.shadow}`, background: card.gradient }}
+                style={{ boxShadow: `0 4px 12px ${card.shadow}`, background: card.gradient, width: '100%' }}
                 styles={{ body: { padding: '14px 16px' } }}
                 hoverable
               >
