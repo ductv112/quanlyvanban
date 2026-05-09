@@ -699,8 +699,12 @@ router.get('/nhom-quyen', async (req: Request, res: Response) => {
   try {
     const unitId = req.query.unit_id ? Number(req.query.unit_id) : null;
     const keyword = (req.query.keyword as string) || '';
-    const data = await roleRepository.getList(unitId, keyword);
-    res.json({ success: true, data });
+    const page = Math.max(1, Number(req.query.page) || 1);
+    const pageSize = Math.max(1, Math.min(200, Number(req.query.pageSize) || Number(req.query.page_size) || 20));
+    const all = await roleRepository.getList(unitId, keyword);
+    const total = all.length;
+    const data = all.slice((page - 1) * pageSize, page * pageSize);
+    res.json({ success: true, data, pagination: { total, page, pageSize } });
   } catch (error) {
     handleDbError(error, res);
   }
