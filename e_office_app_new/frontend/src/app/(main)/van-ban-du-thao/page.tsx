@@ -14,6 +14,7 @@ import {
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth.store';
 import { buildTree, flattenTreeForSelect } from '@/lib/tree-utils';
+import { confirmCloseIfDirty } from '@/lib/form-confirm';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import dayjs from 'dayjs';
 
@@ -203,6 +204,11 @@ export default function DraftingDocPage() {
   const closeDrawer = () => {
     setDrawerOpen(false);
     if (searchParams.get('edit')) router.replace(pathname);
+  };
+
+  // BUG #8, #11, #24: hỏi xác nhận khi click Hủy nếu form đã thay đổi dữ liệu
+  const handleCancelDrawer = () => {
+    confirmCloseIfDirty(form, modal, () => closeDrawer());
   };
 
   const fetchNextNumber = async (docBookId: number) => {
@@ -519,10 +525,15 @@ export default function DraftingDocPage() {
   const handleExportExcel = async () => {
     try {
       const params: Record<string, unknown> = {};
-      if (keyword) params.keyword = keyword;
-      if (filterDocBookId) params.doc_book_id = filterDocBookId;
-      if (filterDocTypeId) params.doc_type_id = filterDocTypeId;
-      if (filterDateRange) { params.from_date = filterDateRange[0].startOf('day').toISOString(); params.to_date = filterDateRange[1].endOf('day').toISOString(); }
+      // BUG #9, #10: nếu user đã tick checkbox → chỉ xuất các bản ghi đã chọn (mọi trang)
+      if (selectedRowKeys.length > 0) {
+        params.ids = selectedRowKeys.join(',');
+      } else {
+        if (keyword) params.keyword = keyword;
+        if (filterDocBookId) params.doc_book_id = filterDocBookId;
+        if (filterDocTypeId) params.doc_type_id = filterDocTypeId;
+        if (filterDateRange) { params.from_date = filterDateRange[0].startOf('day').toISOString(); params.to_date = filterDateRange[1].endOf('day').toISOString(); }
+      }
       const response = await api.get('/van-ban-du-thao/xuat-excel', { params, responseType: 'blob' });
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a'); link.href = url;
@@ -554,6 +565,8 @@ export default function DraftingDocPage() {
             <Input.Search
               placeholder="Tìm kiếm trích yếu, ký hiệu..."
               allowClear
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
               onSearch={(val) => { setKeyword(val); setPage(1); }}
             />
           </Col>
@@ -659,11 +672,11 @@ export default function DraftingDocPage() {
         title={editingRecord ? 'Sửa văn bản dự thảo' : 'Thêm văn bản dự thảo'}
         size={720}
         open={drawerOpen}
-        onClose={() => closeDrawer()}
+        onClose={() => handleCancelDrawer()}
         rootClassName="drawer-gradient"
         extra={
           <Space>
-            <Button onClick={() => closeDrawer()} ghost>
+            <Button onClick={() => handleCancelDrawer()} ghost>
               Hủy
             </Button>
             <Button type="primary" loading={saving} onClick={handleSave}>
@@ -678,6 +691,7 @@ export default function DraftingDocPage() {
               <Form.Item name="doc_book_id" label="Sổ văn bản" rules={[{ required: true, message: 'Bắt buộc chọn sổ văn bản' }]}>
                 <Select
                   placeholder="Chọn sổ văn bản"
+                  allowClear
                   options={docBooks}
                   onChange={(val) => { if (val && !editingRecord) fetchNextNumber(val); }}
                 />
@@ -685,7 +699,7 @@ export default function DraftingDocPage() {
             </Col>
             <Col span={6}>
               <Form.Item name="number" label="Số">
-                <InputNumber style={{ width: '100%' }} min={1} />
+                <InputNumber style={{ width: '100%' }} min={1} placeholder="Nhập số" />
               </Form.Item>
             </Col>
             <Col span={6}>
@@ -789,7 +803,28 @@ export default function DraftingDocPage() {
               </Form.Item>
             </Col>
             <Col span={6}>
-              <Form.Item name="expired_date" label="Hạn xử lý">
+              {/* BUG #5: hạn xử lý phải >= ngày ký và >= ngày ban hành */}
+              <Form.Item
+                name="expired_date"
+                label="Hạn xử lý"
+                dependencies={['sign_date', 'publish_date']}
+                rules={[
+                  ({ getFieldValue }) => ({
+                    validator(_, value) {
+                      if (!value) return Promise.resolve();
+                      const sign = getFieldValue('sign_date') as dayjs.Dayjs | null;
+                      const pub = getFieldValue('publish_date') as dayjs.Dayjs | null;
+                      if (sign && dayjs(value).isBefore(dayjs(sign), 'day')) {
+                        return Promise.reject(new Error('Hạn xử lý phải sau hoặc bằng ngày ký'));
+                      }
+                      if (pub && dayjs(value).isBefore(dayjs(pub), 'day')) {
+                        return Promise.reject(new Error('Hạn xử lý phải sau hoặc bằng ngày ban hành'));
+                      }
+                      return Promise.resolve();
+                    },
+                  }),
+                ]}
+              >
                 <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
               </Form.Item>
             </Col>
