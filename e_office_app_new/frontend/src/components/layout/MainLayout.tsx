@@ -49,6 +49,7 @@ import { useAuthStore } from '@/stores/auth.store';
 import { api } from '@/lib/api';
 import { initSocket, disconnectSocket, SOCKET_EVENTS } from '@/lib/socket';
 import BellNotification from '@/components/notifications/BellNotification';
+import { HIDDEN_ROUTES } from '@/config/hidden-routes';
 
 const { Header, Sider, Content } = Layout;
 
@@ -59,48 +60,6 @@ const ADMIN_ROLE = 'Quản trị hệ thống';
 const VAN_THU_ROLE = 'Văn thư';
 const LANH_DAO_ROLE = 'Ban Lãnh đạo';
 const CHI_DAO_ROLE = 'Chỉ đạo điều hành';
-
-// ─── Phase 1 feature flag: ẩn menu chưa có trong HDSD cũ ──────────────────
-// Các route/module dưới đây tạm ẩn khỏi sidebar để bản demo chỉ hiển thị
-// đúng scope nghiệp vụ trong HDSD cũ. KHÔNG xóa code — Phase 2 muốn bật lại
-// chỉ cần xóa entry tương ứng khỏi Set này.
-const HIDDEN_ROUTES: ReadonlySet<string> = new Set([
-  // Tin nhắn
-  '/tin-nhan',
-  // Lịch (ẩn cả parent group 'lich' qua recursive check)
-  'lich',
-  '/lich/ca-nhan',
-  '/lich/co-quan',
-  '/lich/lanh-dao',
-  // Danh bạ
-  '/danh-ba',
-  // Kho lưu trữ
-  'kho-luu-tru',
-  '/kho-luu-tru',
-  '/kho-luu-tru/muon-tra',
-  // Tài liệu
-  '/tai-lieu',
-  // Hợp đồng
-  '/hop-dong',
-  // Cuộc họp
-  'cuoc-hop',
-  '/cuoc-hop',
-  '/cuoc-hop/thong-ke',
-  // LGSP + kênh thông báo
-  '/lgsp',
-  '/lgsp/co-quan',
-  '/thong-bao-kenh',
-  // Quản trị items bị ẩn (chuyển sang Phase 2)
-  '/quan-tri/chuc-nang',
-  '/quan-tri/cau-hinh-truong',
-  '/quan-tri/co-quan',
-  '/quan-tri/nhom-lam-viec',
-  '/quan-tri/uy-quyen',
-  '/quan-tri/dia-ban',
-  '/quan-tri/lich-lam-viec',
-  '/quan-tri/mau-thong-bao',
-  '/quan-tri/cau-hinh',
-]);
 
 // Recursive filter:
 // 1. Item có key trong HIDDEN_ROUTES → drop.

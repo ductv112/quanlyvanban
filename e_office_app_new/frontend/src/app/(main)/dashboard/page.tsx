@@ -19,6 +19,7 @@ import { useRouter } from 'next/navigation';
 import { Column, Pie } from '@ant-design/charts';
 import { useAuthStore } from '@/stores/auth.store';
 import { api } from '@/lib/api';
+import { HIDDEN_ROUTES } from '@/config/hidden-routes';
 import dayjs from 'dayjs';
 
 
@@ -203,7 +204,7 @@ export default function DashboardPage() {
     { key: 'message_unread', title: 'Tin nhắn chưa đọc', value: extra.message_unread, icon: <MessageOutlined />, gradient: 'linear-gradient(135deg, #dc2626, #f87171)', shadow: 'rgba(220,38,38,0.3)', route: '/tin-nhan' },
     { key: 'notice_unread', title: 'Thông báo chưa đọc', value: extra.notice_unread, icon: <BellOutlined />, gradient: 'linear-gradient(135deg, #ea580c, #fb923c)', shadow: 'rgba(234,88,12,0.3)', route: '/thong-bao' },
     { key: 'today_meetings', title: 'Lịch họp hôm nay', value: extra.today_meetings, icon: <CalendarOutlined />, gradient: 'linear-gradient(135deg, #0284c7, #38bdf8)', shadow: 'rgba(2,132,199,0.3)', route: '/lich/co-quan' },
-  ];
+  ].filter((card) => !HIDDEN_ROUTES.has(card.route));
 
   const cardLoading = statsLoading || extraLoading;
 
