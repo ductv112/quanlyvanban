@@ -28,7 +28,7 @@ interface RightTreeNode {
 }
 
 export default function RolePage() {
-  const { message } = App.useApp();
+  const { message, modal } = App.useApp();
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<Role[]>([]);
   const [total, setTotal] = useState(0);
@@ -177,6 +177,25 @@ export default function RolePage() {
     setPage(1);
   };
 
+  // BUG #26: Hoi xac nhan khi click Huy/onClose neu form dirty.
+  const handleCancelDrawer = () => {
+    if (form.isFieldsTouched()) {
+      modal.confirm({
+        title: 'Xác nhận hủy',
+        content: 'Bạn có chắc chắn muốn hủy? Dữ liệu đã nhập/sửa sẽ không được lưu.',
+        okText: 'Hủy bỏ',
+        cancelText: 'Tiếp tục',
+        okButtonProps: { danger: true },
+        onOk: () => {
+          form.resetFields();
+          setDrawerOpen(false);
+        },
+      });
+    } else {
+      setDrawerOpen(false);
+    }
+  };
+
   const columns: ColumnsType<Role> = [
     {
       title: 'Tên nhóm',
@@ -313,12 +332,12 @@ export default function RolePage() {
       <Drawer forceRender
         title={editingRecord ? 'Cập nhật nhóm quyền' : 'Thêm nhóm quyền mới'}
         open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
+        onClose={handleCancelDrawer}
         rootClassName="drawer-gradient"
         size={720}
         extra={
           <Space>
-            <Button onClick={() => setDrawerOpen(false)} ghost style={{ borderColor: 'rgba(255,255,255,0.6)', color: '#fff' }}>Hủy</Button>
+            <Button onClick={handleCancelDrawer} ghost style={{ borderColor: 'rgba(255,255,255,0.6)', color: '#fff' }}>Hủy</Button>
             <Button type="primary" loading={saving} onClick={handleSave}>
               {editingRecord ? 'Cập nhật' : 'Thêm mới'}
             </Button>

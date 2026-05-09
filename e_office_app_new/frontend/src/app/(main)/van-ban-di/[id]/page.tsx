@@ -203,7 +203,17 @@ export default function OutgoingDocDetailPage() {
 
   // Giao việc
   const fetchStaffOptions = async () => {
-    try { const { data: res } = await api.get('/quan-tri/nguoi-dung', { params: { page: 1, pageSize: 200 } }); setStaffOptions((res.data || []).map((s: { id: number; full_name: string; position_name?: string }) => ({ value: s.id, label: s.full_name + (s.position_name ? ` (${s.position_name})` : '') }))); } catch {}
+    try {
+      const { data: res } = await api.get('/quan-tri/nguoi-dung', { params: { page: 1, pageSize: 200 } });
+      // Loại trừ tài khoản đang đăng nhập khỏi dropdown người phụ trách (consistency với VB đến)
+      const currentStaffId = useAuthStore.getState().user?.staffId;
+      setStaffOptions((res.data || [])
+        .filter((s: { id: number }) => Number(s.id) !== Number(currentStaffId))
+        .map((s: { id: number; full_name: string; position_name?: string }) => ({
+          value: s.id,
+          label: s.full_name + (s.position_name ? ` (${s.position_name})` : ''),
+        })));
+    } catch {}
   };
   const openGiaoViec = async () => { await fetchStaffOptions(); giaoViecForm.resetFields(); giaoViecForm.setFieldsValue({ name: doc ? `Xử lý VB đi: ${doc.notation || doc.abstract?.substring(0, 50)}` : '' }); setGiaoViecOpen(true); };
   const handleGiaoViec = async () => {
@@ -838,16 +848,101 @@ export default function OutgoingDocDetailPage() {
         <Form form={giaoViecForm} layout="vertical" validateTrigger="onSubmit" autoComplete="off">
           <Form.Item name="name" label="Tên hồ sơ công việc" rules={[{ required: true, message: 'Bắt buộc' }]}><Input maxLength={500} /></Form.Item>
           <Row gutter={16}>
-            <Col span={12}><Form.Item name="start_date" label="Ngày bắt đầu"><DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" /></Form.Item></Col>
-            <Col span={12}><Form.Item name="end_date" label="Hạn hoàn thành"><DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" /></Form.Item></Col>
+            <Col span={12}>
+              <Form.Item
+                name="start_date"
+                label="Ngày bắt đầu"
+                rules={[{ required: true, message: 'Vui lòng chọn ngày bắt đầu' }]}
+              >
+                <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" placeholder="Chọn ngày bắt đầu" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="end_date"
+                label="Hạn hoàn thành"
+                dependencies={['start_date']}
+                rules={[
+                  { required: true, message: 'Vui lòng chọn hạn hoàn thành' },
+                  /* BUG #63: Hạn hoàn thành phải >= ngày bắt đầu (và >= hôm nay) */
+                  ({ getFieldValue }) => ({
+                    validator(_, value) {
+                      if (!value) return Promise.resolve();
+                      const startDate = getFieldValue('start_date') || dayjs();
+                      if (dayjs(value).isBefore(dayjs(startDate), 'day')) {
+                        return Promise.reject(new Error('Hạn hoàn thành phải lớn hơn hoặc bằng ngày bắt đầu'));
+                      }
+                      if (dayjs(value).isBefore(dayjs().startOf('day'))) {
+                        return Promise.reject(new Error('Hạn hoàn thành phải lớn hơn hoặc bằng ngày hiện tại'));
+                      }
+                      return Promise.resolve();
+                    },
+                  }),
+                ]}
+              >
+                <DatePicker
+                  style={{ width: '100%' }}
+                  format="DD/MM/YYYY"
+                  placeholder="Chọn hạn hoàn thành"
+                  /* Chặn chọn ngày trong quá khứ */
+                  disabledDate={(d) => {
+                    const start = giaoViecForm.getFieldValue('start_date');
+                    const today = dayjs().startOf('day');
+                    if (!d) return false;
+                    if (d.isBefore(today)) return true;
+                    if (start && d.isBefore(dayjs(start), 'day')) return true;
+                    return false;
+                  }}
+                />
+              </Form.Item>
+            </Col>
           </Row>
-          <Form.Item name="curator_ids" label="Người phụ trách"><Select mode="multiple" placeholder="Chọn người phụ trách..." options={staffOptions} filterOption={(input, opt) => (opt?.label ?? '').toLowerCase().includes(input.toLowerCase())} /></Form.Item>
+          <Form.Item
+            name="curator_ids"
+            label="Người phụ trách"
+            rules={[
+              { required: true, message: 'Vui lòng chọn ít nhất một người phụ trách' },
+              {
+                validator(_, value: number[] | undefined) {
+                  const currentStaffId = user?.staffId;
+                  if (Array.isArray(value) && currentStaffId && value.some(v => Number(v) === Number(currentStaffId))) {
+                    return Promise.reject(new Error('Không thể giao việc cho chính mình. Vui lòng chọn cán bộ khác.'));
+                  }
+                  return Promise.resolve();
+                },
+              },
+            ]}
+          >
+            <Select mode="multiple" placeholder="Chọn người phụ trách..." options={staffOptions} filterOption={(input, opt) => (opt?.label ?? '').toLowerCase().includes(input.toLowerCase())} />
+          </Form.Item>
           <Form.Item name="note" label="Ghi chú"><Input.TextArea rows={3} maxLength={500} showCount /></Form.Item>
         </Form>
       </Drawer>
 
       {/* Modal: Thêm vào HSCV */}
-      <Modal title="Thêm vào hồ sơ công việc" open={hscvModalOpen} onCancel={() => setHscvModalOpen(false)} onOk={handleLinkHscv} confirmLoading={hscvSaving} okText="Thêm vào HSCV" cancelText="Hủy">
+      <Modal
+        title="Thêm vào hồ sơ công việc"
+        open={hscvModalOpen}
+        onCancel={() => {
+          /* BUG #54: Hỏi xác nhận khi đã chọn HSCV mà người dùng click Hủy */
+          if (selectedHscvId) {
+            modal.confirm({
+              title: 'Xác nhận hủy thao tác',
+              content: 'Bạn đã chọn hồ sơ công việc nhưng chưa xác nhận. Bạn có chắc chắn muốn hủy?',
+              okText: 'Đồng ý hủy',
+              okType: 'danger',
+              cancelText: 'Tiếp tục thao tác',
+              onOk: () => { setHscvModalOpen(false); setSelectedHscvId(null); },
+            });
+          } else {
+            setHscvModalOpen(false);
+          }
+        }}
+        onOk={handleLinkHscv}
+        confirmLoading={hscvSaving}
+        okText="Thêm vào HSCV"
+        cancelText="Hủy"
+      >
         <Select style={{ width: '100%', marginTop: 8 }} placeholder="Chọn hồ sơ công việc..." showSearch filterOption={(input, opt) => (opt?.label ?? '').toLowerCase().includes(input.toLowerCase())} value={selectedHscvId} onChange={setSelectedHscvId} options={hscvList.map(h => ({ value: h.id, label: `${h.name} (${h.status === 0 ? 'Mới' : h.status === 1 ? 'Đang xử lý' : 'Trình duyệt'})` }))} />
       </Modal>
 

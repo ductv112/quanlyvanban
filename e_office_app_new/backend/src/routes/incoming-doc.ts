@@ -964,6 +964,16 @@ router.post('/:id/giao-viec', async (req: Request, res: Response) => {
       return;
     }
 
+    // BUG #50: VB không hiển thị ở tài khoản CB đã chọn giao việc.
+    // Sau khi tạo HSCV, đồng thời gửi VB đến cho từng curator (insert
+    // user_incoming_docs) để CB thấy VB trong màn "Văn bản đến" của họ.
+    // Best-effort, không rollback HSCV nếu fail.
+    try {
+      await incomingDocRepository.send(docId, curator_ids.map(Number), staffId);
+    } catch (err) {
+      req.log?.warn({ err, docId, curatorIds: curator_ids }, 'Auto-send VB den to curators after giao-viec failed');
+    }
+
     // Bell notification — best-effort. Curator của HSCV mới được giao việc.
     try {
       const senderRows = await rawQuery<{ full_name: string }>(

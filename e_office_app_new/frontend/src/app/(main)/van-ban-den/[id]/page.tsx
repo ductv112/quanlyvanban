@@ -146,10 +146,14 @@ export default function IncomingDocDetailPage() {
   const fetchStaffOptions = useCallback(async () => {
     try {
       const { data: res } = await api.get('/quan-tri/nguoi-dung', { params: { page: 1, pageSize: 200 } });
-      setStaffOptions((res.data || []).map((s: { id: number; full_name: string; position_name?: string }) => ({
-        value: s.id,
-        label: s.full_name + (s.position_name ? ` (${s.position_name})` : ''),
-      })));
+      // BUG #47: Loại trừ tài khoản đang đăng nhập khỏi dropdown người xử lý
+      const currentStaffId = useAuthStore.getState().user?.staffId;
+      setStaffOptions((res.data || [])
+        .filter((s: { id: number }) => Number(s.id) !== Number(currentStaffId))
+        .map((s: { id: number; full_name: string; position_name?: string }) => ({
+          value: s.id,
+          label: s.full_name + (s.position_name ? ` (${s.position_name})` : ''),
+        })));
     } catch { /* ignore */ }
   }, []);
   const fetchAttachments = useCallback(async () => { try { const { data: res } = await api.get(`/van-ban-den/${docId}/dinh-kem`); setAttachments(res.data || []); } catch {} }, [docId]);
@@ -160,7 +164,13 @@ export default function IncomingDocDetailPage() {
   useEffect(() => {
     setLoading(true);
     Promise.all([fetchDoc(), fetchAttachments(), fetchRecipients(), fetchHistory(), fetchLeaderNotes(), fetchBookmarkStatus(), fetchStaffOptions()]).finally(() => setLoading(false));
-  }, [fetchDoc, fetchAttachments, fetchRecipients, fetchHistory, fetchLeaderNotes, fetchBookmarkStatus, fetchStaffOptions]);
+    // BUG #42: Đánh dấu VB là đã đọc khi cán bộ mở trang chi tiết — server set read_at = NOW()
+    // để vùng "Phân công xử lý" của người gửi hiển thị "Đã đọc lúc HH:mm DD/MM"
+    api.patch('/van-ban-den/danh-dau-da-doc', { doc_ids: [docId] })
+      .then(() => { fetchRecipients(); })
+      .catch(() => { /* best-effort, không cản trở UX */ });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetchDoc, fetchAttachments, fetchRecipients, fetchHistory, fetchLeaderNotes, fetchBookmarkStatus, fetchStaffOptions, docId]);
 
   // Actions
   const handleApprove = async () => { try { await api.patch(`/van-ban-den/${docId}/duyet`); message.success('Duyệt thành công'); fetchDoc(); fetchHistory(); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } };
@@ -359,6 +369,17 @@ export default function IncomingDocDetailPage() {
   const handleAddNote = async () => {
     if (!noteContent.trim()) { message.warning('Nhập nội dung bút phê'); return; }
     if (assignMode && assignStaffIds.length === 0) { message.warning('Vui lòng chọn cán bộ phân công'); return; }
+    // BUG #46: Hạn giải quyết phải >= ngày hiện tại
+    if (assignMode && assignExpiredDate && assignExpiredDate.isBefore(dayjs().startOf('day'))) {
+      message.error('Hạn giải quyết phải lớn hơn hoặc bằng ngày hiện tại');
+      return;
+    }
+    // BUG #47: Không cho phép phân công cho chính tài khoản đang đăng nhập
+    const currentStaffId = user?.staffId;
+    if (assignMode && currentStaffId && assignStaffIds.some(id => Number(id) === Number(currentStaffId))) {
+      message.error('Không thể phân công văn bản cho chính mình. Vui lòng chọn cán bộ khác.');
+      return;
+    }
     setAddingNote(true);
     try {
       const payload: Record<string, unknown> = { content: noteContent.trim() };
@@ -687,11 +708,26 @@ export default function IncomingDocDetailPage() {
                     <Row gutter={12}>
                       <Col span={16}>
                         <div style={{ marginBottom: 4, fontSize: 12, color: '#595959' }}>Cán bộ xử lý</div>
-                        <Select mode="multiple" style={{ width: '100%' }} placeholder="Chọn cán bộ..." value={assignStaffIds} onChange={setAssignStaffIds} options={staffOptions} filterOption={(input, opt) => (opt?.label ?? '').toLowerCase().includes(input.toLowerCase())} />
+                        <Select
+                          mode="multiple"
+                          style={{ width: '100%' }}
+                          placeholder="Chọn cán bộ..."
+                          value={assignStaffIds}
+                          onChange={setAssignStaffIds}
+                          options={staffOptions /* BUG #47: đã loại trừ tài khoản đang đăng nhập trong fetchStaffOptions */}
+                          filterOption={(input, opt) => (opt?.label ?? '').toLowerCase().includes(input.toLowerCase())}
+                        />
                       </Col>
                       <Col span={8}>
                         <div style={{ marginBottom: 4, fontSize: 12, color: '#595959' }}>Hạn giải quyết</div>
-                        <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" value={assignExpiredDate} onChange={setAssignExpiredDate} />
+                        <DatePicker
+                          style={{ width: '100%' }}
+                          format="DD/MM/YYYY"
+                          value={assignExpiredDate}
+                          onChange={setAssignExpiredDate}
+                          /* BUG #46: chặn chọn ngày trong quá khứ */
+                          disabledDate={(d) => d && d.isBefore(dayjs().startOf('day'))}
+                        />
                       </Col>
                     </Row>
                   </div>
@@ -813,21 +849,50 @@ export default function IncomingDocDetailPage() {
               <Form.Item
                 name="end_date"
                 label="Hạn xử lý"
-                rules={[{ required: true, message: 'Vui lòng chọn hạn xử lý' }]}
+                rules={[
+                  { required: true, message: 'Vui lòng chọn hạn xử lý' },
+                  /* BUG #49: Hạn xử lý phải >= ngày hiện tại */
+                  {
+                    validator(_, value) {
+                      if (!value) return Promise.resolve();
+                      if (dayjs(value).isBefore(dayjs().startOf('day'))) {
+                        return Promise.reject(new Error('Hạn xử lý phải lớn hơn hoặc bằng ngày hiện tại'));
+                      }
+                      return Promise.resolve();
+                    },
+                  },
+                ]}
               >
-                <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" placeholder="Chọn ngày hạn xử lý" />
+                <DatePicker
+                  style={{ width: '100%' }}
+                  format="DD/MM/YYYY"
+                  placeholder="Chọn ngày hạn xử lý"
+                  disabledDate={(d) => d && d.isBefore(dayjs().startOf('day'))}
+                />
               </Form.Item>
             </Col>
           </Row>
           <Form.Item
             name="curator_ids"
             label="Người phụ trách"
-            rules={[{ required: true, message: 'Vui lòng chọn ít nhất một người phụ trách' }]}
+            rules={[
+              { required: true, message: 'Vui lòng chọn ít nhất một người phụ trách' },
+              /* BUG #47: Không cho phép giao việc cho chính mình */
+              {
+                validator(_, value: number[] | undefined) {
+                  const currentStaffId = user?.staffId;
+                  if (Array.isArray(value) && currentStaffId && value.some(v => Number(v) === Number(currentStaffId))) {
+                    return Promise.reject(new Error('Không thể giao việc cho chính mình. Vui lòng chọn cán bộ khác.'));
+                  }
+                  return Promise.resolve();
+                },
+              },
+            ]}
           >
             <Select
               mode="multiple"
               placeholder="Tìm kiếm và chọn người phụ trách..."
-              options={staffOptions}
+              options={staffOptions /* BUG #47: đã loại trừ tài khoản đang đăng nhập trong fetchStaffOptions */}
               showSearch
               filterOption={(input, option) =>
                 (option?.label as string)?.toLowerCase().includes(input.toLowerCase())
@@ -873,7 +938,21 @@ export default function IncomingDocDetailPage() {
       <Modal
         title="Thêm vào hồ sơ công việc"
         open={hscvModalOpen}
-        onCancel={() => setHscvModalOpen(false)}
+        onCancel={() => {
+          /* BUG #43: Hỏi xác nhận khi đã chọn HSCV mà người dùng click Hủy */
+          if (selectedHscvId) {
+            modal.confirm({
+              title: 'Xác nhận hủy thao tác',
+              content: 'Bạn đã chọn hồ sơ công việc nhưng chưa xác nhận. Bạn có chắc chắn muốn hủy?',
+              okText: 'Đồng ý hủy',
+              okType: 'danger',
+              cancelText: 'Tiếp tục thao tác',
+              onOk: () => { setHscvModalOpen(false); setSelectedHscvId(null); },
+            });
+          } else {
+            setHscvModalOpen(false);
+          }
+        }}
         onOk={handleLinkHscv}
         confirmLoading={hscvSaving}
         okText="Thêm vào HSCV"

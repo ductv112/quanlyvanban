@@ -55,7 +55,7 @@ interface DeptOption {
 }
 
 export default function StaffPage() {
-  const { message } = App.useApp();
+  const { message, modal } = App.useApp();
   const [loading, setLoading] = useState(false);
   const [treeData, setTreeData] = useState<TreeNode[]>([]);
   const [treeLoading, setTreeLoading] = useState(false);
@@ -340,6 +340,25 @@ export default function StaffPage() {
     }
   };
 
+  // BUG #19: Hoi xac nhan khi nguoi dung click Huy/onClose neu form dirty.
+  const handleCancelDrawer = () => {
+    if (form.isFieldsTouched()) {
+      modal.confirm({
+        title: 'Xác nhận hủy',
+        content: 'Bạn có chắc chắn muốn hủy? Dữ liệu đã nhập sẽ không được lưu.',
+        okText: 'Hủy bỏ',
+        cancelText: 'Tiếp tục',
+        okButtonProps: { danger: true },
+        onOk: () => {
+          form.resetFields();
+          setDrawerOpen(false);
+        },
+      });
+    } else {
+      setDrawerOpen(false);
+    }
+  };
+
   const handleUnitChange = (unitId: number) => {
     setSelectedUnit(unitId);
     form.setFieldsValue({ department_id: undefined });
@@ -618,12 +637,12 @@ export default function StaffPage() {
       <Drawer forceRender
         title={editingRecord ? `Sửa người dùng — ${editingRecord.code || ''}` : 'Thêm người dùng mới'}
         open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
+        onClose={handleCancelDrawer}
         rootClassName="drawer-gradient"
         size={720}
         extra={
           <Space>
-            <Button onClick={() => setDrawerOpen(false)} ghost style={{ borderColor: 'rgba(255,255,255,0.6)', color: '#fff' }}>Hủy</Button>
+            <Button onClick={handleCancelDrawer} ghost style={{ borderColor: 'rgba(255,255,255,0.6)', color: '#fff' }}>Hủy</Button>
             <Button type="primary" loading={saving} onClick={handleSave}>
               {editingRecord ? 'Cập nhật' : 'Thêm mới'}
             </Button>
@@ -672,15 +691,15 @@ export default function StaffPage() {
               </Form.Item>
 
               <Form.Item label="Email" name="email" rules={[{ type: 'email', message: 'Email không đúng định dạng' }]}>
-                <Input type="email" maxLength={100} style={{ borderRadius: 8 }} />
+                <Input type="email" maxLength={100} placeholder="VD: nguyenvana@example.com" style={{ borderRadius: 8 }} />
               </Form.Item>
 
               <Form.Item label="Số điện thoại" name="phone" rules={[{ pattern: /^[0-9+\-\s()]{8,15}$/, message: 'Số điện thoại không đúng định dạng' }]}>
-                <Input maxLength={20} style={{ borderRadius: 8 }} />
+                <Input maxLength={20} placeholder="VD: 02143123456" style={{ borderRadius: 8 }} />
               </Form.Item>
 
               <Form.Item label="Di động" name="mobile" rules={[{ pattern: /^[0-9+\-\s()]{8,15}$/, message: 'Số di động không đúng định dạng' }]}>
-                <Input maxLength={20} style={{ borderRadius: 8 }} />
+                <Input maxLength={20} placeholder="VD: 0912345678" style={{ borderRadius: 8 }} />
               </Form.Item>
             </Col>
 
@@ -728,7 +747,7 @@ export default function StaffPage() {
               </Form.Item>
 
               <Form.Item label="Địa chỉ" name="address">
-                <Input maxLength={500} showCount style={{ borderRadius: 8 }} />
+                <Input maxLength={500} showCount placeholder="VD: Số 10 Lê Văn Lương, Hà Nội" style={{ borderRadius: 8 }} />
               </Form.Item>
             </Col>
           </Row>

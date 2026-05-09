@@ -45,7 +45,7 @@ function flattenTree(nodes: DocType[], level = 0): { id: number; name: string; l
 }
 
 export default function DocTypePage() {
-  const { message } = App.useApp();
+  const { message, modal } = App.useApp();
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<DocType[]>([]);
   const [activeTab, setActiveTab] = useState('1');
@@ -98,6 +98,25 @@ export default function DocTypePage() {
       sort_order: record.sort_order,
     });
     setDrawerOpen(true);
+  };
+
+  // BUG #27 + #32: Hoi xac nhan khi click Huy/onClose neu form dirty.
+  const handleCancelDrawer = () => {
+    if (form.isFieldsTouched()) {
+      modal.confirm({
+        title: 'Xác nhận hủy',
+        content: 'Bạn có chắc chắn muốn hủy? Dữ liệu đã nhập/sửa sẽ không được lưu.',
+        okText: 'Hủy bỏ',
+        cancelText: 'Tiếp tục',
+        okButtonProps: { danger: true },
+        onOk: () => {
+          form.resetFields();
+          setDrawerOpen(false);
+        },
+      });
+    } else {
+      setDrawerOpen(false);
+    }
   };
 
   const handleDelete = async (id: number) => {
@@ -288,12 +307,12 @@ export default function DocTypePage() {
       <Drawer forceRender
         title={editingRecord ? 'Cập nhật loại văn bản' : 'Thêm loại văn bản mới'}
         open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
+        onClose={handleCancelDrawer}
         rootClassName="drawer-gradient"
         size={720}
         extra={
           <Space>
-            <Button onClick={() => setDrawerOpen(false)} ghost style={{ borderColor: 'rgba(255,255,255,0.6)', color: '#fff' }}>Hủy</Button>
+            <Button onClick={handleCancelDrawer} ghost style={{ borderColor: 'rgba(255,255,255,0.6)', color: '#fff' }}>Hủy</Button>
             <Button type="primary" loading={saving} onClick={handleSave}>
               {editingRecord ? 'Cập nhật' : 'Thêm mới'}
             </Button>
