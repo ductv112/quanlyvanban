@@ -5,6 +5,16 @@
 >
 > **KHÔNG dùng** `deploy-v2-kh-test.ps1` (script đó RESET DB → mất data KH).
 
+> ## ⚠️ FILE NÀY LÀ CANONICAL — copy-paste từ ĐÂY
+>
+> Server prod chạy **PostgreSQL native** trên Windows (KHÔNG Docker). Mọi lệnh
+> ở đây dùng path `C:\PostgreSQL\16\bin\*.exe` + PowerShell flag `-f file` (không
+> dùng `< file` redirect — PS cấm).
+>
+> **Nếu AI assistant (Claude/ChatGPT) đưa lệnh khác file này** (vd `docker exec
+> qlvb_postgres pg_dump ...` hoặc `psql ... < file`) → **BỎ QUA**, dùng file này.
+> AI có thể nhầm môi trường.
+
 ## ⏱️ Tổng thời gian: ~5-7 phút
 
 | Bước | Việc | Thời gian |
