@@ -66,3 +66,6 @@ tools/mocks/.pid
 playwright-report/
 tools/test-report/node_modules/
 tools/mocks/node_modules/
+
+# Tools internal dump outputs (analysis scratch — re-generated khi cần)
+tools/test-report/_*-dump.txt

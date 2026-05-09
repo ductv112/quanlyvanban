@@ -1,0 +1,113 @@
+{
+  "category": "D_AUTH_DASH",
+  "count": 4,
+  "bugs": [
+    {
+      "bug_no": 2,
+      "excel_row": 4,
+      "id_excel": "",
+      "date": "2026-04-25",
+      "module": "[Trang chủ giao diện - Tổng quan: Thẻ \"Việc quá hạn\", \"văn bản đi chờ duyệt\" không được căn chỉnh đồng đều so với các thẻ thống kê phía trên khác.",
+      "steps": "1. Đăng nhập vào hệ thống\n2. Truy cập vào trang Tổng quan (Dashboard)\n3. Quan sát hàng các thẻ thống kê phía trên",
+      "bug_expected": "- Hiện tại:\n+ Thẻ “Việc quá hạn” không thẳng hàng với các thẻ bên cạnh\n+ Khoảng cách/padding không đồng đều → UI bị lệch\n- Kết quả mong đợi: Tất cả các thẻ thống kê được căn chỉnh đồng đều:\n+ Cùng chiều cao\n+ Cùng khoảng cách padding/margin\n+ Icon và text thẳng hàng",
+      "evidence": "",
+      "status": "New",
+      "logger": "yến",
+      "priority": "Medium (TB)",
+      "fe_be": "",
+      "note": ""
+    },
+    {
+      "bug_no": 7,
+      "excel_row": 9,
+      "id_excel": "7",
+      "date": "2026-04-25",
+      "module": "[Đăng nhập - Khi đăng nhập sai nhiều lần, hệ thống chỉ hiển thị thông báo lỗi ở lần đầu, các lần sau không hiển thị lại thông báo lỗi.",
+      "steps": "1. Truy cập màn hình đăng nhập\n2. Nhập sai tên đăng nhập hoặc mật khẩu → nhấn Đăng nhập\n3. Quan sát thông báo lỗi (hiển thị bình thường)\n4. Tiếp tục nhập sai lần 2, lần 3…\n5. Quan sát kết quả",
+      "bug_expected": "- HT:\n+ Chỉ hiển thị thông báo lỗi ở lần sai đầu tiên\n+ Các lần sai tiếp theo không có thông báo\n- MM: Mỗi lần đăng nhập sai, hệ thống đều phải hiển thị thông báo: “Tên đăng nhập hoặc mật khẩu không đúng”",
+      "evidence": "https://1drv.ms/v/c/abf3d525161e2109/IQCgT19-XOK_RZcxI_gFpZsSAR4F6JpCyLAf90tWoCUpFMs?e=agaO5B",
+      "status": "New",
+      "logger": "yến",
+      "priority": "Medium (TB)",
+      "fe_be": "",
+      "note": ""
+    },
+    {
+      "bug_no": 12,
+      "excel_row": 14,
+      "id_excel": "",
+      "date": "2026-04-25",
+      "module": "[ Thông tin tài khoản - đổi mật khẩu thành công, hệ thống chỉ hiển thị thông báo mà không đăng xuất hoặc yêu cầu đăng nhập lại ]",
+      "steps": "1. Đăng nhập hệ thống\n2. Vào trang thông tin tài khoản ( click vào tên tài khoản trên cùng góc phải màn hình)\n3. Nhập thông tin hợp lệ và click “Đổi mật khẩu”",
+      "bug_expected": "- HT:\n+ Hiển thị “Đổi mật khẩu thành công”\n+ Không đăng xuất, vẫn giữ phiên đăng nhập cũ\n- MM: Hệ thống tự động đăng xuất hoặc yêu cầu người dùng đăng nhập lại bằng mật khẩu mới",
+      "evidence": "https://1drv.ms/v/c/abf3d525161e2109/IQCEeB7AZd0_QrwR540YzkSJATEPQbkpIqlzwWX8Yn4PpRk?e=ETdggk",
+      "status": "New",
+      "logger": "yến",
+      "priority": "Medium (TB)",
+      "fe_be": "",
+      "note": ""
+    },
+    {
+      "bug_no": 13,
+      "excel_row": 15,
+      "id_excel": "",
+      "date": "2026-04-25",
+      "module": "[ Thông tin tài khoản - Hệ thống không có chức năng sửa thông tin]",
+      "steps": "1. Đăng nhập hệ thống\n2. Vào trang thông tin tài khoản ( click vào tên tài khoản trên cùng góc phải màn hình)\n3. Quan sát",
+      "bug_expected": "- HT: Hệ thống không có button hoặc icon cập nhật thông tin tài khoản                                                                                           - MM: Hiển thị button hoặc icon cập nhật thông tin tài khoản",
+      "evidence": "",
+      "status": "New",
+      "logger": "yến",
+      "priority": "Medium (TB)",
+      "fe_be": "",
+      "note": ""
+    }
+  ],
+  "improvements": [
+    {
+      "imp_no": 1,
+      "excel_row": 2,
+      "date": "2026-04-24",
+      "module": "Hồ sơ công việc - sửa + xóa",
+      "description": "[object Object]",
+      "steps": "",
+      "proposal": "* Đề xuất 1: không hiển thị chức năng sửa + xóa ở các trạng thái # \"tạo mới\" chỉ hiểm thị chức năng với các trạng thái cho phép sửa + xóa\n* Đề xuất 2: nếu vẫn giữ nguyên thì khi click vào chức năng sửa + xóa thì tbao lỗi luôn",
+      "confirmed": "",
+      "proposer": "Nhung"
+    },
+    {
+      "imp_no": 2,
+      "excel_row": 3,
+      "date": "2026-04-25",
+      "module": "Văn bản dự thảo/ Văn bản đến - chức năng Xuất excel",
+      "description": "[object Object]",
+      "steps": "1. Tìm kiếm/ lọc dữ liệu kh có kết quả\n2. Click xuất excel \n3. mở file vừa xuất excel >> qsat thông tin",
+      "proposal": "* Đề xuất :  hệ thống thông báo ( VD: không có dữ liệu để xuất) và file không được xuất thành công",
+      "confirmed": "",
+      "proposer": "Nhung"
+    },
+    {
+      "imp_no": 3,
+      "excel_row": 4,
+      "date": "2026-05-04",
+      "module": "[ Văn Bản - Văn bản dự thảo/ Văn bản đến]",
+      "description": "[object Object]",
+      "steps": "1. Từ màn danh sách \"VB dự thảo/ VB đến \" chọn 1 văn bản với trạng thái \"đã duyệt\" \n2. Click xem chi tiết\n3. từ màn xem chi tiết >> click Gửi văn bản >> từ popup chọn 1 cán bộ >> click gửi \n4. Từ màn xem chi tiết >> tiếp tục click gửi văn bản cho cán bộ đã chọn gửi lần 1 >> click gửi\n5. Quan sát vùng thông báo",
+      "proposal": "* Đề xuất 1 : hệ thống thông báo vấn đề tương ứng ( VD: vb đã gửi cho tk cán bộ này)\n* Đề xuất 2: trạng thái checkbox unable cán bộ đã gửi",
+      "confirmed": "",
+      "proposer": "Nhung"
+    },
+    {
+      "imp_no": 4,
+      "excel_row": 5,
+      "date": "2026-05-05",
+      "module": "Tất cả các màn",
+      "description": "[object Object]",
+      "steps": "1. Click  thêm mới/ sửa \n2. Cửa sổ mở ra >> click ra bên ngoài vùng \n3. Quan sát",
+      "proposal": "* Đề xuất: Cố định cửa sổ thêm mới/ sửa",
+      "confirmed": "",
+      "proposer": "Nhung"
+    }
+  ],
+  "other_bugs": []
+}
