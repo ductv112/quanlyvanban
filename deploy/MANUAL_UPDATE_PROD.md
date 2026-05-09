@@ -20,6 +20,7 @@
 | Bước | Việc | Thời gian |
 |---|---|---|
 | 0 | Backup DB (đề phòng) | ~30s |
+| 0.5 | Verify env trỏ đúng domain (lần đầu / khi đổi domain) | ~1 phút |
 | 1 | Pull code mới | ~5s |
 | 2 | Re-apply master schema (idempotent) | ~30s |
 | 3 | Build backend + frontend | ~3-5 phút |
@@ -43,6 +44,41 @@ $ts = Get-Date -Format 'yyyyMMdd-HHmmss'
 ```
 
 → File `C:\qlvb\backups\qlvb_prod_YYYYMMDD-HHmmss.dump` (~50-200MB tùy data).
+
+### Bước 0.5 — Verify env trỏ đúng domain (chỉ làm LẦN ĐẦU hoặc khi đổi domain)
+
+> `.env` + `.env.local` **gitignored** → `git pull` KHÔNG overwrite. Chỉ cần check 1 lần khi setup hoặc khi domain thay đổi.
+
+```powershell
+# 1. Backend CORS_ORIGIN — phải có domain KH đang dùng
+Get-Content C:\qlvb\quanlyvanban\e_office_app_new\backend\.env | Select-String "CORS_ORIGIN"
+
+# 2. Frontend NEXT_PUBLIC_API_URL — KHUYẾN NGHỊ relative `/api`
+Get-Content C:\qlvb\quanlyvanban\e_office_app_new\frontend\.env.local | Select-String "NEXT_PUBLIC_API_URL"
+```
+
+**Mong đợi (prod):**
+
+```
+CORS_ORIGIN=http://doanhnghiep.vatk.org,http://103.97.134.87,https://doanhnghiep.vatk.org
+NEXT_PUBLIC_API_URL=/api
+```
+
+**Triệu chứng SAI:**
+
+| Triệu chứng | Nguyên nhân | Fix |
+|---|---|---|
+| Browser KH login fail "Network Error" | `NEXT_PUBLIC_API_URL` hard-code IP, KH access qua domain → CORS reject | Sửa `.env.local` → `/api`, rebuild frontend |
+| Mixed content "Blocked: HTTP from HTTPS" | KH access HTTPS, bundle gọi HTTP IP | Same fix — relative `/api` |
+| CORS error console "Access-Control-Allow-Origin" | `CORS_ORIGIN` thiếu origin domain | Add domain vào `CORS_ORIGIN`, restart backend |
+
+**Sửa env (nếu cần):**
+
+```powershell
+notepad C:\qlvb\quanlyvanban\e_office_app_new\backend\.env
+notepad C:\qlvb\quanlyvanban\e_office_app_new\frontend\.env.local
+# Save + close → tiếp tục Bước 1
+```
 
 ### Bước 1 — Pull code
 
@@ -141,6 +177,11 @@ git log --oneline -5
 4. **Schema apply 2 lần liên tiếp** → kiểm tra idempotent. Nếu có ERROR ở lần 2 = bug schema không idempotent (fix bằng `DROP FUNCTION IF EXISTS` trước CREATE khi đổi signature).
 5. **Folder backup chưa có** → `pg_dump` fail "No such file or directory". Tạo `New-Item -ItemType Directory -Force -Path C:\qlvb\backups` trước.
 6. **Server Action error trong browser KH** sau deploy → bình thường, KH refresh hard (Ctrl+Shift+R) là hết.
+7. **Frontend `NEXT_PUBLIC_API_URL` hard-code IP** → KH access qua domain (vd `https://prod.com`) sẽ vỡ vì:
+    - CORS reject (origin domain ≠ allowed IP)
+    - Mixed content (HTTPS page → HTTP IP API call)
+    Fix: dùng `NEXT_PUBLIC_API_URL=/api` (relative) + reverse proxy IIS/Nginx route `/api/*` → backend port 4000. Sửa env XONG phải `npm run build` lại (env baked vào JS bundle) + `pm2 restart eoffice-web --update-env`.
+8. **Backend `CORS_ORIGIN` thiếu domain** → preflight OPTIONS fail. Multi-origin syntax: `CORS_ORIGIN=https://prod.com,http://prod.com,http://ip-raw` (comma-separated).
 
 ---
 
