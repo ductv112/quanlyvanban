@@ -488,8 +488,7 @@ export default function OutgoingDocPage() {
         title={editingRecord ? 'Sửa văn bản đi' : 'Thêm văn bản đi'}
         size={720} open={drawerOpen} onClose={() => handleCancelDrawer()}
         rootClassName="drawer-gradient"
-        extra={<Space><Button onClick={() => handleCancelDrawer()} ghost style={{ borderColor: 'rgba(255,255,255,0.6)', color: '#fff' }}>Hủy</Button><Button type="primary" loading={saving} onClick={handleSave}>{editingRecord ? 'Cập nhật' : 'Tạo mới'}</Button></Space>}
-      >
+        extra={<Space><Button onClick={() => handleCancelDrawer()} ghost style={{ borderColor: 'rgba(255,255,255,0.6)', color: '#fff' }}>Hủy</Button><Button type="primary" loading={saving} onClick={handleSave}>{editingRecord ? 'Cập nhật' : 'Tạo mới'}</Button></Space>} maskClosable={false}>
         <Form form={form} layout="vertical" autoComplete="off">
           <Row gutter={16}>
             <Col span={12}>

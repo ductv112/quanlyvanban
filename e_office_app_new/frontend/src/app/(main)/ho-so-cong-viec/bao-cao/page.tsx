@@ -223,6 +223,11 @@ export default function BaoCaoPage() {
   // ── Excel Export ──────────────────────────────────────────────────────────
 
   const exportExcel = async () => {
+    // IMP #2: nếu danh sách rỗng → toast + KHÔNG xuất file
+    if (!reportData || reportData.length === 0) {
+      message.warning('Không có dữ liệu để xuất');
+      return;
+    }
     const workbook = new ExcelJS.Workbook();
     const sheet = workbook.addWorksheet('Báo cáo HSCV');
 

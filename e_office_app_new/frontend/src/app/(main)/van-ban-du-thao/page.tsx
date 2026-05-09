@@ -523,6 +523,11 @@ export default function DraftingDocPage() {
   ];
 
   const handleExportExcel = async () => {
+    // IMP #2: nếu không có data + không tick chọn → toast + KHÔNG xuất file
+    if ((!data || data.length === 0) && selectedRowKeys.length === 0) {
+      message.warning('Không có dữ liệu để xuất');
+      return;
+    }
     try {
       const params: Record<string, unknown> = {};
       // BUG #9, #10: nếu user đã tick checkbox → chỉ xuất các bản ghi đã chọn (mọi trang)
@@ -683,8 +688,7 @@ export default function DraftingDocPage() {
               {editingRecord ? 'Cập nhật' : 'Tạo mới'}
             </Button>
           </Space>
-        }
-      >
+        } maskClosable={false}>
         <Form form={form} layout="vertical" autoComplete="off">
           <Row gutter={16}>
             <Col span={12}>
