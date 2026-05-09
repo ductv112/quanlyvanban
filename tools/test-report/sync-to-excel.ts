@@ -288,6 +288,15 @@ async function syncToExcel(): Promise<void> {
   if (tcIdCol === -1) tcIdCol = 1; // fallback to column A
   console.log(`[sync] TC-ID column = ${tcIdCol}`);
 
+  // Persistent TC notes (col 12 "Ghi chú") — preserved across sync runs
+  const NOTE_COL = 12;
+  const tcNotesPath = path.join(__dirname, 'tc-notes.json');
+  const tcNotes: Record<string, string> = fs.existsSync(tcNotesPath)
+    ? JSON.parse(fs.readFileSync(tcNotesPath, 'utf8'))
+    : {};
+  const noteCount = Object.keys(tcNotes).filter((k) => !k.startsWith('_')).length;
+  if (noteCount > 0) console.log(`[sync] Loaded ${noteCount} persistent TC notes from tc-notes.json`);
+
   // Add 5 new columns after last column
   const lastCol = sheet.actualColumnCount;
   const STATUS_COL = lastCol + 1;
@@ -323,6 +332,11 @@ async function syncToExcel(): Promise<void> {
     const tcIdValue = String(tcIdCell.value || '').trim();
     if (!tcIdValue || !TC_ID_REGEX.test(tcIdValue)) continue;
     totalTC++;
+
+    // Apply persistent note to col 12 (Ghi chú) if present (does not depend on test result)
+    if (tcNotes[tcIdValue]) {
+      row.getCell(NOTE_COL).value = tcNotes[tcIdValue];
+    }
 
     const result = allResults.get(tcIdValue);
     const statusCell = row.getCell(STATUS_COL);

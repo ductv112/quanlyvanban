@@ -1,0 +1,13 @@
+{
+  "_doc": "Persistent notes (col 12 'Ghi chú') for TC IDs. sync-to-excel.ts reads this and fills col 12 alongside cols 13-17 (status/date/duration/error/trace). Add entries here when feedback từ user testing reveals context that needs preserving across sync runs.",
+  "TC-DASH-002": "Verified PASS: thẻ \"VB đến chưa đọc\" navigate /van-ban-den (Wave 31c agent + manual API).",
+  "TC-DASH-003": "User feedback (2026-05-09): nhầm tưởng đã ẩn. Verified: route /thong-bao + sidebar \"Thông báo nội bộ\" + thẻ \"Thông báo chưa đọc\" đều active. List rỗng vì qlvb_test KHÔNG seed thông báo (count=0).",
+  "TC-DASH-004": "Verified PASS: nút \"Xem thêm\" bảng \"Văn bản mới nhận\" navigate /van-ban-den (Wave 31c).",
+  "TC-DASH-005": "Verified PASS: quickAction \"Tạo VB đến\" navigate /van-ban-den (Wave 31c).",
+  "TC-DASH-006": "Verified PASS: quickAction \"Soạn dự thảo\" navigate /van-ban-du-thao (Wave 31c).",
+  "TC-DASH-007": "SKIP UI animation: chart Column \"VB đến/đi theo tháng\" — verify via snapshot khi qlvb_test có data, hoặc manual.",
+  "TC-DASH-008": "SKIP UI animation: chart Pie \"HSCV theo trạng thái\" — qlvb_test không seed HSCV đủ trạng thái cho chart.",
+  "TC-DASH-009": "SKIP UI: empty state bảng \"Văn bản mới nhận\" — qlvb_test có 5 VB đến → bảng có data; cần fixture rỗng.",
+  "TC-DASH-010": "SKIP UI: empty state khung \"Việc sắp tới hạn\" — phụ thuộc fixture HSCV deadline.",
+  "TC-DASH-011": "SKIP UI: tag độ khẩn màu (Hỏa tốc đỏ / Khẩn cam / Thường xanh) — qlvb_test không seed VB với độ khẩn khác nhau."
+}
