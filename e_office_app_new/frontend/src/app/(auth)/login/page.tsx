@@ -22,13 +22,17 @@ export default function LoginPage() {
 
   const onFinish = async (values: { username: string; password: string; remember: boolean }) => {
     setLoading(true);
+    // Destroy any existing message instance trước khi gọi để mỗi lần sai mật khẩu
+    // đều hiển thị lại toast (BUG #7 — tránh AntD dedupe khi cùng content)
+    message.destroy();
     try {
       await login(values.username, values.password);
-      message.success('Đăng nhập thành công');
+      message.success({ content: 'Đăng nhập thành công', key: 'login-status' });
       router.push('/dashboard');
     } catch (error: any) {
-      const msg = error?.response?.data?.message || 'Đăng nhập thất bại';
-      message.error(msg);
+      const msg = error?.response?.data?.message || 'Tên đăng nhập hoặc mật khẩu không đúng';
+      // Dùng key + duration cố định để mỗi lần error đều show lại
+      message.error({ content: msg, key: 'login-status', duration: 4 });
     } finally {
       setLoading(false);
     }
