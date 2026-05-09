@@ -408,8 +408,7 @@ export default function AddressPage() {
               {editingRecord ? 'Cập nhật' : 'Thêm mới'}
             </Button>
           </Space>
-        }
-      >
+        } maskClosable={false}>
         <Form form={form} layout="vertical" autoComplete="off" validateTrigger="onSubmit">
           <Form.Item label="Mã" name="code" rules={[{ required: true, message: 'Nhập mã' }]}>
             <Input placeholder="VD: 01" maxLength={10} style={{ borderRadius: 8 }} />

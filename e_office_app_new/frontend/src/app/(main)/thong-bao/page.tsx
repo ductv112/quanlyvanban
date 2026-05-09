@@ -260,8 +260,7 @@ export default function ThongBaoPage() {
               Tạo thông báo
             </Button>
           </div>
-        }
-      >
+        } maskClosable={false}>
         <Form form={createForm} layout="vertical" validateTrigger="onSubmit">
           <Form.Item
             name="title"

@@ -390,8 +390,7 @@ export default function LichCaNhanPage() {
               Lưu
             </Button>
           </div>
-        }
-      >
+        } maskClosable={false}>
         <Form form={form} layout="vertical" validateTrigger="onSubmit">
           <Form.Item
             name="title"

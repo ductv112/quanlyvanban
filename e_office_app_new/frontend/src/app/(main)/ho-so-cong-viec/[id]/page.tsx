@@ -1841,8 +1841,7 @@ export default function HscvDetailPage() {
         okText="Từ chối"
         okType="danger"
         cancelText="Hủy"
-        okButtonProps={{ disabled: !rejectReason.trim() }}
-      >
+        okButtonProps={{ disabled: !rejectReason.trim() }} maskClosable={false}>
         <p>Nhập lý do từ chối để thông báo cho người xử lý.</p>
         <TextArea
           rows={3}
@@ -1864,8 +1863,7 @@ export default function HscvDetailPage() {
         onCancel={() => setReturnModalOpen(false)}
         okText="Trả về"
         cancelText="Hủy"
-        okButtonProps={{ disabled: !returnReason.trim() }}
-      >
+        okButtonProps={{ disabled: !returnReason.trim() }} maskClosable={false}>
         <p>Nhập lý do trả về để người xử lý biết cần chỉnh sửa gì.</p>
         <TextArea
           rows={3}
@@ -1887,8 +1885,7 @@ export default function HscvDetailPage() {
         onCancel={() => setProgressModalOpen(false)}
         okText="Cập nhật"
         cancelText="Hủy bỏ"
-        confirmLoading={updatingProgress}
-      >
+        confirmLoading={updatingProgress} maskClosable={false}>
         <div style={{ padding: '16px 0' }}>
           <div style={{ marginBottom: 12 }}>Tiến độ hoàn thành (%)</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
@@ -1922,8 +1919,7 @@ export default function HscvDetailPage() {
         okText="Chuyển tiếp"
         cancelText="Hủy"
         confirmLoading={transferring}
-        width={500}
-      >
+        width={500} maskClosable={false}>
         <div style={{ marginBottom: 12, padding: 10, background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: 6, fontSize: 12, color: '#1E40AF' }}>
           <ExclamationCircleOutlined /> Chỉ có thể chuyển HSCV cho người cùng đơn vị
         </div>
@@ -1957,8 +1953,7 @@ export default function HscvDetailPage() {
         open={historyOpen}
         onCancel={() => setHistoryOpen(false)}
         footer={<Button onClick={() => setHistoryOpen(false)}>Đóng</Button>}
-        width={720}
-      >
+        width={720} maskClosable={false}>
         {historyLoading ? (
           <Skeleton active paragraph={{ rows: 4 }} />
         ) : historyList.length === 0 ? (
@@ -2003,8 +1998,7 @@ export default function HscvDetailPage() {
         okText="Gửi"
         cancelText="Hủy"
         confirmLoading={fwdSubmitting}
-        width={500}
-      >
+        width={500} maskClosable={false}>
         <Form layout="vertical" style={{ marginTop: 16 }}>
           <Form.Item label="Người nhận" required>
             <Select
@@ -2039,8 +2033,7 @@ export default function HscvDetailPage() {
         cancelText="Hủy thao tác"
         okButtonProps={{ danger: true }}
         confirmLoading={cancelling}
-        width={480}
-      >
+        width={480} maskClosable={false}>
         <Form layout="vertical" style={{ marginTop: 16 }}>
           <Form.Item label="Lý do hủy HSCV" required>
             <Input.TextArea
@@ -2063,8 +2056,7 @@ export default function HscvDetailPage() {
         onCancel={() => setLaySoOpen(false)}
         okText="Lấy số"
         cancelText="Hủy"
-        confirmLoading={layingNumber}
-      >
+        confirmLoading={layingNumber} maskClosable={false}>
         <Form layout="vertical" style={{ marginTop: 16 }}>
           <Form.Item label="Sổ văn bản" required>
             <Select
@@ -2155,8 +2147,7 @@ export default function HscvDetailPage() {
         onCancel={() => { setAddDocModalOpen(false); setSelectedDocKeys([]); }}
         okText="Liên kết"
         cancelText="Hủy bỏ"
-        size={800}
-      >
+        width={800} maskClosable={false}>
         <div style={{ marginBottom: 12 }}>
           <Tabs
             activeKey={searchDocTab}

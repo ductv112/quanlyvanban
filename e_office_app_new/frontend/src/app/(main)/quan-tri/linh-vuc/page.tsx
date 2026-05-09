@@ -264,8 +264,7 @@ export default function DocFieldPage() {
               {editingRecord ? 'Cập nhật' : 'Thêm mới'}
             </Button>
           </Space>
-        }
-      >
+        } maskClosable={false}>
         <Form form={form} layout="vertical" autoComplete="off" validateTrigger="onSubmit">
           <Form.Item label="Mã" name="code" rules={[{ required: true, message: 'Nhập mã lĩnh vực' }]}>
             <Input placeholder="VD: KHCN" maxLength={20} style={{ borderRadius: 8 }} />

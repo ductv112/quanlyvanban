@@ -741,8 +741,7 @@ export default function CuocHopPage() {
             <Button onClick={() => setDrawerOpen(false)}>Hủy</Button>
             <Button type="primary" icon={<SaveOutlined />} loading={formLoading} onClick={handleSave}>Lưu</Button>
           </Space>
-        }
-      >
+        } maskClosable={false}>
         <Form form={form} layout="vertical" validateTrigger="onSubmit">
           <Row gutter={16}>
             <Col span={24}>
@@ -829,8 +828,7 @@ export default function CuocHopPage() {
         onClose={() => setRoomDrawerOpen(false)}
         title="Quản lý phòng họp"
         size={600}
-        extra={<Button type="primary" icon={<PlusOutlined />} onClick={() => openRoomForm()}>Thêm phòng</Button>}
-      >
+        extra={<Button type="primary" icon={<PlusOutlined />} onClick={() => openRoomForm()}>Thêm phòng</Button>} maskClosable={false}>
         <Table<Room>
           rowKey="id"
           columns={roomColumns}
@@ -848,8 +846,7 @@ export default function CuocHopPage() {
           onOk={handleSaveRoom}
           confirmLoading={roomFormLoading}
           okText="Lưu"
-          cancelText="Hủy"
-        >
+          cancelText="Hủy" maskClosable={false}>
           <Form form={roomForm} layout="vertical">
             <Form.Item name="code" label="Mã phòng" rules={[{ required: true, message: 'Vui lòng nhập mã phòng' }]}>
               <Input placeholder="VD: P101" maxLength={50} />
@@ -876,8 +873,7 @@ export default function CuocHopPage() {
         onClose={() => { setTypeDrawerOpen(false); setEditingType(null); typeForm.resetFields(); }}
         title="Quản lý loại cuộc họp"
         size={600}
-        rootClassName="drawer-gradient"
-      >
+        rootClassName="drawer-gradient" maskClosable={false}>
         <Card
           size="small"
           title={editingType ? 'Chỉnh sửa loại cuộc họp' : 'Thêm loại cuộc họp mới'}
@@ -922,8 +918,7 @@ export default function CuocHopPage() {
         onOk={handleReject}
         okText="Xác nhận từ chối"
         okButtonProps={{ danger: true }}
-        cancelText="Hủy"
-      >
+        cancelText="Hủy" maskClosable={false}>
         <div style={{ marginBottom: 8 }}>Lý do từ chối:</div>
         <TextArea
           rows={3}

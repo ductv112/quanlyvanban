@@ -180,8 +180,7 @@ export default function DocColumnConfigPage() {
             <Button onClick={() => setDrawerOpen(false)} ghost style={{ borderColor: 'rgba(255,255,255,0.6)', color: '#fff' }}>Hủy</Button>
             <Button type="primary" loading={saving} onClick={handleSave}>{editingRecord ? 'Cập nhật' : 'Thêm'}</Button>
           </Space>
-        }
-      >
+        } maskClosable={false}>
         <Form form={form} layout="vertical" autoComplete="off">
           <Form.Item name="column_name" label="Tên trường (key)" rules={[{ required: true, message: 'Bắt buộc' }, { pattern: /^[a-z_][a-z0-9_]*$/, message: 'Chỉ dùng chữ thường, số, dấu gạch dưới' }]}>
             <Input placeholder="VD: effective_from, report_period" maxLength={100} disabled={!!editingRecord} />

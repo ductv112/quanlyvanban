@@ -312,8 +312,7 @@ export default function WorkflowPage() {
               Lưu
             </Button>
           </Space>
-        }
-      >
+        } maskClosable={false}>
         <Form form={form} layout="vertical" autoComplete="off" validateTrigger="onSubmit">
           <Form.Item
             label="Tên quy trình"

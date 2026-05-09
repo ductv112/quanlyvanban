@@ -527,8 +527,7 @@ export default function MuonTraPage() {
               Tạo yêu cầu
             </Button>
           </Space>
-        }
-      >
+        } maskClosable={false}>
         <Form form={form} layout="vertical" autoComplete="off" validateTrigger="onSubmit">
           <Form.Item
             label="Tên yêu cầu"
@@ -650,8 +649,7 @@ export default function MuonTraPage() {
         onCancel={() => setRejectModal({ open: false, id: null })}
         okText="Xác nhận từ chối"
         cancelText="Hủy"
-        okButtonProps={{ danger: true, loading: rejectLoading }}
-      >
+        okButtonProps={{ danger: true, loading: rejectLoading }} maskClosable={false}>
         <div style={{ marginBottom: 8, color: '#64748b' }}>
           Nhập lý do từ chối (không bắt buộc):
         </div>

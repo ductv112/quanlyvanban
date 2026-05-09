@@ -301,8 +301,7 @@ export default function SignerPage() {
         okText="Thêm"
         cancelText="Hủy"
         confirmLoading={addingSigners}
-        destroyOnHidden
-      >
+        destroyOnHidden maskClosable={false}>
         <div style={{ marginBottom: 8, color: '#64748b', fontSize: 13 }}>
           Chọn nhân viên để thêm vào danh sách người ký
         </div>

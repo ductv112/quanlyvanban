@@ -816,7 +816,7 @@ export default function OutgoingDocDetailPage() {
       </Row>
 
       {/* ====== MODAL GỬI ====== */}
-      <Modal title="Gửi văn bản" open={sendModalOpen} onCancel={() => setSendModalOpen(false)} onOk={handleSend} okText={`Gửi (${selectedStaffIds.length})`} cancelText="Hủy" confirmLoading={sending} width={560}>
+      <Modal title="Gửi văn bản" open={sendModalOpen} onCancel={() => setSendModalOpen(false)} onOk={handleSend} okText={`Gửi (${selectedStaffIds.length})`} cancelText="Hủy" confirmLoading={sending} width={560} maskClosable={false}>
         <div style={{ marginBottom: 12 }}>
           <Checkbox checked={selectedStaffIds.length === sendableStaff.length && sendableStaff.length > 0} indeterminate={selectedStaffIds.length > 0 && selectedStaffIds.length < sendableStaff.length} onChange={(e) => setSelectedStaffIds(e.target.checked ? sendableStaff.map(s => s.staff_id) : [])}>Chọn tất cả</Checkbox>
         </div>
@@ -843,8 +843,7 @@ export default function OutgoingDocDetailPage() {
         title="Giao việc" size={600} open={giaoViecOpen} forceRender
         onClose={() => { setGiaoViecOpen(false); giaoViecForm.resetFields(); }}
         rootClassName="drawer-gradient"
-        extra={<Space><Button onClick={() => setGiaoViecOpen(false)} ghost style={{ borderColor: 'rgba(255,255,255,0.6)', color: '#fff' }}>Hủy</Button><Button type="primary" loading={giaoViecSaving} onClick={handleGiaoViec}>Tạo và giao việc</Button></Space>}
-      >
+        extra={<Space><Button onClick={() => setGiaoViecOpen(false)} ghost style={{ borderColor: 'rgba(255,255,255,0.6)', color: '#fff' }}>Hủy</Button><Button type="primary" loading={giaoViecSaving} onClick={handleGiaoViec}>Tạo và giao việc</Button></Space>} maskClosable={false}>
         <Form form={giaoViecForm} layout="vertical" validateTrigger="onSubmit" autoComplete="off">
           <Form.Item name="name" label="Tên hồ sơ công việc" rules={[{ required: true, message: 'Bắt buộc' }]}><Input maxLength={500} /></Form.Item>
           <Row gutter={16}>
@@ -941,13 +940,12 @@ export default function OutgoingDocDetailPage() {
         onOk={handleLinkHscv}
         confirmLoading={hscvSaving}
         okText="Thêm vào HSCV"
-        cancelText="Hủy"
-      >
+        cancelText="Hủy" maskClosable={false}>
         <Select style={{ width: '100%', marginTop: 8 }} placeholder="Chọn hồ sơ công việc..." showSearch filterOption={(input, opt) => (opt?.label ?? '').toLowerCase().includes(input.toLowerCase())} value={selectedHscvId} onChange={setSelectedHscvId} options={hscvList.map(h => ({ value: h.id, label: `${h.name} (${h.status === 0 ? 'Mới' : h.status === 1 ? 'Đang xử lý' : 'Trình duyệt'})` }))} />
       </Modal>
 
       {/* Modal: Gửi liên thông */}
-      <Modal title="Gửi liên thông LGSP" open={lgspModalOpen} onCancel={() => setLgspModalOpen(false)} onOk={handleSendLgsp} confirmLoading={lgspSending} okText="Gửi liên thông" cancelText="Hủy">
+      <Modal title="Gửi liên thông LGSP" open={lgspModalOpen} onCancel={() => setLgspModalOpen(false)} onOk={handleSendLgsp} confirmLoading={lgspSending} okText="Gửi liên thông" cancelText="Hủy" maskClosable={false}>
         <Select mode="multiple" style={{ width: '100%', marginTop: 8 }} placeholder="Chọn đơn vị nhận..." showSearch filterOption={(input, opt) => (opt?.label ?? '').toLowerCase().includes(input.toLowerCase())} value={selectedLgspOrgs} onChange={setSelectedLgspOrgs} options={lgspOrgs.map(o => ({ value: o.id, label: `${o.org_name} (${o.org_code})` }))} />
       </Modal>
 
@@ -955,8 +953,7 @@ export default function OutgoingDocDetailPage() {
       <Drawer
         title="Chuyển lưu trữ" open={archiveOpen} onClose={() => setArchiveOpen(false)}
         size={640} rootClassName="drawer-gradient" forceRender
-        extra={<Space><Button onClick={() => setArchiveOpen(false)}>Hủy</Button><Button type="primary" onClick={handleArchive} loading={archiving}>Chuyển lưu trữ</Button></Space>}
-      >
+        extra={<Space><Button onClick={() => setArchiveOpen(false)}>Hủy</Button><Button type="primary" onClick={handleArchive} loading={archiving}>Chuyển lưu trữ</Button></Space>} maskClosable={false}>
         <Form form={archiveForm} layout="vertical">
           <Row gutter={16}>
             <Col span={12}><Form.Item name="warehouse_id" label="Kho lưu trữ" rules={[{ required: true, message: 'Vui lòng chọn kho lưu trữ' }]}><Select placeholder="Chọn kho..." allowClear options={warehouseOptions} /></Form.Item></Col>
@@ -989,8 +986,7 @@ export default function OutgoingDocDetailPage() {
         confirmLoading={cpSending}
         onCancel={() => setCpModalOpen(false)}
         onOk={handleSendCp}
-        width={500}
-      >
+        width={500} maskClosable={false}>
         <p style={{ marginBottom: 12 }}>Chọn các bộ/ngành Chính phủ để gửi văn bản:</p>
         <Checkbox.Group
           value={cpSelected}
@@ -1015,8 +1011,7 @@ export default function OutgoingDocDetailPage() {
         confirmLoading={noiBoSending}
         okText={noiBoMode === 'release-and-send' ? `Ban hành & Gửi (${selectedDeptIds.length})` : `Gửi (${selectedDeptIds.length} đơn vị)`}
         cancelText="Hủy"
-        width={600}
-      >
+        width={600} maskClosable={false}>
         <div style={{ marginBottom: 12, color: '#595959' }}>
           Văn bản này chưa chọn đơn vị nhận chính thức. Vui lòng chọn bên dưới để {noiBoMode === 'release-and-send' ? 'ban hành và gửi' : 'gửi'}. Hệ thống sẽ tự sinh &ldquo;Văn bản đến&rdquo; cho mỗi đơn vị.
         </div>

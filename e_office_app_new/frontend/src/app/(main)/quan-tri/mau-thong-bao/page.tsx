@@ -445,8 +445,7 @@ export default function NotificationTemplatePage() {
               {editingRecord ? 'Cập nhật' : 'Thêm mới'}
             </Button>
           </Space>
-        }
-      >
+        } maskClosable={false}>
         <Form form={form} layout="vertical" autoComplete="off" validateTrigger="onSubmit">
           <Form.Item label="Tên mẫu" name="name" rules={[{ required: true, message: 'Nhập tên mẫu' }]}>
             <Input placeholder="VD: Thông báo văn bản mới" maxLength={200} style={{ borderRadius: 8 }} />

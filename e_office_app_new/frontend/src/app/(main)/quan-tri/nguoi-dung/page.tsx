@@ -648,8 +648,7 @@ export default function StaffPage() {
               {editingRecord ? 'Cập nhật' : 'Thêm mới'}
             </Button>
           </Space>
-        }
-      >
+        } maskClosable={false}>
         <Form form={form} layout="vertical" autoComplete="off" validateTrigger="onSubmit" scrollToFirstError>
           {/* Prevent browser autofill */}
           <input type="text" name="prevent_autofill" style={{ display: 'none' }} />
@@ -787,8 +786,7 @@ export default function StaffPage() {
           >
             Lưu
           </Button>
-        }
-      >
+        } maskClosable={false}>
         {roleLoading ? (
           <Skeleton active paragraph={{ rows: 6 }} />
         ) : (

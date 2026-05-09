@@ -342,8 +342,7 @@ export default function RolePage() {
               {editingRecord ? 'Cập nhật' : 'Thêm mới'}
             </Button>
           </Space>
-        }
-      >
+        } maskClosable={false}>
         <Form form={form} layout="vertical" autoComplete="off" validateTrigger="onSubmit">
           <Form.Item label="Tên nhóm quyền" name="name" rules={[{ required: true, message: 'Nhập tên nhóm quyền' }]}>
             <Input placeholder="VD: Quản trị hệ thống" maxLength={100} style={{ borderRadius: 8 }} />
@@ -370,8 +369,7 @@ export default function RolePage() {
           >
             Lưu phân quyền
           </Button>
-        }
-      >
+        } maskClosable={false}>
         {permLoading ? (
           <div style={{ textAlign: 'center', padding: 48 }}>
             <Spin size="large" />

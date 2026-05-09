@@ -475,8 +475,7 @@ export default function TinNhanPage() {
               Gửi tin nhắn
             </Button>
           </div>
-        }
-      >
+        } maskClosable={false}>
         <Form
           form={composeForm}
           layout="vertical"

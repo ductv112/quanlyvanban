@@ -369,8 +369,7 @@ export default function DepartmentPage() {
               {editingRecord ? 'Cập nhật' : 'Thêm mới'}
             </Button>
           </Space>
-        }
-      >
+        } maskClosable={false}>
         <Form form={form} layout="vertical" autoComplete="off" validateTrigger="onSubmit">
           <Form.Item label="Đơn vị cha" name="parent_id">
             <TreeSelect

@@ -328,8 +328,7 @@ export default function LichLanhDaoPage() {
               </Button>
             )}
           </div>
-        }
-      >
+        } maskClosable={false}>
         <Form form={form} layout="vertical" validateTrigger="onSubmit">
           <Form.Item
             name="title"

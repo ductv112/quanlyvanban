@@ -608,8 +608,7 @@ export default function TaiLieuPage() {
               Lưu
             </Button>
           </Space>
-        }
-      >
+        } maskClosable={false}>
         <Form form={catForm} layout="vertical" validateTrigger="onSubmit">
           <Form.Item name="code" label="Mã danh mục">
             <Input placeholder="Nhập mã danh mục" maxLength={50} />
@@ -653,8 +652,7 @@ export default function TaiLieuPage() {
               Lưu
             </Button>
           </Space>
-        }
-      >
+        } maskClosable={false}>
         <Form form={docForm} layout="vertical" validateTrigger="onSubmit">
           <Form.Item
             name="title"

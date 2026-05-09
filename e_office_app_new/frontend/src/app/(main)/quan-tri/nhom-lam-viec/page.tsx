@@ -422,8 +422,7 @@ export default function WorkGroupPage() {
               {editingRecord ? 'Cập nhật' : 'Thêm mới'}
             </Button>
           </Space>
-        }
-      >
+        } maskClosable={false}>
         <Form form={form} layout="vertical" autoComplete="off" validateTrigger="onSubmit">
           <Form.Item
             label="Tên nhóm"
@@ -458,8 +457,7 @@ export default function WorkGroupPage() {
           >
             Thêm thành viên
           </Button>
-        }
-      >
+        } maskClosable={false}>
         <Table
           className="enhanced-table"
           columns={memberColumns}
@@ -481,8 +479,7 @@ export default function WorkGroupPage() {
         okText="Thêm"
         cancelText="Hủy"
         confirmLoading={addingMembers}
-        destroyOnHidden
-      >
+        destroyOnHidden maskClosable={false}>
         <div style={{ marginBottom: 8, color: '#64748b', fontSize: 13 }}>
           Chọn nhân viên để thêm vào nhóm làm việc
         </div>

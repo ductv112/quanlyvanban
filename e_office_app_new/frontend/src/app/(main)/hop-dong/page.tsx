@@ -650,8 +650,7 @@ export default function HopDongPage() {
         open={typeDrawerOpen}
         onClose={() => { setTypeDrawerOpen(false); setEditingType(null); typeForm.resetFields(); }}
         size={600}
-        rootClassName="drawer-gradient"
-      >
+        rootClassName="drawer-gradient" maskClosable={false}>
         <Card
           size="small"
           title={editingType ? 'Chỉnh sửa loại hợp đồng' : 'Thêm loại hợp đồng mới'}
@@ -721,8 +720,7 @@ export default function HopDongPage() {
               Lưu
             </Button>
           </Space>
-        }
-      >
+        } maskClosable={false}>
         <Form form={form} layout="vertical" validateTrigger="onSubmit">
           <Row gutter={16}>
             <Col span={12}>
@@ -845,8 +843,7 @@ export default function HopDongPage() {
           >
             Chỉnh sửa
           </Button>
-        }
-      >
+        } maskClosable={false}>
         {selectedContract && (
           <>
             <div className="info-grid" style={{ marginBottom: 16 }}>

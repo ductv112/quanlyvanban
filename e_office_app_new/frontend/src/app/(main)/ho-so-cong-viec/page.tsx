@@ -686,8 +686,7 @@ export default function HoSoCongViecPage() {
               Lưu hồ sơ
             </Button>
           </Space>
-        }
-      >
+        } maskClosable={false}>
         <Form
           form={form}
           layout="vertical"
