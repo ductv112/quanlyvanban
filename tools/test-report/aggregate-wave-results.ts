@@ -1075,7 +1075,7 @@ async function main(): Promise<void> {
   // + derived UI coverage from g/h. dedupe() weight pass=6 > skip=2 auto-promotes
   // existing SKIPped TCs to PASS when matched here.
   const phase31UiDir = path.join(PHASES_ROOT, '31-fix-gom-ui');
-  for (const f of ['31-RESULTS-bc-ui.md', '31-RESULTS-de-ui.md', '31-RESULTS-f-ui.md', '31-RESULTS-gh-ui.md']) {
+  for (const f of ['31-RESULTS-bc-ui.md', '31-RESULTS-de-ui.md', '31-RESULTS-f-ui.md', '31-RESULTS-gh-ui.md', '31-RESULTS-31c-ui.md', '31-RESULTS-31d-ui.md']) {
     const fp = path.join(phase31UiDir, f);
     if (exists(fp)) {
       const r = parseGenericMd(readFile(fp), fp, '31-ui');
