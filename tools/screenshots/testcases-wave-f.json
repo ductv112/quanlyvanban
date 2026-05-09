@@ -1,0 +1,1178 @@
+{
+  "wave": "F",
+  "title": "Boundary testcases — Kiểm thử biên cho mọi field VARCHAR + file upload + numeric ranges",
+  "generated_at": "2026-05-05",
+  "purpose": "Lấp gap Boundary (47 → ~150 TC) đã phân tích ngày 2026-05-05",
+  "source": "DB schema 000_schema_v3.0.sql + CLAUDE.md mục #9 (maxLength)",
+  "modules": [
+    {
+      "module": "Đăng nhập và Thông tin cá nhân",
+      "table": "public.staff",
+      "testcases": [
+        {
+          "id": "TC-BND-AUTH-001",
+          "screen": "Đổi mật khẩu",
+          "category": "Boundary",
+          "priority": "High",
+          "title": "Đổi mật khẩu mới đúng 6 ký tự (chứa hoa + số) — biên dưới",
+          "preconditions": "Đã đăng nhập, vào Thông tin cá nhân tab Đổi mật khẩu",
+          "steps": "1. Nhập mật khẩu hiện tại\n2. Nhập mật khẩu mới: 'Abcd12' (đúng 6 ký tự)\n3. Xác nhận lại 'Abcd12'\n4. Bấm Đổi mật khẩu",
+          "expected": "Hệ thống chấp nhận, hiển thị 'Đổi mật khẩu thành công'. Lần đăng nhập kế tiếp dùng mật khẩu mới.",
+          "notes": "Min length theo CLAUDE.md = 6 ký tự, có chữ hoa + số."
+        },
+        {
+          "id": "TC-BND-AUTH-002",
+          "screen": "Đổi mật khẩu",
+          "category": "Boundary",
+          "priority": "High",
+          "title": "Đổi mật khẩu mới chỉ 5 ký tự — dưới biên dưới",
+          "preconditions": "Đã đăng nhập",
+          "steps": "1. Nhập mật khẩu hiện tại\n2. Nhập mật khẩu mới: 'Abc12' (5 ký tự)\n3. Bấm Đổi mật khẩu",
+          "expected": "Form báo lỗi inline 'Mật khẩu phải có ít nhất 6 ký tự'. Không gọi máy chủ.",
+          "notes": ""
+        },
+        {
+          "id": "TC-BND-AUTH-003",
+          "screen": "Đổi mật khẩu",
+          "category": "Boundary",
+          "priority": "Medium",
+          "title": "Đổi mật khẩu mới 6 ký tự nhưng KHÔNG có chữ hoa",
+          "preconditions": "Đã đăng nhập",
+          "steps": "1. Nhập mật khẩu hiện tại\n2. Nhập mật khẩu mới: 'abcd12' (đủ 6 ký tự, có số nhưng thiếu chữ hoa)\n3. Bấm Đổi mật khẩu",
+          "expected": "Form báo lỗi 'Mật khẩu phải chứa chữ hoa và số'. Không cập nhật.",
+          "notes": ""
+        },
+        {
+          "id": "TC-BND-AUTH-004",
+          "screen": "Đổi mật khẩu",
+          "category": "Boundary",
+          "priority": "Medium",
+          "title": "Đổi mật khẩu mới 6 ký tự nhưng KHÔNG có số",
+          "preconditions": "Đã đăng nhập",
+          "steps": "1. Nhập mật khẩu hiện tại\n2. Nhập mật khẩu mới: 'AbcDef' (đủ 6 ký tự, có hoa nhưng thiếu số)\n3. Bấm Đổi mật khẩu",
+          "expected": "Form báo lỗi 'Mật khẩu phải chứa chữ hoa và số'. Không cập nhật.",
+          "notes": ""
+        },
+        {
+          "id": "TC-BND-AUTH-005",
+          "screen": "Đổi mật khẩu",
+          "category": "Boundary",
+          "priority": "Medium",
+          "title": "Đổi mật khẩu mới trùng mật khẩu cũ",
+          "preconditions": "Đã đăng nhập với 'Admin@123'",
+          "steps": "1. Nhập mật khẩu hiện tại 'Admin@123'\n2. Nhập mật khẩu mới 'Admin@123'\n3. Xác nhận 'Admin@123'\n4. Bấm Đổi mật khẩu",
+          "expected": "Form báo lỗi 'Mật khẩu mới không được trùng mật khẩu hiện tại'.",
+          "notes": ""
+        },
+        {
+          "id": "TC-BND-AUTH-006",
+          "screen": "Đổi mật khẩu",
+          "category": "Boundary",
+          "priority": "Medium",
+          "title": "Đổi mật khẩu — xác nhận lại không khớp",
+          "preconditions": "Đã đăng nhập",
+          "steps": "1. Nhập mật khẩu hiện tại\n2. Nhập mật khẩu mới 'NewPass99'\n3. Xác nhận 'NewPass98' (lệch 1 ký tự)\n4. Bấm Đổi mật khẩu",
+          "expected": "Form báo lỗi inline ô xác nhận 'Mật khẩu xác nhận không khớp'.",
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "module": "Thông báo nội bộ",
+      "table": "public.notifications",
+      "testcases": [
+        {
+          "id": "TC-BND-NOTIF-001",
+          "screen": "Drawer Tạo thông báo",
+          "category": "Boundary",
+          "priority": "High",
+          "title": "Tiêu đề thông báo đúng 200 ký tự — biên trên",
+          "preconditions": "Đăng nhập admin, mở Drawer Tạo thông báo",
+          "steps": "1. Nhập Tiêu đề = chuỗi đúng 200 ký tự\n2. Chọn Loại thông báo\n3. Nhập Nội dung\n4. Bấm Lưu",
+          "expected": "Tạo thành công. Thông báo xuất hiện ở danh sách với tiêu đề đầy đủ 200 ký tự.",
+          "notes": "VARCHAR(200) NOT NULL theo schema."
+        },
+        {
+          "id": "TC-BND-NOTIF-002",
+          "screen": "Drawer Tạo thông báo",
+          "category": "Boundary",
+          "priority": "High",
+          "title": "Tiêu đề thông báo 201 ký tự — vượt biên",
+          "preconditions": "Đăng nhập admin",
+          "steps": "1. Nhập Tiêu đề = chuỗi 201 ký tự (vượt 1 so với DB limit)\n2. Bấm Lưu",
+          "expected": "Form chặn nhập tới ký tự 201 (input maxLength=200) hoặc backend trả 'Tiêu đề tối đa 200 ký tự'.",
+          "notes": ""
+        },
+        {
+          "id": "TC-BND-NOTIF-003",
+          "screen": "Drawer Tạo thông báo",
+          "category": "Boundary",
+          "priority": "Low",
+          "title": "Tiêu đề thông báo chỉ 1 ký tự — biên dưới",
+          "preconditions": "Đăng nhập admin",
+          "steps": "1. Nhập Tiêu đề = 'A' (1 ký tự)\n2. Nhập Loại + Nội dung\n3. Bấm Lưu",
+          "expected": "Tạo thành công (không có rule min length). Thông báo hiển thị tiêu đề 'A'.",
+          "notes": ""
+        },
+        {
+          "id": "TC-BND-NOTIF-004",
+          "screen": "Drawer Tạo thông báo",
+          "category": "Boundary",
+          "priority": "Medium",
+          "title": "Nội dung thông báo 5000 ký tự (text long)",
+          "preconditions": "Đăng nhập admin",
+          "steps": "1. Nhập Tiêu đề\n2. Nhập Nội dung = chuỗi 5000 ký tự\n3. Bấm Lưu",
+          "expected": "Tạo thành công. Khi xem chi tiết, nội dung hiển thị đầy đủ 5000 ký tự (TEXT field không giới hạn).",
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "module": "Văn bản đến",
+      "table": "edoc.incoming_docs",
+      "testcases": [
+        {
+          "id": "TC-BND-VBD-001",
+          "screen": "Drawer thêm văn bản",
+          "category": "Boundary",
+          "priority": "High",
+          "title": "Số ký hiệu (notation) đúng 100 ký tự — biên trên",
+          "preconditions": "Văn thư đăng nhập, mở drawer Thêm VB đến",
+          "steps": "1. Nhập đầy đủ Sổ VB / Loại VB / Lĩnh vực\n2. Nhập Số ký hiệu = chuỗi đúng 100 ký tự\n3. Nhập Trích yếu, Ngày nhận\n4. Bấm Lưu",
+          "expected": "Tạo thành công. Hiển thị trong danh sách với số ký hiệu đầy đủ 100 ký tự.",
+          "notes": "VARCHAR(100)."
+        },
+        {
+          "id": "TC-BND-VBD-002",
+          "screen": "Drawer thêm văn bản",
+          "category": "Boundary",
+          "priority": "High",
+          "title": "Số ký hiệu 101 ký tự — vượt biên",
+          "preconditions": "Văn thư đăng nhập",
+          "steps": "1. Nhập Số ký hiệu = chuỗi 101 ký tự\n2. Bấm Lưu",
+          "expected": "Form chặn nhập (maxLength=100) hoặc backend báo 'Số ký hiệu tối đa 100 ký tự'.",
+          "notes": ""
+        },
+        {
+          "id": "TC-BND-VBD-003",
+          "screen": "Drawer thêm văn bản",
+          "category": "Boundary",
+          "priority": "High",
+          "title": "Đơn vị phát hành đúng 500 ký tự — biên trên",
+          "preconditions": "Văn thư đăng nhập",
+          "steps": "1. Nhập đầy đủ các trường\n2. Nhập 'Đơn vị phát hành' = chuỗi đúng 500 ký tự\n3. Bấm Lưu",
+          "expected": "Tạo thành công, dữ liệu được lưu đầy đủ.",
+          "notes": "publish_unit VARCHAR(500)."
+        },
+        {
+          "id": "TC-BND-VBD-004",
+          "screen": "Drawer thêm văn bản",
+          "category": "Boundary",
+          "priority": "High",
+          "title": "Đơn vị phát hành 501 ký tự — vượt biên",
+          "preconditions": "Văn thư đăng nhập",
+          "steps": "1. Nhập 'Đơn vị phát hành' = 501 ký tự\n2. Bấm Lưu",
+          "expected": "Form chặn nhập hoặc backend báo lỗi giới hạn.",
+          "notes": ""
+        },
+        {
+          "id": "TC-BND-VBD-005",
+          "screen": "Drawer thêm văn bản",
+          "category": "Boundary",
+          "priority": "Medium",
+          "title": "Người ký đúng 200 ký tự — biên trên",
+          "preconditions": "Văn thư đăng nhập",
+          "steps": "1. Nhập 'Người ký' = chuỗi 200 ký tự\n2. Bấm Lưu",
+          "expected": "Tạo thành công.",
+          "notes": "signer VARCHAR(200)."
+        },
+        {
+          "id": "TC-BND-VBD-006",
+          "screen": "Drawer thêm văn bản",
+          "category": "Boundary",
+          "priority": "Medium",
+          "title": "Người ký 201 ký tự — vượt biên",
+          "preconditions": "Văn thư đăng nhập",
+          "steps": "1. Nhập 'Người ký' = 201 ký tự\n2. Bấm Lưu",
+          "expected": "Form chặn hoặc backend báo lỗi.",
+          "notes": ""
+        },
+        {
+          "id": "TC-BND-VBD-007",
+          "screen": "Drawer thêm văn bản",
+          "category": "Boundary",
+          "priority": "Medium",
+          "title": "Số trang = 0 — biên dưới hợp lệ",
+          "preconditions": "Văn thư đăng nhập",
+          "steps": "1. Nhập đầy đủ\n2. Nhập 'Số trang' = 0\n3. Bấm Lưu",
+          "expected": "Hệ thống chấp nhận hoặc báo 'Số trang phải >= 1'. Tester ghi nhận chính xác hành vi.",
+          "notes": "DEFAULT = 1, kiểm tra business rule."
+        },
+        {
+          "id": "TC-BND-VBD-008",
+          "screen": "Drawer thêm văn bản",
+          "category": "Boundary",
+          "priority": "Medium",
+          "title": "Số trang âm (-1)",
+          "preconditions": "Văn thư đăng nhập",
+          "steps": "1. Nhập 'Số trang' = -1\n2. Bấm Lưu",
+          "expected": "InputNumber chặn không cho nhập giá trị âm (min=0 hoặc 1) hoặc backend reject.",
+          "notes": ""
+        },
+        {
+          "id": "TC-BND-VBD-009",
+          "screen": "Drawer thêm văn bản",
+          "category": "Boundary",
+          "priority": "Low",
+          "title": "Số trang rất lớn (999999)",
+          "preconditions": "Văn thư đăng nhập",
+          "steps": "1. Nhập 'Số trang' = 999999\n2. Bấm Lưu",
+          "expected": "Hệ thống chấp nhận hoặc giới hạn theo nghiệp vụ. INTEGER cho phép tới ~2 tỷ.",
+          "notes": ""
+        },
+        {
+          "id": "TC-BND-VBD-010",
+          "screen": "Drawer thêm văn bản",
+          "category": "Boundary",
+          "priority": "High",
+          "title": "Ngày hết hạn = ngày nhận (cùng ngày) — biên",
+          "preconditions": "Văn thư đăng nhập",
+          "steps": "1. Nhập Ngày nhận = 2026-05-05\n2. Nhập Ngày hết hạn = 2026-05-05\n3. Bấm Lưu",
+          "expected": "Tạo thành công (rule 'Hết hạn >= Nhận' chấp nhận bằng).",
+          "notes": ""
+        },
+        {
+          "id": "TC-BND-VBD-011",
+          "screen": "Drawer thêm văn bản",
+          "category": "Boundary",
+          "priority": "High",
+          "title": "Ngày hết hạn TRƯỚC ngày nhận — vi phạm rule",
+          "preconditions": "Văn thư đăng nhập",
+          "steps": "1. Nhập Ngày nhận = 2026-05-05\n2. Nhập Ngày hết hạn = 2026-05-04\n3. Bấm Lưu",
+          "expected": "Form báo lỗi inline 'Ngày hết hạn phải sau hoặc bằng ngày nhận'. Không gọi backend.",
+          "notes": "CLAUDE.md mục #12 — Date range validation."
+        },
+        {
+          "id": "TC-BND-VBD-012",
+          "screen": "Drawer thêm văn bản",
+          "category": "Boundary",
+          "priority": "High",
+          "title": "Upload file đính kèm 50MB chính xác — biên trên",
+          "preconditions": "Văn thư đăng nhập, có file PDF kích thước đúng 50MB",
+          "steps": "1. Trong drawer, click 'Đính kèm file'\n2. Chọn file 50MB\n3. Bấm Lưu",
+          "expected": "Upload thành công. File lưu vào MinIO, hiển thị link tải xuống.",
+          "notes": "multer limit 50MB theo CLAUDE.md."
+        },
+        {
+          "id": "TC-BND-VBD-013",
+          "screen": "Drawer thêm văn bản",
+          "category": "Boundary",
+          "priority": "High",
+          "title": "Upload file 51MB — vượt biên",
+          "preconditions": "Có file 51MB",
+          "steps": "1. Click 'Đính kèm file'\n2. Chọn file 51MB\n3. Bấm Lưu",
+          "expected": "Backend trả 'File vượt quá kích thước cho phép (50MB)' hoặc multer reject. Không lưu.",
+          "notes": ""
+        },
+        {
+          "id": "TC-BND-VBD-014",
+          "screen": "Drawer thêm văn bản",
+          "category": "Boundary",
+          "priority": "Medium",
+          "title": "Upload file 0 byte (file rỗng)",
+          "preconditions": "Có file txt/pdf 0 byte",
+          "steps": "1. Click 'Đính kèm file'\n2. Chọn file 0 byte\n3. Bấm Lưu",
+          "expected": "Hệ thống reject 'File rỗng' hoặc chấp nhận tùy nghiệp vụ. Tester ghi nhận hành vi thực tế.",
+          "notes": ""
+        },
+        {
+          "id": "TC-BND-VBD-015",
+          "screen": "Drawer thêm văn bản",
+          "category": "Boundary",
+          "priority": "Medium",
+          "title": "Upload nhiều file cùng lúc — 10 file 5MB mỗi file",
+          "preconditions": "Có 10 file PDF mỗi file 5MB",
+          "steps": "1. Click 'Đính kèm file'\n2. Chọn 10 file đồng thời (Ctrl+click)\n3. Bấm Lưu",
+          "expected": "Cả 10 file upload thành công và hiển thị riêng biệt.",
+          "notes": ""
+        },
+        {
+          "id": "TC-BND-VBD-016",
+          "screen": "Drawer thêm văn bản",
+          "category": "Boundary",
+          "priority": "Low",
+          "title": "Upload file tên có ký tự Unicode + khoảng trắng",
+          "preconditions": "Có file 'Quyết định số 123 — Khẩn cấp.pdf'",
+          "steps": "1. Upload file tên 'Quyết định số 123 — Khẩn cấp.pdf'\n2. Lưu",
+          "expected": "Upload OK. Tên file hiển thị đúng tiếng Việt có dấu, không bị mã hóa khó đọc.",
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "module": "Văn bản đi",
+      "table": "edoc.outgoing_docs",
+      "testcases": [
+        {
+          "id": "TC-BND-VBI-001",
+          "screen": "Drawer thêm văn bản",
+          "category": "Boundary",
+          "priority": "High",
+          "title": "Số ký hiệu (notation) đúng 100 ký tự",
+          "preconditions": "Văn thư có quyền tạo VB đi",
+          "steps": "1. Mở drawer Tạo VB đi\n2. Nhập notation = 100 ký tự\n3. Lưu",
+          "expected": "Lưu thành công, hiển thị notation đầy đủ.",
+          "notes": "VARCHAR(100)."
+        },
+        {
+          "id": "TC-BND-VBI-002",
+          "screen": "Drawer thêm văn bản",
+          "category": "Boundary",
+          "priority": "High",
+          "title": "Sub-number 20 ký tự — biên trên",
+          "preconditions": "Văn thư đăng nhập",
+          "steps": "1. Nhập sub_number = 20 ký tự\n2. Lưu",
+          "expected": "OK.",
+          "notes": "VARCHAR(20)."
+        },
+        {
+          "id": "TC-BND-VBI-003",
+          "screen": "Drawer thêm văn bản",
+          "category": "Boundary",
+          "priority": "Medium",
+          "title": "Sub-number 21 ký tự — vượt biên",
+          "preconditions": "Văn thư đăng nhập",
+          "steps": "1. Nhập sub_number = 21 ký tự\n2. Lưu",
+          "expected": "Chặn nhập hoặc backend báo lỗi.",
+          "notes": ""
+        },
+        {
+          "id": "TC-BND-VBI-004",
+          "screen": "Drawer thêm văn bản",
+          "category": "Boundary",
+          "priority": "High",
+          "title": "Document_code 100 ký tự — biên trên",
+          "preconditions": "Văn thư đăng nhập",
+          "steps": "1. Nhập document_code = 100 ký tự\n2. Lưu",
+          "expected": "OK.",
+          "notes": ""
+        },
+        {
+          "id": "TC-BND-VBI-005",
+          "screen": "Drawer thêm văn bản",
+          "category": "Boundary",
+          "priority": "Medium",
+          "title": "Approver 200 ký tự — biên trên",
+          "preconditions": "Văn thư đăng nhập",
+          "steps": "1. Nhập approver = 200 ký tự\n2. Lưu",
+          "expected": "OK.",
+          "notes": ""
+        },
+        {
+          "id": "TC-BND-VBI-006",
+          "screen": "Drawer thêm văn bản",
+          "category": "Boundary",
+          "priority": "High",
+          "title": "Số ký hiệu trùng trong cùng sổ — unique violation",
+          "preconditions": "Đã có 1 VB đi với notation '100/QĐ-UBND' trong sổ năm 2026",
+          "steps": "1. Tạo VB đi mới với cùng sổ + notation '100/QĐ-UBND'\n2. Lưu",
+          "expected": "Backend reject 'Số ký hiệu đã tồn tại trong sổ này'. Inline error trên field notation (setBackendFieldError).",
+          "notes": ""
+        },
+        {
+          "id": "TC-BND-VBI-007",
+          "screen": "Drawer thêm văn bản",
+          "category": "Boundary",
+          "priority": "High",
+          "title": "Ngày phát hành > Ngày hết hạn — vi phạm",
+          "preconditions": "Văn thư đăng nhập",
+          "steps": "1. publish_date = 2026-06-01\n2. expired_date = 2026-05-01\n3. Lưu",
+          "expected": "Form báo lỗi inline 'Ngày hết hạn phải sau ngày phát hành'.",
+          "notes": ""
+        },
+        {
+          "id": "TC-BND-VBI-008",
+          "screen": "Drawer thêm văn bản",
+          "category": "Boundary",
+          "priority": "High",
+          "title": "Upload file Word + PDF cùng lúc — kiểm tra MIME mix",
+          "preconditions": "Có 1 file .docx + 1 file .pdf",
+          "steps": "1. Upload đồng thời 2 file khác MIME\n2. Lưu",
+          "expected": "Cả 2 file upload OK, hiển thị icon riêng theo loại file.",
+          "notes": ""
+        },
+        {
+          "id": "TC-BND-VBI-009",
+          "screen": "Drawer thêm văn bản",
+          "category": "Boundary",
+          "priority": "Medium",
+          "title": "Upload file đuôi .exe — bảo mật",
+          "preconditions": "Có file 'malware.exe'",
+          "steps": "1. Click upload\n2. Chọn malware.exe\n3. Lưu",
+          "expected": "Hệ thống reject hoặc cảnh báo 'Loại file không được phép'. Test bảo mật cơ bản.",
+          "notes": ""
+        },
+        {
+          "id": "TC-BND-VBI-010",
+          "screen": "Drawer thêm văn bản",
+          "category": "Boundary",
+          "priority": "Medium",
+          "title": "Recipients (TEXT) 10000 ký tự",
+          "preconditions": "Văn thư đăng nhập",
+          "steps": "1. Nhập recipients = 10000 ký tự (TEXT)\n2. Lưu",
+          "expected": "Tạo thành công, dữ liệu lưu đầy đủ. TEXT không giới hạn.",
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "module": "Văn bản dự thảo",
+      "table": "edoc.drafting_docs",
+      "testcases": [
+        {
+          "id": "TC-BND-VBT-001",
+          "screen": "Drawer tạo dự thảo",
+          "category": "Boundary",
+          "priority": "High",
+          "title": "Notation 100 ký tự + abstract 5000 ký tự cùng lúc",
+          "preconditions": "Cán bộ đăng nhập",
+          "steps": "1. Nhập notation = 100 ký tự\n2. abstract = 5000 ký tự\n3. Lưu",
+          "expected": "Lưu OK, dữ liệu đầy đủ.",
+          "notes": ""
+        },
+        {
+          "id": "TC-BND-VBT-002",
+          "screen": "Drawer tạo dự thảo",
+          "category": "Boundary",
+          "priority": "Medium",
+          "title": "Reject_reason 5000 ký tự khi từ chối duyệt",
+          "preconditions": "Lãnh đạo đang xem dự thảo",
+          "steps": "1. Bấm 'Từ chối duyệt'\n2. Nhập lý do = 5000 ký tự\n3. Xác nhận",
+          "expected": "Lưu OK, lý do hiển thị đầy đủ trong lịch sử.",
+          "notes": ""
+        },
+        {
+          "id": "TC-BND-VBT-003",
+          "screen": "Drawer tạo dự thảo",
+          "category": "Boundary",
+          "priority": "High",
+          "title": "Nhập sub_number = 20 ký tự",
+          "preconditions": "Cán bộ đăng nhập",
+          "steps": "1. sub_number = 20 ký tự\n2. Lưu",
+          "expected": "OK.",
+          "notes": ""
+        },
+        {
+          "id": "TC-BND-VBT-004",
+          "screen": "Drawer tạo dự thảo",
+          "category": "Boundary",
+          "priority": "Medium",
+          "title": "Số bản phát hành (number_copies) = 0",
+          "preconditions": "Cán bộ đăng nhập",
+          "steps": "1. number_copies = 0\n2. Lưu",
+          "expected": "Hệ thống nhận hoặc reject theo rule. Ghi nhận thực tế.",
+          "notes": "DEFAULT 1."
+        }
+      ]
+    },
+    {
+      "module": "Hồ sơ công việc",
+      "table": "edoc.handling_docs",
+      "testcases": [
+        {
+          "id": "TC-BND-HSCV-001",
+          "screen": "Drawer tạo HSCV",
+          "category": "Boundary",
+          "priority": "High",
+          "title": "Tên HSCV đúng 500 ký tự — biên trên",
+          "preconditions": "Cán bộ đăng nhập",
+          "steps": "1. Mở drawer Tạo HSCV\n2. Tên = chuỗi 500 ký tự\n3. Chọn loại VB, lĩnh vực\n4. Lưu",
+          "expected": "Tạo OK. Hiển thị danh sách với tên đầy đủ.",
+          "notes": "name VARCHAR(500) NOT NULL."
+        },
+        {
+          "id": "TC-BND-HSCV-002",
+          "screen": "Drawer tạo HSCV",
+          "category": "Boundary",
+          "priority": "High",
+          "title": "Tên HSCV 501 ký tự — vượt biên",
+          "preconditions": "Cán bộ đăng nhập",
+          "steps": "1. Tên = 501 ký tự\n2. Lưu",
+          "expected": "Form chặn hoặc backend báo lỗi.",
+          "notes": ""
+        },
+        {
+          "id": "TC-BND-HSCV-003",
+          "screen": "Drawer tạo HSCV",
+          "category": "Boundary",
+          "priority": "High",
+          "title": "Tên HSCV để trống — required",
+          "preconditions": "Cán bộ đăng nhập",
+          "steps": "1. Để trống Tên\n2. Lưu",
+          "expected": "Form báo 'Vui lòng nhập tên hồ sơ'. NOT NULL field.",
+          "notes": ""
+        },
+        {
+          "id": "TC-BND-HSCV-004",
+          "screen": "Drawer tạo HSCV",
+          "category": "Boundary",
+          "priority": "High",
+          "title": "Ngày bắt đầu = ngày kết thúc",
+          "preconditions": "Cán bộ đăng nhập",
+          "steps": "1. start_date = end_date = 2026-05-05\n2. Lưu",
+          "expected": "Lưu OK (>= chấp nhận bằng).",
+          "notes": ""
+        },
+        {
+          "id": "TC-BND-HSCV-005",
+          "screen": "Drawer tạo HSCV",
+          "category": "Boundary",
+          "priority": "High",
+          "title": "Ngày bắt đầu SAU ngày kết thúc",
+          "preconditions": "Cán bộ đăng nhập",
+          "steps": "1. start_date = 2026-06-01, end_date = 2026-05-01\n2. Lưu",
+          "expected": "Form lỗi inline 'Ngày kết thúc phải sau ngày bắt đầu'.",
+          "notes": ""
+        },
+        {
+          "id": "TC-BND-HSCV-006",
+          "screen": "Drawer tạo HSCV",
+          "category": "Boundary",
+          "priority": "Medium",
+          "title": "doc_notation 100 ký tự — biên",
+          "preconditions": "Cán bộ đăng nhập",
+          "steps": "1. doc_notation = 100 ký tự\n2. Lưu",
+          "expected": "OK.",
+          "notes": "VARCHAR(100)."
+        },
+        {
+          "id": "TC-BND-HSCV-007",
+          "screen": "Drawer tạo HSCV",
+          "category": "Boundary",
+          "priority": "Medium",
+          "title": "Comments TEXT 10000 ký tự",
+          "preconditions": "Cán bộ đăng nhập",
+          "steps": "1. comments = 10000 ký tự\n2. Lưu",
+          "expected": "OK.",
+          "notes": ""
+        },
+        {
+          "id": "TC-BND-HSCV-008",
+          "screen": "Tab File HSCV",
+          "category": "Boundary",
+          "priority": "High",
+          "title": "Đính kèm 50 file vào 1 HSCV",
+          "preconditions": "HSCV đã tạo",
+          "steps": "1. Vào tab File\n2. Upload lần lượt 50 file\n3. Quan sát performance + danh sách",
+          "expected": "Cả 50 file upload OK. Phân trang hoặc scroll đúng. Không treo trình duyệt.",
+          "notes": ""
+        },
+        {
+          "id": "TC-BND-HSCV-009",
+          "screen": "Drawer tạo HSCV",
+          "category": "Boundary",
+          "priority": "Low",
+          "title": "step (workflow step) 50 ký tự — biên",
+          "preconditions": "Có workflow chứa step có code 50 ký tự",
+          "steps": "1. Tạo HSCV với workflow_id\n2. Quan sát cột step",
+          "expected": "Hiển thị step đầy đủ 50 ký tự.",
+          "notes": "VARCHAR(50)."
+        }
+      ]
+    },
+    {
+      "module": "Cấu hình ký số hệ thống",
+      "table": "public.signing_provider_config",
+      "testcases": [
+        {
+          "id": "TC-BND-KSCH-001",
+          "screen": "Drawer Sửa cấu hình",
+          "category": "Boundary",
+          "priority": "High",
+          "title": "provider_name 100 ký tự — biên trên",
+          "preconditions": "Admin đang sửa SmartCA VNPT",
+          "steps": "1. Sửa provider_name = 100 ký tự\n2. Lưu",
+          "expected": "OK.",
+          "notes": ""
+        },
+        {
+          "id": "TC-BND-KSCH-002",
+          "screen": "Drawer Sửa cấu hình",
+          "category": "Boundary",
+          "priority": "High",
+          "title": "base_url 500 ký tự — biên trên",
+          "preconditions": "Admin sửa cấu hình",
+          "steps": "1. base_url = 500 ký tự (URL hợp lệ)\n2. Lưu",
+          "expected": "OK.",
+          "notes": ""
+        },
+        {
+          "id": "TC-BND-KSCH-003",
+          "screen": "Drawer Sửa cấu hình",
+          "category": "Boundary",
+          "priority": "High",
+          "title": "base_url không bắt đầu bằng https://",
+          "preconditions": "Admin sửa cấu hình",
+          "steps": "1. base_url = 'http://demo.smartca.vn' (HTTP không secure)\n2. Lưu",
+          "expected": "Báo cảnh báo 'URL phải dùng HTTPS' hoặc reject. Yêu cầu bảo mật cho ký số.",
+          "notes": ""
+        },
+        {
+          "id": "TC-BND-KSCH-004",
+          "screen": "Drawer Sửa cấu hình",
+          "category": "Boundary",
+          "priority": "High",
+          "title": "client_id 200 ký tự + client_secret 200 ký tự",
+          "preconditions": "Admin sửa cấu hình",
+          "steps": "1. client_id = 200 ký tự\n2. client_secret = 200 ký tự\n3. Lưu",
+          "expected": "Lưu OK. client_secret được mã hóa qua pgp_sym_encrypt.",
+          "notes": ""
+        },
+        {
+          "id": "TC-BND-KSCH-005",
+          "screen": "Drawer Sửa cấu hình",
+          "category": "Boundary",
+          "priority": "Medium",
+          "title": "provider_code không thuộc danh mục cho phép",
+          "preconditions": "Admin sửa cấu hình",
+          "steps": "1. Cố nhập provider_code = 'CUSTOM' (không thuộc enum SMARTCA_VNPT/MYSIGN_VIETTEL)\n2. Lưu",
+          "expected": "Backend reject theo CHECK constraint. UI thường disable field này nên test bằng cách gọi API trực tiếp.",
+          "notes": "chk_provider_code constraint."
+        }
+      ]
+    },
+    {
+      "module": "Quản trị Đơn vị",
+      "table": "public.departments",
+      "testcases": [
+        {
+          "id": "TC-BND-QTDV-001",
+          "screen": "Drawer Thêm/Sửa",
+          "category": "Boundary",
+          "priority": "High",
+          "title": "code 50 ký tự — biên trên",
+          "preconditions": "Admin đăng nhập",
+          "steps": "1. Mở drawer Thêm đơn vị\n2. code = 50 ký tự\n3. name = 'Đơn vị test'\n4. Lưu",
+          "expected": "Lưu OK, hiển thị code đầy đủ trong cây.",
+          "notes": ""
+        },
+        {
+          "id": "TC-BND-QTDV-002",
+          "screen": "Drawer Thêm/Sửa",
+          "category": "Boundary",
+          "priority": "High",
+          "title": "code 51 ký tự — vượt biên",
+          "preconditions": "Admin đăng nhập",
+          "steps": "1. code = 51 ký tự\n2. Lưu",
+          "expected": "Form chặn hoặc backend báo lỗi.",
+          "notes": ""
+        },
+        {
+          "id": "TC-BND-QTDV-003",
+          "screen": "Drawer Thêm/Sửa",
+          "category": "Boundary",
+          "priority": "High",
+          "title": "name 200 ký tự + name_en 200 ký tự",
+          "preconditions": "Admin đăng nhập",
+          "steps": "1. name = 200 ký tự\n2. name_en = 200 ký tự\n3. Lưu",
+          "expected": "OK.",
+          "notes": ""
+        },
+        {
+          "id": "TC-BND-QTDV-004",
+          "screen": "Drawer Thêm/Sửa",
+          "category": "Boundary",
+          "priority": "Medium",
+          "title": "abb_name 20 ký tự — biên trên",
+          "preconditions": "Admin đăng nhập",
+          "steps": "1. abb_name = 20 ký tự\n2. Lưu",
+          "expected": "OK.",
+          "notes": ""
+        },
+        {
+          "id": "TC-BND-QTDV-005",
+          "screen": "Drawer Thêm/Sửa",
+          "category": "Boundary",
+          "priority": "Medium",
+          "title": "abb_name 21 ký tự — vượt biên",
+          "preconditions": "Admin đăng nhập",
+          "steps": "1. abb_name = 21 ký tự\n2. Lưu",
+          "expected": "Chặn hoặc reject.",
+          "notes": ""
+        },
+        {
+          "id": "TC-BND-QTDV-006",
+          "screen": "Drawer Thêm/Sửa",
+          "category": "Boundary",
+          "priority": "Medium",
+          "title": "phone 20 ký tự với ký tự đặc biệt + - ( )",
+          "preconditions": "Admin đăng nhập",
+          "steps": "1. phone = '+84-(24)-1234-5678' (đúng 20 ký tự)\n2. Lưu",
+          "expected": "OK theo regex /^[0-9+\\-\\s()]*$/ (CLAUDE.md mục #11).",
+          "notes": ""
+        },
+        {
+          "id": "TC-BND-QTDV-007",
+          "screen": "Drawer Thêm/Sửa",
+          "category": "Boundary",
+          "priority": "Medium",
+          "title": "phone chứa chữ cái — invalid format",
+          "preconditions": "Admin đăng nhập",
+          "steps": "1. phone = '0912abc678'\n2. Lưu",
+          "expected": "Form báo 'Số điện thoại không hợp lệ' inline.",
+          "notes": ""
+        },
+        {
+          "id": "TC-BND-QTDV-008",
+          "screen": "Drawer Thêm/Sửa",
+          "category": "Boundary",
+          "priority": "Medium",
+          "title": "email 100 ký tự + format hợp lệ",
+          "preconditions": "Admin đăng nhập",
+          "steps": "1. email = chuỗi 100 ký tự dạng 'a@b.com'\n2. Lưu",
+          "expected": "OK.",
+          "notes": ""
+        },
+        {
+          "id": "TC-BND-QTDV-009",
+          "screen": "Drawer Thêm/Sửa",
+          "category": "Boundary",
+          "priority": "Medium",
+          "title": "email format không hợp lệ (thiếu @)",
+          "preconditions": "Admin đăng nhập",
+          "steps": "1. email = 'abc.gmail.com'\n2. Lưu",
+          "expected": "Form báo 'Email không hợp lệ' inline.",
+          "notes": ""
+        },
+        {
+          "id": "TC-BND-QTDV-010",
+          "screen": "Drawer Thêm/Sửa",
+          "category": "Boundary",
+          "priority": "Medium",
+          "title": "lgsp_system_id 50 ký tự + lgsp_secret_key 100 ký tự",
+          "preconditions": "Admin đăng nhập, đơn vị có liên thông LGSP",
+          "steps": "1. lgsp_system_id = 50 ký tự\n2. lgsp_secret_key = 100 ký tự\n3. Lưu",
+          "expected": "OK.",
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "module": "Quản trị Chức vụ",
+      "table": "public.positions",
+      "testcases": [
+        {
+          "id": "TC-BND-QTCV-001",
+          "screen": "Drawer Thêm/Sửa",
+          "category": "Boundary",
+          "priority": "High",
+          "title": "name chức vụ 100 ký tự — biên trên",
+          "preconditions": "Admin đăng nhập",
+          "steps": "1. name = 100 ký tự\n2. Lưu",
+          "expected": "OK. NOT NULL.",
+          "notes": ""
+        },
+        {
+          "id": "TC-BND-QTCV-002",
+          "screen": "Drawer Thêm/Sửa",
+          "category": "Boundary",
+          "priority": "High",
+          "title": "name chức vụ 101 ký tự — vượt biên",
+          "preconditions": "Admin đăng nhập",
+          "steps": "1. name = 101 ký tự\n2. Lưu",
+          "expected": "Chặn hoặc reject.",
+          "notes": ""
+        },
+        {
+          "id": "TC-BND-QTCV-003",
+          "screen": "Drawer Thêm/Sửa",
+          "category": "Boundary",
+          "priority": "Medium",
+          "title": "code 20 ký tự — biên trên",
+          "preconditions": "Admin đăng nhập",
+          "steps": "1. code = 20 ký tự\n2. Lưu",
+          "expected": "OK.",
+          "notes": ""
+        },
+        {
+          "id": "TC-BND-QTCV-004",
+          "screen": "Drawer Thêm/Sửa",
+          "category": "Boundary",
+          "priority": "Medium",
+          "title": "Để trống name — required",
+          "preconditions": "Admin đăng nhập",
+          "steps": "1. Để trống name\n2. Lưu",
+          "expected": "Báo 'Vui lòng nhập tên chức vụ'.",
+          "notes": "NOT NULL."
+        }
+      ]
+    },
+    {
+      "module": "Quản trị Người dùng",
+      "table": "public.staff",
+      "testcases": [
+        {
+          "id": "TC-BND-QTND-001",
+          "screen": "Drawer Thêm/Sửa người dùng",
+          "category": "Boundary",
+          "priority": "High",
+          "title": "username 50 ký tự — biên trên",
+          "preconditions": "Admin đăng nhập",
+          "steps": "1. username = 50 ký tự (chỉ chứa a-z 0-9 _)\n2. last_name = 'Test'\n3. Đầy đủ FK department/unit\n4. Lưu",
+          "expected": "OK.",
+          "notes": ""
+        },
+        {
+          "id": "TC-BND-QTND-002",
+          "screen": "Drawer Thêm/Sửa người dùng",
+          "category": "Boundary",
+          "priority": "High",
+          "title": "username 51 ký tự — vượt biên",
+          "preconditions": "Admin đăng nhập",
+          "steps": "1. username = 51 ký tự\n2. Lưu",
+          "expected": "Chặn hoặc reject.",
+          "notes": ""
+        },
+        {
+          "id": "TC-BND-QTND-003",
+          "screen": "Drawer Thêm/Sửa người dùng",
+          "category": "Boundary",
+          "priority": "High",
+          "title": "username trùng với user khác — unique violation",
+          "preconditions": "Đã có user 'admin'",
+          "steps": "1. Tạo user mới username = 'admin'\n2. Lưu",
+          "expected": "Backend reject 'Tên đăng nhập đã tồn tại'. setBackendFieldError đặt lỗi inline ô username.",
+          "notes": ""
+        },
+        {
+          "id": "TC-BND-QTND-004",
+          "screen": "Drawer Thêm/Sửa người dùng",
+          "category": "Boundary",
+          "priority": "Medium",
+          "title": "first_name + last_name mỗi cái 50 ký tự",
+          "preconditions": "Admin đăng nhập",
+          "steps": "1. first_name = 50 ký tự\n2. last_name = 50 ký tự (NOT NULL)\n3. full_name auto-generate = 50 + ' ' + 50 = 101 ký tự (vẫn fit VARCHAR(100)?)",
+          "expected": "Hệ thống cần verify full_name auto-generated cột STORED có vượt VARCHAR(100). Nếu vượt → backend lỗi. Đây là edge case schema design.",
+          "notes": "full_name là STORED VARCHAR(100). Test xem có truncate hay error."
+        },
+        {
+          "id": "TC-BND-QTND-005",
+          "screen": "Drawer Thêm/Sửa người dùng",
+          "category": "Boundary",
+          "priority": "Medium",
+          "title": "Để trống last_name — required",
+          "preconditions": "Admin đăng nhập",
+          "steps": "1. Để trống last_name\n2. Lưu",
+          "expected": "Báo 'Vui lòng nhập họ và tên'. NOT NULL.",
+          "notes": ""
+        },
+        {
+          "id": "TC-BND-QTND-006",
+          "screen": "Drawer Thêm/Sửa người dùng",
+          "category": "Boundary",
+          "priority": "Medium",
+          "title": "email 100 ký tự",
+          "preconditions": "Admin đăng nhập",
+          "steps": "1. email = 100 ký tự dạng 'a@b.com'\n2. Lưu",
+          "expected": "OK.",
+          "notes": ""
+        },
+        {
+          "id": "TC-BND-QTND-007",
+          "screen": "Drawer Thêm/Sửa người dùng",
+          "category": "Boundary",
+          "priority": "Medium",
+          "title": "phone 20 ký tự + mobile 20 ký tự — cả hai field",
+          "preconditions": "Admin đăng nhập",
+          "steps": "1. phone = 20 ký tự\n2. mobile = 20 ký tự\n3. Lưu",
+          "expected": "OK.",
+          "notes": "Cả 2 cùng VARCHAR(20)."
+        },
+        {
+          "id": "TC-BND-QTND-008",
+          "screen": "Drawer Thêm/Sửa người dùng",
+          "category": "Boundary",
+          "priority": "Medium",
+          "title": "id_card 20 ký tự — biên",
+          "preconditions": "Admin đăng nhập",
+          "steps": "1. id_card = '0123456789012' (CCCD 12 số) hoặc 20 ký tự\n2. Lưu",
+          "expected": "OK.",
+          "notes": ""
+        },
+        {
+          "id": "TC-BND-QTND-009",
+          "screen": "Drawer Thêm/Sửa người dùng",
+          "category": "Boundary",
+          "priority": "Low",
+          "title": "id_card_place 200 ký tự — biên",
+          "preconditions": "Admin đăng nhập",
+          "steps": "1. id_card_place = 200 ký tự\n2. Lưu",
+          "expected": "OK.",
+          "notes": ""
+        },
+        {
+          "id": "TC-BND-QTND-010",
+          "screen": "Drawer Thêm/Sửa người dùng",
+          "category": "Boundary",
+          "priority": "Medium",
+          "title": "birth_date trong tương lai (2050)",
+          "preconditions": "Admin đăng nhập",
+          "steps": "1. birth_date = 2050-01-01\n2. Lưu",
+          "expected": "Form nên báo 'Ngày sinh không hợp lệ' (>= today). Nếu không có rule, thì lưu OK nhưng nghiệp vụ sai.",
+          "notes": ""
+        },
+        {
+          "id": "TC-BND-QTND-011",
+          "screen": "Drawer Thêm/Sửa người dùng",
+          "category": "Boundary",
+          "priority": "Low",
+          "title": "birth_date 1900-01-01 — quá cũ",
+          "preconditions": "Admin đăng nhập",
+          "steps": "1. birth_date = 1900-01-01\n2. Lưu",
+          "expected": "Lưu OK (DB cho phép). Nghiệp vụ nên có cảnh báo.",
+          "notes": ""
+        },
+        {
+          "id": "TC-BND-QTND-012",
+          "screen": "Modal Reset password",
+          "category": "Boundary",
+          "priority": "Medium",
+          "title": "Admin reset password user — verify mật khẩu mới = Admin@123",
+          "preconditions": "Admin đăng nhập, có user thường",
+          "steps": "1. Vào danh sách người dùng\n2. Bấm 'Reset mật khẩu'\n3. Xác nhận",
+          "expected": "Mật khẩu user reset về 'Admin@123'. password_changed = false. Lần đăng nhập kế user phải đổi mật khẩu (nếu có rule).",
+          "notes": "HDSD nói reset về Admin@123."
+        }
+      ]
+    },
+    {
+      "module": "Quản trị Nhóm quyền",
+      "table": "public.roles",
+      "testcases": [
+        {
+          "id": "TC-BND-QTNQ-001",
+          "screen": "Drawer Thêm/Sửa nhóm quyền",
+          "category": "Boundary",
+          "priority": "Medium",
+          "title": "Tên nhóm quyền 200 ký tự — biên",
+          "preconditions": "Admin đăng nhập",
+          "steps": "1. name = 200 ký tự\n2. Lưu",
+          "expected": "OK.",
+          "notes": ""
+        },
+        {
+          "id": "TC-BND-QTNQ-002",
+          "screen": "Drawer Phân quyền",
+          "category": "Boundary",
+          "priority": "Medium",
+          "title": "Gán 0 quyền cho nhóm — biên dưới",
+          "preconditions": "Admin đăng nhập, đang phân quyền nhóm",
+          "steps": "1. Bỏ tích tất cả các quyền\n2. Lưu",
+          "expected": "Lưu OK với 0 quyền (nhóm trống). Hoặc báo 'Phải chọn ít nhất 1 quyền'.",
+          "notes": ""
+        },
+        {
+          "id": "TC-BND-QTNQ-003",
+          "screen": "Drawer Phân quyền",
+          "category": "Boundary",
+          "priority": "Low",
+          "title": "Gán TẤT CẢ quyền cho nhóm — biên trên",
+          "preconditions": "Admin đăng nhập",
+          "steps": "1. Tích toàn bộ quyền\n2. Lưu",
+          "expected": "Lưu OK. Nhóm trở thành 'super-role' tương đương admin.",
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "module": "Danh mục Sổ văn bản",
+      "table": "edoc.doc_books",
+      "testcases": [
+        {
+          "id": "TC-BND-DMSV-001",
+          "screen": "Drawer Thêm/Sửa",
+          "category": "Boundary",
+          "priority": "High",
+          "title": "name sổ 200 ký tự — biên trên",
+          "preconditions": "Admin đăng nhập",
+          "steps": "1. name = 200 ký tự\n2. Chọn type_id (đến/đi/dự thảo)\n3. Lưu",
+          "expected": "OK. Hiển thị tab tương ứng.",
+          "notes": "NOT NULL."
+        },
+        {
+          "id": "TC-BND-DMSV-002",
+          "screen": "Drawer Thêm/Sửa",
+          "category": "Boundary",
+          "priority": "High",
+          "title": "name 201 ký tự — vượt biên",
+          "preconditions": "Admin đăng nhập",
+          "steps": "1. name = 201 ký tự\n2. Lưu",
+          "expected": "Chặn hoặc reject.",
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "module": "Danh mục Loại văn bản",
+      "table": "edoc.doc_types",
+      "testcases": [
+        {
+          "id": "TC-BND-DMLV-001",
+          "screen": "Drawer Thêm/Sửa",
+          "category": "Boundary",
+          "priority": "High",
+          "title": "code 20 + name 200 — cả hai biên trên",
+          "preconditions": "Admin đăng nhập",
+          "steps": "1. code = 20 ký tự\n2. name = 200 ký tự\n3. Lưu",
+          "expected": "OK.",
+          "notes": ""
+        },
+        {
+          "id": "TC-BND-DMLV-002",
+          "screen": "Drawer Thêm/Sửa",
+          "category": "Boundary",
+          "priority": "High",
+          "title": "code 21 — vượt biên",
+          "preconditions": "Admin đăng nhập",
+          "steps": "1. code = 21 ký tự\n2. Lưu",
+          "expected": "Chặn hoặc reject.",
+          "notes": ""
+        },
+        {
+          "id": "TC-BND-DMLV-003",
+          "screen": "Drawer Thêm/Sửa",
+          "category": "Boundary",
+          "priority": "High",
+          "title": "code trùng — unique violation",
+          "preconditions": "Đã có loại VB code='QD'",
+          "steps": "1. Tạo loại VB mới code='QD'\n2. Lưu",
+          "expected": "Backend reject 'Mã loại văn bản đã tồn tại'. Inline error.",
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "module": "Danh mục Lĩnh vực",
+      "table": "edoc.doc_fields",
+      "testcases": [
+        {
+          "id": "TC-BND-DMLN-001",
+          "screen": "Drawer Thêm/Sửa",
+          "category": "Boundary",
+          "priority": "High",
+          "title": "code 20 + name 200 — biên trên",
+          "preconditions": "Admin đăng nhập",
+          "steps": "1. code = 20 ký tự\n2. name = 200 ký tự\n3. Lưu",
+          "expected": "OK.",
+          "notes": ""
+        },
+        {
+          "id": "TC-BND-DMLN-002",
+          "screen": "Drawer Thêm/Sửa",
+          "category": "Boundary",
+          "priority": "Medium",
+          "title": "code có khoảng trắng đầu/cuối",
+          "preconditions": "Admin đăng nhập",
+          "steps": "1. code = '  TEST  ' (có space đầu cuối)\n2. Lưu",
+          "expected": "Hệ thống nên trim trước khi lưu. Verify backend trim.",
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "module": "Danh mục Người ký",
+      "table": "edoc.signers",
+      "testcases": [
+        {
+          "id": "TC-BND-DMNK-001",
+          "screen": "Modal Thêm người ký",
+          "category": "Boundary",
+          "priority": "Medium",
+          "title": "Thêm 1 staff làm người ký — sort_order = 0 (default)",
+          "preconditions": "Admin đăng nhập",
+          "steps": "1. Chọn staff\n2. sort_order để trống\n3. Lưu",
+          "expected": "OK, sort_order mặc định 0. Hiển thị cuối danh sách.",
+          "notes": ""
+        },
+        {
+          "id": "TC-BND-DMNK-002",
+          "screen": "Modal Thêm người ký",
+          "category": "Boundary",
+          "priority": "Medium",
+          "title": "Thêm cùng staff_id 2 lần — duplicate",
+          "preconditions": "Đã thêm staff X làm người ký",
+          "steps": "1. Thêm tiếp staff X làm người ký\n2. Lưu",
+          "expected": "Backend reject 'Người ký đã tồn tại' hoặc cho phép tùy nghiệp vụ. Ghi nhận thực tế.",
+          "notes": ""
+        },
+        {
+          "id": "TC-BND-DMNK-003",
+          "screen": "Modal Thêm người ký",
+          "category": "Boundary",
+          "priority": "Low",
+          "title": "sort_order = âm (-1)",
+          "preconditions": "Admin đăng nhập",
+          "steps": "1. sort_order = -1\n2. Lưu",
+          "expected": "InputNumber chặn (min=0) hoặc backend chấp nhận. Sắp xếp người này lên đầu.",
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "module": "Cấu hình gửi nhanh",
+      "table": "configuration table",
+      "testcases": [
+        {
+          "id": "TC-BND-CHGN-001",
+          "screen": "Form cấu hình",
+          "category": "Boundary",
+          "priority": "Medium",
+          "title": "Lưu cấu hình với 0 người nhận — biên dưới",
+          "preconditions": "Cán bộ đăng nhập",
+          "steps": "1. Mở cấu hình gửi nhanh\n2. Bỏ chọn tất cả staff\n3. Lưu",
+          "expected": "Báo 'Cần chọn ít nhất 1 người nhận' hoặc lưu cấu hình rỗng.",
+          "notes": ""
+        },
+        {
+          "id": "TC-BND-CHGN-002",
+          "screen": "Form cấu hình",
+          "category": "Boundary",
+          "priority": "Medium",
+          "title": "Chọn 100 người nhận — biên trên thực tế",
+          "preconditions": "Cơ quan có > 100 nhân sự",
+          "steps": "1. Chọn 100 staff\n2. Lưu",
+          "expected": "Lưu OK, không treo trình duyệt khi save/load.",
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "module": "Tài khoản ký số cá nhân",
+      "table": "public.staff_signing_config",
+      "testcases": [
+        {
+          "id": "TC-BND-KSTK-001",
+          "screen": "Form cấu hình",
+          "category": "Boundary",
+          "priority": "High",
+          "title": "user_id 200 ký tự + credential_id 200 ký tự — biên trên",
+          "preconditions": "User đăng nhập, đã chọn provider",
+          "steps": "1. user_id = 200 ký tự\n2. credential_id = 200 ký tự\n3. Lưu",
+          "expected": "OK.",
+          "notes": ""
+        },
+        {
+          "id": "TC-BND-KSTK-002",
+          "screen": "Form cấu hình",
+          "category": "Boundary",
+          "priority": "Medium",
+          "title": "user_id để trống — required",
+          "preconditions": "User đăng nhập",
+          "steps": "1. Để trống user_id\n2. Lưu",
+          "expected": "Báo 'Vui lòng nhập user ID'. NOT NULL.",
+          "notes": ""
+        }
+      ]
+    }
+  ]
+}

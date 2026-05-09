@@ -1,0 +1,584 @@
+{
+  "wave": "G",
+  "title": "Permission testcases — Cross-unit isolation + Role matrix (Quản trị / Văn thư / Lãnh đạo / Cán bộ)",
+  "generated_at": "2026-05-05",
+  "purpose": "Lấp gap Permission (38 → ~90 TC) đã phân tích ngày 2026-05-05",
+  "source": "CLAUDE.md Architecture (multi-tenancy qua unitId JWT) + 4 vai trò trong HDSD_full.md",
+  "test_accounts": {
+    "admin": "admin / Admin@123 (Quản trị hệ thống)",
+    "vanthu_A": "nguyenvana / Admin@123 (Văn thư đơn vị Sở Nội vụ)",
+    "vanthu_B": "tranthib / Admin@123 (Văn thư đơn vị Sở Tài chính)",
+    "lanh_dao": "levand / Admin@123 (Lãnh đạo Sở TT&TT)",
+    "can_bo": "(tài khoản cán bộ thường nếu có)"
+  },
+  "modules": [
+    {
+      "module": "Permission - Cross-unit Isolation",
+      "description": "Verify multi-tenancy: User đơn vị A KHÔNG thấy/sửa/xóa được data đơn vị B",
+      "testcases": [
+        {
+          "id": "TC-PERM-XU-001",
+          "screen": "Danh sách VB đến",
+          "category": "Permission",
+          "priority": "High",
+          "title": "Văn thư đơn vị A không thấy VB đến của đơn vị B",
+          "preconditions": "Đơn vị A có 5 VB đến, đơn vị B có 3 VB đến. Đăng nhập nguyenvana (Sở Nội vụ).",
+          "steps": "1. Vào menu Văn bản đến\n2. Quan sát danh sách",
+          "expected": "Chỉ hiển thị 5 VB của Sở Nội vụ. KHÔNG thấy 3 VB của Sở Tài chính.",
+          "notes": "Backend filter theo unit_id từ JWT."
+        },
+        {
+          "id": "TC-PERM-XU-002",
+          "screen": "Chi tiết VB đến",
+          "category": "Permission",
+          "priority": "High",
+          "title": "Truy cập trực tiếp URL VB đến của đơn vị khác",
+          "preconditions": "VB đến id=999 thuộc Sở Tài chính. Đăng nhập nguyenvana (Sở Nội vụ).",
+          "steps": "1. Truy cập URL trực tiếp /van-ban-den/999\n2. Quan sát",
+          "expected": "Backend trả 403 Forbidden hoặc 404. Frontend hiển thị 'Không tìm thấy văn bản' hoặc 'Không có quyền truy cập'.",
+          "notes": "Test bypass URL — quan trọng nhất."
+        },
+        {
+          "id": "TC-PERM-XU-003",
+          "screen": "API VB đến",
+          "category": "Permission",
+          "priority": "High",
+          "title": "Gọi API GET /api/van-ban-den/{id_donvi_khac} — direct call",
+          "preconditions": "Lấy access_token của nguyenvana, gọi curl",
+          "steps": "1. curl -H 'Authorization: Bearer <token_A>' http://localhost:4000/api/van-ban-den/999\n2. Quan sát response",
+          "expected": "HTTP 403 hoặc 404. Body có Vietnamese message.",
+          "notes": ""
+        },
+        {
+          "id": "TC-PERM-XU-004",
+          "screen": "Danh sách VB đi",
+          "category": "Permission",
+          "priority": "High",
+          "title": "Văn thư A không thấy VB đi đơn vị B",
+          "preconditions": "Mỗi đơn vị có VB đi riêng",
+          "steps": "1. Đăng nhập nguyenvana\n2. Vào Văn bản đi\n3. Quan sát",
+          "expected": "Chỉ thấy VB đi của Sở Nội vụ.",
+          "notes": ""
+        },
+        {
+          "id": "TC-PERM-XU-005",
+          "screen": "Danh sách HSCV",
+          "category": "Permission",
+          "priority": "High",
+          "title": "Cán bộ A không thấy HSCV cán bộ B trong cùng đơn vị nhưng khác phòng",
+          "preconditions": "HSCV thuộc phòng X. User là cán bộ phòng Y cùng đơn vị.",
+          "steps": "1. Đăng nhập user phòng Y\n2. Vào HSCV\n3. Tìm HSCV của phòng X",
+          "expected": "Không thấy HSCV của phòng X (trừ khi HSCV được phân công liên phòng).",
+          "notes": "Cross-department isolation trong cùng unit."
+        },
+        {
+          "id": "TC-PERM-XU-006",
+          "screen": "Danh sách Đơn vị",
+          "category": "Permission",
+          "priority": "High",
+          "title": "Văn thư đơn vị A KHÔNG thấy được cây đơn vị B trong Quản trị",
+          "preconditions": "Văn thư không có quyền Quản trị",
+          "steps": "1. Đăng nhập nguyenvana\n2. Truy cập /quan-tri/don-vi (URL trực tiếp)",
+          "expected": "Chuyển hướng về dashboard hoặc hiển thị 'Bạn không có quyền truy cập'.",
+          "notes": ""
+        },
+        {
+          "id": "TC-PERM-XU-007",
+          "screen": "Danh mục Sổ VB",
+          "category": "Permission",
+          "priority": "High",
+          "title": "Sổ VB của đơn vị A không xuất hiện trong dropdown khi user B tạo VB",
+          "preconditions": "Đơn vị A có 5 sổ, đơn vị B có 3 sổ. Đăng nhập tranthib (đơn vị B).",
+          "steps": "1. Mở drawer Tạo VB đến\n2. Click dropdown 'Sổ văn bản'\n3. Quan sát",
+          "expected": "Chỉ hiển thị 3 sổ của đơn vị B. KHÔNG thấy sổ đơn vị A.",
+          "notes": "Sổ VB filter theo unit_id."
+        },
+        {
+          "id": "TC-PERM-XU-008",
+          "screen": "Drawer thêm VB",
+          "category": "Permission",
+          "priority": "High",
+          "title": "Cố tình submit form với doc_book_id của đơn vị khác — backend reject",
+          "preconditions": "Lấy doc_book_id=10 (thuộc đơn vị A). Đăng nhập user đơn vị B.",
+          "steps": "1. Tạo VB đến\n2. Inspect HTML, sửa giá trị dropdown thành doc_book_id=10\n3. Submit",
+          "expected": "Backend validate: 'Sổ văn bản không thuộc đơn vị của bạn' hoặc trả 403.",
+          "notes": "Tampering test — phải có server-side check."
+        },
+        {
+          "id": "TC-PERM-XU-009",
+          "screen": "Danh sách Người ký",
+          "category": "Permission",
+          "priority": "Medium",
+          "title": "Người ký đơn vị A không xuất hiện khi user B chọn người ký VB đi",
+          "preconditions": "Đơn vị A có 3 người ký, đơn vị B có 2.",
+          "steps": "1. User B tạo VB đi\n2. Click dropdown 'Người ký'",
+          "expected": "Chỉ thấy 2 người ký đơn vị B.",
+          "notes": ""
+        },
+        {
+          "id": "TC-PERM-XU-010",
+          "screen": "Danh sách Loại VB",
+          "category": "Permission",
+          "priority": "Medium",
+          "title": "Loại VB toàn hệ thống vs đơn vị riêng — phân biệt rõ",
+          "preconditions": "Có loại VB chung (unit_id=NULL hoặc shared) và loại VB riêng đơn vị A",
+          "steps": "1. Đăng nhập đơn vị B\n2. Mở dropdown loại VB",
+          "expected": "Thấy loại VB chung + loại riêng đơn vị B. KHÔNG thấy loại riêng đơn vị A.",
+          "notes": ""
+        },
+        {
+          "id": "TC-PERM-XU-011",
+          "screen": "API tampering",
+          "category": "Permission",
+          "priority": "High",
+          "title": "Gọi API PUT /api/van-ban-den/{id_dv_khac} với token user đơn vị mình",
+          "preconditions": "VB id=999 thuộc đơn vị A. Token của user B.",
+          "steps": "1. curl -X PUT -H 'Authorization: Bearer <token_B>' -d '{\"abstract\":\"hacked\"}' /api/van-ban-den/999",
+          "expected": "HTTP 403/404. KHÔNG cập nhật. Audit log MongoDB ghi nhận attempt.",
+          "notes": ""
+        },
+        {
+          "id": "TC-PERM-XU-012",
+          "screen": "API tampering",
+          "category": "Permission",
+          "priority": "High",
+          "title": "Gọi API DELETE /api/van-ban-di/{id_dv_khac}",
+          "preconditions": "VB đi id=888 thuộc đơn vị A. Token user B.",
+          "steps": "1. curl -X DELETE -H 'Authorization: Bearer <token_B>' /api/van-ban-di/888",
+          "expected": "HTTP 403/404. VB không bị xóa.",
+          "notes": ""
+        },
+        {
+          "id": "TC-PERM-XU-013",
+          "screen": "Đơn vị Cha-Con",
+          "category": "Permission",
+          "priority": "Medium",
+          "title": "Đơn vị cha có thấy được data của đơn vị con không?",
+          "preconditions": "Đơn vị 'UBND Tỉnh' là cha của 'Sở Nội vụ'",
+          "steps": "1. Đăng nhập user đơn vị cha\n2. Vào VB đến\n3. Quan sát có thấy VB của Sở Nội vụ không?",
+          "expected": "Tùy thiết kế: nếu allow_doc_book=true ở cha thì thấy, ngược lại không. Tester ghi nhận thực tế và đối chiếu với rule nghiệp vụ.",
+          "notes": "Hierarchical scope rule."
+        },
+        {
+          "id": "TC-PERM-XU-014",
+          "screen": "Tìm kiếm",
+          "category": "Permission",
+          "priority": "Medium",
+          "title": "Search 'quyết định' không lộ data đơn vị khác qua autocomplete",
+          "preconditions": "Cả 2 đơn vị có VB chứa 'quyết định'",
+          "steps": "1. Đăng nhập user A\n2. Search trong VB đến",
+          "expected": "Chỉ trả VB đơn vị A.",
+          "notes": ""
+        },
+        {
+          "id": "TC-PERM-XU-015",
+          "screen": "Liên thông LGSP",
+          "category": "Permission",
+          "priority": "Medium",
+          "title": "Gửi LGSP từ đơn vị A đến đơn vị B — đơn vị B nhận đúng",
+          "preconditions": "Cả 2 đơn vị có LGSP config",
+          "steps": "1. User A gửi VB qua LGSP đến đơn vị B\n2. User B đăng nhập, vào VB đến\n3. Quan sát",
+          "expected": "User B THẤY được VB này (vì đã được gửi cho mình). Cross-unit visibility chỉ qua LGSP, không qua direct query.",
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "module": "Permission - Role Matrix",
+      "description": "Verify 4 vai trò có quyền/không có quyền theo HDSD",
+      "testcases": [
+        {
+          "id": "TC-PERM-RM-001",
+          "screen": "Menu sidebar",
+          "category": "Permission",
+          "priority": "High",
+          "title": "Cán bộ thường KHÔNG thấy menu Quản trị",
+          "preconditions": "User là cán bộ thường (không có vai trò Admin)",
+          "steps": "1. Đăng nhập\n2. Quan sát sidebar",
+          "expected": "Sidebar KHÔNG có nhóm 'Quản trị hệ thống' và 'Danh mục'.",
+          "notes": ""
+        },
+        {
+          "id": "TC-PERM-RM-002",
+          "screen": "Menu sidebar",
+          "category": "Permission",
+          "priority": "High",
+          "title": "Văn thư KHÔNG thấy menu Quản trị",
+          "preconditions": "User là Văn thư",
+          "steps": "1. Đăng nhập nguyenvana\n2. Quan sát sidebar",
+          "expected": "Có VB đến, VB đi, VB dự thảo, HSCV. KHÔNG có Quản trị.",
+          "notes": ""
+        },
+        {
+          "id": "TC-PERM-RM-003",
+          "screen": "Menu sidebar",
+          "category": "Permission",
+          "priority": "High",
+          "title": "Lãnh đạo thấy menu Ký số nhưng KHÔNG thấy Quản trị (trừ khi kiêm)",
+          "preconditions": "User chỉ có vai trò Lãnh đạo",
+          "steps": "1. Đăng nhập levand\n2. Quan sát sidebar",
+          "expected": "Có Ký số (Tài khoản, Danh sách). KHÔNG có Quản trị hệ thống.",
+          "notes": ""
+        },
+        {
+          "id": "TC-PERM-RM-004",
+          "screen": "Menu sidebar",
+          "category": "Permission",
+          "priority": "High",
+          "title": "Admin thấy đầy đủ menu",
+          "preconditions": "User admin",
+          "steps": "1. Đăng nhập admin\n2. Quan sát sidebar",
+          "expected": "Đủ 6 nhóm: Tổng quan, Văn bản, HSCV, Ký số, Quản trị, Danh mục.",
+          "notes": ""
+        },
+        {
+          "id": "TC-PERM-RM-005",
+          "screen": "Drawer thêm VB đến",
+          "category": "Permission",
+          "priority": "High",
+          "title": "Văn thư có quyền tạo VB đến",
+          "preconditions": "Văn thư đăng nhập",
+          "steps": "1. Vào VB đến\n2. Bấm '+ Thêm văn bản'",
+          "expected": "Drawer mở ra. Submit OK.",
+          "notes": ""
+        },
+        {
+          "id": "TC-PERM-RM-006",
+          "screen": "Drawer thêm VB đến",
+          "category": "Permission",
+          "priority": "High",
+          "title": "Cán bộ thường KHÔNG có quyền tạo VB đến",
+          "preconditions": "Cán bộ thường đăng nhập",
+          "steps": "1. Vào VB đến\n2. Quan sát có nút '+ Thêm văn bản' không",
+          "expected": "Nút thêm bị ẩn HOẶC khi click thì báo 'Bạn không có quyền'. URL POST /van-ban-den trả 403.",
+          "notes": ""
+        },
+        {
+          "id": "TC-PERM-RM-007",
+          "screen": "Chi tiết VB đến",
+          "category": "Permission",
+          "priority": "High",
+          "title": "Lãnh đạo có nút 'Giao việc' trên VB đến đã được phân công",
+          "preconditions": "VB đến đã được Văn thư chuyển cho Lãnh đạo",
+          "steps": "1. Lãnh đạo đăng nhập\n2. Mở chi tiết VB\n3. Quan sát toolbar",
+          "expected": "Có nút 'Giao việc' để phân công xuống Cán bộ.",
+          "notes": ""
+        },
+        {
+          "id": "TC-PERM-RM-008",
+          "screen": "Chi tiết VB đến",
+          "category": "Permission",
+          "priority": "High",
+          "title": "Cán bộ KHÔNG có nút 'Giao việc' (chỉ Lãnh đạo có)",
+          "preconditions": "Cán bộ đang xem VB của mình",
+          "steps": "1. Cán bộ đăng nhập\n2. Mở chi tiết VB",
+          "expected": "Nút 'Giao việc' bị ẩn. Chỉ có 'Tiếp nhận', 'Chuyển lại', 'Hoàn thành'.",
+          "notes": ""
+        },
+        {
+          "id": "TC-PERM-RM-009",
+          "screen": "Chi tiết VB đi",
+          "category": "Permission",
+          "priority": "High",
+          "title": "Lãnh đạo có nút 'Ký số' / 'Phê duyệt' trên VB đi chờ ký",
+          "preconditions": "Có VB đi đang ở trạng thái 'Chờ ký'",
+          "steps": "1. Lãnh đạo đăng nhập\n2. Mở chi tiết VB",
+          "expected": "Có nút 'Ký số' hoặc 'Phê duyệt'.",
+          "notes": ""
+        },
+        {
+          "id": "TC-PERM-RM-010",
+          "screen": "Chi tiết VB đi",
+          "category": "Permission",
+          "priority": "High",
+          "title": "Văn thư KHÔNG được ký số nhưng có nút 'Phát hành' khi VB đã ký",
+          "preconditions": "VB đi đã ký bởi Lãnh đạo",
+          "steps": "1. Văn thư đăng nhập\n2. Mở chi tiết VB",
+          "expected": "Không có nút 'Ký số'. CÓ nút 'Phát hành' (sau khi đã ký).",
+          "notes": ""
+        },
+        {
+          "id": "TC-PERM-RM-011",
+          "screen": "Quản trị Người dùng",
+          "category": "Permission",
+          "priority": "High",
+          "title": "Chỉ Admin được tạo/sửa/xóa người dùng",
+          "preconditions": "Văn thư đăng nhập",
+          "steps": "1. URL trực tiếp /quan-tri/nguoi-dung",
+          "expected": "Redirect /dashboard hoặc 403. Văn thư không có quyền.",
+          "notes": ""
+        },
+        {
+          "id": "TC-PERM-RM-012",
+          "screen": "Quản trị Đơn vị",
+          "category": "Permission",
+          "priority": "High",
+          "title": "Chỉ Admin được sửa cây đơn vị",
+          "preconditions": "User không phải admin",
+          "steps": "1. URL /quan-tri/don-vi",
+          "expected": "403 hoặc redirect.",
+          "notes": ""
+        },
+        {
+          "id": "TC-PERM-RM-013",
+          "screen": "Quản trị Nhóm quyền",
+          "category": "Permission",
+          "priority": "High",
+          "title": "Chỉ Admin được phân quyền",
+          "preconditions": "User Lãnh đạo (không kiêm Admin)",
+          "steps": "1. URL /quan-tri/nhom-quyen",
+          "expected": "403/redirect.",
+          "notes": ""
+        },
+        {
+          "id": "TC-PERM-RM-014",
+          "screen": "Cấu hình ký số hệ thống",
+          "category": "Permission",
+          "priority": "High",
+          "title": "Chỉ Admin được sửa cấu hình ký số (provider config)",
+          "preconditions": "User là Lãnh đạo",
+          "steps": "1. URL /ky-so/cau-hinh",
+          "expected": "403/redirect. Provider config = system-level, chỉ Admin.",
+          "notes": ""
+        },
+        {
+          "id": "TC-PERM-RM-015",
+          "screen": "Tài khoản ký số cá nhân",
+          "category": "Permission",
+          "priority": "Medium",
+          "title": "Mọi user có chữ ký số đều xem được tài khoản ký số cá nhân của mình",
+          "preconditions": "User là Lãnh đạo có tài khoản ký số",
+          "steps": "1. Vào /ky-so/tai-khoan-ca-nhan",
+          "expected": "Hiển thị config ký số của chính user. KHÔNG thấy của user khác.",
+          "notes": ""
+        },
+        {
+          "id": "TC-PERM-RM-016",
+          "screen": "Danh mục Sổ VB",
+          "category": "Permission",
+          "priority": "Medium",
+          "title": "Văn thư có quyền xem nhưng không sửa Sổ VB",
+          "preconditions": "Văn thư đăng nhập (nếu được cấp quyền view-only)",
+          "steps": "1. Vào /quan-tri/so-van-ban (nếu có quyền)\n2. Quan sát nút Sửa/Xóa",
+          "expected": "Tùy thiết kế: nếu Văn thư cần xem, thì hide nút sửa/xóa. Nếu không cần thấy, thì 403.",
+          "notes": "Verify rule với BA."
+        },
+        {
+          "id": "TC-PERM-RM-017",
+          "screen": "Reset mật khẩu",
+          "category": "Permission",
+          "priority": "High",
+          "title": "Chỉ Admin được reset mật khẩu user khác",
+          "preconditions": "Lãnh đạo đăng nhập",
+          "steps": "1. URL /quan-tri/nguoi-dung",
+          "expected": "403. Không thực hiện được reset.",
+          "notes": ""
+        },
+        {
+          "id": "TC-PERM-RM-018",
+          "screen": "Chi tiết HSCV",
+          "category": "Permission",
+          "priority": "Medium",
+          "title": "Chủ trì HSCV có quyền sửa, người tham gia chỉ xem",
+          "preconditions": "HSCV có chủ trì = User A, người tham gia = User B",
+          "steps": "1. User B đăng nhập\n2. Mở HSCV\n3. Quan sát nút sửa",
+          "expected": "User B chỉ thấy thông tin, KHÔNG có nút Sửa/Xóa/Hoàn thành.",
+          "notes": ""
+        },
+        {
+          "id": "TC-PERM-RM-019",
+          "screen": "Báo cáo HSCV",
+          "category": "Permission",
+          "priority": "Medium",
+          "title": "Lãnh đạo xem báo cáo HSCV toàn đơn vị",
+          "preconditions": "Lãnh đạo đăng nhập",
+          "steps": "1. Vào HSCV > Báo cáo",
+          "expected": "Thấy thống kê toàn bộ HSCV trong đơn vị mình.",
+          "notes": ""
+        },
+        {
+          "id": "TC-PERM-RM-020",
+          "screen": "Báo cáo HSCV",
+          "category": "Permission",
+          "priority": "Medium",
+          "title": "Cán bộ xem báo cáo HSCV — chỉ của mình",
+          "preconditions": "Cán bộ đăng nhập",
+          "steps": "1. Vào HSCV > Báo cáo (nếu có quyền)",
+          "expected": "Chỉ thấy thống kê HSCV mình tham gia.",
+          "notes": ""
+        },
+        {
+          "id": "TC-PERM-RM-021",
+          "screen": "Drawer phân quyền",
+          "category": "Permission",
+          "priority": "High",
+          "title": "Admin gán nhiều vai trò cho 1 user — quyền là tập hợp",
+          "preconditions": "User chưa có vai trò",
+          "steps": "1. Admin gán user X vai trò 'Văn thư' + 'Lãnh đạo'\n2. User X đăng nhập",
+          "expected": "User X thấy được CẢ menu Văn thư + Lãnh đạo.",
+          "notes": "HDSD: 1 user có thể nhiều vai trò, quyền là union."
+        },
+        {
+          "id": "TC-PERM-RM-022",
+          "screen": "Đăng nhập",
+          "category": "Permission",
+          "priority": "High",
+          "title": "User bị Admin xóa vai trò ngay khi đang đăng nhập — phải logout",
+          "preconditions": "User đang có session active",
+          "steps": "1. Admin xóa toàn bộ vai trò user\n2. User refresh trang\n3. Quan sát",
+          "expected": "Hệ thống nhận diện không còn quyền và force logout HOẶC chỉ hiển thị dashboard rỗng.",
+          "notes": ""
+        },
+        {
+          "id": "TC-PERM-RM-023",
+          "screen": "Đăng nhập",
+          "category": "Permission",
+          "priority": "High",
+          "title": "User bị khóa tài khoản khi đang active — request kế tiếp bị 401",
+          "preconditions": "User đang đăng nhập",
+          "steps": "1. Admin khóa tài khoản\n2. User thực hiện thao tác mới (gọi API)",
+          "expected": "Backend trả 401/403 'Tài khoản đã bị khóa'. Frontend logout về /login.",
+          "notes": ""
+        },
+        {
+          "id": "TC-PERM-RM-024",
+          "screen": "URL bypass",
+          "category": "Permission",
+          "priority": "High",
+          "title": "Cán bộ truy cập trực tiếp /quan-tri/nguoi-dung qua URL",
+          "preconditions": "Cán bộ đăng nhập",
+          "steps": "1. Gõ URL trực tiếp /quan-tri/nguoi-dung",
+          "expected": "Frontend redirect dashboard hoặc hiển thị 'Không có quyền'.",
+          "notes": ""
+        },
+        {
+          "id": "TC-PERM-RM-025",
+          "screen": "URL bypass",
+          "category": "Permission",
+          "priority": "High",
+          "title": "Văn thư truy cập trực tiếp /ky-so/cau-hinh — chỉ admin",
+          "preconditions": "Văn thư đăng nhập",
+          "steps": "1. URL /ky-so/cau-hinh",
+          "expected": "403/redirect.",
+          "notes": ""
+        },
+        {
+          "id": "TC-PERM-RM-026",
+          "screen": "Hiển thị nút",
+          "category": "Permission",
+          "priority": "Medium",
+          "title": "Nút Xóa VB đến chỉ hiển thị với Văn thư + Admin",
+          "preconditions": "Có VB đến đã tạo",
+          "steps": "1. Lãnh đạo đăng nhập, mở chi tiết VB\n2. Cán bộ đăng nhập, mở chi tiết\n3. Văn thư đăng nhập, mở chi tiết",
+          "expected": "Văn thư + Admin thấy nút Xóa. Lãnh đạo + Cán bộ KHÔNG thấy.",
+          "notes": ""
+        },
+        {
+          "id": "TC-PERM-RM-027",
+          "screen": "Hiển thị nút",
+          "category": "Permission",
+          "priority": "Medium",
+          "title": "Sau khi VB đi đã 'Phát hành', nút 'Sửa'/'Xóa' bị ẩn",
+          "preconditions": "VB đi trạng thái 'Đã phát hành'",
+          "steps": "1. Văn thư đăng nhập\n2. Mở chi tiết VB",
+          "expected": "Nút Sửa/Xóa ẩn (read-only sau khi phát hành).",
+          "notes": "State-based permission."
+        },
+        {
+          "id": "TC-PERM-RM-028",
+          "screen": "API direct",
+          "category": "Permission",
+          "priority": "High",
+          "title": "Gọi DELETE /api/van-ban-di/{id} của VB đã phát hành — backend reject",
+          "preconditions": "VB đi đã phát hành",
+          "steps": "1. curl DELETE với token Văn thư",
+          "expected": "Backend trả lỗi 'Không thể xóa VB đã phát hành'.",
+          "notes": ""
+        },
+        {
+          "id": "TC-PERM-RM-029",
+          "screen": "Phân quyền theo phòng ban",
+          "category": "Permission",
+          "priority": "Medium",
+          "title": "Trưởng phòng có quyền giao việc trong phòng, không liên phòng",
+          "preconditions": "User là Trưởng phòng A",
+          "steps": "1. Mở VB đã được giao\n2. Click Giao việc xuống cán bộ\n3. Quan sát dropdown người nhận",
+          "expected": "Chỉ thấy cán bộ cùng phòng A. Không thấy phòng B.",
+          "notes": ""
+        },
+        {
+          "id": "TC-PERM-RM-030",
+          "screen": "Đại diện đơn vị",
+          "category": "Permission",
+          "priority": "Medium",
+          "title": "User có is_represent_unit=true thấy toàn đơn vị",
+          "preconditions": "User là đại diện đơn vị",
+          "steps": "1. Đăng nhập\n2. Vào VB đến / HSCV",
+          "expected": "Thấy toàn bộ data trong đơn vị (tương đương Lãnh đạo).",
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "module": "Permission - Token & Session",
+      "description": "Bảo mật JWT access token + refresh token",
+      "testcases": [
+        {
+          "id": "TC-PERM-TK-001",
+          "screen": "API",
+          "category": "Permission",
+          "priority": "High",
+          "title": "Gọi API không có Authorization header — 401",
+          "preconditions": "Backend đang chạy",
+          "steps": "1. curl GET /api/van-ban-den (không Authorization)",
+          "expected": "401 Unauthorized + message Vietnamese.",
+          "notes": ""
+        },
+        {
+          "id": "TC-PERM-TK-002",
+          "screen": "API",
+          "category": "Permission",
+          "priority": "High",
+          "title": "Token đã expired (15 phút trôi qua) — gọi API trả 401",
+          "preconditions": "Có access_token cũ > 15 phút",
+          "steps": "1. curl GET /api/van-ban-den với token expired",
+          "expected": "401. Frontend nên auto trigger refresh token flow.",
+          "notes": ""
+        },
+        {
+          "id": "TC-PERM-TK-003",
+          "screen": "API",
+          "category": "Permission",
+          "priority": "High",
+          "title": "Token bị tampering (sửa payload) — backend reject",
+          "preconditions": "Có valid token",
+          "steps": "1. Decode token, sửa staffId trong payload\n2. Encode lại không signed key đúng\n3. Call API",
+          "expected": "401. Signature verification fail (HS256).",
+          "notes": ""
+        },
+        {
+          "id": "TC-PERM-TK-004",
+          "screen": "Refresh flow",
+          "category": "Permission",
+          "priority": "High",
+          "title": "Refresh token đã revoke — không cấp access_token mới",
+          "preconditions": "User đã logout (refresh token bị xóa khỏi DB)",
+          "steps": "1. Gọi POST /api/auth/refresh với cookie cũ",
+          "expected": "401. Buộc đăng nhập lại.",
+          "notes": ""
+        },
+        {
+          "id": "TC-PERM-TK-005",
+          "screen": "Token rotation",
+          "category": "Permission",
+          "priority": "High",
+          "title": "Sau khi refresh, refresh token cũ bị revoke (rotation)",
+          "preconditions": "User đăng nhập",
+          "steps": "1. Lưu lại refresh_token_old\n2. Gọi /refresh — nhận refresh_token_new\n3. Gọi /refresh lần 2 với token_old",
+          "expected": "401. Token rotation = 1 token chỉ dùng 1 lần.",
+          "notes": ""
+        }
+      ]
+    }
+  ]
+}

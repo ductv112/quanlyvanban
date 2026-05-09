@@ -104,7 +104,13 @@ router.post('/', async (req: Request, res: Response) => {
   const startedAt = Date.now();
   try {
     // SECURITY T-11-01: staffId CHỈ từ JWT, không bao giờ từ body
-    const { staffId } = (req as AuthRequest).user;
+    const { staffId, isAdmin, roles } = (req as AuthRequest).user;
+    // BUG-PERM-005: defense-in-depth — yêu cầu role Ban Lãnh đạo hoặc Quản trị hệ thống
+    // (DB ACL canSign vẫn enforce per-attachment, nhưng RBAC layer block sớm)
+    if (!isAdmin && !roles?.some((r: string) => r === 'Ban Lãnh đạo' || r === 'Quản trị hệ thống')) {
+      res.status(403).json({ success: false, message: 'Không có quyền ký số (yêu cầu vai trò Ban Lãnh đạo hoặc Quản trị hệ thống)' });
+      return;
+    }
     const {
       attachment_id,
       attachment_type,
@@ -139,7 +145,19 @@ router.post('/', async (req: Request, res: Response) => {
     }
 
     // ---- 1. Provider active check (Admin đã cấu hình CFG-01?)
-    const active = await getActiveProviderWithCredentials();
+    // BUG-KS-003: catch decrypt error friendly thay vì 500 raw
+    let active;
+    try {
+      active = await getActiveProviderWithCredentials();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      req.log?.warn({ err }, 'Provider credentials decrypt failed');
+      res.status(400).json({
+        success: false,
+        message: 'Provider chưa được cấu hình credentials hợp lệ. Vui lòng liên hệ Quản trị viên: ' + msg,
+      });
+      return;
+    }
     if (!active) {
       res.status(400).json({
         success: false,

@@ -1440,9 +1440,32 @@ $$;
 CREATE OR REPLACE FUNCTION edoc.fn_doc_book_delete(p_id integer) RETURNS TABLE(success boolean, message text)
     LANGUAGE plpgsql
     AS $$
+DECLARE v_ref_count INT;
 BEGIN
   IF NOT EXISTS(SELECT 1 FROM edoc.doc_books WHERE id = p_id AND is_deleted = FALSE) THEN
     RETURN QUERY SELECT FALSE, 'Không tìm thấy sổ văn bản'::TEXT;
+    RETURN;
+  END IF;
+
+  -- BUG-DMSV-004: Block delete khi sổ văn bản đang được tham chiếu bởi VB
+  SELECT COUNT(*) INTO v_ref_count FROM edoc.incoming_docs WHERE doc_book_id = p_id;
+  IF v_ref_count > 0 THEN
+    RETURN QUERY SELECT FALSE, ('Không thể xóa: sổ đang được dùng bởi ' || v_ref_count || ' văn bản đến')::TEXT;
+    RETURN;
+  END IF;
+  SELECT COUNT(*) INTO v_ref_count FROM edoc.outgoing_docs WHERE doc_book_id = p_id;
+  IF v_ref_count > 0 THEN
+    RETURN QUERY SELECT FALSE, ('Không thể xóa: sổ đang được dùng bởi ' || v_ref_count || ' văn bản đi')::TEXT;
+    RETURN;
+  END IF;
+  SELECT COUNT(*) INTO v_ref_count FROM edoc.drafting_docs WHERE doc_book_id = p_id;
+  IF v_ref_count > 0 THEN
+    RETURN QUERY SELECT FALSE, ('Không thể xóa: sổ đang được dùng bởi ' || v_ref_count || ' văn bản dự thảo')::TEXT;
+    RETURN;
+  END IF;
+  SELECT COUNT(*) INTO v_ref_count FROM edoc.handling_docs WHERE doc_book_id = p_id;
+  IF v_ref_count > 0 THEN
+    RETURN QUERY SELECT FALSE, ('Không thể xóa: sổ đang được dùng bởi ' || v_ref_count || ' hồ sơ công việc')::TEXT;
     RETURN;
   END IF;
 
@@ -2312,7 +2335,7 @@ $$;
 CREATE OR REPLACE FUNCTION edoc.fn_doc_type_delete(p_id integer) RETURNS TABLE(success boolean, message text)
     LANGUAGE plpgsql
     AS $$
-DECLARE v_child_count INT;
+DECLARE v_child_count INT; v_ref_count INT;
 BEGIN
   IF NOT EXISTS(SELECT 1 FROM edoc.doc_types WHERE id = p_id AND is_deleted = FALSE) THEN
     RETURN QUERY SELECT FALSE, 'Không tìm thấy loại văn bản'::TEXT;
@@ -2324,6 +2347,28 @@ BEGIN
 
   IF v_child_count > 0 THEN
     RETURN QUERY SELECT FALSE, ('Không thể xóa: còn '|| v_child_count ||' loại văn bản con')::TEXT;
+    RETURN;
+  END IF;
+
+  -- BUG-DMLV-003: Block delete khi loại văn bản đang được tham chiếu bởi VB
+  SELECT COUNT(*) INTO v_ref_count FROM edoc.incoming_docs WHERE doc_type_id = p_id;
+  IF v_ref_count > 0 THEN
+    RETURN QUERY SELECT FALSE, ('Không thể xóa: loại đang được dùng bởi ' || v_ref_count || ' văn bản đến')::TEXT;
+    RETURN;
+  END IF;
+  SELECT COUNT(*) INTO v_ref_count FROM edoc.outgoing_docs WHERE doc_type_id = p_id;
+  IF v_ref_count > 0 THEN
+    RETURN QUERY SELECT FALSE, ('Không thể xóa: loại đang được dùng bởi ' || v_ref_count || ' văn bản đi')::TEXT;
+    RETURN;
+  END IF;
+  SELECT COUNT(*) INTO v_ref_count FROM edoc.drafting_docs WHERE doc_type_id = p_id;
+  IF v_ref_count > 0 THEN
+    RETURN QUERY SELECT FALSE, ('Không thể xóa: loại đang được dùng bởi ' || v_ref_count || ' văn bản dự thảo')::TEXT;
+    RETURN;
+  END IF;
+  SELECT COUNT(*) INTO v_ref_count FROM edoc.handling_docs WHERE doc_type_id = p_id;
+  IF v_ref_count > 0 THEN
+    RETURN QUERY SELECT FALSE, ('Không thể xóa: loại đang được dùng bởi ' || v_ref_count || ' hồ sơ công việc')::TEXT;
     RETURN;
   END IF;
 
@@ -5742,7 +5787,7 @@ $$;
 -- Name: fn_lgsp_tracking_create(bigint, bigint, character varying, character varying, character varying, text, integer); Type: FUNCTION; Schema: edoc; Owner: -
 --
 
-CREATE OR REPLACE FUNCTION edoc.fn_lgsp_tracking_create(p_outgoing_doc_id bigint DEFAULT NULL::bigint, p_incoming_doc_id bigint DEFAULT NULL::bigint, p_direction character varying DEFAULT 'send'::character varying, p_dest_org_code character varying DEFAULT NULL::character varying, p_dest_org_name character varying DEFAULT NULL::character varying, p_edxml_content text DEFAULT NULL::text, p_created_by integer DEFAULT NULL::integer) RETURNS TABLE(success boolean, message text, id bigint)
+CREATE OR REPLACE FUNCTION edoc.fn_lgsp_tracking_create(p_outgoing_doc_id bigint DEFAULT NULL::bigint, p_incoming_doc_id bigint DEFAULT NULL::bigint, p_direction character varying DEFAULT 'send'::character varying, p_dest_org_code character varying DEFAULT NULL::character varying, p_dest_org_name character varying DEFAULT NULL::character varying, p_edxml_content text DEFAULT NULL::text, p_created_by integer DEFAULT NULL::integer, p_channel character varying DEFAULT 'lgsp'::character varying) RETURNS TABLE(success boolean, message text, id bigint)
     LANGUAGE plpgsql
     AS $$
 DECLARE
@@ -5750,11 +5795,11 @@ DECLARE
 BEGIN
   INSERT INTO edoc.lgsp_tracking (
     outgoing_doc_id, incoming_doc_id, direction, dest_org_code, dest_org_name,
-    edxml_content, status, created_by
+    edxml_content, status, created_by, channel
   )
   VALUES (
     p_outgoing_doc_id, p_incoming_doc_id, p_direction, p_dest_org_code, p_dest_org_name,
-    p_edxml_content, 'pending', p_created_by
+    p_edxml_content, 'pending', p_created_by, COALESCE(p_channel, 'lgsp')
   )
   RETURNING edoc.lgsp_tracking.id INTO v_id;
 
@@ -6804,7 +6849,7 @@ $$;
 -- Name: fn_outgoing_doc_create(integer, timestamp with time zone, integer, character varying, character varying, character varying, text, integer, integer, integer, timestamp with time zone, character varying, timestamp with time zone, integer, integer, integer, smallint, smallint, integer, integer, timestamp with time zone, text, integer); Type: FUNCTION; Schema: edoc; Owner: -
 --
 
-CREATE OR REPLACE FUNCTION edoc.fn_outgoing_doc_create(p_unit_id integer, p_received_date timestamp with time zone, p_number integer, p_sub_number character varying, p_notation character varying, p_document_code character varying, p_abstract text, p_drafting_unit_id integer DEFAULT NULL::integer, p_drafting_user_id integer DEFAULT NULL::integer, p_publish_unit_id integer DEFAULT NULL::integer, p_publish_date timestamp with time zone DEFAULT NULL::timestamp with time zone, p_signer character varying DEFAULT NULL::character varying, p_sign_date timestamp with time zone DEFAULT NULL::timestamp with time zone, p_doc_book_id integer DEFAULT NULL::integer, p_doc_type_id integer DEFAULT NULL::integer, p_doc_field_id integer DEFAULT NULL::integer, p_secret_id smallint DEFAULT 1, p_urgent_id smallint DEFAULT 1, p_number_paper integer DEFAULT 1, p_number_copies integer DEFAULT 1, p_expired_date timestamp with time zone DEFAULT NULL::timestamp with time zone, p_recipients text DEFAULT NULL::text, p_created_by integer DEFAULT NULL::integer) RETURNS TABLE(success boolean, message text, id bigint)
+CREATE OR REPLACE FUNCTION edoc.fn_outgoing_doc_create(p_unit_id integer, p_received_date timestamp with time zone, p_number integer, p_sub_number character varying, p_notation character varying, p_document_code character varying, p_abstract text, p_drafting_unit_id integer DEFAULT NULL::integer, p_drafting_user_id integer DEFAULT NULL::integer, p_publish_unit_id integer DEFAULT NULL::integer, p_publish_date timestamp with time zone DEFAULT NULL::timestamp with time zone, p_signer character varying DEFAULT NULL::character varying, p_sign_date timestamp with time zone DEFAULT NULL::timestamp with time zone, p_doc_book_id integer DEFAULT NULL::integer, p_doc_type_id integer DEFAULT NULL::integer, p_doc_field_id integer DEFAULT NULL::integer, p_secret_id smallint DEFAULT 1, p_urgent_id smallint DEFAULT 1, p_number_paper integer DEFAULT 1, p_number_copies integer DEFAULT 1, p_expired_date timestamp with time zone DEFAULT NULL::timestamp with time zone, p_recipients text DEFAULT NULL::text, p_created_by integer DEFAULT NULL::integer, p_department_id integer DEFAULT NULL::integer, p_approver character varying DEFAULT NULL::character varying) RETURNS TABLE(success boolean, message text, id bigint)
     LANGUAGE plpgsql
     AS $$
 DECLARE v_id BIGINT;
@@ -6823,22 +6868,27 @@ BEGIN
     p_number := edoc.fn_outgoing_doc_get_next_number(p_doc_book_id, p_unit_id);
   END IF;
 
+  -- Resolve department_id from created_by if not provided
+  IF p_department_id IS NULL AND p_created_by IS NOT NULL THEN
+    SELECT s.department_id INTO p_department_id FROM public.staff s WHERE s.id = p_created_by;
+  END IF;
+
   INSERT INTO edoc.outgoing_docs (
-    unit_id, received_date, number, sub_number, notation, document_code,
+    unit_id, department_id, received_date, number, sub_number, notation, document_code,
     abstract, drafting_unit_id, drafting_user_id, publish_unit_id, publish_date,
     signer, sign_date, expired_date,
     number_paper, number_copies, secret_id, urgent_id,
     recipients, doc_book_id, doc_type_id, doc_field_id,
-    created_by, updated_by
+    approver, created_by, updated_by
   ) VALUES (
-    p_unit_id, COALESCE(p_received_date, NOW()), p_number,
+    p_unit_id, COALESCE(p_department_id, p_unit_id), COALESCE(p_received_date, NOW()), p_number,
     NULLIF(TRIM(p_sub_number), ''), NULLIF(TRIM(p_notation), ''), NULLIF(TRIM(p_document_code), ''),
     TRIM(p_abstract), p_drafting_unit_id, p_drafting_user_id, p_publish_unit_id, p_publish_date,
     NULLIF(TRIM(p_signer), ''), p_sign_date, p_expired_date,
     COALESCE(p_number_paper, 1), COALESCE(p_number_copies, 1),
     COALESCE(p_secret_id, 1), COALESCE(p_urgent_id, 1),
     NULLIF(TRIM(p_recipients), ''), p_doc_book_id, p_doc_type_id, p_doc_field_id,
-    p_created_by, p_created_by
+    NULLIF(TRIM(p_approver), ''), p_created_by, p_created_by
   )
   RETURNING edoc.outgoing_docs.id INTO v_id;
 
@@ -7238,7 +7288,7 @@ $$;
 -- Name: fn_outgoing_doc_update(bigint, timestamp with time zone, integer, character varying, character varying, character varying, text, integer, integer, integer, timestamp with time zone, character varying, timestamp with time zone, integer, integer, integer, smallint, smallint, integer, integer, timestamp with time zone, text, integer); Type: FUNCTION; Schema: edoc; Owner: -
 --
 
-CREATE OR REPLACE FUNCTION edoc.fn_outgoing_doc_update(p_id bigint, p_received_date timestamp with time zone, p_number integer, p_sub_number character varying, p_notation character varying, p_document_code character varying, p_abstract text, p_drafting_unit_id integer DEFAULT NULL::integer, p_drafting_user_id integer DEFAULT NULL::integer, p_publish_unit_id integer DEFAULT NULL::integer, p_publish_date timestamp with time zone DEFAULT NULL::timestamp with time zone, p_signer character varying DEFAULT NULL::character varying, p_sign_date timestamp with time zone DEFAULT NULL::timestamp with time zone, p_doc_book_id integer DEFAULT NULL::integer, p_doc_type_id integer DEFAULT NULL::integer, p_doc_field_id integer DEFAULT NULL::integer, p_secret_id smallint DEFAULT 1, p_urgent_id smallint DEFAULT 1, p_number_paper integer DEFAULT 1, p_number_copies integer DEFAULT 1, p_expired_date timestamp with time zone DEFAULT NULL::timestamp with time zone, p_recipients text DEFAULT NULL::text, p_updated_by integer DEFAULT NULL::integer) RETURNS TABLE(success boolean, message text)
+CREATE OR REPLACE FUNCTION edoc.fn_outgoing_doc_update(p_id bigint, p_received_date timestamp with time zone, p_number integer, p_sub_number character varying, p_notation character varying, p_document_code character varying, p_abstract text, p_drafting_unit_id integer DEFAULT NULL::integer, p_drafting_user_id integer DEFAULT NULL::integer, p_publish_unit_id integer DEFAULT NULL::integer, p_publish_date timestamp with time zone DEFAULT NULL::timestamp with time zone, p_signer character varying DEFAULT NULL::character varying, p_sign_date timestamp with time zone DEFAULT NULL::timestamp with time zone, p_doc_book_id integer DEFAULT NULL::integer, p_doc_type_id integer DEFAULT NULL::integer, p_doc_field_id integer DEFAULT NULL::integer, p_secret_id smallint DEFAULT 1, p_urgent_id smallint DEFAULT 1, p_number_paper integer DEFAULT 1, p_number_copies integer DEFAULT 1, p_expired_date timestamp with time zone DEFAULT NULL::timestamp with time zone, p_recipients text DEFAULT NULL::text, p_updated_by integer DEFAULT NULL::integer, p_approver character varying DEFAULT NULL::character varying) RETURNS TABLE(success boolean, message text)
     LANGUAGE plpgsql
     AS $$
 DECLARE v_approved BOOLEAN;
@@ -7285,6 +7335,7 @@ BEGIN
     number_copies     = COALESCE(p_number_copies, 1),
     expired_date      = p_expired_date,
     recipients        = NULLIF(TRIM(p_recipients), ''),
+    approver          = COALESCE(NULLIF(TRIM(p_approver), ''), approver),
     updated_by        = p_updated_by,
     updated_at        = NOW()
   WHERE edoc.outgoing_docs.id = p_id;
@@ -15532,7 +15583,8 @@ CREATE TABLE IF NOT EXISTS public.staff (
     is_admin boolean DEFAULT false,
     first_name character varying(50),
     last_name character varying(50) NOT NULL,
-    full_name character varying(100) GENERATED ALWAYS AS (
+    -- BUG-F-ND-002: widen từ 100→150 để fit first_name(50) + ' ' + last_name(50) = 101 ký tự
+    full_name character varying(150) GENERATED ALWAYS AS (
 CASE
     WHEN (first_name IS NOT NULL) THEN ((((first_name)::text || ' '::text) || (last_name)::text))::character varying
     ELSE last_name
@@ -28011,3 +28063,197 @@ UPDATE edoc.handling_docs SET status = 3, updated_at = NOW() WHERE status = 2;
 UPDATE edoc.handling_docs h
 SET unit_id = public.fn_get_ancestor_unit(h.department_id), updated_at = NOW()
 WHERE h.unit_id <> public.fn_get_ancestor_unit(h.department_id);
+
+-- ============================================================================
+-- Phase 31 Group B Fix B1: BUG-E2E-018 LGSP fn_lgsp_tracking_create signature mismatch
+-- ============================================================================
+-- Backend repo goi SP voi 8 args (last param = channel 'lgsp'/'cp'),
+-- nhung SP cu chi co 7 args -> moi call fail.
+-- Fix: them column "channel" vao bang lgsp_tracking + DROP SP cu (7 args)
+--      + tao lai SP voi 8 args (param p_channel cuoi).
+-- Idempotent: ADD COLUMN IF NOT EXISTS, DROP FUNCTION IF EXISTS specific signature.
+-- ============================================================================
+ALTER TABLE edoc.lgsp_tracking ADD COLUMN IF NOT EXISTS channel VARCHAR(10) DEFAULT 'lgsp';
+
+-- Drop SP cu signature 7 args (neu ton tai) de tranh overload
+DROP FUNCTION IF EXISTS edoc.fn_lgsp_tracking_create(bigint, bigint, character varying, character varying, character varying, text, integer);
+
+CREATE OR REPLACE FUNCTION edoc.fn_lgsp_tracking_create(
+  p_outgoing_doc_id bigint DEFAULT NULL::bigint,
+  p_incoming_doc_id bigint DEFAULT NULL::bigint,
+  p_direction character varying DEFAULT 'send'::character varying,
+  p_dest_org_code character varying DEFAULT NULL::character varying,
+  p_dest_org_name character varying DEFAULT NULL::character varying,
+  p_edxml_content text DEFAULT NULL::text,
+  p_created_by integer DEFAULT NULL::integer,
+  p_channel character varying DEFAULT 'lgsp'::character varying
+) RETURNS TABLE(success boolean, message text, id bigint)
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  v_id BIGINT;
+BEGIN
+  INSERT INTO edoc.lgsp_tracking (
+    outgoing_doc_id, incoming_doc_id, direction, dest_org_code, dest_org_name,
+    edxml_content, status, created_by, channel
+  )
+  VALUES (
+    p_outgoing_doc_id, p_incoming_doc_id, p_direction, p_dest_org_code, p_dest_org_name,
+    p_edxml_content, 'pending', p_created_by, COALESCE(p_channel, 'lgsp')
+  )
+  RETURNING edoc.lgsp_tracking.id INTO v_id;
+
+  RETURN QUERY SELECT true, 'Tạo tracking liên thông thành công'::TEXT, v_id;
+END;
+$$;
+
+-- ============================================================================
+-- Phase 31 Group B Fix B2: BUG-CONC-003 Notation race condition outgoing doc
+-- ============================================================================
+-- Note: EXTRACT(YEAR FROM timestamptz) la STABLE (depend on session timezone) -- Postgres reject in INDEX expr.
+-- Workaround: dung helper IMMUTABLE wrapper + index tren wrapper.
+CREATE OR REPLACE FUNCTION edoc.fn_year_of_timestamp(ts timestamp with time zone)
+RETURNS INT
+LANGUAGE sql IMMUTABLE PARALLEL SAFE STRICT
+AS $$ SELECT EXTRACT(YEAR FROM ts AT TIME ZONE 'UTC')::INT $$;
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_outgoing_docs_book_unit_number_year
+  ON edoc.outgoing_docs (doc_book_id, unit_id, number, edoc.fn_year_of_timestamp(received_date))
+  WHERE number IS NOT NULL;
+
+CREATE OR REPLACE FUNCTION edoc.fn_outgoing_doc_get_next_number(
+  p_doc_book_id INT,
+  p_unit_id     INT DEFAULT NULL,
+  p_dept_id     INT DEFAULT NULL
+)
+RETURNS INT
+LANGUAGE plpgsql
+AS $$
+DECLARE v_max INT; v_unit_id INT;
+BEGIN
+  IF p_dept_id IS NOT NULL THEN v_unit_id := public.fn_get_ancestor_unit(p_dept_id);
+  ELSE v_unit_id := p_unit_id; END IF;
+
+  PERFORM 1 FROM edoc.doc_books WHERE id = p_doc_book_id FOR UPDATE;
+
+  SELECT COALESCE(MAX(number), 0) INTO v_max
+  FROM edoc.outgoing_docs
+  WHERE doc_book_id = p_doc_book_id
+    AND unit_id = v_unit_id
+    AND EXTRACT(YEAR FROM received_date) = EXTRACT(YEAR FROM NOW());
+  RETURN v_max + 1;
+END;
+$$;
+
+-- ============================================================================
+-- Phase 31 Group B Fix B3: BUG-001 Missing change-password endpoint
+-- ============================================================================
+CREATE OR REPLACE FUNCTION public.fn_staff_change_password(
+  p_staff_id BIGINT,
+  p_old_hash TEXT,
+  p_new_hash TEXT
+)
+RETURNS TABLE(success BOOLEAN, message TEXT)
+LANGUAGE plpgsql
+AS $func$
+DECLARE
+  v_current_hash VARCHAR(200);
+BEGIN
+  SELECT password_hash INTO v_current_hash
+    FROM public.staff
+    WHERE id = p_staff_id AND is_deleted = FALSE;
+
+  IF v_current_hash IS NULL THEN
+    RETURN QUERY SELECT FALSE, E'Khong tim thay nguoi dung'::TEXT;
+    RETURN;
+  END IF;
+
+  IF v_current_hash <> p_old_hash THEN
+    RETURN QUERY SELECT FALSE, E'Mat khau cu khong dung'::TEXT;
+    RETURN;
+  END IF;
+
+  UPDATE public.staff
+    SET password_hash = p_new_hash,
+        updated_at = NOW()
+    WHERE id = p_staff_id;
+
+  UPDATE public.refresh_tokens
+    SET revoked_at = NOW()
+    WHERE staff_id = p_staff_id AND revoked_at IS NULL;
+
+  RETURN QUERY SELECT TRUE, E'Doi mat khau thanh cong'::TEXT;
+END;
+$func$;
+
+-- ============================================================================
+-- Phase 31 Group B Fix B4: BUG-PERM-008 Refresh token rotation atomic consume
+-- ============================================================================
+CREATE OR REPLACE FUNCTION public.fn_auth_consume_refresh_token(p_token_hash character varying)
+RETURNS TABLE(staff_id integer, username character varying, full_name character varying, email character varying, phone character varying, image character varying, is_admin boolean, is_locked boolean, is_deleted boolean, department_id integer, unit_id integer, position_name character varying, department_name character varying, unit_name character varying, roles text)
+LANGUAGE plpgsql
+AS $func$
+DECLARE
+  v_staff_id INTEGER;
+BEGIN
+  UPDATE public.refresh_tokens
+    SET revoked_at = NOW()
+    WHERE token_hash = p_token_hash
+      AND revoked_at IS NULL
+      AND expires_at > NOW()
+    RETURNING refresh_tokens.staff_id INTO v_staff_id;
+
+  IF v_staff_id IS NULL THEN
+    RETURN;
+  END IF;
+
+  RETURN QUERY
+  SELECT
+    s.id              AS staff_id,
+    s.username,
+    s.full_name::VARCHAR,
+    s.email::VARCHAR,
+    COALESCE(s.phone, s.mobile)::VARCHAR AS phone,
+    s.image::VARCHAR,
+    s.is_admin,
+    s.is_locked,
+    s.is_deleted,
+    s.department_id,
+    s.unit_id,
+    p.name::VARCHAR   AS position_name,
+    d.name::VARCHAR   AS department_name,
+    u.name::VARCHAR   AS unit_name,
+    COALESCE(
+      (SELECT string_agg(r.name, ',')
+       FROM public.role_of_staff ros
+       JOIN public.roles r ON r.id = ros.role_id
+       WHERE ros.staff_id = s.id),
+      ''
+    )::TEXT AS roles
+  FROM public.staff s
+  LEFT JOIN public.positions p ON p.id = s.position_id
+  LEFT JOIN public.departments d ON d.id = s.department_id
+  LEFT JOIN public.departments u ON u.id = s.unit_id
+  WHERE s.id = v_staff_id;
+END;
+$func$;
+
+-- ============================================================================
+-- Phase 31 Group B Fix B3 helper: fn_auth_get_password_hash
+-- ============================================================================
+-- Goi tu route /api/auth/change-password de bcrypt-compare old password.
+-- Tuan thu project rule "all data access via SP" -- KHONG dung rawQuery.
+-- ============================================================================
+-- Note: staff.id la INTEGER, p_staff_id phai dung type de tranh "function does not exist (unknown)" loi.
+-- DROP signature BIGINT cu (neu da apply phien ban truoc) de tranh overload ambiguous.
+DROP FUNCTION IF EXISTS public.fn_auth_get_password_hash(BIGINT);
+
+CREATE OR REPLACE FUNCTION public.fn_auth_get_password_hash(p_staff_id INTEGER)
+RETURNS TABLE(password_hash character varying)
+LANGUAGE sql STABLE
+AS $$
+  SELECT s.password_hash
+    FROM public.staff s
+    WHERE s.id = p_staff_id AND s.is_deleted = FALSE
+    LIMIT 1;
+$$;

@@ -49,3 +49,20 @@ docs/Function list & Estimate.xlsx
 
 # Doc tích hợp ký số MySign Viettel (~400MB — SDK + demo code) — chỉ giữ local
 docs/huong_dan_tich_hop_ky_so_MySign_Viettel/
+
+# Test artifacts (Phase 21+ automation suite)
+tests/results/
+# Storage state JSON files generated runtime by tests/globalSetup.ts (Plan 21-04).
+# Giu folder + .gitkeep nhung khong commit *.json (chua token thuc).
+tests/.auth/*.json
+tests/coverage/
+playwright-report/
+.env.test
+
+# CI artifacts (Plan 21-06 — test-pr.yml workflow)
+.github/.local
+test-results/
+tools/mocks/.pid
+playwright-report/
+tools/test-report/node_modules/
+tools/mocks/node_modules/

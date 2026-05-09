@@ -1,0 +1,22 @@
+{
+  "name": "qlvb-test-orchestrator",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Root test orchestrator cho QLVB — Playwright E2E + tong hop report",
+  "scripts": {
+    "test:smoke": "playwright test --grep @smoke",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:integration": "npm --prefix e_office_app_new/backend run test:integration",
+    "test:unit": "npm --prefix e_office_app_new/backend run test:unit",
+    "test:all": "npm run test:unit && npm run test:integration && npm run test:smoke",
+    "test:report": "playwright show-report",
+    "test:db:reset": "npm --prefix e_office_app_new/backend run test:db:reset",
+    "test:install-browsers": "playwright install chromium --with-deps"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.50.0",
+    "@types/node": "^20.0.0",
+    "dotenv": "^17.0.0"
+  }
+}

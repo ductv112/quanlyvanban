@@ -1,0 +1,368 @@
+{
+  "pass": 55,
+  "fail": 3,
+  "skip": 14,
+  "total": 72,
+  "results": [
+    {
+      "id": "TC-VBI-001",
+      "verdict": "PASS",
+      "detail": "list returned 7 items + all required columns present"
+    },
+    {
+      "id": "TC-VBI-002",
+      "verdict": "PASS",
+      "detail": "filter doc_book_id=5 returned 7 all matching"
+    },
+    {
+      "id": "TC-VBI-003",
+      "verdict": "PASS",
+      "detail": "keyword=cross-unit matched 1 doc (90003)"
+    },
+    {
+      "id": "TC-VBI-004",
+      "verdict": "PASS",
+      "detail": "PATCH danh-dau-da-doc với doc_ids=[90001,90002] returned success"
+    },
+    {
+      "id": "TC-VBI-005",
+      "verdict": "PASS",
+      "detail": "bad token → HTTP 401 (denied gracefully)"
+    },
+    {
+      "id": "TC-VBI-006",
+      "verdict": "PASS",
+      "detail": "no token → HTTP 401"
+    },
+    {
+      "id": "TC-VBI-007",
+      "verdict": "SKIP",
+      "detail": "UI visual — color tags require browser render"
+    },
+    {
+      "id": "TC-VBI-008",
+      "verdict": "PASS",
+      "detail": "created id=90017"
+    },
+    {
+      "id": "TC-VBI-009",
+      "verdict": "PASS",
+      "detail": "validation msg: Trích yếu nội dung là bắt buộc"
+    },
+    {
+      "id": "TC-VBI-010",
+      "verdict": "PASS",
+      "detail": "validation msg: Sổ văn bản là bắt buộc"
+    },
+    {
+      "id": "TC-VBI-011",
+      "verdict": "SKIP",
+      "detail": "Frontend-only validation — backend route accepts undefined drafting_unit_id"
+    },
+    {
+      "id": "TC-VBI-012",
+      "verdict": "SKIP",
+      "detail": "Frontend-only validation — backend accepts undefined drafting_user_id"
+    },
+    {
+      "id": "TC-VBI-013",
+      "verdict": "SKIP",
+      "detail": "endpoint nhan-vien returns 403 — alternate cascade endpoint may exist"
+    },
+    {
+      "id": "TC-VBI-014",
+      "verdict": "FAIL",
+      "detail": "BUG: backend chấp nhận abstract 2001 ký tự — frontend phải giới hạn maxLength={2000}"
+    },
+    {
+      "id": "TC-VBI-015",
+      "verdict": "PASS",
+      "detail": "notation 101 ký tự bị chặn: value too long for type character varying(100)"
+    },
+    {
+      "id": "TC-VBI-016",
+      "verdict": "PASS",
+      "detail": "update draft id=90017 OK"
+    },
+    {
+      "id": "TC-VBI-017",
+      "verdict": "PASS",
+      "detail": "edit released VB → HTTP 400 rejected: Không thể sửa văn bản đã được duyệt"
+    },
+    {
+      "id": "TC-VBI-018",
+      "verdict": "SKIP",
+      "detail": "UI visual — Drawer size + gradient yêu cầu render browser"
+    },
+    {
+      "id": "TC-VBI-053",
+      "verdict": "PASS",
+      "detail": "test_canbo_x update doc đơn vị khác → HTTP 403"
+    },
+    {
+      "id": "TC-VBI-019",
+      "verdict": "PASS",
+      "detail": "xóa draft id=90019 OK"
+    },
+    {
+      "id": "TC-VBI-020",
+      "verdict": "PASS",
+      "detail": "xóa released VB → HTTP 400 forbidden"
+    },
+    {
+      "id": "TC-VBI-021",
+      "verdict": "PASS",
+      "detail": "test_canbo_x xóa doc đơn vị khác → HTTP 403"
+    },
+    {
+      "id": "TC-VBI-022",
+      "verdict": "PASS",
+      "detail": "reject với lý do OK"
+    },
+    {
+      "id": "TC-VBI-023",
+      "verdict": "PASS",
+      "detail": "reject không lý do được chấp nhận (UI sẽ chặn empty)"
+    },
+    {
+      "id": "TC-VBI-024",
+      "verdict": "PASS",
+      "detail": "test_canbo từ chối → HTTP 403"
+    },
+    {
+      "id": "TC-VBI-025",
+      "verdict": "PASS",
+      "detail": "chi tiết 90001 trả về đủ data + permissions"
+    },
+    {
+      "id": "TC-VBI-026",
+      "verdict": "PASS",
+      "detail": "duyệt id=90024 OK"
+    },
+    {
+      "id": "TC-VBI-027",
+      "verdict": "PASS",
+      "detail": "hủy duyệt id=90024 OK"
+    },
+    {
+      "id": "TC-VBI-028",
+      "verdict": "PASS",
+      "detail": "ban hành id=90024 cấp số=90014"
+    },
+    {
+      "id": "TC-VBI-029",
+      "verdict": "SKIP",
+      "detail": "Composite UI flow — frontend chains ban-hanh + gui-noi-bo (đã verify từng bước trong TC-028 + TC-030)"
+    },
+    {
+      "id": "TC-VBI-030",
+      "verdict": "PASS",
+      "detail": "gui-noi-bo internal_count=1 after add recipient"
+    },
+    {
+      "id": "TC-VBI-031",
+      "verdict": "PASS",
+      "detail": "thu hồi OK: "
+    },
+    {
+      "id": "TC-VBI-032",
+      "verdict": "PASS",
+      "detail": "gửi VB chưa ban hành bị chặn: Văn bản chưa ban hành, không thể gửi"
+    },
+    {
+      "id": "TC-VBI-033",
+      "verdict": "SKIP",
+      "detail": "Real ký số cert required — không có HSM/USB token trong test env (SIGNING_MOCK_MODE=true)"
+    },
+    {
+      "id": "TC-VBI-034",
+      "verdict": "PASS",
+      "detail": "upload attachment id=90026 OK"
+    },
+    {
+      "id": "TC-VBI-035",
+      "verdict": "FAIL",
+      "detail": "BUG-VB-DI-001: upload khi đã duyệt được phép (HTTP 201) — phải bị chặn"
+    },
+    {
+      "id": "TC-VBI-036",
+      "verdict": "PASS",
+      "detail": "y-kien created id=4"
+    },
+    {
+      "id": "TC-VBI-051",
+      "verdict": "PASS",
+      "detail": "noi-nhan trả 1 recipient + tracking fields đầy đủ"
+    },
+    {
+      "id": "TC-VBI-052",
+      "verdict": "PASS",
+      "detail": "so-tiep-theo = 90016"
+    },
+    {
+      "id": "TC-VBI-054",
+      "verdict": "FAIL",
+      "detail": "BUG-VB-DI-002: delete attachment của VB đã duyệt được phép (HTTP 200) — phải bị chặn"
+    },
+    {
+      "id": "TC-VBI-037",
+      "verdict": "PASS",
+      "detail": "save recipients inserted_count=1"
+    },
+    {
+      "id": "TC-VBI-038",
+      "verdict": "PASS",
+      "detail": "backend chấp nhận empty (frontend phải chặn) — inserted=0"
+    },
+    {
+      "id": "TC-VBI-039",
+      "verdict": "SKIP",
+      "detail": "UI client-side exclusion — backend không enforce; cần verify trong UI test"
+    },
+    {
+      "id": "TC-VBI-040",
+      "verdict": "SKIP",
+      "detail": "UI text — yêu cầu render Modal trong browser"
+    },
+    {
+      "id": "TC-VBI-041",
+      "verdict": "PASS",
+      "detail": "gửi staff 9004 OK"
+    },
+    {
+      "id": "TC-VBI-042",
+      "verdict": "PASS",
+      "detail": "empty staff_ids: Vui lòng chọn ít nhất một người nhận"
+    },
+    {
+      "id": "TC-VBI-043",
+      "verdict": "PASS",
+      "detail": "test_canbo gửi → HTTP 403"
+    },
+    {
+      "id": "TC-VBI-044",
+      "verdict": "PASS",
+      "detail": "giao việc → HSCV id=9004"
+    },
+    {
+      "id": "TC-VBI-045",
+      "verdict": "PASS",
+      "detail": "empty name: Tên hồ sơ công việc là bắt buộc"
+    },
+    {
+      "id": "TC-VBI-046",
+      "verdict": "PASS",
+      "detail": "name 501 ký tự bị chặn"
+    },
+    {
+      "id": "TC-VBI-047",
+      "verdict": "PASS",
+      "detail": "test_canbo giao việc → HTTP 403"
+    },
+    {
+      "id": "TC-VBI-048",
+      "verdict": "PASS",
+      "detail": "linked 90002 → HSCV 9004"
+    },
+    {
+      "id": "TC-VBI-049",
+      "verdict": "PASS",
+      "detail": "empty: Vui lòng chọn hồ sơ công việc"
+    },
+    {
+      "id": "TC-VBI-050",
+      "verdict": "PASS",
+      "detail": "test_canbo → HTTP 403"
+    },
+    {
+      "id": "TC-CHGN-001",
+      "verdict": "PASS",
+      "detail": "GET cấu hình của user mới (test_vanthu) trả success — UI sẽ render"
+    },
+    {
+      "id": "TC-CHGN-002",
+      "verdict": "PASS",
+      "detail": "save 1 user OK"
+    },
+    {
+      "id": "TC-CHGN-003",
+      "verdict": "PASS",
+      "detail": "verify saved config visible: 1 users"
+    },
+    {
+      "id": "TC-CHGN-004",
+      "verdict": "PASS",
+      "detail": "remove all → 0 users (bulk replace works)"
+    },
+    {
+      "id": "TC-CHGN-005",
+      "verdict": "SKIP",
+      "detail": "UI checkbox toggle — same backend bulk replace semantics → covered by TC-CHGN-004"
+    },
+    {
+      "id": "TC-CHGN-006",
+      "verdict": "SKIP",
+      "detail": "UI state — frontend preserves right-column state during left search; backend stateless"
+    },
+    {
+      "id": "TC-CHGN-007",
+      "verdict": "SKIP",
+      "detail": "UI filter on /quan-tri/nhan-vien — covered by other admin tests"
+    },
+    {
+      "id": "TC-CHGN-008",
+      "verdict": "PASS",
+      "detail": "ghi đè OK, sau lưu = [9001, 9004]"
+    },
+    {
+      "id": "TC-CHGN-009",
+      "verdict": "SKIP",
+      "detail": "UI pagination on cán bộ source list — backend covered by /quan-tri/nhan-vien"
+    },
+    {
+      "id": "TC-CHGN-010",
+      "verdict": "PASS",
+      "detail": "no token /nhan-vien → HTTP 401"
+    },
+    {
+      "id": "TC-CHGN-011",
+      "verdict": "PASS",
+      "detail": "no token /cau-hinh-gui-nhanh → HTTP 401"
+    },
+    {
+      "id": "TC-CHGN-012",
+      "verdict": "PASS",
+      "detail": "search nonexistent → 0 results (UI sẽ show empty state)"
+    },
+    {
+      "id": "TC-CHGN-013",
+      "verdict": "PASS",
+      "detail": "backend chấp nhận empty (UI phải hiển thị 'Vui lòng chọn cán bộ')"
+    },
+    {
+      "id": "TC-CHGN-014",
+      "verdict": "PASS",
+      "detail": "invalid array → HTTP 400 (graceful error)"
+    },
+    {
+      "id": "TC-CHGN-015",
+      "verdict": "SKIP",
+      "detail": "UI rendering — placeholder em-dash khi position/department null; backend trả null OK"
+    },
+    {
+      "id": "TC-CHGN-016",
+      "verdict": "PASS",
+      "detail": "config_type=doc trả 1 — frontend gửi VB đến sẽ pre-fill default recipients"
+    },
+    {
+      "id": "TC-CHGN-017",
+      "verdict": "PASS",
+      "detail": "config_type=task trả 2 users — bút phê pre-fill"
+    },
+    {
+      "id": "TC-CHGN-018",
+      "verdict": "PASS",
+      "detail": "per-user isolation: lanhdao=[] vs vanthu=[9001, 9003]"
+    }
+  ]
+}

@@ -285,7 +285,12 @@ router.get('/so-den-tiep-theo', async (req: Request, res: Response) => {
 // POST / — Tạo VB đến
 router.post('/', async (req: Request, res: Response) => {
   try {
-    const { staffId, departmentId } = (req as AuthRequest).user;
+    const { staffId, departmentId, isAdmin, roles } = (req as AuthRequest).user;
+    // BUG-PERM-003: Chỉ Văn thư hoặc Quản trị hệ thống được tạo VB đến
+    if (!isAdmin && !roles?.some((r: string) => r === 'Văn thư' || r === 'Quản trị hệ thống')) {
+      res.status(403).json({ success: false, message: 'Không có quyền tạo văn bản đến (yêu cầu vai trò Văn thư hoặc Quản trị hệ thống)' });
+      return;
+    }
     const ancestorUnitId = await resolveAncestorUnit(departmentId);
     const body = req.body;
 
@@ -293,9 +298,43 @@ router.post('/', async (req: Request, res: Response) => {
       res.status(400).json({ success: false, message: 'Trích yếu nội dung là bắt buộc' });
       return;
     }
+    // BUG-VB-DEN-001: validate abstract length ≤ 2000
+    if (body.abstract.trim().length > 2000) {
+      res.status(400).json({ success: false, message: 'Trích yếu nội dung không được vượt quá 2000 ký tự' });
+      return;
+    }
     if (!body.doc_book_id) {
       res.status(400).json({ success: false, message: 'Sổ văn bản là bắt buộc' });
       return;
+    }
+    // BUG-F-VB-001: validate number_paper > 0
+    if (body.number_paper !== undefined && body.number_paper !== null) {
+      const np = Number(body.number_paper);
+      if (!Number.isFinite(np) || np <= 0) {
+        res.status(400).json({ success: false, message: 'Số trang phải lớn hơn 0' });
+        return;
+      }
+    }
+    // BUG-F-VB-002: validate expired_date >= received_date
+    if (body.expired_date && body.received_date) {
+      if (new Date(body.expired_date) < new Date(body.received_date)) {
+        res.status(400).json({ success: false, message: 'Ngày hết hạn phải lớn hơn hoặc bằng ngày tiếp nhận' });
+        return;
+      }
+    }
+    // BUG-PERM-002: Validate doc_book_id thuộc đơn vị user (cross-unit tampering)
+    {
+      const docBookRows = await rawQuery<{ unit_id: number }>(
+        'SELECT unit_id FROM edoc.doc_books WHERE id = $1', [Number(body.doc_book_id)],
+      );
+      if (docBookRows.length === 0) {
+        res.status(400).json({ success: false, message: 'Sổ văn bản không tồn tại' });
+        return;
+      }
+      if (!isAdmin && Number(docBookRows[0].unit_id) !== Number(ancestorUnitId)) {
+        res.status(403).json({ success: false, message: 'Sổ văn bản không thuộc đơn vị của bạn' });
+        return;
+      }
     }
 
     const result = await incomingDocRepository.create({
@@ -351,6 +390,25 @@ router.get('/:id', async (req: Request, res: Response) => {
     if (!doc) {
       res.status(404).json({ success: false, message: 'Không tìm thấy văn bản đến' });
       return;
+    }
+    // BUG-PERM-001: Cross-unit guard — chỉ admin hoặc cùng đơn vị mới xem được
+    // Recipient ở đơn vị khác cũng được phép (qua user_incoming_docs)
+    if (!isAdmin) {
+      const ancestorUnitId = await resolveAncestorUnit(departmentId);
+      if (Number(doc.unit_id) !== Number(ancestorUnitId)) {
+        // Check nếu user là recipient → cho phép
+        const recipientRows = await rawQuery<{ exists: boolean }>(
+          `SELECT EXISTS(
+             SELECT 1 FROM edoc.user_incoming_docs
+             WHERE incoming_doc_id = $1 AND staff_id = $2
+           ) AS exists`,
+          [id, staffId],
+        );
+        if (!recipientRows[0]?.exists) {
+          res.status(403).json({ success: false, message: 'Không có quyền xem văn bản đến này' });
+          return;
+        }
+      }
     }
     // Lấy extra_fields + rejection info + sub_number (Phase 20 v3.0)
     const extraRows = await rawQuery<{ extra_fields: Record<string, unknown>; rejected_by: number | null; rejection_reason: string | null; sub_number: string | null }>(
@@ -411,9 +469,21 @@ router.put('/:id', async (req: Request, res: Response) => {
       res.status(400).json({ success: false, message: 'Trích yếu nội dung là bắt buộc' });
       return;
     }
+    // BUG-VB-DEN-001: validate abstract length ≤ 2000
+    if (body.abstract.trim().length > 2000) {
+      res.status(400).json({ success: false, message: 'Trích yếu nội dung không được vượt quá 2000 ký tự' });
+      return;
+    }
     if (!body.doc_book_id) {
       res.status(400).json({ success: false, message: 'Sổ văn bản là bắt buộc' });
       return;
+    }
+    // BUG-F-VB-002: validate expired_date >= received_date
+    if (body.expired_date && body.received_date) {
+      if (new Date(body.expired_date) < new Date(body.received_date)) {
+        res.status(400).json({ success: false, message: 'Ngày hết hạn phải lớn hơn hoặc bằng ngày tiếp nhận' });
+        return;
+      }
     }
 
     const result = await incomingDocRepository.update(id, {
@@ -461,7 +531,12 @@ router.put('/:id', async (req: Request, res: Response) => {
 // DELETE /:id — Xóa VB đến
 router.delete('/:id', async (req: Request, res: Response) => {
   try {
-    const { staffId, departmentId, isAdmin } = (req as AuthRequest).user;
+    const { staffId, departmentId, isAdmin, roles } = (req as AuthRequest).user;
+    // BUG-PERM-004: Chỉ Văn thư hoặc Quản trị hệ thống được xóa VB đến
+    if (!isAdmin && !roles?.some((r: string) => r === 'Văn thư' || r === 'Quản trị hệ thống')) {
+      res.status(403).json({ success: false, message: 'Không có quyền xóa văn bản đến (yêu cầu vai trò Văn thư hoặc Quản trị hệ thống)' });
+      return;
+    }
     const id = Number(req.params.id);
     const loaded = await loadDocAndPerms(id, { staffId, departmentId, isAdmin });
     if (!loaded) { res.status(404).json({ success: false, message: 'Không tìm thấy văn bản đến' }); return; }
@@ -848,6 +923,15 @@ router.post('/:id/giao-viec', async (req: Request, res: Response) => {
       res.status(400).json({ success: false, message: 'Vui lòng chọn ít nhất một người thực hiện' });
       return;
     }
+    // BUG-VB-DEN-003: end_date là bắt buộc cho giao việc
+    if (!end_date) {
+      res.status(400).json({ success: false, message: 'Hạn xử lý (ngày kết thúc) là bắt buộc' });
+      return;
+    }
+    if (start_date && end_date && new Date(end_date) < new Date(start_date)) {
+      res.status(400).json({ success: false, message: 'Hạn xử lý phải lớn hơn hoặc bằng ngày bắt đầu' });
+      return;
+    }
 
     const result = await incomingDocRepository.createHandlingDocFromDoc(
       docId, 'incoming', name.trim(),
@@ -1003,6 +1087,13 @@ router.post('/:id/gui-lien-thong', async (req: Request, res: Response) => {
     if (!Array.isArray(org_codes) || org_codes.length === 0) {
       res.status(400).json({ success: false, message: 'Vui lòng chọn ít nhất một đơn vị' });
       return;
+    }
+    // BUG-VB-DEN-004: validate cấu trúc {code, name} cho mỗi org
+    for (const org of org_codes) {
+      if (!org || typeof org !== 'object' || typeof (org as any).code !== 'string' || typeof (org as any).name !== 'string') {
+        res.status(400).json({ success: false, message: 'Danh sách đơn vị nhận liên thông không hợp lệ' });
+        return;
+      }
     }
     const results = [];
     for (const org of org_codes as { code: string; name: string }[]) {

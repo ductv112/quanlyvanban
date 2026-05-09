@@ -468,7 +468,10 @@ router.put('/:id', async (req: Request, res: Response) => {
     // Existing row lookup — need current encrypted secret if body omits it
     const existing: SigningProviderConfigFullRow | null =
       await signingProviderConfigRepository.getByCode(body.provider_code);
-    if (!existing || existing.id !== id) {
+    // Phase 31 fix(BIGINT pitfall #9): existing.id từ DB BIGINT là string,
+    // id từ req.params là number → so sánh strict (!==) luôn fail → PUT trả 404 sai.
+    // Resolves: BUG-KS-CFG-001, BUG-KS-TK-001, BUG-F-KS-001
+    if (!existing || Number(existing.id) !== Number(id)) {
       res.status(404).json({ success: false, message: 'Không tìm thấy cấu hình' });
       return;
     }
@@ -525,13 +528,21 @@ router.patch('/:id/active', async (req: Request, res: Response) => {
     }
 
     // Look up provider_code from id (setActive SP takes provider_code, not id)
-    interface CodeRow { provider_code: string; }
+    interface CodeRow { provider_code: string; test_result: string | null; }
     const rows = await rawQuery<CodeRow>(
-      'SELECT provider_code FROM public.signing_provider_config WHERE id = $1',
+      'SELECT provider_code, test_result FROM public.signing_provider_config WHERE id = $1',
       [id],
     );
     if (rows.length === 0) {
       res.status(404).json({ success: false, message: 'Không tìm thấy cấu hình' });
+      return;
+    }
+    // BUG-KS-CFG-002: chỉ cho kích hoạt provider đã test connection thành công
+    if (rows[0].test_result !== 'OK') {
+      res.status(400).json({
+        success: false,
+        message: 'Provider chưa test thành công — vui lòng bấm "Kiểm tra kết nối" trước khi kích hoạt',
+      });
       return;
     }
 

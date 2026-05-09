@@ -1,0 +1,5 @@
+﻿{
+    "id":  "TC-VBT-044",
+    "status":  "PASS",
+    "detail":  "danh-sach-gui returns dept+position fields: staff_id,full_name,position_name,department_id,department_name"
+}

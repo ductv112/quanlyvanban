@@ -53,6 +53,12 @@ export const authRepository = {
     return callFunctionOne<StaffLoginRow>('public.fn_auth_verify_refresh_token', [tokenHash]);
   },
 
+  // Phase 31 Fix B4: Atomic consume — UPDATE...RETURNING marks token revoked + returns staff in 1 statement.
+  // Concurrent /refresh calls with same token: only first call succeeds; second sees row already revoked → returns null.
+  async consumeRefreshToken(tokenHash: string): Promise<StaffLoginRow | null> {
+    return callFunctionOne<StaffLoginRow>('public.fn_auth_consume_refresh_token', [tokenHash]);
+  },
+
   async revokeRefreshToken(tokenHash: string): Promise<void> {
     await callFunction('public.fn_auth_logout', [tokenHash]);
   },

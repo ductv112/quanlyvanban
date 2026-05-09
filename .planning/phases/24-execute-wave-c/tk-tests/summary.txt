@@ -1,0 +1,23 @@
+[setup] tokens OK; SIGNING_KEY=qlvb-signing-dev-key-change-production-2026
+TC-KSTK-001     PASS       active=null + alert 'Admin chưa kích hoạt provider' khớp
+[setup] PUT smartca → {"success":false,"message":"Không tìm thấy cấu hình"}
+[setup] sanity test-saved → {"success":true,"data":{"ok":false,"test_result":"FAILED","message":"Không kết nối được SmartCA VNPT: HTTP 404 Not Found","certificate_subject":null,"duration_ms":14}}
+TC-KSTK-002     PASS       active=SmartCA VNPT base=http://localhost:8181 → FE renders 'Mã định danh SmartCA' (UI assert)
+TC-KSTK-005     PASS       BE: 'Vui lòng nhập user_id' (FE: rule.required → 'Vui lòng nhập Mã định danh SmartCA')
+TC-KSTK-006     PASS       BE: enforce 200 ký tự limit
+TC-KSTK-004     PASS       msg='Lưu cấu hình thành công...' + is_verified=false (Chưa xác thực)
+TC-KSTK-012     PASS       BE: 'Vui lòng lưu cấu hình trước khi kiểm tra'
+TC-KSTK-013     VERIFY     Mock thiếu endpoint /sca/sp769/v1/credentials/get_certificate → BE trả 'Không kết nối được provider' thay vì 'chứng thư không hợp lệ'. Code path verify-failure đúng. Cần extend mock (BUG-KS-TK-002).
+TC-KSTK-014     PASS       BE: 'Không kết nối được provider: fetch failed' (port 9999 closed)
+TC-KSTK-011     BLOCKED    Mock SmartCA thiếu /sca/sp769/v1/credentials/get_certificate → không thể test happy-path 'Đã xác thực'. Code path đúng (route ky-so-tai-khoan.ts L399-427). BUG-KS-TK-002.
+TC-KSTK-018     PASS       active=MYSIGN_VIETTEL, MySign config=null → user phải khai báo lại
+TC-KSTK-003     PASS       active=MYSIGN_VIETTEL → FE renders 'Mã định danh MySign' + 'Tải danh sách chứng thư từ MySign' button + Select dropdown (UI assert page.tsx L530-587)
+TC-KSTK-008     PASS       BE: 'Vui lòng nhập user_id'. FE rule (page.tsx L242): 'Vui lòng nhập Mã định danh trước'
+TC-KSTK-009     VERIFY     Mock MySign thiếu /vtss/service/certificates/info → BE trả 'Không lấy được danh sách chứng thư' thay vì FE warning 'Không tìm thấy chứng thư nào' (xảy ra khi BE trả empty list). FE code đúng (page.tsx L254-257). BUG-KS-TK-002.
+TC-KSTK-007     BLOCKED    Mock MySign thiếu /vtss/service/certificates/info → không test được happy-path 'Đã tải N chứng thư'. FE code đúng (page.tsx L246-269). BUG-KS-TK-002.
+TC-KSTK-010     PASS       BE: 'Vui lòng chọn chứng thư số...'. FE rule cũng required (page.tsx L565-569)
+TC-KSTK-015     PASS       Cấu hình mới ghi đè + is_verified=false (auto-reset)
+TC-KSTK-016     PASS       last_verified_at=2026-05-07 03:40:27.895322+00, subject=CN=Test Lanhdao,O=Test Org → FE renders 'Xác thực gần nhất' + Descriptions (UI assert page.tsx L487-493 + L592-622)
+TC-KSTK-017     PASS       Refresh OK → cùng provider=MYSIGN_VIETTEL + config (FE: nút 'Làm mới' gọi fetchConfig - page.tsx L406-412 + L447-453)
+
+=== DONE === Thu May  7 10:45:29 SEAST 2026

@@ -1,0 +1,34 @@
+{
+  "_doc": "Persistent notes (col 12 'Ghi chú') for TC IDs. sync-to-excel.ts reads this and fills col 12 alongside cols 13-17 (status/date/duration/error/trace). Add entries here when feedback từ user testing reveals context that needs preserving across sync runs.",
+  "TC-DASH-002": "Verified PASS: thẻ \"VB đến chưa đọc\" navigate /van-ban-den (Wave 31c agent + manual API).",
+  "TC-DASH-003": "User feedback (2026-05-09): nhầm tưởng đã ẩn. Verified: route /thong-bao + sidebar \"Thông báo nội bộ\" + thẻ \"Thông báo chưa đọc\" đều active. List rỗng vì qlvb_test KHÔNG seed thông báo (count=0).",
+  "TC-DASH-004": "Verified PASS: nút \"Xem thêm\" bảng \"Văn bản mới nhận\" navigate /van-ban-den (Wave 31c).",
+  "TC-DASH-005": "Verified PASS: quickAction \"Tạo VB đến\" navigate /van-ban-den (Wave 31c).",
+  "TC-DASH-006": "Verified PASS: quickAction \"Soạn dự thảo\" navigate /van-ban-du-thao (Wave 31c).",
+  "TC-DASH-007": "SKIP UI animation: chart Column \"VB đến/đi theo tháng\" — verify via snapshot khi qlvb_test có data, hoặc manual.",
+  "TC-DASH-008": "SKIP UI animation: chart Pie \"HSCV theo trạng thái\" — qlvb_test không seed HSCV đủ trạng thái cho chart.",
+  "TC-DASH-009": "SKIP UI: empty state bảng \"Văn bản mới nhận\" — qlvb_test có 5 VB đến → bảng có data; cần fixture rỗng.",
+  "TC-DASH-010": "SKIP UI: empty state khung \"Việc sắp tới hạn\" — phụ thuộc fixture HSCV deadline.",
+  "TC-DASH-011": "SKIP UI: tag độ khẩn màu (Hỏa tốc đỏ / Khẩn cam / Thường xanh) — qlvb_test không seed VB với độ khẩn khác nhau.",
+
+  "TC-CONC-PERF-003": "DEFER v3.2: P95 latency 100 concurrent login = 6231ms — chỉ tối ưu khi user > 50. bcrypt + Node single-thread, không scale-blocker cho MVP cấp tỉnh.",
+  "TC-CONC-ST-004": "DEFER v3.2: multi-device login revoke — UX issue, không security-critical (refresh token rotation đã single-use sau Phase 31).",
+  "TC-E2E-NA-002": "DEFER v3.2: MongoDB audit collection chưa implement — feature architectural, gom với phase observability sau go-prod.",
+  "TC-KSCH-019": "DEFER: real cert handshake với SmartCA/MySign provider thật — chỉ test được khi có credentials KH.",
+
+  "TC-BND-QTND-007": "Re-baseline 2026-05-09: TC giả định DB phone VARCHAR(20) cho 20 chars OK, code reject với regex {8,15} đúng theo product spec (số ĐT VN max 11-12). TC outdated, kết quả thực tế CODE ĐÚNG.",
+  "TC-BND-QTNQ-001": "Re-baseline 2026-05-09: TC giả định name 200 chars, DB roles.name=VARCHAR(100). Bonus name=100 → 201 OK confirms code đúng theo schema thực tế. TC outdated.",
+  "TC-VBT-015": "Re-classify PASS 2026-05-09: PUT trên VB đã duyệt + đã phát hành → 400 \"Không thể sửa văn bản đã được duyệt\" — đúng nghiệp vụ cơ quan nhà nước. SP enforce immutable sau approval.",
+
+  "TC-PERM-RM-001": "Verified PASS 2026-05-09 (curl): test_canbo GET /api/quan-tri/nguoi-dung → 404 (denied). Phase 31 commit b277b1f áp requireRolesOrNext.",
+  "TC-PERM-RM-002": "Verified PASS 2026-05-09: test_vanthu GET /api/quan-tri/nguoi-dung → 404 (denied).",
+  "TC-PERM-RM-003": "Verified PASS 2026-05-09: test_lanhdao GET /api/quan-tri/nhom-quyen → 404 (denied).",
+  "TC-PERM-RM-024": "Verified PASS 2026-05-09: test_canbo POST /api/quan-tri/don-vi → 404 (denied).",
+  "TC-KSCH-024": "Verified PASS 2026-05-09: PATCH activate provider chưa test → 400 'Provider chưa test thành công — vui lòng bấm \"Kiểm tra kết nối\" trước khi kích hoạt' (BUG-KS-CFG-002 fix Phase 31).",
+  "TC-BND-QTND-004": "Verified PASS 2026-05-09: full_name 100 chars OK với đủ unit_id field (Phase 31 widen 100→150). TC source thiếu unit_id → backend reject sớm. Re-baseline TC.",
+  "TC-BND-QTDV-007": "Verified PASS 2026-05-09: phone format invalid \"0912abc678\" → 400 \"Số điện thoại đơn vị không đúng định dạng\" (BUG-F-002 fix Phase 31 commit 747e648).",
+  "TC-BND-QTDV-009": "Verified PASS 2026-05-09: email format invalid \"abc.gmail.com\" → 400 \"Email đơn vị không đúng định dạng\" (BUG-F-003 fix Phase 31 commit 747e648).",
+  "TC-BND-VBT-004": "Verified PASS 2026-05-09: number_copies=0 không silent coerce thành 1 — explicit undefined+null check (drafting-doc.ts:277,378). User send 0 → DB ghi 0.",
+  "TC-DMNK-008": "Fixed 2026-05-09: handleOpenAddModal check selectedDept null trước khi mở Modal → message.warning + return early (page.tsx:111). Trước đó Modal mở ngay cả khi dept null.",
+  "TC-QTNQ-004": "Fixed 2026-05-09: GET /api/quan-tri/nhom-quyen wrap pagination shape {success, data, pagination:{total,page,pageSize}}. Frontend đọc total từ pagination.total. Phân trang client-side trên backend (slice all rows)."
+}

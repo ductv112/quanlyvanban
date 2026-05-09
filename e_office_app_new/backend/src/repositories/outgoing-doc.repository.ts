@@ -110,7 +110,7 @@ export const outgoingDocRepository = {
     docBookId: number; docTypeId?: number; docFieldId?: number;
     secretId?: number; urgentId?: number; numberPaper?: number;
     numberCopies?: number; expiredDate?: string; recipients?: string;
-    createdBy: number; departmentId?: number;
+    createdBy: number; departmentId?: number; approver?: string;
   }): Promise<DbResultWithId> {
     const row = await callFunctionOne<DbResultWithId>('edoc.fn_outgoing_doc_create', [
       params.unitId, params.receivedDate ?? null, params.number ?? null,
@@ -125,6 +125,7 @@ export const outgoingDocRepository = {
       params.expiredDate ?? null, params.recipients ?? null,
       params.createdBy,
       params.departmentId ?? null,
+      params.approver ?? null,
     ]);
     return row ?? { success: false, message: 'Không thể tạo văn bản đi', id: 0 };
   },
@@ -137,7 +138,7 @@ export const outgoingDocRepository = {
     docBookId: number; docTypeId?: number; docFieldId?: number;
     secretId?: number; urgentId?: number; numberPaper?: number;
     numberCopies?: number; expiredDate?: string; recipients?: string;
-    updatedBy: number;
+    updatedBy: number; approver?: string;
   }): Promise<DbResult> {
     const row = await callFunctionOne<DbResult>('edoc.fn_outgoing_doc_update', [
       id, params.receivedDate ?? null, params.number ?? null,
@@ -151,6 +152,7 @@ export const outgoingDocRepository = {
       params.numberPaper ?? 1, params.numberCopies ?? 1,
       params.expiredDate ?? null, params.recipients ?? null,
       params.updatedBy,
+      params.approver ?? null,
     ]);
     return row ?? { success: false, message: 'Không tìm thấy văn bản đi' };
   },

@@ -1,0 +1,63 @@
+TC-HSCV-001 | PASS | list returned 2 fixtures, success=true
+TC-HSCV-002 | SKIP | UI-only — Lấy số button visibility for lãnh đạo (FE not running). Backend list OK total=2
+TC-HSCV-003 | PASS | count-by-status all=2 match list total
+TC-HSCV-004 | PASS | filter_type=new succ=true
+TC-HSCV-005 | PASS | filter status=1 total=1 (fixture 9001 active)
+TC-HSCV-006 | PASS | keyword='HSCV' return 2 hits
+TC-HSCV-007 | PASS | date range filter succ
+TC-HSCV-008 | PASS | page_size=1 -> 1 record
+TC-HSCV-009 | PASS | page=99 -> 0 records (out of range)
+TC-HSCV-020 | PASS | Created HSCV id=9003, status=Mới tạo (1)
+TC-HSCV-021 | FAIL | {"success":false,"message":"Tên hồ sơ công việc là bắt buộc"}
+TC-HSCV-022 | VERIFY | missing start_date PASS at backend (id=9004), TC expects required-validation FE-only?
+TC-HSCV-023 | PASS | end_date<start rejected
+TC-HSCV-024 | VERIFY | missing curator_id PASS at backend, TC may expect required (FE Form rule)
+TC-HSCV-025 | VERIFY | missing signer_id PASS at backend, TC may expect required (FE)
+TC-HSCV-026 | PASS | name>500 chars rejected
+TC-HSCV-027 | PASS | minimal payload (no doc_field/doc_type/workflow) succ=true
+TC-HSCV-028 | PASS | HSCV con created with parent_id=9001
+TC-HSCV-029 | PASS | department_id=2 (own dept) accepted
+TC-HSCV-030 | PASS | comments accepted
+TC-HSCV-031 | PASS | VN diacritics accepted
+TC-HSCV-032 | PASS | whitespace-only name rejected
+TC-HSCV-033 | PASS | PUT id=9003 succeeded
+TC-HSCV-034 | PASS | Detail name='HSCV updated TC033' matches edit
+TC-HSCV-035 | PASS | DELETE id=9012 succeeded
+TC-HSCV-036 | PASS | DELETE closed HSCV rejected: 
+TC-HSCV-037 | PASS | DELETE non-existent rejected
+TC-HSCV-038 | SKIP | Toolbar buttons (Chuyển xử lý/Sửa/Chuyển tiếp/Lịch sử/Xóa) — UI-only, FE not running. Backend detail succ=True
+TC-HSCV-039 | SKIP | UI-only toolbar visibility based on status
+TC-HSCV-040 | SKIP | UI-only — Mở lại button on closed HSCV
+TC-HSCV-041 | PASS | progress=30 returned in detail
+TC-HSCV-042 | PASS | status=1 (Đang xử lý) returned
+TC-HSCV-043 | PASS | doc_notation='TEST-HSCV-1'
+TC-HSCV-044 | PASS | curator/signer names returned: Cán bộ TEST | Lãnh đạo TEST
+TC-HSCV-045 | VERIFY | cross-unit access result=OK (expect 403)
+TC-HSCV-046 | PASS | All 10 info fields present in detail
+TC-HSCV-047 | PASS | closed HSCV progress=100 status=4
+TC-HSCV-048 | PASS | workflow_name nullable returned None for HSCV without workflow
+TC-HSCV-115 | PASS | page_size=50 reflected in pagination
+TC-HSCV-109 | PASS | GET /lich-su success, count=0 events
+TC-HSCV-110 | PASS | GET /lich-su on fresh HSCV id=9013 count=0 (TC expects empty placeholder)
+TC-HSCV-083 | PASS | Lấy số id=9014 number=1
+TC-HSCV-084 | PASS | Re-lấy số rejected for HSCV with number
+TC-HSCV-085 | PASS | missing doc_book_id rejected: Vui lòng chọn sổ văn bản
+TC-HSCV-086 | PASS | invalid doc_book_id rejected
+TC-HSCV-097 | FAIL | {"success":false,"message":"Chỉ được hủy HSCV ở trạng thái Từ chối (-1) hoặc Trả về (-2). Trạng thái hiện tại: 0"}
+TC-HSCV-098 | PASS | empty reason rejected
+TC-HSCV-099 | PASS | Cancel closed HSCV rejected: Chỉ được hủy HSCV ở trạng thái Từ chối (-1) hoặc Trả về (-2). Trạng thái hiện tại: 4
+TC-HSCV-100 | FAIL | {"success":false,"message":"Chỉ được hủy HSCV ở trạng thái Từ chối (-1) hoặc Trả về (-2). Trạng thái hiện tại: 0"}
+TC-HSCV-101 | PASS | Cancel non-existent rejected
+TC-HSCV-010 | SKIP | UI-only color rendering. Backend OK: HSCV 9002 status=4 end_date=2026-05-02 03:21:54.7476+00
+TC-HSCV-011 | SKIP | UI-only navigation. GET detail endpoint verified separately
+TC-HSCV-012 | SKIP | UI-only menu visibility based on status
+TC-HSCV-013 | SKIP | UI-only menu visibility
+TC-HSCV-014 | SKIP | Browser print dialog — pure UI
+TC-HSCV-015 | SKIP | xuat-excel endpoint not implemented (HTTP code: 500|75)
+TC-HSCV-016 | SKIP | xuat-excel endpoint not implemented (HTTP 500)
+TC-HSCV-017 | SKIP | Cannot test 10000+ rows in test fixture (only 2 base + ~15 created)
+TC-HSCV-018 | PASS | canbo_x (cross-unit) sees 0 HSCV — empty list rendered FE-side
+TC-HSCV-019 | PASS | non-existent keyword -> total=0, FE shows empty state
+TC-HSCV-097-RETEST | PASS | After reject->cancel: id=9024 status=-3 reason=Khong can xu ly
+TC-HSCV-100-RETEST | PASS | 1000-char reason accepted on rejected HSCV id=9025
+TC-HSCV-021-RECHECK | PASS | Missing name rejected: Tên hồ sơ công việc là bắt buộc

@@ -117,11 +117,12 @@ export const dashboardRepository = {
     );
   },
 
-  // SP: fn_dashboard_upcoming_tasks(p_staff_id, p_limit, p_dept_ids)
-  async getUpcomingTasks(staffId: number, limit = 10, deptIds?: number[] | null): Promise<UpcomingTaskRow[]> {
+  // SP: fn_dashboard_upcoming_tasks(p_staff_id, p_limit)
+  // BUG-003: SP chỉ nhận 2 params, không phải 3 — bỏ deptIds (param thừa gây bigint cast NaN)
+  async getUpcomingTasks(staffId: number, limit = 10, _deptIds?: number[] | null): Promise<UpcomingTaskRow[]> {
     return callFunction<UpcomingTaskRow>(
       'edoc.fn_dashboard_upcoming_tasks',
-      [staffId, limit, deptIds ?? null],
+      [staffId, limit],
     );
   },
 

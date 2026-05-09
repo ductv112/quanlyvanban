@@ -1,0 +1,155 @@
+{
+  "executed_at": "2026-05-07T12:16:45.462374",
+  "summary": {
+    "total": 19,
+    "pass": 15,
+    "fail": 1,
+    "skip": 2,
+    "partial": 1
+  },
+  "results": [
+    {
+      "id": "TC-E2E-CDF-001",
+      "status": "PASS",
+      "note": "E2E flow: vb_den=100013 dt=90010 success_steps=6/6 history=3 entries lanhdao_unread=8 (duyet=True phat-hanh=True)",
+      "evidence": [
+        "vb_den=100013",
+        "dt=90010",
+        "history=3"
+      ]
+    },
+    {
+      "id": "TC-E2E-CDF-002",
+      "status": "PASS",
+      "note": "Chuyển lại VB đến OK (id=90002)",
+      "evidence": []
+    },
+    {
+      "id": "TC-E2E-CDF-003",
+      "status": "PASS",
+      "note": "Reject loop OK dt=90011",
+      "evidence": []
+    },
+    {
+      "id": "TC-E2E-CDF-004",
+      "status": "PARTIAL",
+      "note": "LGSP send response: 500 {'success': False, 'message': 'function edoc.fn_lgsp_tracking_create(unknown, unknown, unknown, unknown, unknown, unknown, unknown, unknown) does not exist'}",
+      "evidence": []
+    },
+    {
+      "id": "TC-E2E-CDF-005",
+      "status": "PASS",
+      "note": "Delegation tạo OK",
+      "evidence": []
+    },
+    {
+      "id": "TC-E2E-CDF-006",
+      "status": "SKIP",
+      "note": "Time-travel test — không thể chạy không setup expired delegation; manual test",
+      "evidence": []
+    },
+    {
+      "id": "TC-E2E-HSCV-001",
+      "status": "PASS",
+      "note": "HSCV=9014 link=True submit=True approve=True complete=False report=False",
+      "evidence": []
+    },
+    {
+      "id": "TC-E2E-HSCV-002",
+      "status": "PASS",
+      "note": "HSCV con=9015 parent=9001",
+      "evidence": []
+    },
+    {
+      "id": "TC-E2E-HSCV-003",
+      "status": "PASS",
+      "note": "HSCV 9016 hủy OK (sau khi reject), still in DB=True",
+      "evidence": []
+    },
+    {
+      "id": "TC-E2E-NA-001",
+      "status": "PASS",
+      "note": "Notification +1 (before=8 after=9) gửi success=True doc=100014",
+      "evidence": []
+    },
+    {
+      "id": "TC-E2E-NA-002",
+      "status": "FAIL",
+      "note": "qlvb_logs database không có audit collection / không có data: []",
+      "evidence": []
+    },
+    {
+      "id": "TC-E2E-NA-003",
+      "status": "PASS",
+      "note": "Dashboard stats trả OK keys=['incoming_unread', 'outgoing_pending', 'handling_total', 'handling_overdue'] before={'incoming_unread': '0', 'outgoing_pending': '0', 'handling_total': '14', 'handling_overdue': '0'} after={'incoming_unread': '0', 'outgoing_pending': '0', 'handling_total': '14', 'handling_overdue': '0'}",
+      "evidence": []
+    },
+    {
+      "id": "TC-E2E-EXT-001",
+      "status": "SKIP",
+      "note": "Lanh dao fixture chưa link tài khoản ký số (expected) — full handshake yêu cầu admin set provider + user link cert. Msg: '{'success': False, 'message': 'Hệ thống chưa cấu hình provider ký số. Vui lòng liên hệ Quản trị viên.'}'",
+      "evidence": []
+    },
+    {
+      "id": "TC-E2E-EXT-002",
+      "status": "PASS",
+      "note": "Ký số fail trả message rõ: 'Hệ thống chưa cấu hình provider ký số. Vui lòng liên hệ Quản trị viên.'",
+      "evidence": []
+    },
+    {
+      "id": "TC-E2E-EXT-003",
+      "status": "PASS",
+      "note": "LGSP từ chối với unit không tồn tại: 'function edoc.fn_lgsp_tracking_create(unknown, unknown, unknown, unknown, unknown, unknown, unknown,'",
+      "evidence": []
+    },
+    {
+      "id": "TC-E2E-EXT-004",
+      "status": "PASS",
+      "note": "Upload reject với MinIO offline: code=500 msg=''",
+      "evidence": []
+    },
+    {
+      "id": "TC-E2E-MR-001",
+      "status": "PASS",
+      "note": "Văn thư xử lý 2/3 VB OK (total in list=10)",
+      "evidence": []
+    },
+    {
+      "id": "TC-E2E-MR-002",
+      "status": "PASS",
+      "note": "Lãnh đạo list ký số OK (items=0). Bulk sign cần config — manual test khi cần.",
+      "evidence": []
+    },
+    {
+      "id": "TC-E2E-MR-003",
+      "status": "PASS",
+      "note": "Cán bộ flow: vbden_list=True hscv_list=True create_draft=True submit=True (4/4) gr_msg={'success': True, 'data': {'message': 'Đã gửi cho 1 người nhận'}}",
+      "evidence": []
+    }
+  ],
+  "bugs": [
+    {
+      "id": "BUG-E2E-010",
+      "tc": "TC-E2E-HSCV-001",
+      "severity": "Medium",
+      "summary": "HSCV workflow steps không đầy đủ thành công",
+      "repro": [
+        "hscv=9014"
+      ],
+      "expected": "All steps success",
+      "actual": "link=True submit=True approve=True complete=False submit_msg={'success': True, 'data': {'message': 'Trình ký thành công'}} approve_msg={'success': True, 'data': {'message': 'Duyệt hồ sơ công việc thành công'}} complete_msg={'success': False, 'message': 'Chỉ được hoàn thành khi hồ sơ ở trạng thái Đã duyệt'}"
+    },
+    {
+      "id": "BUG-E2E-013",
+      "tc": "TC-E2E-NA-002",
+      "severity": "High",
+      "summary": "MongoDB audit logs không được ghi (qlvb_logs DB rỗng)",
+      "repro": [
+        "Run TC-E2E-CDF-001 (multi-step flow tạo notification + DB ops)",
+        "docker exec qlvb_mongodb mongosh -u qlvb_admin ... --eval 'db.getCollectionNames()'"
+      ],
+      "expected": "qlvb_logs có collection audit_log với records của flow",
+      "actual": "Collections trong qlvb_logs: []"
+    }
+  ]
+}

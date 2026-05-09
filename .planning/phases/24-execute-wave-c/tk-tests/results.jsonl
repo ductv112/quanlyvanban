@@ -1,0 +1,14 @@
+{"tc":"TC-KSTK-001","resp":{"success":true,"data":{"active":null,"config":null,"message":"Admin chưa kích hoạt provider ký số nào. Vui lòng liên hệ Quản trị viên."}}}
+{"tc":"TC-KSTK-002","resp":{"success":true,"data":{"active":{"provider_code":"SMARTCA_VNPT","provider_name":"SmartCA VNPT","base_url":"http://localhost:8181"},"config":null}}}
+{"tc":"TC-KSTK-005","resp":{"success":false,"message":"Vui lòng nhập user_id (không quá 200 ký tự)"}}
+{"tc":"TC-KSTK-006","resp":{"success":false,"message":"Vui lòng nhập user_id (không quá 200 ký tự)"}}
+{"tc":"TC-KSTK-004","resp":{"success":true,"message":"Lưu cấu hình thành công. Vui lòng bấm \"Kiểm tra\" để xác thực."}}
+{"tc":"TC-KSTK-012","resp":{"success":false,"message":"Vui lòng lưu cấu hình trước khi kiểm tra"}}
+{"tc":"TC-KSTK-013","resp":{"success":false,"message":"Không kết nối được provider: HTTP 404 Not Found"}}
+{"tc":"TC-KSTK-014","resp":{"success":false,"message":"Không kết nối được provider: fetch failed"}}
+{"tc":"TC-KSTK-018","resp":{"success":true,"data":{"active":{"provider_code":"MYSIGN_VIETTEL","provider_name":"MySign Viettel","base_url":"http://localhost:8182"},"config":null}}}
+{"tc":"TC-KSTK-008","resp":{"success":false,"message":"Vui lòng nhập user_id"}}
+{"tc":"TC-KSTK-009","resp":{"success":false,"message":"Không lấy được danh sách chứng thư: Login Viettel thất bại: HTTP 404 Not Found"}}
+{"tc":"TC-KSTK-010","resp":{"success":false,"message":"Vui lòng chọn chứng thư số (bấm \"Tải danh sách CTS\" để lấy danh sách trước)"}}
+{"tc":"TC-KSTK-015","resp":{"success":true,"data":{"active":{"provider_code":"MYSIGN_VIETTEL","provider_name":"MySign Viettel","base_url":"http://localhost:8182"},"config":{"staff_id":9003,"provider_code":"MYSIGN_VIETTEL","user_id":"CMT_NEW","credential_id":"cred_new_999","certificate_subject":null,"certificate_serial":null,"is_verified":false,"last_verified_at":null}}}}
+{"tc":"TC-KSTK-016","resp":{"success":true,"data":{"active":{"provider_code":"MYSIGN_VIETTEL","provider_name":"MySign Viettel","base_url":"http://localhost:8182"},"config":{"staff_id":9003,"provider_code":"MYSIGN_VIETTEL","user_id":"CMT_NEW","credential_id":"cred_new_999","certificate_subject":"CN=Test Lanhdao,O=Test Org","certificate_serial":"CERT-12345","is_verified":true,"last_verified_at":"2026-05-07 03:40:27.895322+00"}}}}

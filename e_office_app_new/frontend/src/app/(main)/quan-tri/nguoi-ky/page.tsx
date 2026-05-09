@@ -109,6 +109,10 @@ export default function SignerPage() {
   }, [user?.unitId, selectedDept, message]);
 
   const handleOpenAddModal = () => {
+    if (!selectedDept) {
+      message.warning('Vui lòng chọn phòng ban / đơn vị từ cây bên trái trước');
+      return;
+    }
     setSelectedStaffId(null);
     setModalOpen(true);
     fetchStaff();

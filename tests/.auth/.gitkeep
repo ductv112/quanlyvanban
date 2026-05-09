@@ -1,0 +1,2 @@
+# Keep tests/.auth/ folder in repo (storage state JSON files are .gitignored).
+# Generated runtime by tests/globalSetup.ts - see Plan 21-04 SUMMARY.

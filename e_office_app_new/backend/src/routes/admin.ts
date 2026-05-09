@@ -102,6 +102,8 @@ router.post('/don-vi', async (req: Request, res: Response) => {
       parent_id, code, name, name_en, short_name, abb_name,
       is_unit, level, sort_order, phone, fax, email, address,
       allow_doc_book, description,
+      // BUG-F-001: tránh silent drop LGSP fields
+      lgsp_system_id, lgsp_secret_key,
     } = req.body;
 
     if (!name?.trim()) {
@@ -120,6 +122,25 @@ router.post('/don-vi', async (req: Request, res: Response) => {
       }
     }
 
+    // BUG-F-003: validate email format
+    if (email && String(email).trim()) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(String(email).trim())) {
+        res.status(400).json({ success: false, message: 'Email đơn vị không đúng định dạng' });
+        return;
+      }
+    }
+    // BUG-F-002: validate phone/fax format
+    const phoneRegex = /^[0-9+\-\s()]{6,20}$/;
+    if (phone && String(phone).trim() && !phoneRegex.test(String(phone).trim())) {
+      res.status(400).json({ success: false, message: 'Số điện thoại đơn vị không đúng định dạng' });
+      return;
+    }
+    if (fax && String(fax).trim() && !phoneRegex.test(String(fax).trim())) {
+      res.status(400).json({ success: false, message: 'Số fax không đúng định dạng' });
+      return;
+    }
+
     const id = await departmentRepository.create(
       parent_id ?? null, code, name, name_en ?? '', short_name ?? '', abb_name ?? '',
       is_unit ?? false, level ?? 0, sort_order ?? 0, phone ?? '', fax ?? '',
@@ -130,6 +151,17 @@ router.post('/don-vi', async (req: Request, res: Response) => {
     if (!id) {
       res.status(500).json({ success: false, message: 'Không thể tạo đơn vị' });
       return;
+    }
+    // BUG-F-001: persist LGSP fields nếu có (SP create không nhận)
+    if (lgsp_system_id !== undefined || lgsp_secret_key !== undefined) {
+      await pool.query(
+        'UPDATE public.departments SET lgsp_system_id = $1, lgsp_secret_key = $2 WHERE id = $3',
+        [
+          lgsp_system_id ? String(lgsp_system_id).slice(0, 50) : null,
+          lgsp_secret_key ? String(lgsp_secret_key).slice(0, 100) : null,
+          id,
+        ],
+      );
     }
     res.status(201).json({ success: true, data: { id } });
   } catch (error) {
@@ -146,6 +178,8 @@ router.put('/don-vi/:id', async (req: Request, res: Response) => {
       parent_id, code, name, name_en, short_name, abb_name,
       is_unit, level, sort_order, phone, fax, email, address,
       allow_doc_book, description,
+      // BUG-F-001: tránh silent drop LGSP fields
+      lgsp_system_id, lgsp_secret_key,
     } = req.body;
 
     if (!name?.trim()) {
@@ -174,6 +208,17 @@ router.put('/don-vi/:id', async (req: Request, res: Response) => {
     if (!updated) {
       res.status(404).json({ success: false, message: 'Không tìm thấy đơn vị' });
       return;
+    }
+    // BUG-F-001: persist LGSP fields nếu có (SP update không nhận)
+    if (lgsp_system_id !== undefined || lgsp_secret_key !== undefined) {
+      await pool.query(
+        'UPDATE public.departments SET lgsp_system_id = $1, lgsp_secret_key = $2 WHERE id = $3',
+        [
+          lgsp_system_id !== undefined ? (lgsp_system_id ? String(lgsp_system_id).slice(0, 50) : null) : undefined,
+          lgsp_secret_key !== undefined ? (lgsp_secret_key ? String(lgsp_secret_key).slice(0, 100) : null) : undefined,
+          id,
+        ],
+      );
     }
     res.json({ success: true, data: { updated: true } });
   } catch (error) {
@@ -383,6 +428,11 @@ router.post('/nguoi-dung', async (req: Request, res: Response) => {
     // Username validation
     if (!username || username.trim().length < 3) {
       res.status(400).json({ success: false, message: 'Tên đăng nhập phải có ít nhất 3 ký tự' });
+      return;
+    }
+    // BUG-F-ND-001: validate username ≤ 50 ký tự (DB VARCHAR(50))
+    if (username.trim().length > 50) {
+      res.status(400).json({ success: false, message: 'Tên đăng nhập không được vượt quá 50 ký tự' });
       return;
     }
     if (!/^[a-zA-Z0-9._-]+$/.test(username.trim())) {
@@ -649,8 +699,12 @@ router.get('/nhom-quyen', async (req: Request, res: Response) => {
   try {
     const unitId = req.query.unit_id ? Number(req.query.unit_id) : null;
     const keyword = (req.query.keyword as string) || '';
-    const data = await roleRepository.getList(unitId, keyword);
-    res.json({ success: true, data });
+    const page = Math.max(1, Number(req.query.page) || 1);
+    const pageSize = Math.max(1, Math.min(200, Number(req.query.pageSize) || Number(req.query.page_size) || 20));
+    const all = await roleRepository.getList(unitId, keyword);
+    const total = all.length;
+    const data = all.slice((page - 1) * pageSize, page * pageSize);
+    res.json({ success: true, data, pagination: { total, page, pageSize } });
   } catch (error) {
     handleDbError(error, res);
   }

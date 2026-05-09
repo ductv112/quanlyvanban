@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
-milestone: planning-next
-milestone_name: chờ-milestone-mới
-status: v3.0 archived 2026-04-24
-stopped_at: Milestone v3.0 shipped + tagged + pushed to GitHub
-last_updated: "2026-04-25T05:30:00.000Z"
-last_activity: 2026-04-25
+milestone: v3.1
+milestone_name: Manual Test Execution + Bug Fix (re-scoped 2026-05-06)
+status: phase_21_done_re_scoped_executing
+stopped_at: Re-scope cleanup done. Phase 21 (infra) DONE. Ready Batch 1 = Phase 22 Execute Wave a (83 TC Auth+Admin).
+last_updated: "2026-05-06T16:50:00.000Z"
+last_activity: 2026-05-06
 progress:
-  total_phases: 0
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  total_phases: 10
+  completed_phases: 1
+  total_plans: 7
+  completed_plans: 7
+  percent: 10
 ---
 
 # Project State
@@ -21,7 +21,14 @@ progress:
 See: .planning/PROJECT.md
 
 **Core value:** Luồng văn bản đến → xử lý → văn bản đi phải hoạt động đúng nghiệp vụ cơ quan nhà nước
-**Current focus:** v3.0 SHIPPED. Chờ user định hướng milestone tiếp theo (v3.1+)
+**Current focus:** Phase 21 — automation-foundation
+
+## Current Position
+
+Phase: 21 (automation-foundation) — EXECUTING
+Plan: 6 of 6
+Status: Phase complete — ready for verification
+Last activity: 2026-05-06
 
 ## Performance Metrics
 
@@ -29,7 +36,7 @@ See: .planning/PROJECT.md
 - **v2.0 (shipped 2026-04-23):** 8 phases (8-14 + 11.1), 39 plans, 3 days, 41/41 REQ Pass
 - **v3.0 (shipped 2026-04-24):** 6 phases (15-20), 23 commits chính, 17 bugs UAT fixed, 29/29 REQ Pass
 
-## v3.0 Tech Debt → v3.1 Backlog
+## v3.0 Tech Debt → v3.2+ Backlog
 
 - Drafting recipients structured + carry-over Outgoing
 - Trang admin CRUD inter_organizations + Sync from LGSP button
@@ -37,15 +44,28 @@ See: .planning/PROJECT.md
 - Cleanup 2 modal legacy LGSP/CP code v1.0
 - Default expired_date theo config sổ văn bản
 - Worker LGSP startup script production deploy
+- Phase 24: LGSP "Từ chối tiếp nhận" status 02 — kích hoạt khi LGSP production ready
+
+## Roadmap Evolution
+
+- 2026-05-05: Phase 21 added (LGSP "Từ chối tiếp nhận") — sau renumber thành Phase 24 cùng ngày để nhường slot 21-23 cho v3.1 Automation Test. Phase dir: `.planning/phases/24-hoan-thien-nghiep-vu-tu-choi-tiep-nhan-vb-lien-thong-lgsp-st/`. Lý do gốc: phát hiện trong session review HDSD_full mục 4.3.7 — implementation "Chuyển lại VB" chỉ cosmetic (insert leader_note + flip approved=false), KHÔNG gọi LGSP `update-status` 02 → đơn vị gửi không nhận tín hiệu. Demo cuối tuần (2026-04-18/19) GIỮ NGUYÊN — phase này hoàn thiện khi tích hợp LGSP production thật.
+- 2026-05-05: Milestone v3.1 (Automation Test Suite + Bug Fix) started — phase 21-23 cho automation test 847 TC + reserve slot 25+ cho bug fix khám phá từ regression. Source plan: `.planning/AUTOMATION_TEST_PLAN.md`.
+- 2026-05-05: Roadmap v3.1 created — 3 phases (21 Automation Foundation 3d / 22 Regression Backbone 5d / 23 E2E + Concurrent + Hybrid 3d) = 11 working days. 43 REQ-IDs mapped 100% (AUTO×11 + REG×10 + E2E×7 + CI×8 + RPT×7). Phase 24 LGSP giữ trong v3.2+ backlog.
 
 ## Session Continuity
 
-Last session: 2026-04-25
-Stopped at: Quick task 260425-g4z hoàn tất — fix HSCV (3 commit atomic + smoke test 16/16 PASS), sẵn sàng deploy prod
-Resume: `/gsd-new-milestone` để bắt đầu v3.1 hoặc `/gsd-discuss-phase` cho work hiện tại
+Last session: 2026-05-06T05:10:53.420Z
+Stopped at: Completed 21-06-PLAN.md (CI workflow test-pr.yml). Phase 21 ready for verification.
+Resume: `/gsd-plan-phase 21` để bắt đầu Phase 21 Foundation, hoặc `/gsd-discuss-phase 21` nếu cần discuss trước
 
 ### Quick Tasks Completed
 
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 260425-g4z | Fix HSCV: consolidate 4 archive migrations + fix SP status flow (5-step) + smoke test | 2026-04-25 | fb53494 | [260425-g4z-fix-hscv-consolidate-4-archive-migration](./quick/260425-g4z-fix-hscv-consolidate-4-archive-migration/) |
+| Phase 21 P01 | 12min | 3 tasks | 11 files |
+| Phase 21 P02 | 13min | 3 tasks | 7 files |
+| Phase 21 P03 | 8min | 3 tasks | 9 files |
+| Phase 21 P04 | 6min | 2 tasks | 8 files |
+| Phase 21 P05 | 8min | 3 tasks | 12 files |
+| Phase 21 P06 | 6min | 2 tasks | 4 files |

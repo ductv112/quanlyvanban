@@ -1,6 +1,7 @@
 import { Router, type Request, type Response } from 'express';
 import type { AuthRequest } from '../middleware/auth.js';
 import { upload } from '../middleware/upload.js';
+import { loadDocAndCanEdit } from '../middleware/doc-edit-guard.js';
 import { draftingDocRepository } from '../repositories/drafting-doc.repository.js';
 import { incomingDocRepository } from '../repositories/incoming-doc.repository.js';
 import { uploadFile, deleteFile, getFileUrl, streamFileToResponse } from '../lib/minio/client.js';
@@ -230,10 +231,27 @@ router.post('/', async (req: Request, res: Response) => {
       res.status(400).json({ success: false, message: 'Trích yếu nội dung là bắt buộc' });
       return;
     }
+    // BUG-DT-003: validate abstract length ≤ 2000
+    if (body.abstract.trim().length > 2000) {
+      res.status(400).json({ success: false, message: 'Trích yếu nội dung không được vượt quá 2000 ký tự' });
+      return;
+    }
     if (!body.doc_book_id) {
       res.status(400).json({ success: false, message: 'Sổ văn bản là bắt buộc' });
       return;
     }
+    // BUG-DT-001: drafting_unit_id required
+    if (!body.drafting_unit_id) {
+      res.status(400).json({ success: false, message: 'Đơn vị dự thảo là bắt buộc' });
+      return;
+    }
+    // BUG-DT-004: validate recipients length ≤ 2000
+    if (body.recipients && String(body.recipients).length > 2000) {
+      res.status(400).json({ success: false, message: 'Nơi nhận không được vượt quá 2000 ký tự' });
+      return;
+    }
+    // BUG-DT-002: drafting_user_id auto-fill từ JWT nếu missing
+    const draftingUserId = body.drafting_user_id ? Number(body.drafting_user_id) : staffId;
 
     const result = await draftingDocRepository.create({
       unitId: ancestorUnitId,
@@ -244,7 +262,7 @@ router.post('/', async (req: Request, res: Response) => {
       documentCode: body.document_code || null,
       abstract: body.abstract.trim(),
       draftingUnitId: body.drafting_unit_id ? Number(body.drafting_unit_id) : undefined,
-      draftingUserId: body.drafting_user_id ? Number(body.drafting_user_id) : undefined,
+      draftingUserId,
       publishUnitId: body.publish_unit_id ? Number(body.publish_unit_id) : undefined,
       publishDate: body.publish_date || null,
       signer: body.signer || null,
@@ -255,7 +273,8 @@ router.post('/', async (req: Request, res: Response) => {
       secretId: body.secret_id ? Number(body.secret_id) : 1,
       urgentId: body.urgent_id ? Number(body.urgent_id) : 1,
       numberPaper: body.number_paper ? Number(body.number_paper) : 1,
-      numberCopies: body.number_copies ? Number(body.number_copies) : 1,
+      // BUG-F-DT-001: cho phép number_copies = 0 (không coerce silent)
+      numberCopies: (body.number_copies !== undefined && body.number_copies !== null) ? Math.max(0, Number(body.number_copies)) : 1,
       expiredDate: body.expired_date || null,
       recipients: body.recipients || null,
       createdBy: staffId,
@@ -321,8 +340,18 @@ router.put('/:id', async (req: Request, res: Response) => {
       res.status(400).json({ success: false, message: 'Trích yếu nội dung là bắt buộc' });
       return;
     }
+    // BUG-DT-003: validate abstract length ≤ 2000
+    if (body.abstract.trim().length > 2000) {
+      res.status(400).json({ success: false, message: 'Trích yếu nội dung không được vượt quá 2000 ký tự' });
+      return;
+    }
     if (!body.doc_book_id) {
       res.status(400).json({ success: false, message: 'Sổ văn bản là bắt buộc' });
+      return;
+    }
+    // BUG-DT-004: validate recipients length ≤ 2000
+    if (body.recipients && String(body.recipients).length > 2000) {
+      res.status(400).json({ success: false, message: 'Nơi nhận không được vượt quá 2000 ký tự' });
       return;
     }
 
@@ -345,7 +374,8 @@ router.put('/:id', async (req: Request, res: Response) => {
       secretId: body.secret_id ? Number(body.secret_id) : 1,
       urgentId: body.urgent_id ? Number(body.urgent_id) : 1,
       numberPaper: body.number_paper ? Number(body.number_paper) : 1,
-      numberCopies: body.number_copies ? Number(body.number_copies) : 1,
+      // BUG-F-DT-001: cho phép number_copies = 0 (không coerce silent)
+      numberCopies: (body.number_copies !== undefined && body.number_copies !== null) ? Math.max(0, Number(body.number_copies)) : 1,
       expiredDate: body.expired_date || null,
       recipients: body.recipients || null,
       updatedBy: staffId,
@@ -424,7 +454,17 @@ router.get('/:id/dinh-kem', async (req: Request, res: Response) => {
   }
 });
 
-router.post('/:id/dinh-kem', upload.single('file'), async (req: Request, res: Response) => {
+router.post(
+  '/:id/dinh-kem',
+  // Phase 31 fix(BUG-DT-005): chặn upload attachment lên dự thảo đã duyệt/phát hành
+  loadDocAndCanEdit(async (id) => {
+    const rows = await rawQuery<{ id: number; approved: boolean; is_released: boolean }>(
+      `SELECT id, approved, is_released FROM edoc.drafting_docs WHERE id = $1`, [id],
+    );
+    return rows[0] ?? null;
+  }),
+  upload.single('file'),
+  async (req: Request, res: Response) => {
   try {
     const { staffId } = (req as AuthRequest).user;
     const docId = Number(req.params.id);
@@ -453,7 +493,16 @@ router.post('/:id/dinh-kem', upload.single('file'), async (req: Request, res: Re
   }
 });
 
-router.delete('/:id/dinh-kem/:attachmentId', async (req: Request, res: Response) => {
+router.delete(
+  '/:id/dinh-kem/:attachmentId',
+  // Phase 31 fix(BUG-DT-005): chặn xóa attachment trên dự thảo đã duyệt/phát hành
+  loadDocAndCanEdit(async (id) => {
+    const rows = await rawQuery<{ id: number; approved: boolean; is_released: boolean }>(
+      `SELECT id, approved, is_released FROM edoc.drafting_docs WHERE id = $1`, [id],
+    );
+    return rows[0] ?? null;
+  }),
+  async (req: Request, res: Response) => {
   try {
     const result = await draftingDocRepository.deleteAttachment(Number(req.params.attachmentId));
     if (!result.success) {

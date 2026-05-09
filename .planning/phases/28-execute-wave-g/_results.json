@@ -1,0 +1,311 @@
+{
+  "summary": {
+    "total": 50,
+    "pass": 24,
+    "fail": 12,
+    "skip": 6,
+    "verify": 8
+  },
+  "results": [
+    {
+      "id": "TC-PERM-XU-001",
+      "status": "PASS",
+      "http": 200,
+      "note": "5 docs all unit_id=2"
+    },
+    {
+      "id": "TC-PERM-XU-002",
+      "status": "FAIL",
+      "http": 200,
+      "note": "BUG-PERM-001: cross-unit GET leaks unit 2 doc to unit 3 user"
+    },
+    {
+      "id": "TC-PERM-XU-003",
+      "status": "FAIL",
+      "http": 200,
+      "note": "BUG-PERM-001: same — cross-unit isolation broken on GET /:id"
+    },
+    {
+      "id": "TC-PERM-XU-004",
+      "status": "PASS",
+      "http": 200,
+      "note": "3 docs unit={2}"
+    },
+    {
+      "id": "TC-PERM-XU-005",
+      "status": "VERIFY",
+      "http": 200,
+      "note": "canbo dept 2 sees 2 HSCV — manual cross-dept verification needed"
+    },
+    {
+      "id": "TC-PERM-XU-006",
+      "status": "FAIL",
+      "http": 200,
+      "note": "BUG-PERM-002: vanthu can read /api/quan-tri/don-vi (admin endpoint)"
+    },
+    {
+      "id": "TC-PERM-XU-007",
+      "status": "PASS",
+      "http": 200,
+      "note": "3 books, units={3}"
+    },
+    {
+      "id": "TC-PERM-XU-008",
+      "status": "FAIL",
+      "http": 201,
+      "note": "BUG-PERM-003: tampering accepted — canbo_x created VB with unit 2's doc_book_id"
+    },
+    {
+      "id": "TC-PERM-XU-009",
+      "status": "PASS",
+      "http": 403,
+      "note": "no read access"
+    },
+    {
+      "id": "TC-PERM-XU-010",
+      "status": "VERIFY",
+      "http": 403,
+      "note": "canbo_x sees 0 doc types — manual check vs unit 2 types"
+    },
+    {
+      "id": "TC-PERM-XU-011",
+      "status": "PASS",
+      "http": 403,
+      "note": "PUT blocked"
+    },
+    {
+      "id": "TC-PERM-XU-012",
+      "status": "PASS",
+      "http": 403,
+      "note": "DELETE blocked for od_id=90003"
+    },
+    {
+      "id": "TC-PERM-XU-013",
+      "status": "VERIFY",
+      "http": 200,
+      "note": "admin (unit 1) sees 6 docs, units={2, 3} — confirm hierarchy rule"
+    },
+    {
+      "id": "TC-PERM-XU-014",
+      "status": "PASS",
+      "http": 200,
+      "note": "search returned 5 all unit 2"
+    },
+    {
+      "id": "TC-PERM-XU-015",
+      "status": "SKIP",
+      "http": 0,
+      "note": "LGSP cross-unit send/receive scenario requires multi-step LGSP setup — manual test needed"
+    },
+    {
+      "id": "TC-PERM-RM-001",
+      "status": "FAIL",
+      "http": 200,
+      "note": "BUG-PERM-006: cán bộ accessed admin route"
+    },
+    {
+      "id": "TC-PERM-RM-002",
+      "status": "FAIL",
+      "http": 200,
+      "note": "BUG-PERM-007: văn thư accessed admin route"
+    },
+    {
+      "id": "TC-PERM-RM-003",
+      "status": "FAIL",
+      "http": 200,
+      "note": "BUG-PERM-008: lãnh đạo accessed admin route"
+    },
+    {
+      "id": "TC-PERM-RM-004",
+      "status": "PASS",
+      "http": 200,
+      "note": "admin can access /quan-tri"
+    },
+    {
+      "id": "TC-PERM-RM-005",
+      "status": "PASS",
+      "http": 201,
+      "note": "văn thư created VB"
+    },
+    {
+      "id": "TC-PERM-RM-006",
+      "status": "FAIL",
+      "http": 201,
+      "note": "BUG-PERM-009: cán bộ created VB"
+    },
+    {
+      "id": "TC-PERM-RM-007",
+      "status": "PASS",
+      "http": 400,
+      "note": "lãnh đạo can call giao-viec endpoint (HTTP 400)"
+    },
+    {
+      "id": "TC-PERM-RM-008",
+      "status": "PASS",
+      "http": 403,
+      "note": "cán bộ blocked from giao-viec"
+    },
+    {
+      "id": "TC-PERM-RM-009",
+      "status": "PASS",
+      "http": 400,
+      "note": "lãnh đạo can call /ky-so/sign (HTTP 400)"
+    },
+    {
+      "id": "TC-PERM-RM-010",
+      "status": "VERIFY",
+      "http": 400,
+      "note": "văn thư /ky-so/sign returned HTTP 400 — expected 403 if RBAC enforces"
+    },
+    {
+      "id": "TC-PERM-RM-011",
+      "status": "PASS",
+      "http": 403,
+      "note": "văn thư blocked from create user"
+    },
+    {
+      "id": "TC-PERM-RM-012",
+      "status": "PASS",
+      "http": 403,
+      "note": "lãnh đạo blocked from edit unit"
+    },
+    {
+      "id": "TC-PERM-RM-013",
+      "status": "PASS",
+      "http": 403,
+      "note": "lãnh đạo blocked from roles admin"
+    },
+    {
+      "id": "TC-PERM-RM-014",
+      "status": "PASS",
+      "http": 403,
+      "note": "lãnh đạo blocked from sign config"
+    },
+    {
+      "id": "TC-PERM-RM-015",
+      "status": "FAIL",
+      "http": 500,
+      "note": "unexpected"
+    },
+    {
+      "id": "TC-PERM-RM-016",
+      "status": "PASS",
+      "http": 200,
+      "note": "văn thư read-only on so-van-ban (GET 200, PUT 403)"
+    },
+    {
+      "id": "TC-PERM-RM-017",
+      "status": "PASS",
+      "http": 403,
+      "note": "lãnh đạo blocked from reset password"
+    },
+    {
+      "id": "TC-PERM-RM-018",
+      "status": "SKIP",
+      "http": 0,
+      "note": "needs HSCV fixture with chủ trì=A, tham gia=B, both in unit 2"
+    },
+    {
+      "id": "TC-PERM-RM-019",
+      "status": "VERIFY",
+      "http": 500,
+      "note": "HTTP 500"
+    },
+    {
+      "id": "TC-PERM-RM-020",
+      "status": "VERIFY",
+      "http": 500,
+      "note": "HTTP 500"
+    },
+    {
+      "id": "TC-PERM-RM-021",
+      "status": "PASS",
+      "http": 200,
+      "note": "admin multi-role works: nguoi-dung=200 ky-so/cau-hinh=200"
+    },
+    {
+      "id": "TC-PERM-RM-022",
+      "status": "SKIP",
+      "http": 0,
+      "note": "requires admin to remove role on test_canbo + verify session — destructive, manual"
+    },
+    {
+      "id": "TC-PERM-RM-023",
+      "status": "SKIP",
+      "http": 0,
+      "note": "requires locking active user — destructive, manual test"
+    },
+    {
+      "id": "TC-PERM-RM-024",
+      "status": "FAIL",
+      "http": 200,
+      "note": "backend allowed cán bộ"
+    },
+    {
+      "id": "TC-PERM-RM-025",
+      "status": "PASS",
+      "http": 403,
+      "note": "văn thư blocked from /ky-so/cau-hinh"
+    },
+    {
+      "id": "TC-PERM-RM-026",
+      "status": "FAIL",
+      "http": 404,
+      "note": "DELETE perms wrong: lãnh đạo=200 cán bộ=404 văn thư=404"
+    },
+    {
+      "id": "TC-PERM-RM-027",
+      "status": "VERIFY",
+      "http": 404,
+      "note": "VB 90100 not found — fixture may differ"
+    },
+    {
+      "id": "TC-PERM-RM-028",
+      "status": "VERIFY",
+      "http": 404,
+      "note": "covered by RM-027 (HTTP 404)"
+    },
+    {
+      "id": "TC-PERM-RM-029",
+      "status": "SKIP",
+      "http": 0,
+      "note": "requires Trưởng phòng role fixture"
+    },
+    {
+      "id": "TC-PERM-RM-030",
+      "status": "SKIP",
+      "http": 0,
+      "note": "requires is_represent_unit user fixture"
+    },
+    {
+      "id": "TC-PERM-TK-001",
+      "status": "PASS",
+      "http": 401,
+      "note": "no auth header rejected"
+    },
+    {
+      "id": "TC-PERM-TK-002",
+      "status": "PASS",
+      "http": 401,
+      "note": "expired/bad-sig token rejected"
+    },
+    {
+      "id": "TC-PERM-TK-003",
+      "status": "PASS",
+      "http": 401,
+      "note": "tampered payload rejected (sig mismatch)"
+    },
+    {
+      "id": "TC-PERM-TK-004",
+      "status": "PASS",
+      "http": 401,
+      "note": "refresh after logout rejected (logout=200)"
+    },
+    {
+      "id": "TC-PERM-TK-005",
+      "status": "FAIL",
+      "http": 200,
+      "note": "BUG-PERM-022: refresh token reusable (no rotation)"
+    }
+  ]
+}
