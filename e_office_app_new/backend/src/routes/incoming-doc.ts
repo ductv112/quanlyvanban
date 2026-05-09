@@ -198,18 +198,37 @@ router.get('/danh-dau-ca-nhan', async (req: Request, res: Response) => {
 router.get('/xuat-excel', async (req: Request, res: Response) => {
   try {
     const { staffId, departmentId, isAdmin } = (req as AuthRequest).user;
-    const { doc_book_id, doc_type_id, from_date, to_date, keyword } = req.query;
+    const { doc_book_id, doc_type_id, from_date, to_date, keyword, ids } = req.query;
     const deptIds = await resolveDeptSubtree(departmentId, isAdmin);
 
-    const rows = await incomingDocRepository.getList(0, staffId, {
-      docBookId: doc_book_id ? Number(doc_book_id) : undefined,
-      docTypeId: doc_type_id ? Number(doc_type_id) : undefined,
-      fromDate: from_date as string || undefined,
-      toDate: to_date as string || undefined,
-      keyword: keyword as string || undefined,
-      page: 1, pageSize: 10000,
-      deptIds,
-    });
+    // BUG #36/#37: nếu FE gửi `ids` (đã tick checkbox) → chỉ xuất các bản ghi đó.
+    // Format: ids=1,2,3 hoặc ids[]=1&ids[]=2
+    const idList = (() => {
+      if (!ids) return null;
+      const raw = Array.isArray(ids) ? ids : String(ids).split(',');
+      const parsed = raw.map((v) => Number(v)).filter((n) => Number.isFinite(n) && n > 0);
+      return parsed.length > 0 ? parsed : null;
+    })();
+
+    let rows: Awaited<ReturnType<typeof incomingDocRepository.getList>>;
+    if (idList) {
+      // Lấy full list theo filter mặc định rồi filter client-side bằng id (đảm bảo permissions vẫn áp dụng)
+      const allRows = await incomingDocRepository.getList(0, staffId, {
+        page: 1, pageSize: 10000, deptIds,
+      });
+      const idSet = new Set(idList.map((n) => Number(n)));
+      rows = allRows.filter((r) => idSet.has(Number(r.id)));
+    } else {
+      rows = await incomingDocRepository.getList(0, staffId, {
+        docBookId: doc_book_id ? Number(doc_book_id) : undefined,
+        docTypeId: doc_type_id ? Number(doc_type_id) : undefined,
+        fromDate: from_date as string || undefined,
+        toDate: to_date as string || undefined,
+        keyword: keyword as string || undefined,
+        page: 1, pageSize: 10000,
+        deptIds,
+      });
+    }
 
     const fmtDate = (d: string) => d ? dayjs(d).format('DD/MM/YYYY') : '';
     const URGENT: Record<number, string> = { 1: 'Thường', 2: 'Khẩn', 3: 'Hỏa tốc' };

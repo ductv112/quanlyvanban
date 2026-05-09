@@ -405,6 +405,15 @@ input:-webkit-autofill:active {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
   position: relative;
+  height: 100%;
+  min-height: 92px;
+  display: flex;
+  flex-direction: column;
+}
+.stat-card .ant-card-body {
+  flex: 1;
+  display: flex;
+  align-items: center;
 }
 .stat-card:hover {
   transform: translateY(-3px);
@@ -413,7 +422,13 @@ input:-webkit-autofill:active {
 .stat-card-body {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
+  width: 100%;
+  gap: 8px;
+}
+.stat-card-body > div:first-child {
+  flex: 1;
+  min-width: 0;
 }
 .stat-card-icon {
   width: 48px;
@@ -422,6 +437,7 @@ input:-webkit-autofill:active {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 /* --- Section Card Header (icon + title) --- */
@@ -484,6 +500,19 @@ input:-webkit-autofill:active {
   border-radius: 10px;
   margin-bottom: 16px;
   box-shadow: inset 0 1px 2px rgba(0,0,0,0.04);
+}
+
+/* BUG #1, #56: dropdown danh sách phòng ban (TreeSelect/Select) phải căn lề trái.
+   Một số môi trường browser/print stylesheet vô tình kế thừa text-align:center từ
+   parent .ant-table cell hoặc page-card → buộc lại left-align cho dropdown options. */
+.ant-select-dropdown .ant-select-item,
+.ant-select-dropdown .ant-select-item-option-content,
+.ant-select-tree-list .ant-select-tree-treenode,
+.ant-select-tree-list .ant-select-tree-node-content-wrapper,
+.ant-select-tree-list .ant-select-tree-title,
+.ant-tree-select-dropdown .ant-select-tree-node-content-wrapper,
+.ant-tree-select-dropdown .ant-select-tree-title {
+  text-align: left !important;
 }
 
 /* --- Enhanced Table Styles --- */
