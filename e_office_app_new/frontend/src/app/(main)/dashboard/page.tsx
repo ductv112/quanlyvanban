@@ -237,7 +237,7 @@ export default function DashboardPage() {
     { icon: <MessageOutlined />, label: 'Soạn tin nhắn', path: '/tin-nhan', color: '#D97706' },
     { icon: <FolderOpenOutlined />, label: 'Tạo HSCV', path: '/ho-so-cong-viec', color: '#7c3aed' },
     { icon: <CalendarOutlined />, label: 'Tạo lịch', path: '/lich/ca-nhan', color: '#dc2626' },
-  ];
+  ].filter((a) => !HIDDEN_ROUTES.has(a.path));
 
   return (
     <div>
