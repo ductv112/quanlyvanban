@@ -61,6 +61,45 @@ const VAN_THU_ROLE = 'Văn thư';
 const LANH_DAO_ROLE = 'Ban Lãnh đạo';
 const CHI_DAO_ROLE = 'Chỉ đạo điều hành';
 
+// BUG #44, #45: Filter menu key theo permission user (action_link cua right tuong ung).
+// Khong gioi han neu user la admin (isAdmin=true) — backend cung tu dong tra full rights.
+// Cac key bat dau bang 'grp-', 'ext-', 'lich' (parent submenu khong co route) duoc giu lai
+// truoc khi filter children — neu children empty thi se bi drop o filterMenuItems().
+function filterMenuItemsByPermissions(items: MenuItem[], allowed: Set<string>): MenuItem[] {
+  const result: MenuItem[] = [];
+  for (const item of items) {
+    if (!item) continue;
+    if ('type' in item && (item.type === 'group' || item.type === 'divider')) {
+      result.push(item);
+      continue;
+    }
+    const key = 'key' in item ? (item.key as string) : '';
+    // Submenu parent khong co route truc tiep — luon giu, recurse vao children
+    const isParent = 'children' in item && Array.isArray(item.children) && item.children.length > 0;
+    if (isParent) {
+      const filtered = filterMenuItemsByPermissions((item as any).children, allowed);
+      if (filtered.length > 0) {
+        result.push({ ...(item as any), children: filtered });
+      }
+      continue;
+    }
+    // External link (ext-*) hoac route khong khoa permission ('/') -> luon hien
+    if (key.startsWith('ext-')) {
+      result.push(item);
+      continue;
+    }
+    // Cho phep neu key match exact 1 menuLink, hoac la prefix ('/quan-tri/' chap nhan
+    // user co quyen vao tab con bat ky cua quan tri — vi du '/quan-tri/nguoi-dung').
+    if (allowed.has(key)) {
+      result.push(item);
+      continue;
+    }
+    // Neu nguoi dung co bat ky right con cua nhom (vi du allowed has '/quan-tri/nguoi-dung'
+    // -> giu cha '/quan-tri') -> handled qua isParent o tren. O day chi can match exact key.
+  }
+  return result;
+}
+
 // Recursive filter:
 // 1. Item có key trong HIDDEN_ROUTES → drop.
 // 2. Item có children → filter children; children rỗng sau filter → drop luôn cha.
@@ -119,10 +158,11 @@ interface MenuBuildParams {
   badgeCounts: { vbDen: number; tinNhan: number; thongBao: number };
   isAdmin: boolean;
   roles: string[];
+  menuLinks: string[];
 }
 
 // Menu builder filtered by user roles
-function buildMenuItems({ badgeCounts, isAdmin, roles }: MenuBuildParams): MenuItem[] {
+function buildMenuItems({ badgeCounts, isAdmin, roles, menuLinks }: MenuBuildParams): MenuItem[] {
   const hasRole = (name: string) => roles.includes(name);
   const isLeader = hasRole(LANH_DAO_ROLE) || hasRole(CHI_DAO_ROLE);
   const isVanThu = hasRole(VAN_THU_ROLE);
@@ -296,7 +336,15 @@ function buildMenuItems({ badgeCounts, isAdmin, roles }: MenuBuildParams): MenuI
     );
   }
 
-  return filterMenuItems(items);
+  // BUG #44, #45: Sau khi build full menu theo role, ap them filter theo
+  // permission action_link. Admin -> menuLinks da chua tat ca rights nen het
+  // truoc filter; non-admin chua duoc cap right -> filter ra rong.
+  let filtered = filterMenuItems(items);
+  if (!isAdmin) {
+    const allowed = new Set(menuLinks || []);
+    filtered = filterMenuItemsByPermissions(filtered, allowed);
+  }
+  return filtered;
 }
 
 // Map pathname to breadcrumb labels
@@ -529,14 +577,15 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     },
   ];
 
-  // Memoize menu items with badge counts + role-based filtering
+  // Memoize menu items with badge counts + role-based filtering + permission filter
   const menuItems = useMemo(
     () => buildMenuItems({
       badgeCounts: { vbDen: badgeCounts.vbDen, tinNhan: badgeCounts.tinNhan, thongBao: notifUnreadCount },
       isAdmin: user?.isAdmin ?? false,
       roles: user?.roles ?? [],
+      menuLinks: user?.menuLinks ?? [],
     }),
-    [badgeCounts.vbDen, badgeCounts.tinNhan, notifUnreadCount, user?.isAdmin, user?.roles]
+    [badgeCounts.vbDen, badgeCounts.tinNhan, notifUnreadCount, user?.isAdmin, user?.roles, user?.menuLinks]
   );
 
   const breadcrumbItems = buildBreadcrumbs(pathname);

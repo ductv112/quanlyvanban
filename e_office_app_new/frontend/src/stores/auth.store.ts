@@ -17,6 +17,9 @@ export interface UserInfo {
   departmentName: string;
   unitName: string;
   roles: string[];
+  // BUG #44, #45: action_link cua cac right user duoc cap.
+  // FE dung de filter sidebar — admin se nhan day du, non-admin chi nhan duoc gan qua role.
+  menuLinks?: string[];
   // HDSD I.4 — chữ ký số (SmartCA)
   signPhone?: string | null;
   signImage?: string | null;
@@ -45,7 +48,16 @@ export const useAuthStore = create<AuthState>((set) => ({
       const { data: res } = await api.post('/auth/login', { username, password });
       const { accessToken, user } = res.data;
       localStorage.setItem('accessToken', accessToken);
-      set({ user, isAuthenticated: true, isLoading: false });
+      // Phase 31 BUG #44, #45: login response khong co menuLinks de toi uu payload.
+      // Goi /auth/me ngay sau de fetch full profile (kem menuLinks) -> sidebar render dung.
+      let fullUser = user;
+      try {
+        const { data: meRes } = await api.get('/auth/me');
+        fullUser = meRes.data;
+      } catch {
+        // fallback giu user tu /login
+      }
+      set({ user: fullUser, isAuthenticated: true, isLoading: false });
     } catch (error) {
       set({ isLoading: false });
       throw error;

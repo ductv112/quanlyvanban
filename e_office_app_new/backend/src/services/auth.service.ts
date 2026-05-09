@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { authRepository } from '../repositories/auth.repository.js';
+import { rightRepository } from '../repositories/right.repository.js';
 import { verifyPassword } from '../lib/auth/password.js';
 import { signAccessToken, signRefreshToken, verifyToken } from '../lib/auth/jwt.js';
 import { getFileUrl } from '../lib/minio/client.js';
@@ -168,6 +169,19 @@ export const authService = {
       }
     }
 
+    // BUG #44, #45: Lay danh sach right action_link de FE filter sidebar.
+    // Admin tu dong duoc tat ca rights (xu ly trong fn_right_get_by_staff).
+    // Non-admin chi tra rights duoc gan qua role -> sidebar chi hien menu duoc phep.
+    let menuLinks: string[] = [];
+    try {
+      const rights = await rightRepository.getByStaff(staffId);
+      menuLinks = (rights || [])
+        .map((r) => (r.action_link || '').trim())
+        .filter((link) => !!link);
+    } catch {
+      menuLinks = [];
+    }
+
     return {
       staffId: profile.staff_id,
       unitId: profile.unit_id,
@@ -186,6 +200,7 @@ export const authService = {
       departmentName: profile.department_name || '',
       unitName: profile.unit_name || '',
       roles: parseRoles(profile.roles),
+      menuLinks,
       lastLoginAt: profile.last_login_at,
       createdAt: profile.created_at,
       signPhone: profile.sign_phone || '',
