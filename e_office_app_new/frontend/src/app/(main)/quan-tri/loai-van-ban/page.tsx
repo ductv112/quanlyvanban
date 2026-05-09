@@ -20,7 +20,8 @@ interface DocType {
   name: string;
   description: string;
   sort_order: number;
-  notation_type: string;
+  // DB column = SMALLINT: 0 = Khong co, 1 = So/Ky hieu, 2 = So-Ky hieu
+  notation_type: number;
   is_default: boolean;
   children?: DocType[];
 }
@@ -82,7 +83,7 @@ export default function DocTypePage() {
   const handleAdd = () => {
     setEditingRecord(null);
     form.resetFields();
-    form.setFieldsValue({ sort_order: 0, parent_id: null, notation_type: '' });
+    form.setFieldsValue({ sort_order: 0, parent_id: null, notation_type: 0 });
     setDrawerOpen(true);
   };
 
@@ -92,7 +93,8 @@ export default function DocTypePage() {
       parent_id: record.parent_id,
       code: record.code,
       name: record.name,
-      notation_type: record.notation_type,
+      // BUG #29: DB tra ve notation_type = number (smallint). Coerce de Select hien dung option.
+      notation_type: Number(record.notation_type) || 0,
       sort_order: record.sort_order,
     });
     setDrawerOpen(true);
@@ -171,14 +173,15 @@ export default function DocTypePage() {
       ellipsis: true,
     },
     {
-      title: 'Ký hiệu',
+      title: 'Kiểu ký hiệu',
       dataIndex: 'notation_type',
       key: 'notation_type',
       width: 140,
       render: (v: number | string | null | undefined) => {
-        if (v === 1 || v === '1' || v === 'so/ky_hieu') return 'Số/Ký hiệu';
-        if (v === 2 || v === '2' || v === 'so-ky_hieu') return 'Số-Ký hiệu';
-        return <span style={{ color: '#9CA3AF' }}>—</span>;
+        const n = Number(v);
+        if (n === 1) return 'Số/Ký hiệu';
+        if (n === 2) return 'Số-Ký hiệu';
+        return <span style={{ color: '#9CA3AF' }}>Không có</span>;
       },
     },
     {
@@ -320,14 +323,13 @@ export default function DocTypePage() {
             <Input placeholder="VD: Nghị quyết" maxLength={200} style={{ borderRadius: 8 }} />
           </Form.Item>
 
-          <Form.Item label="Kiểu ký hiệu" name="notation_type">
+          <Form.Item label="Kiểu ký hiệu" name="notation_type" initialValue={0}>
             <Select
               placeholder="Chọn kiểu ký hiệu"
-              allowClear
               options={[
-                { value: '', label: 'Không có' },
-                { value: 'so/ky_hieu', label: 'Số/Ký hiệu' },
-                { value: 'so-ky_hieu', label: 'Số-Ký hiệu' },
+                { value: 0, label: 'Không có' },
+                { value: 1, label: 'Số/Ký hiệu' },
+                { value: 2, label: 'Số-Ký hiệu' },
               ]}
               style={{ borderRadius: 8 }}
             />

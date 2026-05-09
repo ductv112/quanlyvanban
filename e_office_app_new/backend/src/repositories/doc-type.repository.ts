@@ -9,7 +9,8 @@ export interface DocTypeRow {
   name: string;
   description: string;
   sort_order: number;
-  notation_type: string;
+  // DB column = SMALLINT: 0 = Khong co, 1 = So/Ky hieu, 2 = So-Ky hieu
+  notation_type: number;
   is_default: boolean;
 }
 
