@@ -47,6 +47,7 @@ interface Staff {
 interface PositionOption {
   id: number;
   name: string;
+  is_active?: boolean;
 }
 
 interface DeptOption {
@@ -729,7 +730,22 @@ export default function StaffPage() {
                 <Select
                   placeholder="Chọn chức vụ"
                   allowClear
-                  options={positions.map((p) => ({ label: p.name, value: p.id }))}
+                  showSearch
+                  optionFilterProp="label"
+                  filterOption={(input, option) => {
+                    const label = String(option?.label ?? '').toLowerCase();
+                    return label.includes((input || '').trim().toLowerCase());
+                  }}
+                  // BUG #48: Chi cho chon chuc vu dang hoat dong (is_active=true).
+                  // Neu user dang edit + position_id hien tai bi disable -> van giu de hien thi
+                  // (tranh mat data) nhung gan disabled flag canh bao.
+                  options={positions
+                    .filter((p) => p.is_active !== false || p.id === editingRecord?.position_id)
+                    .map((p) => ({
+                      label: p.is_active === false ? `${p.name} (Đã ngừng)` : p.name,
+                      value: p.id,
+                      disabled: p.is_active === false && p.id !== editingRecord?.position_id,
+                    }))}
                   style={{ borderRadius: 8 }}
                 />
               </Form.Item>

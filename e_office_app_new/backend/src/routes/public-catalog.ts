@@ -129,6 +129,9 @@ router.get('/linh-vuc', async (_req: Request, res: Response) => {
 // GET /nguoi-dung — list staff (read-only) cho dropdown 'Người soạn thảo' / recipient picker / cấu hình gửi nhanh
 // Phase 19 v3.0 fix: non-admin user mở form CRUD VB cần load staff dropdown
 // Shadow admin route /quan-tri/nguoi-dung (mount trước) — phải trả đủ position_name + department_name để form admin render đúng.
+// Phase 31 BUG #17/#18/#52/#53: them filter is_deleted=false va is_locked param de
+// Quan ly nguoi dung filter trang thai dung (admin route co Phase 31 fix nhung non-admin
+// user voi role 'Van thu' van fall-through xuong day).
 router.get('/nguoi-dung', async (req: Request, res: Response) => {
   try {
     const { departmentId: callerDeptId, isAdmin } = (req as AuthRequest).user;
@@ -145,6 +148,12 @@ router.get('/nguoi-dung', async (req: Request, res: Response) => {
       unitId = await resolveAncestorUnit(callerDeptId);
     }
     const keyword = ((req.query.keyword as string) || '').trim();
+    // BUG #52/#53: respect is_locked filter — null = tat ca, true = chi khoa, false = chi hoat dong.
+    // Mac dinh public picker chi tra active (is_locked=false) de tranh chon nguoi da khoa.
+    let isLockedFilter: boolean | null = false;
+    if (req.query.is_locked !== undefined) {
+      isLockedFilter = req.query.is_locked === 'true' ? true : req.query.is_locked === 'false' ? false : null;
+    }
     const rows = await rawQuery<{
       id: number;
       full_name: string;
@@ -153,18 +162,21 @@ router.get('/nguoi-dung', async (req: Request, res: Response) => {
       position_id: number | null;
       position_name: string | null;
       department_name: string | null;
+      is_locked: boolean;
     }>(
       `SELECT s.id, s.full_name, s.unit_id, s.department_id, s.position_id,
-              p.name AS position_name, d.name AS department_name
+              p.name AS position_name, d.name AS department_name,
+              s.is_locked
        FROM public.staff s
        LEFT JOIN public.positions p ON p.id = s.position_id
        LEFT JOIN public.departments d ON d.id = s.department_id
-       WHERE COALESCE(s.is_locked, false) = false
+       WHERE COALESCE(s.is_deleted, false) = false
+         AND ($4::boolean IS NULL OR COALESCE(s.is_locked, false) = $4)
          AND ($1::int IS NULL OR s.unit_id = $1)
          AND ($2::int IS NULL OR s.department_id = $2)
          AND ($3 = '' OR s.full_name ILIKE '%' || $3 || '%')
        ORDER BY s.full_name`,
-      [unitId, departmentId, keyword],
+      [unitId, departmentId, keyword, isLockedFilter],
     );
     res.json({ success: true, data: rows, total: rows.length });
   } catch (error) {
