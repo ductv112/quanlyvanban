@@ -303,7 +303,10 @@ export default function DocTypePage() {
               placeholder="Chọn loại cha (nếu có)"
               allowClear
               showSearch
-              optionFilterProp="label"
+              filterOption={(input, option) => {
+                const label = String(option?.label ?? '').toLowerCase();
+                return label.includes((input || '').trim().toLowerCase());
+              }}
               options={parentOptions}
               style={{ borderRadius: 8 }}
             />

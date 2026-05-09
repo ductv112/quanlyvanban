@@ -118,7 +118,7 @@ export default function PositionPage() {
   };
 
   const handleSearch = (value: string) => {
-    setKeyword(value);
+    setKeyword((value || '').trim());
     setPage(1);
   };
 

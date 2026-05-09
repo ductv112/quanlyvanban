@@ -350,7 +350,7 @@ export default function StaffPage() {
     }
   };
 
-  const filteredTree = useMemo(() => filterTree(treeData, searchTree), [treeData, searchTree]);
+  const filteredTree = useMemo(() => filterTree(treeData, (searchTree || '').trim()), [treeData, searchTree]);
 
   const columns: ColumnsType<Staff> = [
     {
@@ -575,7 +575,7 @@ export default function StaffPage() {
                 <Input.Search
                   placeholder="Tìm kiếm họ tên, username..."
                   allowClear
-                  onSearch={(v) => { setKeyword(v); setPage(1); }}
+                  onSearch={(v) => { setKeyword((v || '').trim()); setPage(1); }}
                   style={{ width: 280, borderRadius: 8 }}
                   prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
                 />

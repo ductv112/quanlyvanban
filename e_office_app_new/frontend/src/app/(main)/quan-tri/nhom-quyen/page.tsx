@@ -173,7 +173,7 @@ export default function RolePage() {
   };
 
   const handleSearch = (value: string) => {
-    setKeyword(value);
+    setKeyword((value || '').trim());
     setPage(1);
   };
 

@@ -122,7 +122,7 @@ export default function DocFieldPage() {
   };
 
   const handleSearch = (value: string) => {
-    setKeyword(value);
+    setKeyword((value || '').trim());
   };
 
   const columns: ColumnsType<DocField> = [
