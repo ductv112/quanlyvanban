@@ -14,9 +14,15 @@
  *  - .planning/phases/28-execute-wave-g/_results.json (+ 28-RESULTS.md)
  *  - .planning/phases/29-execute-wave-h/_results.json (+ 29-RESULTS.md)
  *  - .planning/phases/30-execute-wave-i/30-RESULTS.md
+ *  - .planning/phases/31-fix-gom-ui/31-RESULTS-{bc,de,f,gh}-ui.md (Phase 31 UI follow-up)
  *
  * Phase 31 fix gom (commits ef5308d → d30cdd2) overrides applied — bugs
  * resolved chuyển status FAIL → PASS for explicitly-listed TCs.
+ *
+ * Phase 31 UI follow-up (commits 202f874 + earlier UI agent runs) covers SKIP UI
+ * TCs from Wave b/c/d/e/f via Playwright + adds derived UI coverage for Wave g/h.
+ * No explicit override list needed — dedupe weight (pass=6 > skip=2) auto-promotes
+ * when same TC ID appears as PASS in 31-ui results.
  *
  * Output:
  *  - tests/results/aggregated-wave-results.json (raw aggregator output)
@@ -925,7 +931,7 @@ function toPlaywrightJson(results: Map<string, TcResult>) {
     config: { rootDir: REPO_ROOT, configFile: 'aggregated' },
     suites: [
       {
-        title: 'Wave a-i aggregated (Phase 22-30 + Phase 31 fix gom overrides)',
+        title: 'Wave a-i aggregated (Phase 22-30 + Phase 31 fix gom overrides + Phase 31 UI follow-up)',
         specs,
       },
     ],
@@ -1063,6 +1069,19 @@ async function main(): Promise<void> {
     const r = parseGenericMd(readFile(waveIMd), waveIMd, 'i');
     console.log(`[agg] Wave i 30-RESULTS.md: ${r.length} TC parsed`);
     all.push(...r);
+  }
+
+  // Phase 31 UI follow-up — Playwright runs cover SKIP UI from b/c/d/e/f
+  // + derived UI coverage from g/h. dedupe() weight pass=6 > skip=2 auto-promotes
+  // existing SKIPped TCs to PASS when matched here.
+  const phase31UiDir = path.join(PHASES_ROOT, '31-fix-gom-ui');
+  for (const f of ['31-RESULTS-bc-ui.md', '31-RESULTS-de-ui.md', '31-RESULTS-f-ui.md', '31-RESULTS-gh-ui.md']) {
+    const fp = path.join(phase31UiDir, f);
+    if (exists(fp)) {
+      const r = parseGenericMd(readFile(fp), fp, '31-ui');
+      console.log(`[agg] Phase 31 UI ${f}: ${r.length} TC parsed`);
+      all.push(...r);
+    }
   }
 
   console.log(`[agg] Raw total: ${all.length} TC results (with duplicates across sources)`);
