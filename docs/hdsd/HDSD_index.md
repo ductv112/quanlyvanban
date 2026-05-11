@@ -79,35 +79,33 @@ Một người dùng có thể được gán **nhiều vai trò** cùng lúc; qu
 
 | # | Chức năng | Tài liệu |
 |---|---|---|
-| 9 | Hồ sơ công việc — Danh sách | [HDSD_ho_so_cong_viec_danh_sach.md](HDSD_ho_so_cong_viec_danh_sach.md) |
-| 10 | Hồ sơ công việc — Chi tiết | [HDSD_ho_so_cong_viec_chi_tiet.md](HDSD_ho_so_cong_viec_chi_tiet.md) |
-| 11 | Hồ sơ công việc — Báo cáo | [HDSD_ho_so_cong_viec_bao_cao.md](HDSD_ho_so_cong_viec_bao_cao.md) |
+| 9 | Hồ sơ công việc (danh sách + chi tiết + báo cáo) | [HDSD_ho_so_cong_viec.md](HDSD_ho_so_cong_viec.md) |
 
 ### 5.4. Ký số
 
 | # | Chức năng | Tài liệu |
 |---|---|---|
-| 12 | Cấu hình ký số hệ thống *(quản trị)* | [HDSD_ky_so_cau_hinh.md](HDSD_ky_so_cau_hinh.md) |
-| 13 | Tài khoản ký số cá nhân | [HDSD_ky_so_tai_khoan.md](HDSD_ky_so_tai_khoan.md) |
-| 14 | Danh sách ký số | [HDSD_ky_so_danh_sach.md](HDSD_ky_so_danh_sach.md) |
+| 10 | Cấu hình ký số hệ thống *(quản trị)* | [HDSD_ky_so_cau_hinh.md](HDSD_ky_so_cau_hinh.md) |
+| 11 | Tài khoản ký số cá nhân | [HDSD_ky_so_tai_khoan.md](HDSD_ky_so_tai_khoan.md) |
+| 12 | Danh sách ký số | [HDSD_ky_so_danh_sach.md](HDSD_ky_so_danh_sach.md) |
 
 ### 5.5. Quản trị hệ thống *(chỉ Quản trị hệ thống)*
 
 | # | Chức năng | Tài liệu |
 |---|---|---|
-| 15 | Đơn vị — cơ cấu tổ chức | [HDSD_quan_tri_don_vi.md](HDSD_quan_tri_don_vi.md) |
-| 16 | Chức vụ | [HDSD_quan_tri_chuc_vu.md](HDSD_quan_tri_chuc_vu.md) |
-| 17 | Người dùng | [HDSD_quan_tri_nguoi_dung.md](HDSD_quan_tri_nguoi_dung.md) |
-| 18 | Nhóm quyền | [HDSD_quan_tri_nhom_quyen.md](HDSD_quan_tri_nhom_quyen.md) |
+| 13 | Đơn vị — cơ cấu tổ chức | [HDSD_quan_tri_don_vi.md](HDSD_quan_tri_don_vi.md) |
+| 14 | Chức vụ | [HDSD_quan_tri_chuc_vu.md](HDSD_quan_tri_chuc_vu.md) |
+| 15 | Người dùng | [HDSD_quan_tri_nguoi_dung.md](HDSD_quan_tri_nguoi_dung.md) |
+| 16 | Nhóm quyền | [HDSD_quan_tri_nhom_quyen.md](HDSD_quan_tri_nhom_quyen.md) |
 
 ### 5.6. Danh mục *(chỉ Quản trị hệ thống)*
 
 | # | Chức năng | Tài liệu |
 |---|---|---|
-| 19 | Sổ văn bản | [HDSD_quan_tri_so_van_ban.md](HDSD_quan_tri_so_van_ban.md) |
-| 20 | Loại văn bản | [HDSD_quan_tri_loai_van_ban.md](HDSD_quan_tri_loai_van_ban.md) |
-| 21 | Lĩnh vực | [HDSD_quan_tri_linh_vuc.md](HDSD_quan_tri_linh_vuc.md) |
-| 22 | Người ký | [HDSD_quan_tri_nguoi_ky.md](HDSD_quan_tri_nguoi_ky.md) |
+| 17 | Sổ văn bản | [HDSD_quan_tri_so_van_ban.md](HDSD_quan_tri_so_van_ban.md) |
+| 18 | Loại văn bản | [HDSD_quan_tri_loai_van_ban.md](HDSD_quan_tri_loai_van_ban.md) |
+| 19 | Lĩnh vực | [HDSD_quan_tri_linh_vuc.md](HDSD_quan_tri_linh_vuc.md) |
+| 20 | Người ký | [HDSD_quan_tri_nguoi_ky.md](HDSD_quan_tri_nguoi_ky.md) |
 
 ---
 
