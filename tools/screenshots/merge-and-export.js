@@ -1,8 +1,14 @@
 // Merge all HDSD modules into HDSD_full.md, then export to docx via pandoc.
+//
+// Usage:
+//   node merge-and-export.js                # merge + pandoc export
+//   node merge-and-export.js --merge-only   # merge only (skip pandoc — used by Plan 32-07)
 
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
+
+const MERGE_ONLY = process.argv.includes('--merge-only');
 
 const HDSD_DIR = path.resolve(__dirname, '../../docs/hdsd');
 const FULL_MD = path.join(HDSD_DIR, 'HDSD_full.md');
@@ -159,6 +165,12 @@ console.log(`\n  Merged: ${FULL_MD}`);
 console.log(`  Size:   ${(stats.size / 1024).toFixed(0)} KB`);
 const lineCount = merged.split('\n').length;
 console.log(`  Lines:  ${lineCount}`);
+
+if (MERGE_ONLY) {
+  console.log('\n[2/2] --merge-only flag set, skipping pandoc export.');
+  console.log('Done (merge only).');
+  process.exit(0);
+}
 
 // 2. Export to docx via pandoc — reference.docx adds borders to Table style.
 //    --toc-depth=3 ⇒ TOC shows H1 + H2 + H3 (Phần I + các chương + sub-section).

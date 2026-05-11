@@ -430,10 +430,12 @@ Khi có thông báo mới gửi tới (qua kết nối thời gian thực với 
 
 | Tên trường | Mô tả |
 |---|---|
-| Biểu tượng loại | Mỗi loại có một biểu tượng riêng: dấu tích xanh (ký số thành công), dấu chéo đỏ (ký số thất bại), tài liệu xanh navy (được giao VB đến), giấy tờ teal (được giao việc), bút chì cam (lãnh đạo có ý kiến). Loại khác: chuông xanh teal mặc định. |
+| Biểu tượng loại | Mỗi loại có một biểu tượng riêng: dấu tích xanh (ký số thành công — `sign_completed`), dấu chéo đỏ (ký số thất bại — `sign_failed`), tài liệu xanh navy (được giao VB đến — `incoming_doc_assigned`), giấy tờ teal (được giao việc — `task_assigned`), bút chì cam (lãnh đạo có ý kiến — `leader_note_received`). Loại khác: chuông xanh teal mặc định. |
 | Tiêu đề | Tiêu đề thông báo, in đậm nếu chưa đọc. Cắt một dòng nếu dài. |
 | Nội dung tóm tắt | Mô tả ngắn dưới tiêu đề. Cắt một dòng. |
 | Thời gian tương đối | Hiển thị dạng "vừa xong", "5 phút trước", "2 giờ trước"... theo tiếng Việt. |
+
+**Lưu ý phạm vi chuông `task_assigned` (được giao việc):** Chuông này CHỈ phát ra khi lãnh đạo bấm "Tạo và giao việc" trên chi tiết **Văn bản đến** (xem HDSD Văn bản đến mục 3.6). Khi giao việc từ **Văn bản đi** (xem HDSD Văn bản đi mục 3.8), hệ thống **CHƯA gửi chuông** cho người được giao trong phiên bản hiện tại — gap code sẽ bổ sung ở phiên bản sau v3.2+. Người được giao từ VB đi cần tự vào trang Hồ sơ công việc (tab "Mới tạo") để biết có việc mới.
 
 ##### 3.3.1.4. Thông báo của hệ thống
 
@@ -821,6 +823,20 @@ Drawer rộng 720px, có gradient xanh thẫm. Tiêu đề "Giao việc". Form n
 | Người phụ trách rỗng | Vui lòng chọn ít nhất một người phụ trách |
 | Tạo thành công | Giao việc thành công |
 | Không có quyền | Không có quyền giao xử lý văn bản đến này |
+
+##### 4.3.6.5. Sau khi giao việc — văn bản xuất hiện ở đâu của TK được giao?
+
+Khi bấm "Tạo và giao việc", hệ thống tạo một Hồ sơ công việc (HSCV) mới và liên kết với văn bản đến này:
+
+1. **TK được chọn làm Người phụ trách** sẽ nhận:
+   - **Chuông thông báo** (góc trên màn hình) với nội dung "Bạn vừa được giao việc..." — bấm vào điều hướng sang HSCV chi tiết.
+   - HSCV mới xuất hiện ở trang **Hồ sơ công việc** (menu trái), tab **"Mới tạo"** (status mặc định khi giao việc).
+
+2. **Vào chi tiết HSCV**, người được giao thấy:
+   - Thông tin HSCV (tên, ngày bắt đầu, hạn, ghi chú, người phụ trách)
+   - Văn bản đến nguồn được link sẵn — bấm để mở chi tiết văn bản
+
+3. **Văn bản đến** vẫn nằm ở trang VB đến cũ của người tiếp nhận ban đầu (lãnh đạo) — KHÔNG bị chuyển đi.
 
 #### 4.3.7. Modal chuyển lại văn bản
 
@@ -1221,6 +1237,32 @@ Modal rộng 600px. Tiêu đề "Gửi nội bộ — chọn đơn vị nhận" 
 | Gửi thành công | Đã gửi: N đơn vị nội bộ |
 | Ban hành & Gửi thành công | Đã ban hành và gửi: N đơn vị nội bộ |
 
+##### 5.3.7.5. Luồng kỹ thuật khi Gửi (3 bước nối tiếp)
+
+Khi bấm nút "Ban hành & Gửi" hoặc "Gửi" trong modal, hệ thống thực hiện 3 bước nối tiếp:
+
+**Bước 1 — Lưu danh sách đơn vị nhận:**
+- Mỗi đơn vị/cơ quan được chọn được lưu thành 1 dòng trong bảng `outgoing_doc_recipients` với `sent_status='pending'`.
+- Phân loại: `internal_unit` (đơn vị trong tỉnh) hoặc `external_org` (cơ quan ngoài tỉnh — gửi qua LGSP).
+
+**Bước 2 — Ban hành cấp số:**
+- Hệ thống cấp số văn bản đi chính thức và đánh dấu `is_released = TRUE`.
+- Trạng thái văn bản đi chuyển sang **"Đã ban hành"**.
+
+**Bước 3 — Gửi (loop từng recipient):**
+
+- **Nếu là đơn vị Nội bộ:** Hệ thống tự sinh 1 Văn bản đến cho đơn vị nhận:
+  - Văn bản đến nằm ngay ở trang **Văn bản đến** của đơn vị nhận, trạng thái "Chưa duyệt".
+  - Người nhận có thể đăng nhập và xử lý ngay (duyệt → giao việc → ban hành công văn trả lời...).
+  - Số văn bản đến được cấp tự động theo sổ của đơn vị nhận.
+
+- **Nếu là cơ quan ngoài LGSP:** Hệ thống tạo bản ghi trong `lgsp_tracking` (trạng thái `pending`):
+  - Badge **"Đang chờ worker đẩy LGSP"** hiển thị ở khung "Đơn vị / Cơ quan nhận" trên trang chi tiết.
+  - Worker BullMQ (`lgsp-send`) sẽ pick lên, gọi API LGSP thật (apiltvb.langson.gov.vn), update trạng thái → `success` / `error`.
+  - Khi worker xong, badge đổi thành **"Đã gửi LGSP"** hoặc **"Lỗi gửi LGSP"** (kèm thông báo lỗi).
+
+Trạng thái cuối cùng của văn bản đi: **"Đã gửi"** (nội bộ done ngay, LGSP đợi worker).
+
 #### 5.3.8. Drawer giao việc
 
 ![Drawer Giao việc](screenshots/van_ban_di_08_drawer_giao_viec.png)
@@ -1253,6 +1295,22 @@ Drawer rộng 600px, có gradient xanh thẫm. Tiêu đề "Giao việc". Form g
 | Tên hồ sơ rỗng | Tên hồ sơ công việc là bắt buộc |
 | Tạo thành công | Giao việc thành công |
 | Không có quyền | Không có quyền giao xử lý văn bản đi này |
+
+##### 5.3.8.5. Sau khi giao việc — văn bản xuất hiện ở đâu?
+
+Khi bấm "Tạo và giao việc" trong Drawer giao việc của VB đi, hệ thống tạo một Hồ sơ công việc (HSCV) mới liên kết với văn bản đi này:
+
+1. **TK được chọn làm Người phụ trách** sẽ thấy:
+   - HSCV mới xuất hiện ở trang **Hồ sơ công việc** (menu trái), tab **"Mới tạo"**.
+   - **KHÔNG có chuông thông báo** (gap code chưa fix — sẽ bổ sung ở phiên bản sau v3.2+). Người được giao phải tự vào trang HSCV để biết có việc mới.
+
+2. **Vào chi tiết HSCV**, người được giao thấy:
+   - Thông tin HSCV (tên, ngày bắt đầu, hạn, ghi chú, người phụ trách).
+   - Văn bản đi nguồn được link sẵn — bấm để mở chi tiết văn bản.
+
+3. **Văn bản đi** vẫn nằm ở trang VB đi của người soạn — KHÔNG bị chuyển đi.
+
+**Lưu ý:** form Drawer giao việc VB đi hiện KHÔNG validate `Người phụ trách` rỗng và `Hạn hoàn thành` rỗng — đề nghị người dùng nhập đủ các trường trước khi bấm Tạo. Validation sẽ bổ sung ở phiên bản sau (v3.2+).
 
 #### 5.3.9. Modal thêm văn bản vào hồ sơ công việc
 
@@ -1520,6 +1578,8 @@ Sau khi phát hành thành công, hệ thống mở thêm 1 hộp thoại "Phát
 |---|---|
 | Phát hành thành công | Phát hành thành công — Đã tạo văn bản đi #&lt;ID&gt; |
 | Không có quyền | Không có quyền phát hành văn bản này |
+
+> **Lưu ý nghiệp vụ:** sau khi Phát hành, dự thảo trở thành một Văn bản đi mới (ID hiển thị ngay trên hộp thoại thành công). Văn bản đi mới ở trạng thái "Đã duyệt" — chưa được Ban hành cấp số và chưa Gửi. Toàn bộ luồng kỹ thuật khi Ban hành cấp số và Gửi tới các đơn vị nhận (nội bộ + LGSP) được mô tả tại mục **3.7 — Luồng kỹ thuật khi Gửi (3 bước nối tiếp)** trong HDSD Văn bản đi.
 
 #### 6.3.7. Trang chi tiết văn bản dự thảo
 
@@ -1848,7 +1908,19 @@ Từ trên xuống:
 
 Chuyển tab — bảng tự đưa về trang 1 và tải lại danh sách.
 
-##### 9.3.1.3. Các nút chức năng
+##### 9.3.1.3. HSCV tự xuất hiện ở tab "Mới tạo" khi được giao việc
+
+Có 3 nguồn HSCV xuất hiện ở tab **"Mới tạo"** (trạng thái mặc định khi tạo HSCV):
+
+1. **Cán bộ tự bấm "Tạo hồ sơ mới":** HSCV xuất hiện ở cả tab **"Tôi tạo"** lẫn tab **"Mới tạo"** của chính người tạo. Đây là luồng tạo HSCV chủ động — xem chi tiết ở mục **3.2. Drawer Tạo hồ sơ công việc**.
+
+2. **Lãnh đạo bấm "Tạo và giao việc" trên chi tiết Văn bản đến:** Hệ thống tạo HSCV mới gắn với VB đến đó, đặt người được chọn làm **Người phụ trách**. HSCV xuất hiện ở tab **"Mới tạo"** của người được giao — đồng thời người được giao **nhận chuông thông báo** (loại `task_assigned`) ở góc trên màn hình với nội dung *"Bạn được giao xử lý hồ sơ công việc..."* — bấm vào điều hướng sang HSCV chi tiết. Xem chi tiết luồng nghiệp vụ ở mục **3.6** của HDSD Văn bản đến.
+
+3. **Người soạn bấm "Tạo và giao việc" trên chi tiết Văn bản đi:** Hệ thống tạo HSCV mới gắn với VB đi đó. HSCV cũng xuất hiện ở tab **"Mới tạo"** của người được chọn làm Người phụ trách. **Lưu ý:** hiện tại VB đi giao việc **CHƯA có chuông thông báo** (gap code chưa fix — sẽ bổ sung ở phiên bản sau v3.2+). Người được giao phải tự vào trang **Hồ sơ công việc** để biết có việc mới. Xem chi tiết luồng nghiệp vụ ở mục **3.8** của HDSD Văn bản đi.
+
+Trong cả ba trường hợp, HSCV chi tiết hiển thị link đến văn bản nguồn (đến hoặc đi) ở tab **Văn bản liên kết**. Văn bản nguồn KHÔNG bị di chuyển — vẫn nằm ở trang VB đến/đi gốc của người tiếp nhận / người soạn.
+
+##### 9.3.1.4. Các nút chức năng
 
 | Nút | Vị trí | Khi nào hiển thị | Tác dụng |
 |---|---|---|---|
@@ -1859,7 +1931,7 @@ Chuyển tab — bảng tự đưa về trang 1 và tải lại danh sách.
 | Đặt lại | Hàng bộ lọc | Luôn hiển thị | Xóa Từ khóa, Lĩnh vực, Đơn vị/Phòng ban, Khoảng ngày và đưa về trang 1. |
 | Ba chấm dọc | Cột cuối mỗi dòng | Luôn hiển thị | Mở menu thao tác. Mặc định có Xem chi tiết. Khi HSCV ở trạng thái Mới tạo có thêm Sửa và Xóa. |
 
-##### 9.3.1.4. Các cột / trường dữ liệu
+##### 9.3.1.5. Các cột / trường dữ liệu
 
 | Cột | Mô tả |
 |---|---|
@@ -1872,7 +1944,7 @@ Chuyển tab — bảng tự đưa về trang 1 và tải lại danh sách.
 | Lãnh đạo ký | Họ tên lãnh đạo sẽ ký duyệt HSCV. |
 | Tiến độ | Thanh phần trăm hoàn thành (0–100%) màu xanh teal. |
 
-##### 9.3.1.5. Thông báo của hệ thống
+##### 9.3.1.6. Thông báo của hệ thống
 
 | Tình huống | Thông báo |
 |---|---|
