@@ -160,23 +160,55 @@ async function runCase(label, fn, results) {
     }, results);
 
     // ── 5. VB đi modal "Ban hành & Gửi" ────────────────────────────
+    // The modal "Ban hành & Gửi — chọn đơn vị nhận" only opens when
+    // doc has NO recipients yet (page.tsx handleReleaseAndSend line 337).
+    // If recipients already set, the click triggers direct release+send.
+    // Strategy: pick releasableDoc, then check if it has recipients via
+    // /noi-nhan API; if it does, skip & fall back to any approved doc
+    // with empty recipients, OR seed via UI fallback.
     await runCase('5:van_ban_di_07_modal_send_internal.png', async () => {
-      if (!releasableDoc) {
+      // First pass: find any doc with approved=true, is_released=false, and zero recipients
+      let targetId = null;
+      for (const d of vbDiDocs.filter(x => x.approved === true && x.is_released === false)) {
+        const noiNhan = await apiFetch(page, `/api/van-ban-di/${d.id}/noi-nhan`);
+        const recipients = noiNhan?.data || [];
+        if (recipients.length === 0) {
+          targetId = d.id;
+          console.log(`  Picked id=${d.id} (recipients=0, approved=true, is_released=false)`);
+          break;
+        }
+      }
+      if (!targetId) {
+        // Fallback: pick the first approved-not-released doc regardless of recipients —
+        // the click may not open a modal but we will detect that and adapt.
+        targetId = releasableDoc?.id;
+        console.log(`  Fallback id=${targetId} (may have recipients)`);
+      }
+      if (!targetId) {
         throw new Error('Không có VB đi với approved=true && is_released=false trong DB');
       }
-      await gotoAndSettle(page, `/van-ban-di/${releasableDoc.id}`, 2500);
-      // The button is the exact text "Ban hành & Gửi" (page.tsx line 495)
+      await gotoAndSettle(page, `/van-ban-di/${targetId}`, 2500);
       const btn = page.locator('button:has-text("Ban hành & Gửi")').first();
       if (await btn.count() === 0) {
-        throw new Error('Không thấy nút "Ban hành & Gửi" (canRelease && canSend không thoả)');
+        throw new Error('Không thấy nút "Ban hành & Gửi"');
       }
       await btn.click({ timeout: 5000 });
-      await page.waitForTimeout(1800);
-      // Modal title contains "chọn đơn vị nhận"
-      const modal = page.locator('.ant-modal-content:has-text("chọn đơn vị nhận")').first();
-      if (await modal.count() === 0) {
-        throw new Error('Modal "chọn đơn vị nhận" không mở');
+      // Wait for the modal title to appear (AntD renders in portal — :visible
+      // pseudo-selector can be flaky; check .ant-modal-title text instead).
+      // Modal title = "Ban hành & Gửi — chọn đơn vị nhận" (page.tsx line 916).
+      try {
+        await page.waitForFunction(
+          () => {
+            const titles = Array.from(document.querySelectorAll('.ant-modal-title'));
+            return titles.some(el => el.textContent && el.textContent.includes('chọn đơn vị nhận'));
+          },
+          { timeout: 6000 },
+        );
+      } catch {
+        throw new Error('Modal "chọn đơn vị nhận" không mở sau 6s');
       }
+      // Extra wait for fade-in animation + dept options to render
+      await page.waitForTimeout(1200);
       const r = await snap(page, 'van_ban_di_07_modal_send_internal.png', { fullPage: false });
       await closeOverlays(page);
       return r;
