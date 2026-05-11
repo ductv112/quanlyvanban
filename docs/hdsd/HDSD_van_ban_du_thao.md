@@ -235,6 +235,8 @@ Sau khi phát hành thành công, hệ thống mở thêm 1 hộp thoại "Phát
 | Phát hành thành công | Phát hành thành công — Đã tạo văn bản đi #&lt;ID&gt; |
 | Không có quyền | Không có quyền phát hành văn bản này |
 
+> **Lưu ý nghiệp vụ:** sau khi Phát hành, dự thảo trở thành một Văn bản đi mới (ID hiển thị ngay trên hộp thoại thành công). Văn bản đi mới ở trạng thái "Đã duyệt" — chưa được Ban hành cấp số và chưa Gửi. Toàn bộ luồng kỹ thuật khi Ban hành cấp số và Gửi tới các đơn vị nhận (nội bộ + LGSP) được mô tả tại mục **3.7 — Luồng kỹ thuật khi Gửi (3 bước nối tiếp)** trong [HDSD Văn bản đi](HDSD_van_ban_di.md).
+
 ### 3.7. Trang chi tiết văn bản dự thảo
 
 ![Chi tiết văn bản dự thảo](screenshots/van_ban_du_thao_07_detail.png)
