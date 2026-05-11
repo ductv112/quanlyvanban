@@ -71,6 +71,18 @@ Từ trên xuống:
 
 Chuyển tab — bảng tự đưa về trang 1 và tải lại danh sách.
 
+#### HSCV tự xuất hiện ở tab "Mới tạo" khi được giao việc
+
+Có 3 nguồn HSCV xuất hiện ở tab **"Mới tạo"** (trạng thái mặc định khi tạo HSCV):
+
+1. **Cán bộ tự bấm "Tạo hồ sơ mới":** HSCV xuất hiện ở cả tab **"Tôi tạo"** lẫn tab **"Mới tạo"** của chính người tạo. Đây là luồng tạo HSCV chủ động — xem chi tiết ở mục **3.2. Drawer Tạo hồ sơ công việc**.
+
+2. **Lãnh đạo bấm "Tạo và giao việc" trên chi tiết Văn bản đến:** Hệ thống tạo HSCV mới gắn với VB đến đó, đặt người được chọn làm **Người phụ trách**. HSCV xuất hiện ở tab **"Mới tạo"** của người được giao — đồng thời người được giao **nhận chuông thông báo** (loại `task_assigned`) ở góc trên màn hình với nội dung *"Bạn được giao xử lý hồ sơ công việc..."* — bấm vào điều hướng sang HSCV chi tiết. Xem chi tiết luồng nghiệp vụ ở mục **3.6** của [HDSD Văn bản đến](HDSD_van_ban_den.md).
+
+3. **Người soạn bấm "Tạo và giao việc" trên chi tiết Văn bản đi:** Hệ thống tạo HSCV mới gắn với VB đi đó. HSCV cũng xuất hiện ở tab **"Mới tạo"** của người được chọn làm Người phụ trách. **Lưu ý:** hiện tại VB đi giao việc **CHƯA có chuông thông báo** (gap code chưa fix — sẽ bổ sung ở phiên bản sau v3.2+). Người được giao phải tự vào trang **Hồ sơ công việc** để biết có việc mới. Xem chi tiết luồng nghiệp vụ ở mục **3.8** của [HDSD Văn bản đi](HDSD_van_ban_di.md).
+
+Trong cả ba trường hợp, HSCV chi tiết hiển thị link đến văn bản nguồn (đến hoặc đi) ở tab **Văn bản liên kết**. Văn bản nguồn KHÔNG bị di chuyển — vẫn nằm ở trang VB đến/đi gốc của người tiếp nhận / người soạn.
+
 #### Các nút chức năng
 
 | Nút | Vị trí | Khi nào hiển thị | Tác dụng |
