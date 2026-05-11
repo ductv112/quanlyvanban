@@ -71,10 +71,12 @@ Khi có thông báo mới gửi tới (qua kết nối thời gian thực với 
 
 | Tên trường | Mô tả |
 |---|---|
-| Biểu tượng loại | Mỗi loại có một biểu tượng riêng: dấu tích xanh (ký số thành công), dấu chéo đỏ (ký số thất bại), tài liệu xanh navy (được giao VB đến), giấy tờ teal (được giao việc), bút chì cam (lãnh đạo có ý kiến). Loại khác: chuông xanh teal mặc định. |
+| Biểu tượng loại | Mỗi loại có một biểu tượng riêng: dấu tích xanh (ký số thành công — `sign_completed`), dấu chéo đỏ (ký số thất bại — `sign_failed`), tài liệu xanh navy (được giao VB đến — `incoming_doc_assigned`), giấy tờ teal (được giao việc — `task_assigned`), bút chì cam (lãnh đạo có ý kiến — `leader_note_received`). Loại khác: chuông xanh teal mặc định. |
 | Tiêu đề | Tiêu đề thông báo, in đậm nếu chưa đọc. Cắt một dòng nếu dài. |
 | Nội dung tóm tắt | Mô tả ngắn dưới tiêu đề. Cắt một dòng. |
 | Thời gian tương đối | Hiển thị dạng "vừa xong", "5 phút trước", "2 giờ trước"... theo tiếng Việt. |
+
+**Lưu ý phạm vi chuông `task_assigned` (được giao việc):** Chuông này CHỈ phát ra khi lãnh đạo bấm "Tạo và giao việc" trên chi tiết **Văn bản đến** (xem [HDSD Văn bản đến](HDSD_van_ban_den.md) mục 3.6). Khi giao việc từ **Văn bản đi** (xem [HDSD Văn bản đi](HDSD_van_ban_di.md) mục 3.8), hệ thống **CHƯA gửi chuông** cho người được giao trong phiên bản hiện tại — gap code sẽ bổ sung ở phiên bản sau v3.2+. Người được giao từ VB đi cần tự vào trang Hồ sơ công việc (tab "Mới tạo") để biết có việc mới.
 
 #### Thông báo của hệ thống
 
