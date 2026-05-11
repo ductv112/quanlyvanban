@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
 milestone: v3.1
-milestone_name: Manual Test Execution + Bug Fix (re-scoped 2026-05-06)
-status: phase_21_done_re_scoped_executing
-stopped_at: Re-scope cleanup done. Phase 21 (infra) DONE. Ready Batch 1 = Phase 22 Execute Wave a (83 TC Auth+Admin).
-last_updated: "2026-05-06T16:50:00.000Z"
-last_activity: 2026-05-06
+milestone_name: Automation Test Suite + Bug Fix
+status: executing
+stopped_at: Completed 21-06-PLAN.md (CI workflow test-pr.yml). Phase 21 ready for verification.
+last_updated: "2026-05-11T04:06:53.100Z"
+last_activity: 2026-05-11 -- Phase 32 planning complete
 progress:
-  total_phases: 10
-  completed_phases: 1
+  total_phases: 13
+  completed_phases: 0
   total_plans: 7
-  completed_plans: 7
-  percent: 10
+  completed_plans: 6
+  percent: 86
 ---
 
 # Project State
@@ -27,8 +27,8 @@ See: .planning/PROJECT.md
 
 Phase: 21 (automation-foundation) — EXECUTING
 Plan: 6 of 6
-Status: Phase complete — ready for verification
-Last activity: 2026-05-06
+Status: Ready to execute
+Last activity: 2026-05-11 -- Phase 32 planning complete
 
 ## Performance Metrics
 
@@ -51,6 +51,7 @@ Last activity: 2026-05-06
 - 2026-05-05: Phase 21 added (LGSP "Từ chối tiếp nhận") — sau renumber thành Phase 24 cùng ngày để nhường slot 21-23 cho v3.1 Automation Test. Phase dir: `.planning/phases/24-hoan-thien-nghiep-vu-tu-choi-tiep-nhan-vb-lien-thong-lgsp-st/`. Lý do gốc: phát hiện trong session review HDSD_full mục 4.3.7 — implementation "Chuyển lại VB" chỉ cosmetic (insert leader_note + flip approved=false), KHÔNG gọi LGSP `update-status` 02 → đơn vị gửi không nhận tín hiệu. Demo cuối tuần (2026-04-18/19) GIỮ NGUYÊN — phase này hoàn thiện khi tích hợp LGSP production thật.
 - 2026-05-05: Milestone v3.1 (Automation Test Suite + Bug Fix) started — phase 21-23 cho automation test 847 TC + reserve slot 25+ cho bug fix khám phá từ regression. Source plan: `.planning/AUTOMATION_TEST_PLAN.md`.
 - 2026-05-05: Roadmap v3.1 created — 3 phases (21 Automation Foundation 3d / 22 Regression Backbone 5d / 23 E2E + Concurrent + Hybrid 3d) = 11 working days. 43 REQ-IDs mapped 100% (AUTO×11 + REG×10 + E2E×7 + CI×8 + RPT×7). Phase 24 LGSP giữ trong v3.2+ backlog.
+- 2026-05-11: Phase 32 added — Audit & cập nhật toàn bộ HDSD (16 module) sau khi test fix nhiều vòng (Phase 21 LGSP foundation + Phase 31 fix-gom UI). Lý do: tester Nhung Phạm Thị (2026-05-06) báo HDSD không mô tả luồng "Giao việc → VB hiển thị ở đâu" + luồng "Ban hành & Gửi" chi tiết. Scope: 16 file `HDSD_*.md` (~4400 dòng) + chụp lại screenshots Playwright + merge `HDSD_full.md` + export `HDSD_full.docx` qua pandoc 3.9. Phase dir: `.planning/phases/32-hdsd-audit-update/`.
 
 ## Session Continuity
 
