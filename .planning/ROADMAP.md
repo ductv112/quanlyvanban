@@ -213,10 +213,10 @@ Sau mỗi Wave execute → bug list. User duyệt → tôi insert phase fix qua 
 **Output:** 16 file `HDSD_*.md` updated + screenshots mới trong `docs/hdsd/screenshots/` + `HDSD_full.md` + `HDSD_full.docx` với ảnh embedded.
 
 **Depends on:** Phase 31 (fix-gom UI đã commit — pull về 1c1c414)
-**Plans:** 8 plans
+**Plans:** 1/8 plans executed
 
 Plans:
-- [ ] 32-01-PLAN.md — Audit toàn bộ 22 HDSD vs code → 32-AUDIT-REPORT.md (source of truth)
+- [x] 32-01-PLAN.md — Audit toàn bộ 22 HDSD vs code → 32-AUDIT-REPORT.md (source of truth)
 - [ ] 32-02-PLAN.md — Update text 4 file VB (đến + đi + dự thảo + đánh dấu) + insert GAP 1/2/3
 - [ ] 32-03-PLAN.md — Update text HSCV + Dashboard + Thông báo + Cấu hình gửi nhanh
 - [ ] 32-04-PLAN.md — Update text 3 Ký số + Đăng nhập + HDSD_index.md
