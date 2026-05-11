@@ -295,6 +295,20 @@ Drawer rộng 720px, có gradient xanh thẫm. Tiêu đề "Giao việc". Form n
 | Tạo thành công | Giao việc thành công |
 | Không có quyền | Không có quyền giao xử lý văn bản đến này |
 
+#### Sau khi giao việc — văn bản xuất hiện ở đâu của TK được giao?
+
+Khi bấm "Tạo và giao việc", hệ thống tạo một Hồ sơ công việc (HSCV) mới và liên kết với văn bản đến này:
+
+1. **TK được chọn làm Người phụ trách** sẽ nhận:
+   - **Chuông thông báo** (góc trên màn hình) với nội dung "Bạn vừa được giao việc..." — bấm vào điều hướng sang HSCV chi tiết.
+   - HSCV mới xuất hiện ở trang **Hồ sơ công việc** (menu trái), tab **"Mới tạo"** (status mặc định khi giao việc).
+
+2. **Vào chi tiết HSCV**, người được giao thấy:
+   - Thông tin HSCV (tên, ngày bắt đầu, hạn, ghi chú, người phụ trách)
+   - Văn bản đến nguồn được link sẵn — bấm để mở chi tiết văn bản
+
+3. **Văn bản đến** vẫn nằm ở trang VB đến cũ của người tiếp nhận ban đầu (lãnh đạo) — KHÔNG bị chuyển đi.
+
 ### 3.7. Modal chuyển lại văn bản
 
 ![Modal Chuyển lại](screenshots/van_ban_den_07_modal_chuyen_lai.png)
