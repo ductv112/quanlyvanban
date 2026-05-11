@@ -308,6 +308,32 @@ Modal rộng 600px. Tiêu đề "Gửi nội bộ — chọn đơn vị nhận" 
 | Gửi thành công | Đã gửi: N đơn vị nội bộ |
 | Ban hành & Gửi thành công | Đã ban hành và gửi: N đơn vị nội bộ |
 
+#### Luồng kỹ thuật khi Gửi (3 bước nối tiếp)
+
+Khi bấm nút "Ban hành & Gửi" hoặc "Gửi" trong modal, hệ thống thực hiện 3 bước nối tiếp:
+
+**Bước 1 — Lưu danh sách đơn vị nhận:**
+- Mỗi đơn vị/cơ quan được chọn được lưu thành 1 dòng trong bảng `outgoing_doc_recipients` với `sent_status='pending'`.
+- Phân loại: `internal_unit` (đơn vị trong tỉnh) hoặc `external_org` (cơ quan ngoài tỉnh — gửi qua LGSP).
+
+**Bước 2 — Ban hành cấp số:**
+- Hệ thống cấp số văn bản đi chính thức và đánh dấu `is_released = TRUE`.
+- Trạng thái văn bản đi chuyển sang **"Đã ban hành"**.
+
+**Bước 3 — Gửi (loop từng recipient):**
+
+- **Nếu là đơn vị Nội bộ:** Hệ thống tự sinh 1 Văn bản đến cho đơn vị nhận:
+  - Văn bản đến nằm ngay ở trang **Văn bản đến** của đơn vị nhận, trạng thái "Chưa duyệt".
+  - Người nhận có thể đăng nhập và xử lý ngay (duyệt → giao việc → ban hành công văn trả lời...).
+  - Số văn bản đến được cấp tự động theo sổ của đơn vị nhận.
+
+- **Nếu là cơ quan ngoài LGSP:** Hệ thống tạo bản ghi trong `lgsp_tracking` (trạng thái `pending`):
+  - Badge **"Đang chờ worker đẩy LGSP"** hiển thị ở khung "Đơn vị / Cơ quan nhận" trên trang chi tiết.
+  - Worker BullMQ (`lgsp-send`) sẽ pick lên, gọi API LGSP thật (apiltvb.langson.gov.vn), update trạng thái → `success` / `error`.
+  - Khi worker xong, badge đổi thành **"Đã gửi LGSP"** hoặc **"Lỗi gửi LGSP"** (kèm thông báo lỗi).
+
+Trạng thái cuối cùng của văn bản đi: **"Đã gửi"** (nội bộ done ngay, LGSP đợi worker).
+
 ### 3.8. Drawer giao việc
 
 ![Drawer Giao việc](screenshots/van_ban_di_08_drawer_giao_viec.png)
@@ -340,6 +366,22 @@ Drawer rộng 600px, có gradient xanh thẫm. Tiêu đề "Giao việc". Form g
 | Tên hồ sơ rỗng | Tên hồ sơ công việc là bắt buộc |
 | Tạo thành công | Giao việc thành công |
 | Không có quyền | Không có quyền giao xử lý văn bản đi này |
+
+#### Sau khi giao việc — văn bản xuất hiện ở đâu?
+
+Khi bấm "Tạo và giao việc" trong Drawer giao việc của VB đi, hệ thống tạo một Hồ sơ công việc (HSCV) mới liên kết với văn bản đi này:
+
+1. **TK được chọn làm Người phụ trách** sẽ thấy:
+   - HSCV mới xuất hiện ở trang **Hồ sơ công việc** (menu trái), tab **"Mới tạo"**.
+   - **KHÔNG có chuông thông báo** (gap code chưa fix — sẽ bổ sung ở phiên bản sau v3.2+). Người được giao phải tự vào trang HSCV để biết có việc mới.
+
+2. **Vào chi tiết HSCV**, người được giao thấy:
+   - Thông tin HSCV (tên, ngày bắt đầu, hạn, ghi chú, người phụ trách).
+   - Văn bản đi nguồn được link sẵn — bấm để mở chi tiết văn bản.
+
+3. **Văn bản đi** vẫn nằm ở trang VB đi của người soạn — KHÔNG bị chuyển đi.
+
+**Lưu ý:** form Drawer giao việc VB đi hiện KHÔNG validate `Người phụ trách` rỗng và `Hạn hoàn thành` rỗng — đề nghị người dùng nhập đủ các trường trước khi bấm Tạo. Validation sẽ bổ sung ở phiên bản sau (v3.2+).
 
 ### 3.9. Modal thêm văn bản vào hồ sơ công việc
 
