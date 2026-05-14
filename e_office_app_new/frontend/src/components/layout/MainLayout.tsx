@@ -360,6 +360,19 @@ function buildMenuItems({ badgeCounts, isAdmin, roles, menuLinks, userRights }: 
   let filtered = filterMenuItems(items);
   if (!isAdmin) {
     const allowed = new Set(menuLinks || []);
+    // Fix 2026-05-14: Parent right (Danh muc) auto-expand sub action_links.
+    // Rights table chi co 22 records (1 Danh muc parent, KHONG co rieng cho 12
+    // sub-catalog). Khi user duoc cap right "Danh muc" -> expand de 12 sub
+    // items qua duoc filter.
+    if (allowed.has('/quan-tri/danh-muc')) {
+      [
+        '/quan-tri/so-van-ban', '/quan-tri/loai-van-ban', '/quan-tri/linh-vuc',
+        '/quan-tri/cau-hinh-truong', '/quan-tri/co-quan', '/quan-tri/nguoi-ky',
+        '/quan-tri/nhom-lam-viec', '/quan-tri/uy-quyen', '/quan-tri/dia-ban',
+        '/quan-tri/lich-lam-viec', '/quan-tri/mau-thong-bao', '/quan-tri/cau-hinh',
+        '/quan-tri/thuoc-tinh-van-ban',
+      ].forEach((p) => allowed.add(p));
+    }
     filtered = filterMenuItemsByPermissions(filtered, allowed);
   }
   return filtered;
