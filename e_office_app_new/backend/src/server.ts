@@ -71,8 +71,17 @@ app.use('/api/auth', authRoutes);
 // to avoid public-catalog shadowing admin endpoints (e.g. /nguoi-dung w/ is_locked filter).
 // Use requireRolesOrNext so non-admin users fall THROUGH to publicCatalog (read-only picker)
 // instead of getting 403. Admin users hit full admin handler.
-app.use('/api/quan-tri', authenticate, requireRolesOrNext('Quản trị hệ thống'), adminRoutes);
-app.use('/api/quan-tri', authenticate, requireRolesOrNext('Quản trị hệ thống'), adminCatalogRoutes);
+//
+// Fix 2026-05-11: wrap admin routes in sub-Router để `next('router')` thoát đúng
+// sub-Router (Express semantics) thay vì thoát toàn bộ app routing -> 404 cho
+// non-admin user.
+const adminGuard = express.Router({ mergeParams: true });
+adminGuard.use(requireRolesOrNext('Quản trị hệ thống'), adminRoutes);
+const adminCatalogGuard = express.Router({ mergeParams: true });
+adminCatalogGuard.use(requireRolesOrNext('Quản trị hệ thống'), adminCatalogRoutes);
+
+app.use('/api/quan-tri', authenticate, adminGuard);
+app.use('/api/quan-tri', authenticate, adminCatalogGuard);
 // Public catalog SAU — chỉ catch khi admin routes không match HOẶC user không phải admin
 app.use('/api/quan-tri', authenticate, publicCatalogRoutes);
 
