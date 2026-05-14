@@ -119,11 +119,21 @@ interface MenuBuildParams {
   badgeCounts: { vbDen: number; tinNhan: number; thongBao: number };
   isAdmin: boolean;
   roles: string[];
+  userRights: ReadonlySet<number>;
 }
 
-// Menu builder filtered by user roles
-function buildMenuItems({ badgeCounts, isAdmin, roles }: MenuBuildParams): MenuItem[] {
+// Right IDs từ public.rights table (xem fix backend granular permission)
+const RIGHT_DON_VI = 14;
+const RIGHT_NGUOI_DUNG = 15;
+const RIGHT_NHOM_QUYEN = 16;
+const RIGHT_CHUC_VU = 17;
+const RIGHT_DANH_MUC = 18;
+const RIGHT_KY_SO_CAU_HINH = 20;
+
+// Menu builder filtered by user roles + rights (action_of_role)
+function buildMenuItems({ badgeCounts, isAdmin, roles, userRights }: MenuBuildParams): MenuItem[] {
   const hasRole = (name: string) => roles.includes(name);
+  const hasRight = (rightId: number) => isAdmin || userRights.has(rightId);
   const isLeader = hasRole(LANH_DAO_ROLE) || hasRole(CHI_DAO_ROLE);
   const isVanThu = hasRole(VAN_THU_ROLE);
   // Admin, Văn thư, Lãnh đạo can see management sections
@@ -226,10 +236,10 @@ function buildMenuItems({ badgeCounts, isAdmin, roles }: MenuBuildParams): MenuI
     );
   }
 
-  // ── KÝ SỐ ── (Group hiển thị cho MỌI user; submenu admin-only được guard riêng)
+  // ── KÝ SỐ ── (Group hiển thị cho MỌI user; submenu guard theo right granular)
   items.push({ key: 'grp-kyso', type: 'group', label: 'KÝ SỐ' });
-  // Submenu admin: Cấu hình ký số hệ thống (admin-only)
-  if (isAdmin) {
+  // Submenu Cấu hình ký số hệ thống — gate theo right 20 (action_of_role)
+  if (hasRight(RIGHT_KY_SO_CAU_HINH)) {
     items.push({
       key: '/ky-so/cau-hinh',
       icon: <SafetyCertificateOutlined />,
@@ -258,42 +268,50 @@ function buildMenuItems({ badgeCounts, isAdmin, roles }: MenuBuildParams): MenuI
     { key: 'ext-thue', icon: <LinkOutlined />, label: <a href="https://thuedientu.gdt.gov.vn" target="_blank" rel="noopener noreferrer">Thuế điện tử</a> },
   );
 
-  // ── HỆ THỐNG ── (Admin only)
-  if (isAdmin) {
-    items.push(
-      { key: 'grp-hethong', type: 'group', label: 'HỆ THỐNG' },
-      {
+  // ── HỆ THỐNG ── (gate theo rights granular, không hardcode isAdmin)
+  // Quản trị: hiện nếu user có bất kỳ right con (Đơn vị/Chức vụ/Người dùng/Nhóm quyền)
+  const adminChildren = [
+    hasRight(RIGHT_DON_VI) && { key: '/quan-tri/don-vi', icon: <ApartmentOutlined />, label: 'Đơn vị' },
+    hasRight(RIGHT_CHUC_VU) && { key: '/quan-tri/chuc-vu', icon: <IdcardOutlined />, label: 'Chức vụ' },
+    hasRight(RIGHT_NGUOI_DUNG) && { key: '/quan-tri/nguoi-dung', icon: <UserOutlined />, label: 'Người dùng' },
+    hasRight(RIGHT_NHOM_QUYEN) && { key: '/quan-tri/nhom-quyen', icon: <KeyOutlined />, label: 'Nhóm quyền' },
+    isAdmin && { key: '/quan-tri/chuc-nang', icon: <AppstoreOutlined />, label: 'Chức năng' },
+  ].filter(Boolean) as MenuItem[];
+
+  // Danh mục: hiện nếu có right 18 (Danh mục) — tất cả sub-item nằm chung
+  const catalogChildren = hasRight(RIGHT_DANH_MUC) ? [
+    { key: '/quan-tri/so-van-ban', icon: <BookOutlined />, label: 'Sổ văn bản' },
+    { key: '/quan-tri/loai-van-ban', icon: <TagsOutlined />, label: 'Loại văn bản' },
+    { key: '/quan-tri/linh-vuc', icon: <ClusterOutlined />, label: 'Lĩnh vực' },
+    { key: '/quan-tri/cau-hinh-truong', icon: <TableOutlined />, label: 'Thuộc tính văn bản' },
+    { key: '/quan-tri/co-quan', icon: <BankOutlined />, label: 'Cơ quan' },
+    { key: '/quan-tri/nguoi-ky', icon: <SolutionOutlined />, label: 'Người ký' },
+    { key: '/quan-tri/nhom-lam-viec', icon: <TeamOutlined />, label: 'Nhóm làm việc' },
+    { key: '/quan-tri/uy-quyen', icon: <SwapOutlined />, label: 'Ủy quyền' },
+    { key: '/quan-tri/dia-ban', icon: <EnvironmentOutlined />, label: 'Địa bàn' },
+    { key: '/quan-tri/lich-lam-viec', icon: <CalendarOutlined />, label: 'Lịch làm việc' },
+    { key: '/quan-tri/mau-thong-bao', icon: <MailOutlined />, label: 'Mẫu thông báo' },
+    { key: '/quan-tri/cau-hinh', icon: <ToolOutlined />, label: 'Cấu hình' },
+  ] as MenuItem[] : [];
+
+  if (adminChildren.length > 0 || catalogChildren.length > 0) {
+    items.push({ key: 'grp-hethong', type: 'group', label: 'HỆ THỐNG' });
+    if (adminChildren.length > 0) {
+      items.push({
         key: 'quan-tri',
         icon: <SettingOutlined />,
         label: 'Quản trị',
-        children: [
-          { key: '/quan-tri/don-vi', icon: <ApartmentOutlined />, label: 'Đơn vị' },
-          { key: '/quan-tri/chuc-vu', icon: <IdcardOutlined />, label: 'Chức vụ' },
-          { key: '/quan-tri/nguoi-dung', icon: <UserOutlined />, label: 'Người dùng' },
-          { key: '/quan-tri/nhom-quyen', icon: <KeyOutlined />, label: 'Nhóm quyền' },
-          { key: '/quan-tri/chuc-nang', icon: <AppstoreOutlined />, label: 'Chức năng' },
-        ],
-      },
-      {
+        children: adminChildren,
+      });
+    }
+    if (catalogChildren.length > 0) {
+      items.push({
         key: 'danh-muc',
         icon: <BookOutlined />,
         label: 'Danh mục',
-        children: [
-          { key: '/quan-tri/so-van-ban', icon: <BookOutlined />, label: 'Sổ văn bản' },
-          { key: '/quan-tri/loai-van-ban', icon: <TagsOutlined />, label: 'Loại văn bản' },
-          { key: '/quan-tri/linh-vuc', icon: <ClusterOutlined />, label: 'Lĩnh vực' },
-          { key: '/quan-tri/cau-hinh-truong', icon: <TableOutlined />, label: 'Thuộc tính văn bản' },
-          { key: '/quan-tri/co-quan', icon: <BankOutlined />, label: 'Cơ quan' },
-          { key: '/quan-tri/nguoi-ky', icon: <SolutionOutlined />, label: 'Người ký' },
-          { key: '/quan-tri/nhom-lam-viec', icon: <TeamOutlined />, label: 'Nhóm làm việc' },
-          { key: '/quan-tri/uy-quyen', icon: <SwapOutlined />, label: 'Ủy quyền' },
-          { key: '/quan-tri/dia-ban', icon: <EnvironmentOutlined />, label: 'Địa bàn' },
-          { key: '/quan-tri/lich-lam-viec', icon: <CalendarOutlined />, label: 'Lịch làm việc' },
-          { key: '/quan-tri/mau-thong-bao', icon: <MailOutlined />, label: 'Mẫu thông báo' },
-          { key: '/quan-tri/cau-hinh', icon: <ToolOutlined />, label: 'Cấu hình' },
-        ],
-      },
-    );
+        children: catalogChildren,
+      });
+    }
   }
 
   return filterMenuItems(items);
@@ -529,14 +547,27 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     },
   ];
 
-  // Memoize menu items with badge counts + role-based filtering
+  // Fetch user rights từ /chuc-nang/menu để gate menu items granular (Phase 2 perm fix)
+  const [userRights, setUserRights] = useState<ReadonlySet<number>>(new Set());
+  useEffect(() => {
+    if (!user) return;
+    api.get('/quan-tri/chuc-nang/menu')
+      .then((res) => {
+        const ids = (res.data?.data || []).map((r: { id: number }) => r.id);
+        setUserRights(new Set<number>(ids));
+      })
+      .catch(() => setUserRights(new Set()));
+  }, [user?.staffId]);
+
+  // Memoize menu items with badge counts + role + rights filtering
   const menuItems = useMemo(
     () => buildMenuItems({
       badgeCounts: { vbDen: badgeCounts.vbDen, tinNhan: badgeCounts.tinNhan, thongBao: notifUnreadCount },
       isAdmin: user?.isAdmin ?? false,
       roles: user?.roles ?? [],
+      userRights,
     }),
-    [badgeCounts.vbDen, badgeCounts.tinNhan, notifUnreadCount, user?.isAdmin, user?.roles]
+    [badgeCounts.vbDen, badgeCounts.tinNhan, notifUnreadCount, user?.isAdmin, user?.roles, userRights]
   );
 
   const breadcrumbItems = buildBreadcrumbs(pathname);
