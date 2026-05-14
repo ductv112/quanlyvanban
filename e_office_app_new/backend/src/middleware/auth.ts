@@ -100,6 +100,43 @@ const ADMIN_PATH_RIGHT_MAP: { prefix: string; rightId: number }[] = [
 ];
 
 /**
+ * Helper: check user có right cụ thể qua role_of_staff × action_of_role.
+ */
+async function userHasRight(staffId: number, rightId: number): Promise<boolean> {
+  try {
+    const rows = await rawQuery<{ ok: number }>(
+      `SELECT 1 AS ok FROM public.role_of_staff rs
+        JOIN public.action_of_role ar ON ar.role_id = rs.role_id
+        WHERE rs.staff_id = $1 AND ar.right_id = $2
+        LIMIT 1`,
+      [staffId, rightId],
+    );
+    return rows.length > 0;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Middleware single-right: check user có right_id cụ thể (vd: cấu hình ký số).
+ * Pass → next(). Fail → next('router') để fall through mount khác.
+ */
+export function requireRightOrNext(rightId: number) {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    const user = (req as AuthRequest).user;
+    if (!user) {
+      res.status(401).json({ success: false, message: 'Unauthorized' });
+      return;
+    }
+    if (await userHasRight(user.staffId, rightId)) {
+      next();
+      return;
+    }
+    next('router');
+  };
+}
+
+/**
  * Path-aware permission middleware: check action_of_role table cho user
  * theo right_id tương ứng với path prefix.
  *
@@ -126,22 +163,10 @@ export function requireRightByPathOrNext() {
       next('router');
       return;
     }
-    try {
-      const rows = await rawQuery<{ ok: number }>(
-        `SELECT 1 AS ok FROM public.role_of_staff rs
-          JOIN public.action_of_role ar ON ar.role_id = rs.role_id
-          WHERE rs.staff_id = $1 AND ar.right_id = $2
-          LIMIT 1`,
-        [user.staffId, match.rightId],
-      );
-      if (rows.length > 0) {
-        next();
-        return;
-      }
-      next('router');
-    } catch {
-      // DB error — fail closed: fall through (không cấp quyền nếu check lỗi)
-      next('router');
+    if (await userHasRight(user.staffId, match.rightId)) {
+      next();
+      return;
     }
+    next('router');
   };
 }

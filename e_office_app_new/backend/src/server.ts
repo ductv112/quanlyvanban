@@ -39,7 +39,7 @@ import notificationRoutes from './routes/notification.js';
 import bellNotificationsRoutes from './routes/notifications.js';  // Phase 13 — personal bell
 import sendConfigRoutes from './routes/send-config.js';
 import profileRoutes from './routes/profile.js';
-import { authenticate, requireRoles, requireRightByPathOrNext } from './middleware/auth.js';
+import { authenticate, requireRightByPathOrNext, requireRightOrNext } from './middleware/auth.js';
 import { initSocket } from './lib/socket.js';
 import { ensureBucket } from './lib/minio/client.js';
 import { startSigningWorker, stopSigningWorker } from './workers/signing-poll.worker.js';
@@ -119,7 +119,9 @@ app.use('/api/cuoc-hop', authenticate, meetingRoutes);
 // --- Phase 6: Tich hop he thong ngoai ---
 app.use('/api/lgsp', authenticate, lgspRoutes);
 // Phase 9: Admin config cho ký số — MUST mount BEFORE /api/ky-so generic (longer prefix wins)
-app.use('/api/ky-so/cau-hinh', authenticate, requireRoles('Quản trị hệ thống'), kySoCauHinhRoutes);
+// Fix 2026-05-11: dùng requireRightOrNext(20) — check right "Cấu hình ký số hệ
+// thống" qua action_of_role table thay vì hardcode role name "Quản trị hệ thống"
+app.use('/api/ky-so/cau-hinh', authenticate, requireRightOrNext(20), kySoCauHinhRoutes);
 // Phase 10: User config ký số cá nhân — mount BEFORE /api/ky-so generic, authenticate only (mọi user)
 app.use('/api/ky-so/tai-khoan', authenticate, kySoTaiKhoanRoutes);
 // Phase 11: Async sign flow (POST /sign, GET /sign/:id, POST /sign/:id/cancel)
