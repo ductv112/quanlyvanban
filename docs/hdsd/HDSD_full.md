@@ -2242,7 +2242,7 @@ Tab chia 3 cột:
 
 ##### 9.3.10.1. Bố cục màn hình
 
-Mỗi ý kiến hiển thị thành dòng có Avatar màu, họ tên, thời điểm và nội dung. Ý kiến chuyển tiếp được thụt lề trái và có nhãn "Chuyển tiếp cho ...". Mỗi ý kiến có nút Chuyển tiếp ở chân.
+Mỗi ý kiến hiển thị thành dòng có Avatar màu, họ tên, thời điểm và nội dung.
 
 Phía dưới có khung soạn ý kiến mới (TextArea tối đa 2000 ký tự + nút Gửi ý kiến).
 
@@ -2250,7 +2250,6 @@ Phía dưới có khung soạn ý kiến mới (TextArea tối đa 2000 ký tự
 
 | Nút | Vị trí | Khi nào hiển thị | Tác dụng |
 |---|---|---|---|
-| Chuyển tiếp | Mỗi ý kiến | Luôn hiển thị | Mở Modal Chuyển tiếp ý kiến. |
 | Gửi ý kiến | Khung soạn | Luôn hiển thị | Gửi ý kiến mới vào HSCV. |
 
 ##### 9.3.10.3. Các trường dữ liệu
@@ -2269,46 +2268,15 @@ Phía dưới có khung soạn ý kiến mới (TextArea tối đa 2000 ký tự
 | Gửi thành công | Gửi ý kiến thành công |
 | Gửi thất bại | Gửi ý kiến thất bại |
 
-#### 9.3.11. Modal Chuyển tiếp ý kiến
-
-![Modal chuyển tiếp ý kiến](screenshots/hscv_chi_tiet_06_chuyen_tiep.png)
-
-##### 9.3.11.1. Bố cục màn hình
-
-Modal rộng 500px, tiêu đề "Chuyển tiếp ý kiến". Form có 2 trường: Người nhận (Select) và Nội dung chuyển tiếp (TextArea).
-
-##### 9.3.11.2. Các nút chức năng
-
-| Nút | Vị trí | Khi nào hiển thị | Tác dụng |
-|---|---|---|---|
-| Gửi | Đáy modal | Luôn hiển thị | Gửi ý kiến chuyển tiếp đến người nhận. |
-| Hủy | Đáy modal | Luôn hiển thị | Đóng modal. |
-
-##### 9.3.11.3. Các trường dữ liệu
-
-| Trường | Bắt buộc | Mô tả |
-|---|---|---|
-| Người nhận | Có | Cán bộ cùng đơn vị, có ô tìm kiếm. |
-| Nội dung chuyển tiếp | Có | Tối đa 1000 ký tự. |
-
-##### 9.3.11.4. Thông báo của hệ thống
-
-| Tình huống | Thông báo |
-|---|---|
-| Trống người nhận | Vui lòng chọn người nhận |
-| Trống nội dung | Vui lòng nhập nội dung chuyển tiếp |
-| Gửi thành công | Đã chuyển tiếp ý kiến |
-| Gửi thất bại | Chuyển tiếp thất bại |
-
-#### 9.3.12. Tab File đính kèm
+#### 9.3.11. Tab File đính kèm
 
 ![Tab file đính kèm](screenshots/hscv_chi_tiet_04_tab_file.png)
 
-##### 9.3.12.1. Bố cục màn hình
+##### 9.3.11.1. Bố cục màn hình
 
 Đầu tab: khung kéo thả "Kéo thả file vào đây hoặc nhấn để chọn file" với gợi ý định dạng. Bên dưới là danh sách tệp đã đính kèm. Mỗi dòng tệp có biểu tượng theo định dạng, tên tệp, dung lượng, thời gian, người tải lên và cụm nút thao tác.
 
-##### 9.3.12.2. Các nút chức năng
+##### 9.3.11.2. Các nút chức năng
 
 | Nút | Vị trí | Khi nào hiển thị | Tác dụng |
 |---|---|---|---|
@@ -2316,11 +2284,11 @@ Modal rộng 500px, tiêu đề "Chuyển tiếp ý kiến". Form có 2 trườn
 | Ký số | Mỗi dòng tệp | Tệp PDF + cán bộ là lãnh đạo ký + HSCV ở Chờ trình ký hoặc Đã trình ký + tệp chưa ký | Mở Modal Ký số (xem 3.x trong module Danh sách ký số). |
 | Xóa | Mỗi dòng tệp | Luôn hiển thị | Mở Popconfirm xác nhận xóa tệp. |
 
-##### 9.3.12.3. Các trường dữ liệu
+##### 9.3.11.3. Các trường dữ liệu
 
 Hiển thị tên tệp, dung lượng (B/KB/MB), thời gian (DD/MM/YYYY HH:mm), tên người tải lên. Tệp đã ký số có nhãn "Đã ký số".
 
-##### 9.3.12.4. Thông báo của hệ thống
+##### 9.3.11.4. Thông báo của hệ thống
 
 | Tình huống | Thông báo |
 |---|---|
@@ -2334,21 +2302,21 @@ Hiển thị tên tệp, dung lượng (B/KB/MB), thời gian (DD/MM/YYYY HH:mm)
 | Xóa thành công | Đã xóa file |
 | Xóa thất bại | Xóa file thất bại |
 
-#### 9.3.13. Tab HSCV con
+#### 9.3.12. Tab HSCV con
 
 ![Tab HSCV con](screenshots/hscv_chi_tiet_05_toolbar.png)
 
-##### 9.3.13.1. Bố cục màn hình
+##### 9.3.12.1. Bố cục màn hình
 
 Đầu tab có nút Tạo HSCV con. Bên dưới là bảng 5 cột: Tên hồ sơ, Ngày mở, Hạn giải quyết, Trạng thái, Tiến độ. Bấm tên hồ sơ để mở Chi tiết HSCV con.
 
-##### 9.3.13.2. Các nút chức năng
+##### 9.3.12.2. Các nút chức năng
 
 | Nút | Vị trí | Khi nào hiển thị | Tác dụng |
 |---|---|---|---|
 | Tạo HSCV con | Đầu tab | Luôn hiển thị | Mở Drawer Tạo hồ sơ con. |
 
-##### 9.3.13.3. Các cột / trường dữ liệu
+##### 9.3.12.3. Các cột / trường dữ liệu
 
 | Cột | Mô tả |
 |---|---|
@@ -2358,29 +2326,29 @@ Hiển thị tên tệp, dung lượng (B/KB/MB), thời gian (DD/MM/YYYY HH:mm)
 | Trạng thái | Nhãn màu theo trạng thái. |
 | Tiến độ | Thanh phần trăm. |
 
-##### 9.3.13.4. Thông báo của hệ thống
+##### 9.3.12.4. Thông báo của hệ thống
 
 | Tình huống | Thông báo |
 |---|---|
 | Tải danh sách thất bại | Lỗi tải hồ sơ con |
 | Bảng trống | Chưa có hồ sơ con. Nhấn "Tạo HSCV con" để thêm hồ sơ con. |
 
-#### 9.3.14. Drawer Tạo HSCV con
+#### 9.3.13. Drawer Tạo HSCV con
 
 ![Drawer tạo HSCV con](screenshots/hscv_danh_sach_02_create_drawer.png)
 
-##### 9.3.14.1. Bố cục màn hình
+##### 9.3.13.1. Bố cục màn hình
 
 Drawer trượt từ phải, rộng 720px, tiêu đề "Tạo hồ sơ con". Trường Hồ sơ cha hiển thị tên HSCV hiện tại (chỉ đọc). Các trường còn lại tương tự Drawer Tạo hồ sơ công việc nhưng giảm bớt: Tên hồ sơ con, Ngày mở, Hạn giải quyết, Người phụ trách, Lãnh đạo ký, Ghi chú.
 
-##### 9.3.14.2. Các nút chức năng
+##### 9.3.13.2. Các nút chức năng
 
 | Nút | Vị trí | Khi nào hiển thị | Tác dụng |
 |---|---|---|---|
 | Lưu | Góc trên drawer | Luôn hiển thị | Tạo HSCV con thuộc HSCV hiện tại. |
 | Hủy | Góc trên drawer | Luôn hiển thị | Đóng drawer, bỏ qua. |
 
-##### 9.3.14.3. Các trường dữ liệu
+##### 9.3.13.3. Các trường dữ liệu
 
 | Trường | Bắt buộc | Mô tả |
 |---|---|---|
@@ -2392,7 +2360,7 @@ Drawer trượt từ phải, rộng 720px, tiêu đề "Tạo hồ sơ con". Tr�
 | Lãnh đạo ký | Không | Người ký được đăng ký cho đơn vị. |
 | Ghi chú | Không | Tối đa 2000 ký tự. |
 
-##### 9.3.14.4. Thông báo của hệ thống
+##### 9.3.13.4. Thông báo của hệ thống
 
 | Tình huống | Thông báo |
 |---|---|
@@ -2403,28 +2371,28 @@ Drawer trượt từ phải, rộng 720px, tiêu đề "Tạo hồ sơ con". Tr�
 | Tạo thành công | Tạo hồ sơ con thành công |
 | Tạo thất bại | Tạo hồ sơ thất bại |
 
-#### 9.3.15. Modal Cập nhật tiến độ
+#### 9.3.14. Modal Cập nhật tiến độ
 
 ![Modal tiến độ](screenshots/hscv_chi_tiet_05_toolbar.png)
 
-##### 9.3.15.1. Bố cục màn hình
+##### 9.3.14.1. Bố cục màn hình
 
 Modal nhỏ, tiêu đề "Cập nhật tiến độ". Bên trong có nhãn "Tiến độ hoàn thành (%)", thanh trượt 0–100, ô nhập số có hậu tố `%`.
 
-##### 9.3.15.2. Các nút chức năng
+##### 9.3.14.2. Các nút chức năng
 
 | Nút | Vị trí | Khi nào hiển thị | Tác dụng |
 |---|---|---|---|
 | Cập nhật | Đáy modal | Luôn hiển thị | Lưu tiến độ và làm mới HSCV. |
 | Hủy bỏ | Đáy modal | Luôn hiển thị | Đóng modal. |
 
-##### 9.3.15.3. Các trường dữ liệu
+##### 9.3.14.3. Các trường dữ liệu
 
 | Trường | Bắt buộc | Mô tả |
 |---|---|---|
 | Tiến độ hoàn thành (%) | Có | Số nguyên 0–100, đồng bộ giữa thanh trượt và ô nhập. |
 
-##### 9.3.15.4. Thông báo của hệ thống
+##### 9.3.14.4. Thông báo của hệ thống
 
 | Tình huống | Thông báo |
 |---|---|
@@ -2432,28 +2400,28 @@ Modal nhỏ, tiêu đề "Cập nhật tiến độ". Bên trong có nhãn "Ti�
 | Cập nhật thất bại | Cập nhật tiến độ thất bại |
 | Vượt giới hạn (BE) | Tiến độ phải trong khoảng 0-100 |
 
-#### 9.3.16. Modal Lấy số văn bản
+#### 9.3.15. Modal Lấy số văn bản
 
 ![Modal lấy số](screenshots/hscv_chi_tiet_05_toolbar.png)
 
-##### 9.3.16.1. Bố cục màn hình
+##### 9.3.15.1. Bố cục màn hình
 
 Modal nhỏ, tiêu đề "Chọn sổ văn bản để lấy số". Form có 1 trường Sổ văn bản (Select có ô tìm kiếm). Phía dưới hiển thị ghi chú: "Số văn bản được tính theo công thức MAX(số) + 1 trong cùng sổ và năm tạo HSCV.". Khi HSCV đã chọn sẵn sổ, hệ thống hiển thị Modal xác nhận đơn giản với nội dung "Sẽ cấp số kế tiếp theo sổ ... Bạn xác nhận?".
 
-##### 9.3.16.2. Các nút chức năng
+##### 9.3.15.2. Các nút chức năng
 
 | Nút | Vị trí | Khi nào hiển thị | Tác dụng |
 |---|---|---|---|
 | Lấy số | Đáy modal | Luôn hiển thị | Cấp số kế tiếp theo sổ đã chọn. |
 | Hủy | Đáy modal | Luôn hiển thị | Đóng modal. |
 
-##### 9.3.16.3. Các trường dữ liệu
+##### 9.3.15.3. Các trường dữ liệu
 
 | Trường | Bắt buộc | Mô tả |
 |---|---|---|
 | Sổ văn bản | Có | Danh sách sổ — hiển thị `<mã> - <tên>`. |
 
-##### 9.3.16.4. Thông báo của hệ thống
+##### 9.3.15.4. Thông báo của hệ thống
 
 | Tình huống | Thông báo |
 |---|---|
@@ -2463,13 +2431,13 @@ Modal nhỏ, tiêu đề "Chọn sổ văn bản để lấy số". Form có 1 t
 | HSCV đã có số | HSCV đã có số <số> |
 | Lỗi nghiệp vụ khác | Thao tác thất bại |
 
-#### 9.3.17. Modal Trình ký / Duyệt hồ sơ / Xử lý lại / Chuyển xử lý
+#### 9.3.16. Modal Trình ký / Duyệt hồ sơ / Xử lý lại / Chuyển xử lý
 
-##### 9.3.17.1. Bố cục màn hình
+##### 9.3.16.1. Bố cục màn hình
 
 Đây là các nút thao tác đơn giản (không mở thêm cửa sổ). Khi bấm — hệ thống gọi đổi trạng thái HSCV ngay và làm mới chi tiết.
 
-##### 9.3.17.2. Các nút chức năng
+##### 9.3.16.2. Các nút chức năng
 
 | Nút | Vị trí | Khi nào hiển thị | Tác dụng |
 |---|---|---|---|
@@ -2478,90 +2446,90 @@ Modal nhỏ, tiêu đề "Chọn sổ văn bản để lấy số". Form có 1 t
 | Duyệt hồ sơ | Thanh nút | Trạng thái Đã trình ký | Phê duyệt HSCV — chuyển sang Hoàn thành, tiến độ = 100%. |
 | Xử lý lại | Thanh nút | Trạng thái Bị từ chối / Trả về | Chuyển HSCV về Đang xử lý. |
 
-##### 9.3.17.3. Thông báo của hệ thống
+##### 9.3.16.3. Thông báo của hệ thống
 
 | Tình huống | Thông báo |
 |---|---|
 | Thành công | Cập nhật trạng thái thành công |
 | Thất bại | Cập nhật trạng thái thất bại |
 
-#### 9.3.18. Modal Từ chối hồ sơ
+#### 9.3.17. Modal Từ chối hồ sơ
 
 ![Modal từ chối](screenshots/hscv_chi_tiet_05_toolbar.png)
 
-##### 9.3.18.1. Bố cục màn hình
+##### 9.3.17.1. Bố cục màn hình
 
 Modal nhỏ, tiêu đề "Từ chối hồ sơ". Trên là dòng hướng dẫn "Nhập lý do từ chối để thông báo cho người xử lý.", dưới là TextArea (tối đa 500 ký tự, có đếm). Đáy có 2 nút Từ chối (đỏ, vô hiệu khi trống lý do) và Hủy.
 
-##### 9.3.18.2. Các nút chức năng
+##### 9.3.17.2. Các nút chức năng
 
 | Nút | Vị trí | Khi nào hiển thị | Tác dụng |
 |---|---|---|---|
 | Từ chối | Đáy modal | Luôn hiển thị; vô hiệu khi trống lý do | Chuyển HSCV sang Bị từ chối kèm lý do. |
 | Hủy | Đáy modal | Luôn hiển thị | Đóng modal. |
 
-##### 9.3.18.3. Các trường dữ liệu
+##### 9.3.17.3. Các trường dữ liệu
 
 | Trường | Bắt buộc | Mô tả |
 |---|---|---|
 | Lý do từ chối | Có | Tối đa 500 ký tự. |
 
-##### 9.3.18.4. Thông báo của hệ thống
+##### 9.3.17.4. Thông báo của hệ thống
 
 | Tình huống | Thông báo |
 |---|---|
 | Trống lý do (BE) | Lý do là bắt buộc khi từ chối hoặc trả về |
 | Từ chối thành công | Cập nhật trạng thái thành công |
 
-#### 9.3.19. Modal Trả về hồ sơ
+#### 9.3.18. Modal Trả về hồ sơ
 
 ![Modal trả về](screenshots/hscv_chi_tiet_05_toolbar.png)
 
-##### 9.3.19.1. Bố cục màn hình
+##### 9.3.18.1. Bố cục màn hình
 
 Giống Modal Từ chối nhưng tiêu đề "Trả về hồ sơ", dòng hướng dẫn "Nhập lý do trả về để người xử lý biết cần chỉnh sửa gì.". Nút chính là Trả về (vô hiệu khi trống lý do).
 
-##### 9.3.19.2. Các nút chức năng
+##### 9.3.18.2. Các nút chức năng
 
 | Nút | Vị trí | Khi nào hiển thị | Tác dụng |
 |---|---|---|---|
 | Trả về | Đáy modal | Luôn hiển thị; vô hiệu khi trống lý do | Chuyển HSCV sang Trả về kèm lý do. |
 | Hủy | Đáy modal | Luôn hiển thị | Đóng modal. |
 
-##### 9.3.19.3. Các trường dữ liệu
+##### 9.3.18.3. Các trường dữ liệu
 
 | Trường | Bắt buộc | Mô tả |
 |---|---|---|
 | Lý do trả về | Có | Tối đa 500 ký tự. |
 
-##### 9.3.19.4. Thông báo của hệ thống
+##### 9.3.18.4. Thông báo của hệ thống
 
 | Tình huống | Thông báo |
 |---|---|
 | Trả về thành công | Cập nhật trạng thái thành công |
 
-#### 9.3.20. Modal Hủy HSCV
+#### 9.3.19. Modal Hủy HSCV
 
 ![Modal hủy](screenshots/hscv_chi_tiet_06_chuyen_tiep.png)
 
-##### 9.3.20.1. Bố cục màn hình
+##### 9.3.19.1. Bố cục màn hình
 
 Modal rộng 480px, tiêu đề "Hủy hồ sơ công việc". Form có 1 trường Lý do hủy HSCV (TextArea, 1000 ký tự). Đáy có nút Xác nhận hủy (đỏ) và Hủy thao tác.
 
-##### 9.3.20.2. Các nút chức năng
+##### 9.3.19.2. Các nút chức năng
 
 | Nút | Vị trí | Khi nào hiển thị | Tác dụng |
 |---|---|---|---|
 | Xác nhận hủy | Đáy modal | Luôn hiển thị | Đặt HSCV về trạng thái Đã hủy kèm lý do. |
 | Hủy thao tác | Đáy modal | Luôn hiển thị | Đóng modal. |
 
-##### 9.3.20.3. Các trường dữ liệu
+##### 9.3.19.3. Các trường dữ liệu
 
 | Trường | Bắt buộc | Mô tả |
 |---|---|---|
 | Lý do hủy HSCV | Có | Tối đa 1000 ký tự. |
 
-##### 9.3.20.4. Thông báo của hệ thống
+##### 9.3.19.4. Thông báo của hệ thống
 
 | Tình huống | Thông báo |
 |---|---|
@@ -2569,22 +2537,22 @@ Modal rộng 480px, tiêu đề "Hủy hồ sơ công việc". Form có 1 trư�
 | Hủy thành công | Đã hủy hồ sơ công việc |
 | Trạng thái không cho hủy | Chỉ được hủy HSCV ở trạng thái Từ chối (-1) hoặc Trả về (-2). Trạng thái hiện tại: <mã> |
 
-#### 9.3.21. Hộp thoại Mở lại HSCV
+#### 9.3.20. Hộp thoại Mở lại HSCV
 
 ![Mở lại HSCV](screenshots/hscv_chi_tiet_05_toolbar.png)
 
-##### 9.3.21.1. Bố cục màn hình
+##### 9.3.20.1. Bố cục màn hình
 
 Modal nhỏ "Mở lại hồ sơ công việc?" với mô tả: "Trạng thái sẽ chuyển từ 'Hoàn thành' về 'Đang xử lý' (giữ nguyên tiến độ 100%). Bạn xác nhận?". Nút Mở lại và Hủy.
 
-##### 9.3.21.2. Các nút chức năng
+##### 9.3.20.2. Các nút chức năng
 
 | Nút | Vị trí | Khi nào hiển thị | Tác dụng |
 |---|---|---|---|
 | Mở lại | Đáy modal | Luôn hiển thị | Đưa HSCV về Đang xử lý, giữ tiến độ. |
 | Hủy | Đáy modal | Luôn hiển thị | Đóng modal. |
 
-##### 9.3.21.3. Thông báo của hệ thống
+##### 9.3.20.3. Thông báo của hệ thống
 
 | Tình huống | Thông báo |
 |---|---|
@@ -2592,29 +2560,29 @@ Modal nhỏ "Mở lại hồ sơ công việc?" với mô tả: "Trạng thái s
 | Trạng thái không cho mở lại | Chỉ có thể mở lại HSCV đã hoàn thành. Trạng thái hiện tại: <mã> |
 | Lỗi khác | Thao tác thất bại |
 
-#### 9.3.22. Modal Chuyển tiếp HSCV
+#### 9.3.21. Modal Chuyển tiếp HSCV
 
 ![Modal chuyển tiếp HSCV](screenshots/hscv_chi_tiet_06_chuyen_tiep.png)
 
-##### 9.3.22.1. Bố cục màn hình
+##### 9.3.21.1. Bố cục màn hình
 
 Modal rộng 500px, tiêu đề "Chuyển tiếp hồ sơ công việc". Đầu modal có dòng nhắc "Chỉ có thể chuyển HSCV cho người cùng đơn vị". Form gồm Người nhận (Select có ô tìm kiếm) và Ghi chú (TextArea).
 
-##### 9.3.22.2. Các nút chức năng
+##### 9.3.21.2. Các nút chức năng
 
 | Nút | Vị trí | Khi nào hiển thị | Tác dụng |
 |---|---|---|---|
 | Chuyển tiếp | Đáy modal | Luôn hiển thị | Chuyển HSCV cho người nhận. |
 | Hủy | Đáy modal | Luôn hiển thị | Đóng modal. |
 
-##### 9.3.22.3. Các trường dữ liệu
+##### 9.3.21.3. Các trường dữ liệu
 
 | Trường | Bắt buộc | Mô tả |
 |---|---|---|
 | Người nhận | Có | Cán bộ cùng đơn vị (loại trừ chính mình). |
 | Ghi chú | Không | Tối đa 500 ký tự. |
 
-##### 9.3.22.4. Thông báo của hệ thống
+##### 9.3.21.4. Thông báo của hệ thống
 
 | Tình huống | Thông báo |
 |---|---|
@@ -2626,25 +2594,25 @@ Modal rộng 500px, tiêu đề "Chuyển tiếp hồ sơ công việc". Đầu 
 | Người nhận đã xóa | Người nhận đã bị xoá |
 | Chuyển cho chính mình | Không thể chuyển cho chính mình |
 
-#### 9.3.23. Modal Lịch sử HSCV
+#### 9.3.22. Modal Lịch sử HSCV
 
 ![Modal lịch sử HSCV](screenshots/hscv_chi_tiet_06_chuyen_tiep.png)
 
-##### 9.3.23.1. Bố cục màn hình
+##### 9.3.22.1. Bố cục màn hình
 
 Modal rộng 720px, tiêu đề "Lịch sử hồ sơ công việc". Bên trong là danh sách thẻ, mỗi thẻ mô tả một sự kiện trong vòng đời HSCV: Tạo HSCV, Trình ký, Duyệt hồ sơ, Từ chối, Trả về bổ sung, Hoàn thành, Lấy số văn bản, Chuyển tiếp, Hủy HSCV, Mở lại, Đổi trạng thái → <tên>. Mỗi thẻ có ghi chú (nếu có) và thời điểm + người thao tác. Đáy modal có nút Đóng.
 
-##### 9.3.23.2. Các nút chức năng
+##### 9.3.22.2. Các nút chức năng
 
 | Nút | Vị trí | Khi nào hiển thị | Tác dụng |
 |---|---|---|---|
 | Đóng | Đáy modal | Luôn hiển thị | Đóng modal. |
 
-##### 9.3.23.3. Các trường dữ liệu
+##### 9.3.22.3. Các trường dữ liệu
 
 Hiển thị: loại hành động, ghi chú (nếu có), thời điểm (DD/MM/YYYY HH:mm), tên người thao tác.
 
-##### 9.3.23.4. Thông báo của hệ thống
+##### 9.3.22.4. Thông báo của hệ thống
 
 | Tình huống | Thông báo |
 |---|---|

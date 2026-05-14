@@ -85,12 +85,6 @@ export interface OpinionRow {
   content: string;
   attachment_path: string;
   created_at: string;
-  // Gap E (HDSD III.2.6) — Chuyển tiếp ý kiến
-  forwarded_to_staff_id?: number | null;
-  forwarded_to_name?: string | null;
-  forwarded_at?: string | null;
-  forward_note?: string | null;
-  parent_opinion_id?: number | null;
 }
 
 export interface StaffSameUnitRow {
@@ -389,20 +383,7 @@ export const handlingDocRepository = {
     return row ?? { success: false, message: 'Không tìm thấy hồ sơ công việc' };
   },
 
-  // --- Gap E (HDSD III.2.6) — Chuyển tiếp ý kiến HSCV ---
-  async forwardOpinion(
-    opinionId: number,
-    fromStaffId: number,
-    toStaffId: number,
-    note: string,
-  ): Promise<DbResultWithId> {
-    const row = await callFunctionOne<DbResultWithId>('edoc.fn_opinion_forward', [
-      opinionId, fromStaffId, toStaffId, note,
-    ]);
-    return row ?? { success: false, message: 'Không thể chuyển tiếp ý kiến', id: 0 };
-  },
-
-  // --- Gap E + F (HDSD III.2.6/2.7) — Staff picker cùng đơn vị (bypass RBAC admin) ---
+  // --- Gap F (HDSD III.2.7) — Staff picker cùng đơn vị cho Chuyển tiếp HSCV ---
   async listStaffSameUnit(unitId: number): Promise<StaffSameUnitRow[]> {
     return rawQuery<StaffSameUnitRow>(
       `SELECT s.id, s.full_name, s.username, s.department_id,
