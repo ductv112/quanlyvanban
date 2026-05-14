@@ -13,7 +13,7 @@ import { notifyBell } from '../lib/notifications/bell-emit.js';
 const router = Router();
 
 // ============================================================
-// Gap E + F (HDSD III.2.6/2.7) — Staff picker cùng đơn vị
+// Gap F (HDSD III.2.7) — Staff picker cùng đơn vị (Chuyển tiếp HSCV)
 // Middleware chỉ authenticate (KHÔNG requireRoles) — bypass RBAC admin
 // MOUNT TRƯỚC route `/:id/...` để không bị catch
 // ============================================================
@@ -713,36 +713,6 @@ router.post('/:id/lay-so', async (req: Request, res: Response) => {
       return;
     }
     res.json({ success: true, message: result.message, number: result.number });
-  } catch (error) {
-    handleDbError(error, res);
-  }
-});
-
-// POST /:id/y-kien/:opinionId/chuyen-tiep — Chuyển tiếp ý kiến HSCV (Gap E HDSD III.2.6)
-router.post('/:id/y-kien/:opinionId/chuyen-tiep', async (req: Request, res: Response) => {
-  try {
-    const { staffId } = (req as AuthRequest).user;
-    const opinionId = Number(req.params.opinionId);
-    const toStaffId = Number(req.body?.to_staff_id);
-    const note = String(req.body?.note || '').trim();
-    if (!Number.isInteger(opinionId) || opinionId <= 0) {
-      res.status(400).json({ success: false, message: 'ID ý kiến không hợp lệ' });
-      return;
-    }
-    if (!Number.isInteger(toStaffId) || toStaffId <= 0) {
-      res.status(400).json({ success: false, message: 'Vui lòng chọn người nhận' });
-      return;
-    }
-    if (!note) {
-      res.status(400).json({ success: false, message: 'Vui lòng nhập nội dung chuyển tiếp' });
-      return;
-    }
-    const result = await handlingDocRepository.forwardOpinion(opinionId, staffId, toStaffId, note);
-    if (!result.success) {
-      res.status(400).json({ success: false, message: result.message });
-      return;
-    }
-    res.json({ success: true, message: result.message, id: result.id });
   } catch (error) {
     handleDbError(error, res);
   }

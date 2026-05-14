@@ -22446,8 +22446,22 @@ RETURNS TABLE (
   curator_id INT, curator_name TEXT, signer_id INT, signer_name TEXT,
   progress SMALLINT, doc_field_name VARCHAR, doc_type_name VARCHAR, created_at TIMESTAMPTZ, total_count BIGINT
 ) LANGUAGE plpgsql AS $$
-DECLARE v_offset INT := (COALESCE(p_page, 1) - 1) * COALESCE(p_page_size, 20);
+DECLARE
+  v_offset INT := (COALESCE(p_page, 1) - 1) * COALESCE(p_page_size, 20);
+  v_is_leader BOOLEAN := FALSE;
 BEGIN
+  -- Phân quyền visibility theo positions.is_leader:
+  --   - Lãnh đạo (GD/PGD/TP/PTP): thấy hết HSCV trong dept subtree
+  --   - Chuyên viên/Văn thư:      chỉ thấy HSCV mình là curator/creator/assignee
+  IF p_staff_id IS NOT NULL THEN
+    SELECT COALESCE(p.is_leader, FALSE)
+      INTO v_is_leader
+      FROM public.staff s
+      LEFT JOIN public.positions p ON p.id = s.position_id
+     WHERE s.id = p_staff_id;
+    v_is_leader := COALESCE(v_is_leader, FALSE);
+  END IF;
+
   RETURN QUERY
   WITH filtered AS (
     SELECT h.id, h.name, h.start_date, h.end_date, h.status,
@@ -22457,7 +22471,17 @@ BEGIN
     FROM edoc.handling_docs h
     LEFT JOIN public.staff sc ON sc.id = h.curator LEFT JOIN public.staff ss ON ss.id = h.signer
     LEFT JOIN edoc.doc_fields df ON df.id = h.doc_field_id LEFT JOIN edoc.doc_types dt ON dt.id = h.doc_type_id
-    WHERE (p_dept_ids IS NULL OR h.department_id = ANY(p_dept_ids))
+    WHERE (
+      -- Visibility rules:
+      p_dept_ids IS NULL                                              -- admin
+      OR (v_is_leader AND h.department_id = ANY(p_dept_ids))          -- lãnh đạo thấy hết subtree
+      OR (p_staff_id IS NOT NULL AND h.curator = p_staff_id)           -- mình là curator
+      OR (p_staff_id IS NOT NULL AND h.created_by = p_staff_id)        -- mình tạo
+      OR (p_staff_id IS NOT NULL AND EXISTS (                          -- mình được gán
+        SELECT 1 FROM edoc.staff_handling_docs shd
+        WHERE shd.handling_doc_id = h.id AND shd.staff_id = p_staff_id
+      ))
+    )
       AND (p_status IS NULL OR p_status = -99 OR h.status = p_status)
       AND (p_filter_type IS NULL OR p_filter_type = 'all' OR
         (p_filter_type = 'created_by_me' AND h.created_by = p_staff_id) OR

@@ -46,6 +46,32 @@ router.get('/don-vi', async (_req: Request, res: Response) => {
   }
 });
 
+// GET /don-vi/:id/nhan-vien — list cán bộ trong 1 đơn vị (cho HSCV "Cán bộ xử lý" picker)
+// Frontend HSCV detail → tab "Cán bộ xử lý" → click node đơn vị trên cây → load danh sách.
+// Mount ở public-catalog để cả admin + chuyên viên đều dùng được.
+router.get('/don-vi/:id/nhan-vien', async (req: Request, res: Response) => {
+  try {
+    const deptId = Number(req.params.id);
+    if (!deptId) {
+      res.status(400).json({ success: false, message: 'Thiếu mã đơn vị' });
+      return;
+    }
+    const rows = await rawQuery<{ id: number; full_name: string; position_name: string | null }>(
+      `SELECT s.id, s.full_name, p.name AS position_name
+       FROM public.staff s
+       LEFT JOIN public.positions p ON p.id = s.position_id
+       WHERE s.department_id = $1
+         AND COALESCE(s.is_deleted, false) = false
+         AND COALESCE(s.is_locked, false) = false
+       ORDER BY s.last_name, s.first_name`,
+      [deptId],
+    );
+    res.json({ success: true, data: rows });
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
+
 // GET /don-vi/tree — tree (con lồng vào parent) cho Tree/TreeSelect component
 router.get('/don-vi/tree', async (_req: Request, res: Response) => {
   try {

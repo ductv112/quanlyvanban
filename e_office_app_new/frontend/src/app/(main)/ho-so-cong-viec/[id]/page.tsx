@@ -126,12 +126,6 @@ interface Opinion {
   staff_name: string;
   content: string;
   created_at: string;
-  // Gap E (HDSD III.2.6) — Chuyển tiếp ý kiến
-  forwarded_to_staff_id?: number | null;
-  forwarded_to_name?: string | null;
-  forwarded_at?: string | null;
-  forward_note?: string | null;
-  parent_opinion_id?: number | null;
 }
 
 // Gap F (HDSD III.2.7) — Lịch sử HSCV
@@ -372,12 +366,7 @@ export default function HscvDetailPage() {
   const [cancelReason, setCancelReason] = useState('');
   const [cancelling, setCancelling] = useState(false);
 
-  // Gap E (HDSD III.2.6) — Chuyển tiếp ý kiến HSCV + staff picker (reuse cho Gap F)
-  const [fwdOpen, setFwdOpen] = useState(false);
-  const [fwdOpinionId, setFwdOpinionId] = useState<number | null>(null);
-  const [fwdToStaffId, setFwdToStaffId] = useState<number | null>(null);
-  const [fwdNote, setFwdNote] = useState('');
-  const [fwdSubmitting, setFwdSubmitting] = useState(false);
+  // Staff picker dùng cho Gap F — Chuyển tiếp HSCV
   const [forwardStaffOptions, setForwardStaffOptions] = useState<{ value: number; label: string }[]>([]);
 
   // Gap F (HDSD III.2.7) — Chuyển tiếp HSCV (reuse forwardStaffOptions)
@@ -679,7 +668,7 @@ export default function HscvDetailPage() {
     });
   };
 
-  // Gap E (HDSD III.2.6) — Fetch staff cùng đơn vị (reuse cho Gap F)
+  // Fetch staff cùng đơn vị — dùng cho Gap F (Chuyển tiếp HSCV)
   const fetchStaffForForward = async () => {
     try {
       const { data: res } = await api.get('/ho-so-cong-viec/nhan-vien-cung-don-vi');
@@ -687,40 +676,6 @@ export default function HscvDetailPage() {
       setForwardStaffOptions(list.map((s: { id: number; full_name: string }) => ({ value: s.id, label: s.full_name })));
     } catch {
       setForwardStaffOptions([]);
-    }
-  };
-
-  const openForwardOpinion = (opinionId: number) => {
-    setFwdOpinionId(opinionId);
-    setFwdToStaffId(null);
-    setFwdNote('');
-    fetchStaffForForward();
-    setFwdOpen(true);
-  };
-
-  const handleForwardOpinion = async () => {
-    if (!fwdOpinionId) return;
-    if (!fwdToStaffId) {
-      message.warning('Vui lòng chọn người nhận');
-      return;
-    }
-    if (!fwdNote.trim()) {
-      message.warning('Vui lòng nhập nội dung chuyển tiếp');
-      return;
-    }
-    setFwdSubmitting(true);
-    try {
-      const { data: res } = await api.post(
-        `/ho-so-cong-viec/${id}/y-kien/${fwdOpinionId}/chuyen-tiep`,
-        { to_staff_id: fwdToStaffId, note: fwdNote.trim() },
-      );
-      message.success(res?.message || 'Đã chuyển tiếp ý kiến');
-      setFwdOpen(false);
-      await fetchOpinions();
-    } catch (err: any) {
-      message.error(err?.response?.data?.message || 'Chuyển tiếp thất bại');
-    } finally {
-      setFwdSubmitting(false);
     }
   };
 
@@ -916,14 +871,16 @@ export default function HscvDetailPage() {
   // Linked docs
   // ===========================
 
-  const handleSearchDocs = async () => {
+  const handleSearchDocs = async (tabOverride?: string, keywordOverride?: string) => {
+    const tab = tabOverride ?? searchDocTab;
+    const keyword = keywordOverride ?? searchDocKeyword;
     setSearchDocLoading(true);
     try {
-      const endpoint = searchDocTab === 'den' ? '/van-ban-den'
-        : searchDocTab === 'di' ? '/van-ban-di'
+      const endpoint = tab === 'den' ? '/van-ban-den'
+        : tab === 'di' ? '/van-ban-di'
         : '/van-ban-du-thao';
       const { data: res } = await api.get(endpoint, {
-        params: { keyword: searchDocKeyword, page: 1, page_size: 20 },
+        params: { keyword, page: 1, page_size: 20 },
       });
       setSearchDocResults((res.data || []).map((x: any) => ({
         id: x.id,
@@ -1385,9 +1342,10 @@ export default function HscvDetailPage() {
               icon={<LinkOutlined />}
               onClick={() => {
                 setAddDocModalOpen(true);
-                setSearchDocResults([]);
                 setSelectedDocKeys([]);
                 setSearchDocKeyword('');
+                setSearchDocTab('den');
+                handleSearchDocs('den', '');
               }}
             >
               Thêm văn bản
@@ -1575,11 +1533,6 @@ export default function HscvDetailPage() {
                     <div
                       key={item.id}
                       className="opinion-item"
-                      style={item.parent_opinion_id ? {
-                        marginLeft: 32,
-                        borderLeft: '2px solid #E5E7EB',
-                        paddingLeft: 12,
-                      } : undefined}
                     >
                       <Avatar
                         size={32}
@@ -1594,23 +1547,7 @@ export default function HscvDetailPage() {
                             {dayjs(item.created_at).format('DD/MM/YYYY HH:mm')}
                           </span>
                         </div>
-                        {item.parent_opinion_id && (
-                          <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 4 }}>
-                            <SendOutlined /> Chuyển tiếp cho {item.forwarded_to_name || '—'}
-                          </div>
-                        )}
                         <div className="opinion-item-text">{item.content}</div>
-                        <div style={{ marginTop: 6 }}>
-                          <Button
-                            size="small"
-                            type="link"
-                            icon={<SendOutlined />}
-                            onClick={() => openForwardOpinion(item.id)}
-                            style={{ padding: 0 }}
-                          >
-                            Chuyển tiếp
-                          </Button>
-                        </div>
                       </div>
                     </div>
                   ))}
@@ -1989,40 +1926,6 @@ export default function HscvDetailPage() {
         )}
       </Modal>
 
-      {/* Gap E (HDSD III.2.6) — MODAL CHUYỂN TIẾP Ý KIẾN */}
-      <Modal
-        title="Chuyển tiếp ý kiến"
-        open={fwdOpen}
-        onOk={handleForwardOpinion}
-        onCancel={() => setFwdOpen(false)}
-        okText="Gửi"
-        cancelText="Hủy"
-        confirmLoading={fwdSubmitting}
-        width={500} maskClosable={false}>
-        <Form layout="vertical" style={{ marginTop: 16 }}>
-          <Form.Item label="Người nhận" required>
-            <Select
-              showSearch
-              optionFilterProp="label"
-              placeholder="Chọn người nhận..."
-              options={forwardStaffOptions}
-              value={fwdToStaffId ?? undefined}
-              onChange={setFwdToStaffId}
-            />
-          </Form.Item>
-          <Form.Item label="Nội dung chuyển tiếp" required>
-            <Input.TextArea
-              rows={4}
-              maxLength={1000}
-              showCount
-              value={fwdNote}
-              onChange={(e) => setFwdNote(e.target.value)}
-              placeholder="Nhập nội dung, ý kiến gửi kèm..."
-            />
-          </Form.Item>
-        </Form>
-      </Modal>
-
       {/* Gap D (HDSD III.2.5) — MODAL HỦY HSCV */}
       <Modal
         title="Hủy hồ sơ công việc"
@@ -2151,7 +2054,11 @@ export default function HscvDetailPage() {
         <div style={{ marginBottom: 12 }}>
           <Tabs
             activeKey={searchDocTab}
-            onChange={(k) => { setSearchDocTab(k); setSearchDocResults([]); setSelectedDocKeys([]); }}
+            onChange={(k) => {
+              setSearchDocTab(k);
+              setSelectedDocKeys([]);
+              handleSearchDocs(k, searchDocKeyword);
+            }}
             items={[
               { key: 'den', label: 'Văn bản đến' },
               { key: 'di', label: 'Văn bản đi' },
@@ -2163,9 +2070,9 @@ export default function HscvDetailPage() {
               placeholder="Nhập từ khóa tìm kiếm..."
               value={searchDocKeyword}
               onChange={(e) => setSearchDocKeyword(e.target.value)}
-              onPressEnter={handleSearchDocs}
+              onPressEnter={() => handleSearchDocs()}
             />
-            <Button type="primary" onClick={handleSearchDocs} loading={searchDocLoading}>Tìm kiếm</Button>
+            <Button type="primary" onClick={() => handleSearchDocs()} loading={searchDocLoading}>Tìm kiếm</Button>
           </Space.Compact>
           <Table
             size="small"

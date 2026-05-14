@@ -71,6 +71,18 @@ Từ trên xuống:
 
 Chuyển tab — bảng tự đưa về trang 1 và tải lại danh sách.
 
+#### HSCV tự xuất hiện ở tab "Mới tạo" khi được giao việc
+
+Có 3 nguồn HSCV xuất hiện ở tab **"Mới tạo"** (trạng thái mặc định khi tạo HSCV):
+
+1. **Cán bộ tự bấm "Tạo hồ sơ mới":** HSCV xuất hiện ở cả tab **"Tôi tạo"** lẫn tab **"Mới tạo"** của chính người tạo. Đây là luồng tạo HSCV chủ động — xem chi tiết ở mục **3.2. Drawer Tạo hồ sơ công việc**.
+
+2. **Lãnh đạo bấm "Tạo và giao việc" trên chi tiết Văn bản đến:** Hệ thống tạo HSCV mới gắn với VB đến đó, đặt người được chọn làm **Người phụ trách**. HSCV xuất hiện ở tab **"Mới tạo"** của người được giao — đồng thời người được giao **nhận chuông thông báo** (loại `task_assigned`) ở góc trên màn hình với nội dung *"Bạn được giao xử lý hồ sơ công việc..."* — bấm vào điều hướng sang HSCV chi tiết. Xem chi tiết luồng nghiệp vụ ở mục **3.6** của [HDSD Văn bản đến](HDSD_van_ban_den.md).
+
+3. **Người soạn bấm "Tạo và giao việc" trên chi tiết Văn bản đi:** Hệ thống tạo HSCV mới gắn với VB đi đó. HSCV cũng xuất hiện ở tab **"Mới tạo"** của người được chọn làm Người phụ trách. **Lưu ý:** hiện tại VB đi giao việc **CHƯA có chuông thông báo** (gap code chưa fix — sẽ bổ sung ở phiên bản sau v3.2+). Người được giao phải tự vào trang **Hồ sơ công việc** để biết có việc mới. Xem chi tiết luồng nghiệp vụ ở mục **3.8** của [HDSD Văn bản đi](HDSD_van_ban_di.md).
+
+Trong cả ba trường hợp, HSCV chi tiết hiển thị link đến văn bản nguồn (đến hoặc đi) ở tab **Văn bản liên kết**. Văn bản nguồn KHÔNG bị di chuyển — vẫn nằm ở trang VB đến/đi gốc của người tiếp nhận / người soạn.
+
 #### Các nút chức năng
 
 | Nút | Vị trí | Khi nào hiển thị | Tác dụng |
@@ -393,7 +405,7 @@ Tab chia 3 cột:
 
 #### Bố cục màn hình
 
-Mỗi ý kiến hiển thị thành dòng có Avatar màu, họ tên, thời điểm và nội dung. Ý kiến chuyển tiếp được thụt lề trái và có nhãn "Chuyển tiếp cho ...". Mỗi ý kiến có nút Chuyển tiếp ở chân.
+Mỗi ý kiến hiển thị thành dòng có Avatar màu, họ tên, thời điểm và nội dung.
 
 Phía dưới có khung soạn ý kiến mới (TextArea tối đa 2000 ký tự + nút Gửi ý kiến).
 
@@ -401,7 +413,6 @@ Phía dưới có khung soạn ý kiến mới (TextArea tối đa 2000 ký tự
 
 | Nút | Vị trí | Khi nào hiển thị | Tác dụng |
 |---|---|---|---|
-| Chuyển tiếp | Mỗi ý kiến | Luôn hiển thị | Mở Modal Chuyển tiếp ý kiến. |
 | Gửi ý kiến | Khung soạn | Luôn hiển thị | Gửi ý kiến mới vào HSCV. |
 
 #### Các trường dữ liệu
@@ -420,38 +431,7 @@ Phía dưới có khung soạn ý kiến mới (TextArea tối đa 2000 ký tự
 | Gửi thành công | Gửi ý kiến thành công |
 | Gửi thất bại | Gửi ý kiến thất bại |
 
-### 3.11. Modal Chuyển tiếp ý kiến
-
-![Modal chuyển tiếp ý kiến](screenshots/hscv_chi_tiet_06_chuyen_tiep.png)
-
-#### Bố cục màn hình
-
-Modal rộng 500px, tiêu đề "Chuyển tiếp ý kiến". Form có 2 trường: Người nhận (Select) và Nội dung chuyển tiếp (TextArea).
-
-#### Các nút chức năng
-
-| Nút | Vị trí | Khi nào hiển thị | Tác dụng |
-|---|---|---|---|
-| Gửi | Đáy modal | Luôn hiển thị | Gửi ý kiến chuyển tiếp đến người nhận. |
-| Hủy | Đáy modal | Luôn hiển thị | Đóng modal. |
-
-#### Các trường dữ liệu
-
-| Trường | Bắt buộc | Mô tả |
-|---|---|---|
-| Người nhận | Có | Cán bộ cùng đơn vị, có ô tìm kiếm. |
-| Nội dung chuyển tiếp | Có | Tối đa 1000 ký tự. |
-
-#### Thông báo của hệ thống
-
-| Tình huống | Thông báo |
-|---|---|
-| Trống người nhận | Vui lòng chọn người nhận |
-| Trống nội dung | Vui lòng nhập nội dung chuyển tiếp |
-| Gửi thành công | Đã chuyển tiếp ý kiến |
-| Gửi thất bại | Chuyển tiếp thất bại |
-
-### 3.12. Tab File đính kèm
+### 3.11. Tab File đính kèm
 
 ![Tab file đính kèm](screenshots/hscv_chi_tiet_04_tab_file.png)
 
@@ -485,7 +465,7 @@ Hiển thị tên tệp, dung lượng (B/KB/MB), thời gian (DD/MM/YYYY HH:mm)
 | Xóa thành công | Đã xóa file |
 | Xóa thất bại | Xóa file thất bại |
 
-### 3.13. Tab HSCV con
+### 3.12. Tab HSCV con
 
 ![Tab HSCV con](screenshots/hscv_chi_tiet_05_toolbar.png)
 
@@ -516,7 +496,7 @@ Hiển thị tên tệp, dung lượng (B/KB/MB), thời gian (DD/MM/YYYY HH:mm)
 | Tải danh sách thất bại | Lỗi tải hồ sơ con |
 | Bảng trống | Chưa có hồ sơ con. Nhấn "Tạo HSCV con" để thêm hồ sơ con. |
 
-### 3.14. Drawer Tạo HSCV con
+### 3.13. Drawer Tạo HSCV con
 
 ![Drawer tạo HSCV con](screenshots/hscv_danh_sach_02_create_drawer.png)
 
@@ -554,7 +534,7 @@ Drawer trượt từ phải, rộng 720px, tiêu đề "Tạo hồ sơ con". Tr�
 | Tạo thành công | Tạo hồ sơ con thành công |
 | Tạo thất bại | Tạo hồ sơ thất bại |
 
-### 3.15. Modal Cập nhật tiến độ
+### 3.14. Modal Cập nhật tiến độ
 
 ![Modal tiến độ](screenshots/hscv_chi_tiet_05_toolbar.png)
 
@@ -583,7 +563,7 @@ Modal nhỏ, tiêu đề "Cập nhật tiến độ". Bên trong có nhãn "Ti�
 | Cập nhật thất bại | Cập nhật tiến độ thất bại |
 | Vượt giới hạn (BE) | Tiến độ phải trong khoảng 0-100 |
 
-### 3.16. Modal Lấy số văn bản
+### 3.15. Modal Lấy số văn bản
 
 ![Modal lấy số](screenshots/hscv_chi_tiet_05_toolbar.png)
 
@@ -614,7 +594,7 @@ Modal nhỏ, tiêu đề "Chọn sổ văn bản để lấy số". Form có 1 t
 | HSCV đã có số | HSCV đã có số <số> |
 | Lỗi nghiệp vụ khác | Thao tác thất bại |
 
-### 3.17. Modal Trình ký / Duyệt hồ sơ / Xử lý lại / Chuyển xử lý
+### 3.16. Modal Trình ký / Duyệt hồ sơ / Xử lý lại / Chuyển xử lý
 
 #### Bố cục màn hình
 
@@ -636,7 +616,7 @@ Modal nhỏ, tiêu đề "Chọn sổ văn bản để lấy số". Form có 1 t
 | Thành công | Cập nhật trạng thái thành công |
 | Thất bại | Cập nhật trạng thái thất bại |
 
-### 3.18. Modal Từ chối hồ sơ
+### 3.17. Modal Từ chối hồ sơ
 
 ![Modal từ chối](screenshots/hscv_chi_tiet_05_toolbar.png)
 
@@ -664,7 +644,7 @@ Modal nhỏ, tiêu đề "Từ chối hồ sơ". Trên là dòng hướng dẫn 
 | Trống lý do (BE) | Lý do là bắt buộc khi từ chối hoặc trả về |
 | Từ chối thành công | Cập nhật trạng thái thành công |
 
-### 3.19. Modal Trả về hồ sơ
+### 3.18. Modal Trả về hồ sơ
 
 ![Modal trả về](screenshots/hscv_chi_tiet_05_toolbar.png)
 
@@ -691,7 +671,7 @@ Giống Modal Từ chối nhưng tiêu đề "Trả về hồ sơ", dòng hướ
 |---|---|
 | Trả về thành công | Cập nhật trạng thái thành công |
 
-### 3.20. Modal Hủy HSCV
+### 3.19. Modal Hủy HSCV
 
 ![Modal hủy](screenshots/hscv_chi_tiet_06_chuyen_tiep.png)
 
@@ -720,7 +700,7 @@ Modal rộng 480px, tiêu đề "Hủy hồ sơ công việc". Form có 1 trư�
 | Hủy thành công | Đã hủy hồ sơ công việc |
 | Trạng thái không cho hủy | Chỉ được hủy HSCV ở trạng thái Từ chối (-1) hoặc Trả về (-2). Trạng thái hiện tại: <mã> |
 
-### 3.21. Hộp thoại Mở lại HSCV
+### 3.20. Hộp thoại Mở lại HSCV
 
 ![Mở lại HSCV](screenshots/hscv_chi_tiet_05_toolbar.png)
 
@@ -743,7 +723,7 @@ Modal nhỏ "Mở lại hồ sơ công việc?" với mô tả: "Trạng thái s
 | Trạng thái không cho mở lại | Chỉ có thể mở lại HSCV đã hoàn thành. Trạng thái hiện tại: <mã> |
 | Lỗi khác | Thao tác thất bại |
 
-### 3.22. Modal Chuyển tiếp HSCV
+### 3.21. Modal Chuyển tiếp HSCV
 
 ![Modal chuyển tiếp HSCV](screenshots/hscv_chi_tiet_06_chuyen_tiep.png)
 
@@ -777,7 +757,7 @@ Modal rộng 500px, tiêu đề "Chuyển tiếp hồ sơ công việc". Đầu 
 | Người nhận đã xóa | Người nhận đã bị xoá |
 | Chuyển cho chính mình | Không thể chuyển cho chính mình |
 
-### 3.23. Modal Lịch sử HSCV
+### 3.22. Modal Lịch sử HSCV
 
 ![Modal lịch sử HSCV](screenshots/hscv_chi_tiet_06_chuyen_tiep.png)
 

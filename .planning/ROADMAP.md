@@ -205,3 +205,24 @@ Sau mỗi Wave execute → bug list. User duyệt → tôi insert phase fix qua 
 **Plans:** TBD — chạy `/gsd-plan-phase 24` khi sẵn sàng.
 
 **Phase directory:** `.planning/phases/24-hoan-thien-nghiep-vu-tu-choi-tiep-nhan-vb-lien-thong-lgsp-st/`
+
+### Phase 32: Audit & cập nhật toàn bộ HDSD (16 module)
+
+**Mục tiêu:** Đối chiếu toàn bộ 16 file HDSD (~4400 dòng) với code hiện tại sau Phase 21 (LGSP foundation) + Phase 31 (fix-gom UI). Bổ sung mô tả luồng nghiệp vụ còn thiếu (đặc biệt: hậu quả khi Giao việc — VB xuất hiện ở đâu của TK được giao, có chuông bell không; luồng "Ban hành & Gửi" chi tiết — phân biệt internal vs LGSP, queue worker BullMQ, badge "Đang chờ worker đẩy LGSP"). Đồng bộ button/menu/field theo UI mới. Chụp lại toàn bộ screenshots bằng Playwright (script `tools/screenshots/capture-*` có sẵn). Merge tất cả file con thành `HDSD_full.md`. Export `HDSD_full.docx` bằng pandoc 3.9 (đã cài).
+
+**Output:** 16 file `HDSD_*.md` updated + screenshots mới trong `docs/hdsd/screenshots/` + `HDSD_full.md` + `HDSD_full.docx` với ảnh embedded.
+
+**Depends on:** Phase 31 (fix-gom UI đã commit — pull về 1c1c414)
+**Plans:** 8/8 plans complete
+
+Plans:
+- [x] 32-01-PLAN.md — Audit toàn bộ 22 HDSD vs code → 32-AUDIT-REPORT.md (source of truth)
+- [x] 32-02-PLAN.md — Update text 4 file VB (đến + đi + dự thảo + đánh dấu) + insert GAP 1/2/3
+- [x] 32-03-PLAN.md — Update text HSCV + Dashboard + Thông báo + Cấu hình gửi nhanh
+- [x] 32-04-PLAN.md — Update text 3 Ký số + Đăng nhập + HDSD_index.md
+- [x] 32-05-PLAN.md — Update text 8 Quản trị HDSD (đơn vị, chức vụ, người dùng, nhóm quyền, sổ VB, lĩnh vực, loại VB, người ký)
+- [x] 32-06-PLAN.md — Chụp lại screenshots Playwright (depends on dev servers running)
+- [x] 32-07-PLAN.md — Re-merge HDSD_full.md từ 20 file con
+- [x] 32-08-PLAN.md — Export HDSD_full.docx qua pandoc 3.9
+
+**Phase directory:** `.planning/phases/32-hdsd-audit-update/`
