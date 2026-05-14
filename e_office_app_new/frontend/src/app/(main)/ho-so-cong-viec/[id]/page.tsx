@@ -916,14 +916,16 @@ export default function HscvDetailPage() {
   // Linked docs
   // ===========================
 
-  const handleSearchDocs = async () => {
+  const handleSearchDocs = async (tabOverride?: string, keywordOverride?: string) => {
+    const tab = tabOverride ?? searchDocTab;
+    const keyword = keywordOverride ?? searchDocKeyword;
     setSearchDocLoading(true);
     try {
-      const endpoint = searchDocTab === 'den' ? '/van-ban-den'
-        : searchDocTab === 'di' ? '/van-ban-di'
+      const endpoint = tab === 'den' ? '/van-ban-den'
+        : tab === 'di' ? '/van-ban-di'
         : '/van-ban-du-thao';
       const { data: res } = await api.get(endpoint, {
-        params: { keyword: searchDocKeyword, page: 1, page_size: 20 },
+        params: { keyword, page: 1, page_size: 20 },
       });
       setSearchDocResults((res.data || []).map((x: any) => ({
         id: x.id,
@@ -1385,9 +1387,10 @@ export default function HscvDetailPage() {
               icon={<LinkOutlined />}
               onClick={() => {
                 setAddDocModalOpen(true);
-                setSearchDocResults([]);
                 setSelectedDocKeys([]);
                 setSearchDocKeyword('');
+                setSearchDocTab('den');
+                handleSearchDocs('den', '');
               }}
             >
               Thêm văn bản
@@ -2160,7 +2163,11 @@ export default function HscvDetailPage() {
         <div style={{ marginBottom: 12 }}>
           <Tabs
             activeKey={searchDocTab}
-            onChange={(k) => { setSearchDocTab(k); setSearchDocResults([]); setSelectedDocKeys([]); }}
+            onChange={(k) => {
+              setSearchDocTab(k);
+              setSelectedDocKeys([]);
+              handleSearchDocs(k, searchDocKeyword);
+            }}
             items={[
               { key: 'den', label: 'Văn bản đến' },
               { key: 'di', label: 'Văn bản đi' },
@@ -2172,9 +2179,9 @@ export default function HscvDetailPage() {
               placeholder="Nhập từ khóa tìm kiếm..."
               value={searchDocKeyword}
               onChange={(e) => setSearchDocKeyword(e.target.value)}
-              onPressEnter={handleSearchDocs}
+              onPressEnter={() => handleSearchDocs()}
             />
-            <Button type="primary" onClick={handleSearchDocs} loading={searchDocLoading}>Tìm kiếm</Button>
+            <Button type="primary" onClick={() => handleSearchDocs()} loading={searchDocLoading}>Tìm kiếm</Button>
           </Space.Compact>
           <Table
             size="small"
