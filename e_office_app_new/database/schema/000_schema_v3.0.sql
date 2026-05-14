@@ -22457,7 +22457,17 @@ BEGIN
     FROM edoc.handling_docs h
     LEFT JOIN public.staff sc ON sc.id = h.curator LEFT JOIN public.staff ss ON ss.id = h.signer
     LEFT JOIN edoc.doc_fields df ON df.id = h.doc_field_id LEFT JOIN edoc.doc_types dt ON dt.id = h.doc_type_id
-    WHERE (p_dept_ids IS NULL OR h.department_id = ANY(p_dept_ids))
+    WHERE (
+      -- Visibility: in user's dept subtree OR user is curator/creator/assignee
+      p_dept_ids IS NULL
+      OR h.department_id = ANY(p_dept_ids)
+      OR (p_staff_id IS NOT NULL AND h.curator = p_staff_id)
+      OR (p_staff_id IS NOT NULL AND h.created_by = p_staff_id)
+      OR (p_staff_id IS NOT NULL AND EXISTS (
+        SELECT 1 FROM edoc.staff_handling_docs shd
+        WHERE shd.handling_doc_id = h.id AND shd.staff_id = p_staff_id
+      ))
+    )
       AND (p_status IS NULL OR p_status = -99 OR h.status = p_status)
       AND (p_filter_type IS NULL OR p_filter_type = 'all' OR
         (p_filter_type = 'created_by_me' AND h.created_by = p_staff_id) OR
