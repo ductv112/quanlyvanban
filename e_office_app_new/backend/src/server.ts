@@ -39,7 +39,7 @@ import notificationRoutes from './routes/notification.js';
 import bellNotificationsRoutes from './routes/notifications.js';  // Phase 13 — personal bell
 import sendConfigRoutes from './routes/send-config.js';
 import profileRoutes from './routes/profile.js';
-import { authenticate, requireRoles, requireRolesOrNext } from './middleware/auth.js';
+import { authenticate, requireRoles, requireRightByPathOrNext } from './middleware/auth.js';
 import { initSocket } from './lib/socket.js';
 import { ensureBucket } from './lib/minio/client.js';
 import { startSigningWorker, stopSigningWorker } from './workers/signing-poll.worker.js';
@@ -75,10 +75,15 @@ app.use('/api/auth', authRoutes);
 // Fix 2026-05-11: wrap admin routes in sub-Router để `next('router')` thoát đúng
 // sub-Router (Express semantics) thay vì thoát toàn bộ app routing -> 404 cho
 // non-admin user.
+//
+// Fix 2026-05-11 (2): đổi từ requireRolesOrNext('Quản trị hệ thống') sang
+// requireRightByPathOrNext() - check action_of_role table thay vì hardcode role
+// name. Cho phép admin gán quyền granular qua UI Nhóm quyền (action_of_role).
+// Ví dụ: tick "Danh mục" cho "Ban Lãnh đạo" -> Ban Lãnh đạo CRUD được Danh mục.
 const adminGuard = express.Router({ mergeParams: true });
-adminGuard.use(requireRolesOrNext('Quản trị hệ thống'), adminRoutes);
+adminGuard.use(requireRightByPathOrNext(), adminRoutes);
 const adminCatalogGuard = express.Router({ mergeParams: true });
-adminCatalogGuard.use(requireRolesOrNext('Quản trị hệ thống'), adminCatalogRoutes);
+adminCatalogGuard.use(requireRightByPathOrNext(), adminCatalogRoutes);
 
 app.use('/api/quan-tri', authenticate, adminGuard);
 app.use('/api/quan-tri', authenticate, adminCatalogGuard);

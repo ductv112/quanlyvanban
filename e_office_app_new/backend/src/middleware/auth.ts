@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
 import { verifyToken, type TokenPayload } from '../lib/auth/jwt.js';
+import { rawQuery } from '../lib/db/query.js';
 
 export interface AuthRequest extends Request {
   user: TokenPayload;
@@ -67,5 +68,80 @@ export function requireRolesOrNext(...roles: string[]) {
       return;
     }
     next();
+  };
+}
+
+/**
+ * Map admin path prefix → right_id (public.rights table).
+ * Mỗi entry là path prefix của route → quyền tương ứng user cần để CRUD.
+ */
+const ADMIN_PATH_RIGHT_MAP: { prefix: string; rightId: number }[] = [
+  // admin.ts
+  { prefix: '/don-vi', rightId: 14 },        // Đơn vị
+  { prefix: '/chuc-vu', rightId: 17 },        // Chức vụ
+  { prefix: '/nguoi-dung', rightId: 15 },     // Người dùng
+  { prefix: '/nhom-quyen', rightId: 16 },     // Nhóm quyền
+  { prefix: '/chuc-nang', rightId: 13 },      // Quản trị (root)
+  // admin-catalog.ts — tất cả thuộc nhóm "Danh mục" (right 18)
+  { prefix: '/loai-van-ban', rightId: 18 },
+  { prefix: '/linh-vuc', rightId: 18 },
+  { prefix: '/so-van-ban', rightId: 18 },
+  { prefix: '/nguoi-ky', rightId: 18 },
+  { prefix: '/co-quan', rightId: 18 },
+  { prefix: '/dia-ban', rightId: 18 },
+  { prefix: '/mau-email', rightId: 18 },
+  { prefix: '/mau-sms', rightId: 18 },
+  { prefix: '/thuoc-tinh-van-ban', rightId: 18 },
+  { prefix: '/nhom-lam-viec', rightId: 18 },
+  { prefix: '/uy-quyen', rightId: 18 },
+  { prefix: '/cau-hinh-truong', rightId: 13 }, // Cấu hình thuộc Quản trị
+  { prefix: '/cau-hinh', rightId: 13 },
+  { prefix: '/lich-lam-viec', rightId: 6 },    // Lịch làm việc
+];
+
+/**
+ * Path-aware permission middleware: check action_of_role table cho user
+ * theo right_id tương ứng với path prefix.
+ *
+ * - User có role "Quản trị hệ thống" → bypass (vì admin role đã có sẵn 22 rights).
+ *   Tuy nhiên check tự nhiên qua action_of_role cũng pass; bypass chỉ là optimization.
+ * - User có rights phù hợp (qua role_of_staff → action_of_role) → next().
+ * - User không có rights → next('router') → fall through sang publicCatalog
+ *   (chỉ phục vụ GET read-only) hoặc 404 nếu publicCatalog cũng không có route.
+ *
+ * Path không match prefix nào → next('router') (chấp nhận skipping admin guards
+ * và để adminRoutes/adminCatalogRoutes router tự handle hoặc fall through tiếp).
+ */
+export function requireRightByPathOrNext() {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    const user = (req as AuthRequest).user;
+    if (!user) {
+      res.status(401).json({ success: false, message: 'Unauthorized' });
+      return;
+    }
+    const path = req.path;
+    const match = ADMIN_PATH_RIGHT_MAP.find((m) => path === m.prefix || path.startsWith(`${m.prefix}/`));
+    if (!match) {
+      // Path không thuộc admin-guarded scope → fall through để router khác xử lý.
+      next('router');
+      return;
+    }
+    try {
+      const rows = await rawQuery<{ ok: number }>(
+        `SELECT 1 AS ok FROM public.role_of_staff rs
+          JOIN public.action_of_role ar ON ar.role_id = rs.role_id
+          WHERE rs.staff_id = $1 AND ar.right_id = $2
+          LIMIT 1`,
+        [user.staffId, match.rightId],
+      );
+      if (rows.length > 0) {
+        next();
+        return;
+      }
+      next('router');
+    } catch {
+      // DB error — fail closed: fall through (không cấp quyền nếu check lỗi)
+      next('router');
+    }
   };
 }
