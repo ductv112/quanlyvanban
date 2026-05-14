@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Card, Row, Col, Table, Button, Input, Tree, Tag, Space, Drawer,
-  Form, TreeSelect, Radio, Switch, InputNumber, Skeleton, Tooltip, Dropdown, Modal, App,
+  Form, TreeSelect, Radio, InputNumber, Skeleton, Tooltip, Dropdown, Modal, App,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
@@ -28,7 +28,6 @@ interface Department {
   fax: string;
   email: string;
   address: string;
-  allow_doc_book: boolean;
   description: string;
   is_locked: boolean;
   staff_count: number;
@@ -444,10 +443,6 @@ export default function DepartmentPage() {
               </Form.Item>
             </Col>
           </Row>
-
-          <Form.Item label="Cho phép sổ VB" name="allow_doc_book" valuePropName="checked">
-            <Switch />
-          </Form.Item>
 
           <Form.Item label="Mô tả" name="description">
             <Input.TextArea rows={3} maxLength={500} style={{ borderRadius: 8 }} />
