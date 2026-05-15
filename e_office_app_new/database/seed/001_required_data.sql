@@ -263,7 +263,9 @@ BEGIN
   -- SmartCA VNPT Tích hợp — chỉ dùng cho DEV TEST E2E.
   -- KHÁC SmartCA Thường: dùng endpoint v2 + TOTP secret + user password (KHÔNG cần app mobile confirm).
   -- KHÔNG khuyến nghị bật cho khách hàng cuối — rủi ro bảo mật (server giữ password + TOTP của user).
+  -- Credential demo VNPT pre-fill sẵn (sample code chính thức), admin chỉ bấm Test Connection + Kích hoạt.
   -- User-level credentials (password, TOTP secret) đọc từ env vars SMARTCA_TH_USER_PASSWORD + SMARTCA_TH_TOTP_SECRET.
+  -- ON CONFLICT DO UPDATE → idempotent re-apply seed khôi phục credential demo nếu admin lỡ xóa.
   INSERT INTO public.signing_provider_config
     (provider_code, provider_name, base_url, client_id, client_secret,
      profile_id, extra_config, is_active, created_by, updated_by)
@@ -271,14 +273,17 @@ BEGIN
     'SMARTCA_VNPT_TH',
     'SmartCA VNPT Tích hợp (DEV TEST)',
     'https://rmgateway.vnptit.vn',
-    '',
-    pgp_sym_encrypt('', v_key),
+    '4185-637127995547330633.apps.signserviceapi.com',
+    pgp_sym_encrypt('NGNhMzdmOGE-OGM2Mi00MTg0', v_key),
     NULL,
     '{}'::jsonb,
     FALSE,
     1, 1
   )
-  ON CONFLICT (provider_code) DO NOTHING;
+  ON CONFLICT (provider_code) DO UPDATE SET
+    base_url = EXCLUDED.base_url,
+    client_id = EXCLUDED.client_id,
+    client_secret = EXCLUDED.client_secret;
 
   RAISE NOTICE 'seed/001_required_data.sql: Master data OK (admin/Admin@123, 3 providers disabled — admin must configure via /ky-so/cau-hinh; SMARTCA_VNPT_TH chi dung cho dev test)';
 END $$;
