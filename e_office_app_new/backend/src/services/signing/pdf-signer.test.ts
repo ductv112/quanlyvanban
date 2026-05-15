@@ -123,7 +123,7 @@ describe('computePdfHash', () => {
 describe('prepareSignPdf', () => {
   it('combine addPlaceholder + computeHash', async () => {
     const pdf = await createSamplePdf();
-    const result = prepareSignPdf(pdf, { reason: 'Test' });
+    const result = await prepareSignPdf(pdf, { reason: 'Test' });
     assert.ok(result.hash);
     assert.ok(Buffer.isBuffer(result.placeholderPdf));
     assert.equal(result.byteRange.length, 4);
@@ -133,7 +133,7 @@ describe('prepareSignPdf', () => {
 describe('signPdf', () => {
   it('embed mock PKCS7 signature thành công', async () => {
     const pdf = await createSamplePdf();
-    const prep = prepareSignPdf(pdf, { reason: 'Test' });
+    const prep = await prepareSignPdf(pdf, { reason: 'Test' });
 
     // Dùng byte range bytes làm "data to sign" (PKCS7 content = byte range data)
     const [s1, l1, s2, l2] = prep.byteRange;

@@ -99,6 +99,7 @@ const DOC_TYPE_LABEL: Record<string, string> = {
 const PROVIDER_LABEL: Record<string, string> = {
   SMARTCA_VNPT: 'VNPT SmartCA',
   MYSIGN_VIETTEL: 'Viettel MySign',
+  SMARTCA_VNPT_TH: 'VNPT SmartCA TH',
 };
 
 // ============================================================================

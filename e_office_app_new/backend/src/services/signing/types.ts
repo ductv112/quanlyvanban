@@ -60,4 +60,16 @@ export interface PlaceholderOptions extends SignatureMetadata {
    * @default 16384
    */
   signatureLength?: number;
+
+  /**
+   * Tên người ký để vẽ visual overlay trên PDF (góc dưới-phải page cuối).
+   * Strip dấu tiếng Việt vì pdf-lib StandardFonts Helvetica không hỗ trợ Unicode.
+   * Nếu KHÔNG truyền → KHÔNG vẽ overlay (giữ PDF gốc nguyên).
+   */
+  signerName?: string;
+
+  /**
+   * Thời điểm ký để hiển thị trên overlay. Default = new Date() khi xử lý.
+   */
+  signedAt?: Date;
 }

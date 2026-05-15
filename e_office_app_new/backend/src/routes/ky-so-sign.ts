@@ -231,13 +231,18 @@ router.post('/', async (req: Request, res: Response) => {
       return;
     }
 
-    // ---- 6. Compute hash + placeholder PDF (pure JS)
+    // ---- 6. Compute hash + placeholder PDF (pure JS) + visual overlay
+    // Extract CN từ certificate_subject (cert đã verify) hoặc fallback user_id (CCCD)
+    const cnMatch = (userConfig.certificate_subject ?? '').match(/CN=([^,]+)/);
+    const signerDisplayName = (cnMatch?.[1]?.trim()) || userConfig.user_id;
     let hashResult;
     try {
-      hashResult = prepareSignPdf(pdfBuffer, {
+      hashResult = await prepareSignPdf(pdfBuffer, {
         reason: safeMetadata(sign_reason, 'Ký phê duyệt văn bản'),
         location: safeMetadata(sign_location, 'Vietnam'),
-        name: 'E-Office signer',
+        name: signerDisplayName,
+        signerName: signerDisplayName,
+        signedAt: new Date(),
       });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);

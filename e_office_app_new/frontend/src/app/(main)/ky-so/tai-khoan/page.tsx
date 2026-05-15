@@ -45,7 +45,7 @@ import { useAuthStore } from '@/stores/auth.store';
 // Types — match Plan 10-01 API response shape
 // ============================================================================
 
-type ProviderCode = 'SMARTCA_VNPT' | 'MYSIGN_VIETTEL';
+type ProviderCode = 'SMARTCA_VNPT' | 'MYSIGN_VIETTEL' | 'SMARTCA_VNPT_TH';
 
 interface ActiveProvider {
   provider_code: ProviderCode;
@@ -130,6 +130,13 @@ const PROVIDER_UX: Record<
       'Mã định danh cá nhân đã đăng ký với Viettel MySign (do Viettel cấp)',
     userIdPlaceholder: 'Ví dụ: CMT_123456',
     needsCertList: true,
+  },
+  SMARTCA_VNPT_TH: {
+    userIdLabel: 'Mã định danh SmartCA TH (DEV TEST)',
+    userIdTooltip:
+      'Số CMND/CCCD demo của VNPT — password + TOTP secret đọc từ env vars server',
+    userIdPlaceholder: 'Ví dụ: 871097 (demo)',
+    needsCertList: false,
   },
 };
 
