@@ -128,6 +128,39 @@ Script check `tsc --noEmit` + `npm run build` backend + frontend. Nếu PASS →
     - **Rule:** Khi `.env` thay đổi, phải `pm2 restart all --update-env`.
 
 **Lưu ý cho AI:** KHÔNG cần hỏi user về env vars/passwords — `.env.example` đã có dev defaults match docker-compose.yml. Chỉ cần chạy script + verify backend start OK + admin login OK qua curl.
+
+### ⚠️ Customer-Facing Scope — Module ĐÃ ẨN, KHÔNG nhắc đến trong tài liệu KH
+
+**Rule cứng:** Trước khi viết bất kỳ output nào hướng tới khách hàng (slide đào tạo, HDSD, brochure, email/Zalo trao đổi, đề xuất tính năng, test case do KH chạy, mô tả phân hệ trong onboarding) → **PHẢI đọc** `e_office_app_new/frontend/src/config/hidden-routes.ts` trước. Các module có trong `HIDDEN_ROUTES` Set là **code chết tạm** dành cho phase sau (chưa được KH duyệt) — **KHÔNG nhắc đến**, không demo, không đề xuất tính năng cho chúng.
+
+**Why:** Nhắc đến module đã ẩn = tạo kỳ vọng sai cho KH = mất uy tín đội triển khai. Đã bị nhắc nhở nhiều lần (lần gần nhất: slide đào tạo 2026-05-15 phải sửa lần 2 vì còn nhắc Lịch họp/LGSP).
+
+**Snapshot module đã ẩn (verify lại với `hidden-routes.ts` trước khi dùng — file có thể thay đổi):**
+
+- Tin nhắn (`/tin-nhan`)
+- Lịch — tất cả: cá nhân, cơ quan, lãnh đạo (`lich`, `/lich/*`)
+- Danh bạ (`/danh-ba`)
+- Kho lưu trữ — danh mục + mượn/trả (`kho-luu-tru`, `/kho-luu-tru/*`)
+- Tài liệu (`/tai-lieu`)
+- Hợp đồng (`/hop-dong`)
+- Cuộc họp — danh sách + thống kê (`cuoc-hop`, `/cuoc-hop/*`)
+- **LGSP** — liên thông + cơ quan liên thông (`/lgsp`, `/lgsp/co-quan`)
+- Thông báo kênh (`/thong-bao-kenh`)
+- Quản trị nâng cao Phase 2: chức năng, cấu hình trường, cơ quan, nhóm làm việc, ủy quyền, địa bàn, lịch làm việc, mẫu thông báo, cấu hình
+
+**Module CÒN giới thiệu cho KH (sau khi filter hidden):**
+
+- Văn bản đến / Văn bản đi / Văn bản dự thảo
+- Hồ sơ công việc
+- Thông báo (notification — khác với `thong-bao-kenh` đã ẩn)
+- Ký số: **SmartCA + Viettel CA** (hệ thống có 2 kênh)
+- Đánh dấu cá nhân, Cấu hình gửi nhanh
+- Quản trị cơ bản (Admin only): Đơn vị, Chức vụ, Người dùng, Nhóm quyền, Sổ VB, Loại VB, Lĩnh vực, Người ký
+
+**Đặc biệt với LGSP:** Dù backend có thể vẫn xử lý liên thông cho văn bản đi, **menu UI đã ẩn** → **KHÔNG nhắc đến LGSP trong tài liệu KH**. Mô tả "Văn bản đi" chỉ nói "gửi nội bộ" — không nhắc "gửi cơ quan ngoài qua LGSP".
+
+**Khi user yêu cầu thêm tính năng cho module ẩn** (VD: "thêm chức năng X cho Lịch họp"): **DỪNG + hỏi user** xác nhận có muốn bật lại module đó không, vì hiện tại đã chủ động ẩn.
+
 <!-- GSD:project-end -->
 
 <!-- GSD:stack-start source:codebase/STACK.md -->
