@@ -1,0 +1,99 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Inter', 'Roboto', system-ui, sans-serif;
+  --font-display: 'Plus Jakarta Sans', 'Inter', sans-serif;
+
+  /* Smart Digiword brand — Deep Navy primary */
+  --color-brand-50: #f0f4f9;
+  --color-brand-100: #d9e3ef;
+  --color-brand-200: #b2c6df;
+  --color-brand-300: #7e9bc3;
+  --color-brand-400: #4c75a3;
+  --color-brand-500: #2d5685;
+  --color-brand-600: #1b3a5c;
+  --color-brand-700: #15304d;
+  --color-brand-800: #11253b;
+  --color-brand-900: #0b1928;
+  --color-brand-950: #060d17;
+
+  /* Teal accent */
+  --color-accent-50: #ecfeff;
+  --color-accent-100: #cffafe;
+  --color-accent-200: #a5f3fc;
+  --color-accent-300: #67e8f9;
+  --color-accent-400: #22d3ee;
+  --color-accent-500: #06b6d4;
+  --color-accent-600: #0891b2;
+  --color-accent-700: #0e7490;
+  --color-accent-800: #155e75;
+  --color-accent-900: #164e63;
+
+  --color-ink-50: #f7f7f8;
+  --color-ink-100: #ededf0;
+  --color-ink-200: #d9d9df;
+  --color-ink-300: #b6b6c0;
+  --color-ink-400: #8e8e9c;
+  --color-ink-500: #707080;
+  --color-ink-600: #5a5a68;
+  --color-ink-700: #4a4a55;
+  --color-ink-800: #2e2e36;
+  --color-ink-900: #1a1a1f;
+  --color-ink-950: #0d0d11;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background: #0d0d11;
+  color: #1a1a1f;
+}
+
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+}
+
+/* Slide stage — locked 16:9, scaled to viewport */
+.slide-stage {
+  width: 1920px;
+  height: 1080px;
+  position: relative;
+  overflow: hidden;
+  background: #ffffff;
+  transform-origin: center center;
+}
+
+.slide-viewport {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0d0d11;
+  overflow: hidden;
+}
+
+@media print {
+  body {
+    background: #ffffff;
+  }
+  .slide-viewport {
+    background: #ffffff;
+    width: 1920px;
+    height: 1080px;
+    overflow: visible;
+  }
+  .slide-stage {
+    transform: none !important;
+    page-break-after: always;
+  }
+}
