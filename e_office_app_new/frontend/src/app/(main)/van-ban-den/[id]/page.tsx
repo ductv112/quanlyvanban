@@ -338,21 +338,6 @@ export default function IncomingDocDetailPage() {
   const handleUpload = async (file: File) => { setUploading(true); try { const fd = new FormData(); fd.append('file', file); await api.post(`/van-ban-den/${docId}/dinh-kem`, fd, { headers: { 'Content-Type': 'multipart/form-data' } }); message.success('Tải lên thành công'); fetchAttachments(); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } finally { setUploading(false); } return false; };
   const handleDownload = async (att: Attachment) => { try { await downloadAttachment(`/van-ban-den/${docId}/dinh-kem/${att.id}/download`, att.file_name); } catch { message.error('Lỗi tải file'); } };
   const handleDeleteAttachment = async (att: Attachment) => { try { await api.delete(`/van-ban-den/${docId}/dinh-kem/${att.id}`); message.success('Đã xóa'); fetchAttachments(); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } };
-  const handleSignAttachment = async (att: Attachment) => {
-    try {
-      const { data: res } = await api.post('/ky-so/mock/sign', { attachment_id: att.id, attachment_type: 'incoming' });
-      message.success(res.message || 'Ký số thành công'); fetchAttachments();
-    } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi ký số'); }
-  };
-  const handleVerifyAttachment = async (att: Attachment) => {
-    try {
-      const { data: res } = await api.post('/ky-so/mock/verify', { attachment_id: att.id, attachment_type: 'incoming' });
-      const d = res.data;
-      if (d?.is_valid) modal.success({ title: 'Chữ ký hợp lệ', content: `${d.signer_name} • ${d.sign_date ? dayjs(d.sign_date).format('DD/MM/YYYY HH:mm') : ''}` });
-      else modal.warning({ title: 'Chưa ký số', content: d?.message || 'File chưa được ký số' });
-    } catch { message.error('Lỗi xác thực'); }
-  };
-
   // Send
   const openSendModal = async () => {
     try {
@@ -678,8 +663,6 @@ export default function IncomingDocDetailPage() {
                     </Flex>
                     <Space size={4}>
                       <Button size="small" type="link" icon={<DownloadOutlined />} onClick={() => handleDownload(att)} />
-                      {!att.is_ca && <Button size="small" type="link" style={{ color: '#059669' }} onClick={() => handleSignAttachment(att)}>Ký số</Button>}
-                      {att.is_ca && <Button size="small" type="link" onClick={() => handleVerifyAttachment(att)}>Xác thực</Button>}
                       {!doc.approved && <Popconfirm title="Xóa file?" onConfirm={() => handleDeleteAttachment(att)}><Button size="small" type="link" danger icon={<DeleteOutlined />} /></Popconfirm>}
                     </Space>
                   </Flex>
