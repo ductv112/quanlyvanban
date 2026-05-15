@@ -75,7 +75,7 @@ let worker: Worker<PollSignStatusJob> | null = null;
 
 /** Narrow string provider_code thành ProviderCode union — throw nếu không support. */
 function toProviderCode(code: string): ProviderCode {
-  if (code === 'SMARTCA_VNPT' || code === 'MYSIGN_VIETTEL') {
+  if (code === 'SMARTCA_VNPT' || code === 'MYSIGN_VIETTEL' || code === 'SMARTCA_VNPT_TH') {
     return code;
   }
   throw new Error(`Provider code không hỗ trợ: ${code}`);

@@ -56,7 +56,7 @@ const router = Router();
 // Constants
 // ============================================================================
 
-const VALID_CODES: ProviderCode[] = ['SMARTCA_VNPT', 'MYSIGN_VIETTEL'];
+const VALID_CODES: ProviderCode[] = ['SMARTCA_VNPT', 'MYSIGN_VIETTEL', 'SMARTCA_VNPT_TH'];
 
 // ============================================================================
 // Helpers
@@ -149,31 +149,23 @@ router.get('/', async (_req: Request, res: Response) => {
       return;
     }
 
-    // Compute stats + has_secret flag in parallel cho 2 providers.
+    // Compute stats + has_secret flag in parallel cho N providers (scale theo VALID_CODES).
     // has_secret = provider có base_url + client_id + decrypted secret KHÁC placeholder
-    // (migration 043 seed MySign với sentinel 'placeholder_not_configured').
-    const [statsSmartca, statsMysign, fullSmartca, fullMysign] = await Promise.all([
-      getStatsForProvider('SMARTCA_VNPT'),
-      getStatsForProvider('MYSIGN_VIETTEL'),
-      signingProviderConfigRepository.getByCode('SMARTCA_VNPT'),
-      signingProviderConfigRepository.getByCode('MYSIGN_VIETTEL'),
-    ]);
-    const statsByCode: Record<string, StatsRow> = {
-      SMARTCA_VNPT: statsSmartca,
-      MYSIGN_VIETTEL: statsMysign,
-    };
-    const fullByCode: Record<string, SigningProviderConfigFullRow | null> = {
-      SMARTCA_VNPT: fullSmartca,
-      MYSIGN_VIETTEL: fullMysign,
-    };
-
-    // detectHasSecret decrypt BYTEA → tính toán tuần tự cho 2 row (nhanh vì chỉ 2 call)
-    const hasSecretSmartca = fullSmartca ? await detectHasSecret(fullSmartca) : false;
-    const hasSecretMysign = fullMysign ? await detectHasSecret(fullMysign) : false;
-    const hasSecretByCode: Record<string, boolean> = {
-      SMARTCA_VNPT: hasSecretSmartca,
-      MYSIGN_VIETTEL: hasSecretMysign,
-    };
+    // (seed MySign với sentinel 'placeholder_not_configured').
+    const statsArr = await Promise.all(VALID_CODES.map((code) => getStatsForProvider(code)));
+    const fullArr = await Promise.all(
+      VALID_CODES.map((code) => signingProviderConfigRepository.getByCode(code)),
+    );
+    const statsByCode: Record<string, StatsRow> = {};
+    const fullByCode: Record<string, SigningProviderConfigFullRow | null> = {};
+    const hasSecretByCode: Record<string, boolean> = {};
+    for (let i = 0; i < VALID_CODES.length; i++) {
+      const code = VALID_CODES[i];
+      statsByCode[code] = statsArr[i];
+      fullByCode[code] = fullArr[i];
+      // detectHasSecret decrypt BYTEA — tuần tự cho từng row (N call, mỗi call <100ms)
+      hasSecretByCode[code] = fullArr[i] ? await detectHasSecret(fullArr[i]!) : false;
+    }
 
     let activeCode: ProviderCode | null = null;
     const providers = VALID_CODES.map((code) => {

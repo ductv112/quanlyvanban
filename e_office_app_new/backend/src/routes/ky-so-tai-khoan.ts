@@ -42,6 +42,7 @@ const router = Router();
 const PROVIDER_NAMES: Record<string, string> = {
   SMARTCA_VNPT: 'SmartCA VNPT',
   MYSIGN_VIETTEL: 'MySign Viettel',
+  SMARTCA_VNPT_TH: 'SmartCA VNPT Tích hợp (DEV TEST)',
 };
 
 // ============================================================================

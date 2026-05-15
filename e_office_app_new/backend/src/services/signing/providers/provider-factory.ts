@@ -20,6 +20,7 @@ import { signingProviderConfigRepository } from '../../../repositories/signing-p
 import { decryptSecret } from '../crypto.js';
 import { smartcaVnptProvider } from './smartca-vnpt.provider.js';
 import { mysignViettelProvider } from './mysign-viettel.provider.js';
+import { smartcaVnptThProvider } from './smartca-vnpt-th.provider.js';
 import type { AdminCredentials, ProviderCode, SigningProvider } from './provider.interface.js';
 
 // ============================================================================
@@ -39,6 +40,8 @@ export function getProviderByCode(code: string): SigningProvider {
       return smartcaVnptProvider;
     case 'MYSIGN_VIETTEL':
       return mysignViettelProvider;
+    case 'SMARTCA_VNPT_TH':
+      return smartcaVnptThProvider;
     default:
       throw new Error('Provider không hỗ trợ: ' + code);
   }

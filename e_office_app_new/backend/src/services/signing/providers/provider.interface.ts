@@ -24,7 +24,7 @@
 // ============================================================================
 
 /** Danh sách provider được hỗ trợ trong v2.0 — union literal type-safe */
-export type ProviderCode = 'SMARTCA_VNPT' | 'MYSIGN_VIETTEL';
+export type ProviderCode = 'SMARTCA_VNPT' | 'MYSIGN_VIETTEL' | 'SMARTCA_VNPT_TH';
 
 /**
  * Kết quả test connection (CFG-03 — Admin lưu config + test).
