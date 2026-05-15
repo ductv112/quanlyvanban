@@ -19,6 +19,7 @@
  *   - SECURITY: không log plaintext `sp_password` (mask khi throw error).
  */
 
+import { randomUUID } from 'node:crypto';
 import type {
   AdminCredentials,
   CertificateInfo,
@@ -30,6 +31,11 @@ import type {
   UserConfig,
 } from './provider.interface.js';
 import { createDefaultHttpClient, type HttpClient, validateHttpsBaseUrl } from './http-client.js';
+
+// VNPT SP769 dùng HTTP-style status codes (200 = OK), không phải JSON-RPC style (0 = OK).
+// Sample PHP chính thức: `if($msg->status_code != 200)` — tham chiếu
+// `Sample.SmartCA-769-PHP.Curl/signature_curl.php:140`.
+const VNPT_STATUS_OK = 200;
 
 // ============================================================================
 // Response shapes từ VNPT (copy từ Model.cs — snake_case)
@@ -125,16 +131,15 @@ export function createSmartCaVnptProvider(httpClient?: HttpClient): SigningProvi
           sp_password: admin.clientSecretPlaintext,
           user_id: 'test_connection', // user giả — provider return error "not found"
           serial_number: '',
-          transaction_id: '',
+          transaction_id: randomUUID(),
         };
 
         const response = await http.post<VnptGetCertResponse>(url, body);
 
-        // Logic: VNPT trả status_code=0 khi credentials đúng.
-        // Nếu user_id bịa → thường trả message "not found" / "user not exist"
-        //   nhưng status_code không phải code "invalid client".
-        // Nếu client_id/secret sai → thường status_code khác 0 kèm message "invalid"/"unauthorized".
-        if (response.status_code === 0) {
+        // VNPT trả status_code=200 khi credentials đúng.
+        // user_id giả → message "not found" / "user not exist", credentials vẫn pass.
+        // client_id/secret sai → status_code khác 200 + message "invalid"/"unauthorized".
+        if (response.status_code === VNPT_STATUS_OK) {
           const cert = response.data?.user_certificates?.[0];
           return {
             success: true,
@@ -182,12 +187,12 @@ export function createSmartCaVnptProvider(httpClient?: HttpClient): SigningProvi
         sp_password: admin.clientSecretPlaintext,
         user_id: user.userId,
         serial_number: '',
-        transaction_id: '',
+        transaction_id: randomUUID(),
       };
 
       const response = await http.post<VnptGetCertResponse>(url, body);
 
-      if (response.status_code !== 0) {
+      if (response.status_code !== VNPT_STATUS_OK) {
         throw new Error(
           `SmartCA VNPT không trả cert: ${response.message ?? 'status_code=' + response.status_code}`,
         );
@@ -221,7 +226,7 @@ export function createSmartCaVnptProvider(httpClient?: HttpClient): SigningProvi
         sp_password: admin.clientSecretPlaintext,
         user_id: user.userId,
         transaction_desc: req.documentName,
-        transaction_id: '',
+        transaction_id: randomUUID(),
         sign_files: [
           {
             data_to_be_signed: req.hashHex,
@@ -235,7 +240,7 @@ export function createSmartCaVnptProvider(httpClient?: HttpClient): SigningProvi
 
       const response = await http.post<VnptSignResponse>(url, body);
 
-      if (response.status_code !== 0 || !response.data?.transaction_id) {
+      if (response.status_code !== VNPT_STATUS_OK || !response.data?.transaction_id) {
         // Scrub secret trong body snapshot trước khi throw (debug an toàn)
         void scrubSecret(body);
         throw new Error(

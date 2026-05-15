@@ -99,6 +99,19 @@ function redact(msg: string, secrets: string[]): string {
   return safe;
 }
 
+// Viettel MySign yêu cầu document_name / description gửi dạng base64,
+// raw chỉ chấp nhận [a-zA-Z0-9_\- ] và base64-encoded length < 100.
+// Strip dấu tiếng Việt + ký tự đặc biệt trước khi encode.
+function encodeMysignText(input: string, maxRawLen = 60): string {
+  const noDiacritics = input
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '') // Unicode combining diacritical marks
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D');
+  const ascii = noDiacritics.replace(/[^a-zA-Z0-9_\- ]/g, '_').slice(0, maxRawLen);
+  return Buffer.from(ascii, 'utf8').toString('base64');
+}
+
 // ============================================================================
 // Factory
 // ============================================================================
@@ -247,15 +260,19 @@ export function createMysignViettelProvider(httpClient?: HttpClient): SigningPro
 
       const url = joinUrl(admin.baseUrl, '/vtss/service/signHash');
       // CRITICAL: key `credentialID` CHỮ D HOA — match postman literal (không phải credential_id)
+      // document_name PHẢI base64 — raw chỉ chấp nhận [a-zA-Z0-9_\- ], KHÔNG tiếng Việt có dấu
+      // Tham chiếu doc: `docs/ky_so_analysis/01_mysign_viettel.md` mục 3.3.
+      const encodedDocName = encodeMysignText(req.documentName);
       const body = {
         client_id: admin.clientId,
         client_secret: admin.clientSecretPlaintext,
         credentialID: user.credentialId,
         numSignatures: 1,
+        description: encodedDocName,
         documents: [
           {
             document_id: req.documentId,
-            document_name: req.documentName,
+            document_name: encodedDocName,
           },
         ],
         hash: [req.hashHex],
@@ -296,8 +313,15 @@ export function createMysignViettelProvider(httpClient?: HttpClient): SigningPro
         Authorization: `Bearer ${token}`,
       });
 
-      // Postman: status='1' → signed, status='0' → pending
-      if (response.status === '1') {
+      // Status codes theo doc Viettel (01_mysign_viettel.md mục 3.4):
+      //   1     = Success — có signatures[]
+      //   4000  = Waiting for user confirm (poll tiếp)
+      //   6000  = User confirmed, system đang ký (poll tiếp)
+      //   4001  = Timeout, 4002 = User reject, 4004 = Signing failed,
+      //   4005  = Hết lượt ký, 13004 = CTS hết hạn / bị thu hồi, 50000 = lỗi nội bộ
+      const status = response.status;
+
+      if (status === '1') {
         const sig = response.signatures?.[0];
         if (!sig) {
           return {
@@ -312,13 +336,25 @@ export function createMysignViettelProvider(httpClient?: HttpClient): SigningPro
         };
       }
 
-      if (response.status === '0') {
+      if (status === '4000' || status === '6000') {
         return { status: 'pending' };
       }
 
+      const errorByCode: Record<string, string> = {
+        '4001': 'Hết thời gian xác nhận trên app Mysign',
+        '4002': 'Người dùng từ chối ký trên app Mysign',
+        '4004': 'Hệ thống Viettel báo lỗi khi ký',
+        '4005': 'Tài khoản hết lượt ký hoặc hết hạn mức',
+        '13004': 'Chứng thư số hết hạn hoặc bị thu hồi',
+        '50000': 'Lỗi nội bộ Viettel — vui lòng thử lại sau',
+      };
+
       return {
         status: 'failed',
-        errorMessage: response.message ?? `Status không xác định: ${response.status ?? 'null'}`,
+        errorMessage:
+          (status && errorByCode[status]) ??
+          response.message ??
+          `Status không xác định: ${status ?? 'null'}`,
       };
     },
   };
