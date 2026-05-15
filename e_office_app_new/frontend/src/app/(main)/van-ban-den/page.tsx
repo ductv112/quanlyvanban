@@ -447,7 +447,7 @@ export default function IncomingDocPage() {
       <Table<IncomingDoc>
         className="enhanced-table"
         rowKey="id" loading={loading} columns={columns} dataSource={data} size="small" scroll={{ x: 1100 }}
-        rowSelection={{ selectedRowKeys, onChange: setSelectedRowKeys }}
+        rowSelection={{ selectedRowKeys, onChange: setSelectedRowKeys, preserveSelectedRowKeys: true }}
         rowClassName={(record) => record.is_read ? '' : 'row-unread'}
         pagination={{ current: page, pageSize, total, showSizeChanger: true, showTotal: (t) => `Tổng ${t} văn bản`, pageSizeOptions: ['10', '20', '50', '100'] }}
         onChange={(p) => { setPage(p.current || 1); setPageSize(p.pageSize || 20); }}

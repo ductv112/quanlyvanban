@@ -3417,16 +3417,17 @@ CREATE OR REPLACE FUNCTION edoc.fn_handling_doc_create_from_doc(p_doc_id bigint,
 DECLARE
   v_id      BIGINT;
   v_unit_id INT;
+  v_dept_id INT;
   v_curator_id INT;
   v_cid     INT;
 BEGIN
-  -- Lấy unit_id từ văn bản gốc
+  -- Lấy unit_id + department_id từ văn bản gốc
   IF p_doc_type = 'incoming' THEN
-    SELECT ind.unit_id INTO v_unit_id FROM edoc.incoming_docs ind WHERE ind.id = p_doc_id;
+    SELECT ind.unit_id, ind.department_id INTO v_unit_id, v_dept_id FROM edoc.incoming_docs ind WHERE ind.id = p_doc_id;
   ELSIF p_doc_type = 'outgoing' THEN
-    SELECT od.unit_id INTO v_unit_id FROM edoc.outgoing_docs od WHERE od.id = p_doc_id;
+    SELECT od.unit_id, od.department_id INTO v_unit_id, v_dept_id FROM edoc.outgoing_docs od WHERE od.id = p_doc_id;
   ELSIF p_doc_type = 'drafting' THEN
-    SELECT dd.unit_id INTO v_unit_id FROM edoc.drafting_docs dd WHERE dd.id = p_doc_id;
+    SELECT dd.unit_id, dd.department_id INTO v_unit_id, v_dept_id FROM edoc.drafting_docs dd WHERE dd.id = p_doc_id;
   END IF;
 
   IF v_unit_id IS NULL THEN
@@ -3439,12 +3440,17 @@ BEGIN
     v_curator_id := p_curator_ids[1];
   END IF;
 
-  -- Tạo hồ sơ công việc
+  -- Fallback: nếu doc nguồn không có department_id → lấy từ created_by của HSCV
+  IF v_dept_id IS NULL THEN
+    SELECT s.department_id INTO v_dept_id FROM public.staff s WHERE s.id = p_created_by;
+  END IF;
+
+  -- Tạo hồ sơ công việc (BUG #65 fix: thêm department_id để lãnh đạo cùng đv thấy được)
   INSERT INTO edoc.handling_docs (
-    unit_id, name, comments, start_date, end_date,
+    unit_id, department_id, name, comments, start_date, end_date,
     curator, status, is_from_doc, created_by, created_at, updated_at
   ) VALUES (
-    v_unit_id, p_name, p_note, p_start_date, p_end_date,
+    v_unit_id, v_dept_id, p_name, p_note, p_start_date, p_end_date,
     v_curator_id, 0, TRUE, p_created_by, NOW(), NOW()
   )
   RETURNING edoc.handling_docs.id INTO v_id;
@@ -3567,7 +3573,9 @@ RETURNS TABLE(
     doc_book_name character varying,
     cancel_reason text,
     cancelled_at timestamp with time zone,
-    cancelled_by integer
+    cancelled_by integer,
+    -- Đề xuất #5: tên người hủy
+    cancelled_by_name text
 )
 LANGUAGE plpgsql
 AS $$
@@ -3609,7 +3617,9 @@ BEGIN
     db.name::VARCHAR                            AS doc_book_name,
     h.cancel_reason,
     h.cancelled_at,
-    h.cancelled_by
+    h.cancelled_by,
+    -- Đề xuất #5: tên người hủy
+    CONCAT(scancel.last_name, ' ', scancel.first_name)::TEXT AS cancelled_by_name
   FROM edoc.handling_docs h
   LEFT JOIN public.departments du ON du.id = h.unit_id
   LEFT JOIN public.departments dd ON dd.id = h.department_id
@@ -3617,6 +3627,7 @@ BEGIN
   LEFT JOIN edoc.doc_fields    df ON df.id = h.doc_field_id
   LEFT JOIN public.staff       sc ON sc.id = h.curator
   LEFT JOIN public.staff       ss ON ss.id = h.signer
+  LEFT JOIN public.staff       scancel ON scancel.id = h.cancelled_by
   LEFT JOIN edoc.handling_docs hp ON hp.id = h.parent_id
   LEFT JOIN edoc.doc_books     db ON db.id = h.doc_book_id AND db.is_deleted = FALSE
   WHERE h.id = p_id;
@@ -3686,6 +3697,7 @@ $$;
 -- Name: fn_handling_doc_get_linked_docs(bigint); Type: FUNCTION; Schema: edoc; Owner: -
 --
 
+-- BUG #75: bổ sung doc_type 'outgoing' + 'drafting' (trước chỉ trả data cho 'incoming')
 CREATE OR REPLACE FUNCTION edoc.fn_handling_doc_get_linked_docs(p_id bigint) RETURNS TABLE(link_id bigint, doc_id bigint, doc_type character varying, doc_number integer, doc_notation character varying, doc_abstract text, doc_date timestamp with time zone)
     LANGUAGE plpgsql
     AS $$
@@ -3697,18 +3709,26 @@ BEGIN
     l.doc_type,
     CASE l.doc_type
       WHEN 'incoming' THEN (SELECT d.number FROM edoc.incoming_docs d WHERE d.id = l.doc_id)
+      WHEN 'outgoing' THEN (SELECT d.number FROM edoc.outgoing_docs d WHERE d.id = l.doc_id)
+      WHEN 'drafting' THEN (SELECT d.number FROM edoc.drafting_docs d WHERE d.id = l.doc_id)
       ELSE NULL
     END        AS doc_number,
     CASE l.doc_type
       WHEN 'incoming' THEN (SELECT d.notation FROM edoc.incoming_docs d WHERE d.id = l.doc_id)
+      WHEN 'outgoing' THEN (SELECT d.notation FROM edoc.outgoing_docs d WHERE d.id = l.doc_id)
+      WHEN 'drafting' THEN (SELECT d.notation FROM edoc.drafting_docs d WHERE d.id = l.doc_id)
       ELSE NULL
     END        AS doc_notation,
     CASE l.doc_type
       WHEN 'incoming' THEN (SELECT d.abstract FROM edoc.incoming_docs d WHERE d.id = l.doc_id)
+      WHEN 'outgoing' THEN (SELECT d.abstract FROM edoc.outgoing_docs d WHERE d.id = l.doc_id)
+      WHEN 'drafting' THEN (SELECT d.abstract FROM edoc.drafting_docs d WHERE d.id = l.doc_id)
       ELSE NULL
     END        AS doc_abstract,
     CASE l.doc_type
       WHEN 'incoming' THEN (SELECT d.received_date FROM edoc.incoming_docs d WHERE d.id = l.doc_id)
+      WHEN 'outgoing' THEN (SELECT COALESCE(d.sign_date, d.publish_date, d.received_date) FROM edoc.outgoing_docs d WHERE d.id = l.doc_id)
+      WHEN 'drafting' THEN (SELECT COALESCE(d.sign_date, d.created_at) FROM edoc.drafting_docs d WHERE d.id = l.doc_id)
       ELSE NULL
     END        AS doc_date
   FROM edoc.handling_doc_links l
@@ -7192,26 +7212,51 @@ END; $$;
 CREATE OR REPLACE FUNCTION edoc.fn_outgoing_doc_retract(p_id bigint, p_staff_id integer, p_staff_ids integer[] DEFAULT NULL::integer[]) RETURNS TABLE(success boolean, message text)
     LANGUAGE plpgsql SECURITY DEFINER
     AS $$
-DECLARE v_deleted_count INT;
+DECLARE
+  v_deleted_users INT := 0;
+  v_deleted_units INT := 0;
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM edoc.outgoing_docs WHERE id = p_id) THEN
     RETURN QUERY SELECT FALSE, 'Không tìm thấy văn bản đi'::TEXT; RETURN;
   END IF;
 
   IF p_staff_ids IS NULL THEN
-    -- Thu hồi tất cả (trừ người thu hồi)
+    -- Thu hồi toàn bộ (cả intra-unit staff lẫn cross-unit recipients)
+
+    -- 1. Xoá bản nhận của staff trong cùng đv (legacy intra-unit send)
     DELETE FROM edoc.user_outgoing_docs WHERE outgoing_doc_id = p_id AND staff_id != p_staff_id;
-    GET DIAGNOSTICS v_deleted_count = ROW_COUNT;
-    -- Reset approved khi thu hồi toàn bộ
-    UPDATE edoc.outgoing_docs SET approved = FALSE, updated_by = p_staff_id, updated_at = NOW() WHERE id = p_id;
+    GET DIAGNOSTICS v_deleted_users = ROW_COUNT;
+
+    -- 2. Xoá auto-generated incoming_docs ở các đơn vị nhận
+    --    (CASCADE xoá luôn user_incoming_docs)
+    DELETE FROM edoc.incoming_docs WHERE previous_outgoing_doc_id = p_id;
+    GET DIAGNOSTICS v_deleted_units = ROW_COUNT;
+
+    -- 3. Reset recipients về 'pending' để có thể gửi lại
+    UPDATE edoc.outgoing_doc_recipients
+    SET sent_status = 'pending',
+        sent_at = NULL,
+        generated_incoming_doc_id = NULL,
+        error_message = NULL
+    WHERE outgoing_doc_id = p_id;
+
+    -- 4. Reset trạng thái VB đi: approved=false (legacy) + status 'sent' -> 'released'
+    UPDATE edoc.outgoing_docs
+    SET approved = FALSE,
+        status = CASE WHEN status = 'sent' THEN 'released' ELSE status END,
+        updated_by = p_staff_id,
+        updated_at = NOW()
+    WHERE id = p_id;
   ELSE
-    -- Thu hồi từng người cụ thể
+    -- Thu hồi từng staff cụ thể (chỉ legacy intra-unit, không động đến recipients đv)
     DELETE FROM edoc.user_outgoing_docs WHERE outgoing_doc_id = p_id AND staff_id = ANY(p_staff_ids);
-    GET DIAGNOSTICS v_deleted_count = ROW_COUNT;
+    GET DIAGNOSTICS v_deleted_users = ROW_COUNT;
     UPDATE edoc.outgoing_docs SET updated_by = p_staff_id, updated_at = NOW() WHERE id = p_id;
   END IF;
 
-  RETURN QUERY SELECT TRUE, ('Thu hồi thành công — đã xóa ' || v_deleted_count || ' người nhận')::TEXT;
+  RETURN QUERY SELECT TRUE,
+    ('Thu hồi thành công — đã xoá ' || v_deleted_users || ' người nhận' ||
+     CASE WHEN v_deleted_units > 0 THEN ', ' || v_deleted_units || ' đơn vị' ELSE '' END)::TEXT;
 END;
 $$;
 
@@ -22434,12 +22479,15 @@ BEGIN
 END; $$;
 
 -- 11. fn_handling_doc_get_list
+-- BUG #73: thêm p_doc_field_id (filter Lĩnh vực)
 DROP FUNCTION IF EXISTS edoc.fn_handling_doc_get_list(INT, INT[], INT, INT, TEXT, TEXT, TIMESTAMPTZ, TIMESTAMPTZ, INT, INT);
+DROP FUNCTION IF EXISTS edoc.fn_handling_doc_get_list(INT, INT[], INT, INT, TEXT, TEXT, TIMESTAMPTZ, TIMESTAMPTZ, INT, INT, INT);
 CREATE OR REPLACE FUNCTION edoc.fn_handling_doc_get_list(
   p_unit_id INT, p_dept_ids INT[] DEFAULT NULL, p_staff_id INT DEFAULT NULL,
   p_status INT DEFAULT NULL, p_filter_type TEXT DEFAULT NULL, p_keyword TEXT DEFAULT NULL,
   p_from_date TIMESTAMPTZ DEFAULT NULL, p_to_date TIMESTAMPTZ DEFAULT NULL,
-  p_page INT DEFAULT 1, p_page_size INT DEFAULT 20
+  p_page INT DEFAULT 1, p_page_size INT DEFAULT 20,
+  p_doc_field_id INT DEFAULT NULL   -- BUG #73: filter Lĩnh vực
 )
 RETURNS TABLE (
   id BIGINT, name VARCHAR, start_date TIMESTAMPTZ, end_date TIMESTAMPTZ, status SMALLINT,
@@ -22499,6 +22547,7 @@ BEGIN
       AND (p_keyword IS NULL OR TRIM(p_keyword) = '' OR h.name ILIKE '%' || p_keyword || '%')
       AND (p_from_date IS NULL OR h.start_date >= p_from_date)
       AND (p_to_date IS NULL OR h.start_date <= p_to_date)
+      AND (p_doc_field_id IS NULL OR h.doc_field_id = p_doc_field_id)   -- BUG #73 filter Lĩnh vực
   )
   SELECT f.id, f.name, f.start_date, f.end_date, f.status,
     f.curator_id, f.curator_name::TEXT, f.signer_id, f.signer_name::TEXT,
@@ -26914,7 +26963,10 @@ END $$;
 -- DROP SP em viết với signature SAI
 DROP FUNCTION IF EXISTS edoc.fn_incoming_doc_create(integer, timestamp with time zone, integer, character varying, character varying, text, character varying, timestamp with time zone, character varying, timestamp with time zone, integer, integer, smallint, smallint, integer, integer, timestamp with time zone, text, text, boolean, integer, edoc.doc_source_type, boolean, character varying, bigint, character varying);
 
--- CREATE lại với signature ĐÚNG (match repository call positional 22 args)
+-- BUG #40 fix: drop signature CŨ (KHÔNG có p_sents) để chỉ tồn tại version mới có p_sents
+DROP FUNCTION IF EXISTS edoc.fn_incoming_doc_create(integer, timestamp with time zone, integer, character varying, character varying, text, character varying, timestamp with time zone, character varying, timestamp with time zone, integer, integer, integer, smallint, smallint, integer, integer, timestamp with time zone, text, boolean, integer, integer, edoc.doc_source_type, boolean, character varying, bigint, character varying);
+
+-- CREATE lại với signature ĐÚNG (BUG #40: thêm p_sents) — match repository call
 CREATE OR REPLACE FUNCTION edoc.fn_incoming_doc_create(
   p_unit_id              integer,
   p_received_date        timestamp with time zone,
@@ -26935,6 +26987,7 @@ CREATE OR REPLACE FUNCTION edoc.fn_incoming_doc_create(
   p_number_copies        integer DEFAULT 1,
   p_expired_date         timestamp with time zone DEFAULT NULL,
   p_recipients           text DEFAULT NULL,
+  p_sents                text DEFAULT NULL,
   p_is_received_paper    boolean DEFAULT FALSE,
   p_created_by           integer DEFAULT NULL,
   p_department_id        integer DEFAULT NULL,
@@ -26963,7 +27016,7 @@ BEGIN
     publish_unit, publish_date, signer, sign_date,
     doc_book_id, doc_type_id, doc_field_id,
     secret_id, urgent_id, number_paper, number_copies,
-    expired_date, recipients,
+    expired_date, recipients, sents,
     is_received_paper, archive_status,
     source_type, is_unit_send, unit_send,
     previous_outgoing_doc_id, external_doc_id,
@@ -26973,7 +27026,7 @@ BEGIN
     p_publish_unit, p_publish_date, p_signer, p_sign_date,
     p_doc_book_id, p_doc_type_id, p_doc_field_id,
     p_secret_id, p_urgent_id, p_number_paper, p_number_copies,
-    p_expired_date, p_recipients,
+    p_expired_date, p_recipients, NULLIF(TRIM(p_sents), ''),
     p_is_received_paper, FALSE,
     p_source_type, p_is_unit_send, p_unit_send,
     p_previous_outgoing_doc_id, p_external_doc_id,

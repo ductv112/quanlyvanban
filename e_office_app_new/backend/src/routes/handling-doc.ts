@@ -60,7 +60,7 @@ router.get('/', async (req: Request, res: Response) => {
   try {
     const { staffId, departmentId, isAdmin } = (req as AuthRequest).user;
     const {
-      filter_type, status, keyword, from_date, to_date, page, page_size,
+      filter_type, status, keyword, from_date, to_date, page, page_size, field_id,
     } = req.query;
 
     const filterDeptId = req.query.department_id ? Number(req.query.department_id) : undefined;
@@ -78,6 +78,8 @@ router.get('/', async (req: Request, res: Response) => {
         toDate: to_date as string || undefined,
         page: page ? Number(page) : 1,
         pageSize: page_size ? Number(page_size) : 20,
+        // BUG #73: pass field_id (Lĩnh vực) filter xuống SP
+        docFieldId: field_id ? Number(field_id) : undefined,
       },
     );
 

@@ -18,6 +18,7 @@ import ExcelJS from 'exceljs';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth.store';
 import { buildTree, flattenTreeForSelect } from '@/lib/tree-utils';
+import { confirmCloseIfDirty } from '@/lib/form-confirm';
 
 const { TextArea } = Input;
 const { RangePicker } = DatePicker;
@@ -572,15 +573,21 @@ export default function HoSoCongViecPage() {
         <div className="list-filter-bar">
           <div className="filter-row" style={{ marginTop: 12 }}>
             <Space wrap>
-              <Input
-                placeholder="Tìm kiếm tên hồ sơ..."
-                value={keyword}
-                onChange={(e) => setKeyword(e.target.value)}
-                onPressEnter={handleSearch}
-                style={{ width: 240 }}
-                prefix={<SearchOutlined style={{ color: '#94A3B8' }} />}
-                allowClear
-              />
+              {/* BUG #71: Input "Tìm kiếm" + Button "Tìm kiếm" đặt cạnh nhau (Compact) */}
+              <Space.Compact>
+                <Input
+                  placeholder="Tìm kiếm tên hồ sơ..."
+                  value={keyword}
+                  onChange={(e) => setKeyword(e.target.value)}
+                  onPressEnter={handleSearch}
+                  style={{ width: 240 }}
+                  prefix={<SearchOutlined style={{ color: '#94A3B8' }} />}
+                  allowClear
+                />
+                <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>
+                  Tìm kiếm
+                </Button>
+              </Space.Compact>
               <Select
                 placeholder="Lĩnh vực"
                 allowClear
@@ -620,9 +627,6 @@ export default function HoSoCongViecPage() {
                 }}
                 style={{ width: 220 }}
               />
-              <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>
-                Tìm kiếm
-              </Button>
               <Button onClick={handleReset}>Đặt lại</Button>
             </Space>
           </div>
@@ -668,15 +672,16 @@ export default function HoSoCongViecPage() {
       </div>
 
       {/* Drawer tạo/sửa HSCV */}
+      {/* BUG #74 + #82: xác nhận hủy khi form dirty */}
       <Drawer forceRender
         title={editingRecord ? 'Chỉnh sửa hồ sơ công việc' : 'Tạo hồ sơ công việc'}
         size={720}
         open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
+        onClose={() => confirmCloseIfDirty(form, modal, () => setDrawerOpen(false))}
         rootClassName="drawer-gradient"
         extra={
           <Space>
-            <Button onClick={() => setDrawerOpen(false)}>Hủy</Button>
+            <Button onClick={() => confirmCloseIfDirty(form, modal, () => setDrawerOpen(false))}>Hủy</Button>
             <Button
               type="primary"
               icon={<SaveOutlined />}
@@ -752,6 +757,8 @@ export default function HoSoCongViecPage() {
                 name="end_date"
                 label="Hạn giải quyết"
                 dependencies={['start_date']}
+                // BUG #72: validate inline (onChange/onBlur) thay vì chờ onSubmit của Form
+                validateTrigger={['onChange', 'onBlur']}
                 rules={[
                   { required: true, message: 'Vui lòng chọn hạn giải quyết' },
                   ({ getFieldValue }) => ({

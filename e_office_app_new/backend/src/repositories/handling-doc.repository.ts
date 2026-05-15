@@ -149,6 +149,7 @@ export const handlingDocRepository = {
       toDate?: string;
       page?: number;
       pageSize?: number;
+      docFieldId?: number;
     } = {},
   ): Promise<HandlingDocListRow[]> {
     return callFunction<HandlingDocListRow>('edoc.fn_handling_doc_get_list', [
@@ -162,6 +163,7 @@ export const handlingDocRepository = {
       filters.toDate ?? null,
       filters.page ?? 1,
       filters.pageSize ?? 20,
+      filters.docFieldId ?? null,
     ]);
   },
 

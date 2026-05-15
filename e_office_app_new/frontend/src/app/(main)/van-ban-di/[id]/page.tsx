@@ -204,9 +204,13 @@ export default function OutgoingDocDetailPage() {
   // Giao việc
   const fetchStaffOptions = async () => {
     try {
-      const { data: res } = await api.get('/quan-tri/nguoi-dung', { params: { page: 1, pageSize: 200 } });
+      // BUG #66: scope theo unit của user để dropdown chỉ hiện CB cùng đơn vị (kèm phòng ban con)
+      const currentUser = useAuthStore.getState().user;
+      const params: Record<string, unknown> = { page: 1, pageSize: 200 };
+      if (currentUser?.unitId) params.unit_id = currentUser.unitId;
+      const { data: res } = await api.get('/quan-tri/nguoi-dung', { params });
       // Loại trừ tài khoản đang đăng nhập khỏi dropdown người phụ trách (consistency với VB đến)
-      const currentStaffId = useAuthStore.getState().user?.staffId;
+      const currentStaffId = currentUser?.staffId;
       setStaffOptions((res.data || [])
         .filter((s: { id: number }) => Number(s.id) !== Number(currentStaffId))
         .map((s: { id: number; full_name: string; position_name?: string }) => ({

@@ -479,7 +479,7 @@ export default function OutgoingDocPage() {
       <Table<OutgoingDoc>
         className="enhanced-table"
         rowKey="id" loading={loading} columns={columns} dataSource={data} size="small" scroll={{ x: 1200 }}
-        rowSelection={{ selectedRowKeys, onChange: setSelectedRowKeys }}
+        rowSelection={{ selectedRowKeys, onChange: setSelectedRowKeys, preserveSelectedRowKeys: true }}
         pagination={{ current: page, pageSize, total, showSizeChanger: true, showTotal: (t) => `Tổng ${t} văn bản`, pageSizeOptions: ['10', '20', '50', '100'] }}
         onChange={(p) => { setPage(p.current || 1); setPageSize(p.pageSize || 20); }}
       />
@@ -497,8 +497,9 @@ export default function OutgoingDocPage() {
               </Form.Item>
             </Col>
             <Col span={6}>
-              <Form.Item name="number" label="Số đi" tooltip="Hệ thống tự cấp số tiếp theo của sổ văn bản.">
-                <InputNumber style={{ width: '100%' }} min={1} placeholder="Tự cấp" />
+              {/* BUG #68: Số đi disable + auto-fill từ sổ văn bản qua fetchNextNumber. User không tự nhập. */}
+              <Form.Item name="number" label="Số đi" tooltip="Hệ thống tự cấp số tiếp theo của sổ văn bản. Không nhập tay.">
+                <InputNumber style={{ width: '100%' }} min={1} placeholder="Tự cấp" disabled />
               </Form.Item>
             </Col>
             <Col span={6}>

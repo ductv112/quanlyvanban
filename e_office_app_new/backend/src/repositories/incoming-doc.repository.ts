@@ -194,6 +194,7 @@ export const incomingDocRepository = {
       params.secretId ?? 1, params.urgentId ?? 1,
       params.numberPaper ?? 1, params.numberCopies ?? 1,
       params.expiredDate ?? null, params.recipients ?? null,
+      params.sents ?? null,
       params.isReceivedPaper ?? false, params.createdBy,
       params.departmentId ?? null,
     ]);

@@ -34,6 +34,7 @@ import {
 import { useRouter, useParams } from 'next/navigation';
 import dayjs from 'dayjs';
 import { api } from '@/lib/api';
+import { confirmCloseIfDirty } from '@/lib/form-confirm';
 import { useAuthStore } from '@/stores/auth.store';
 import { buildTree } from '@/lib/tree-utils';
 import { useSigning } from '@/hooks/use-signing';
@@ -82,6 +83,7 @@ interface HscvDetail {
   cancel_reason?: string | null;
   cancelled_at?: string | null;
   cancelled_by?: number | null;
+  cancelled_by_name?: string | null;
 }
 
 interface LinkedDoc {
@@ -1305,7 +1307,7 @@ export default function HscvDetailPage() {
               <div style={{ fontSize: 13, lineHeight: 1.8 }}>
                 <div><strong>Lý do:</strong> {detail.cancel_reason}</div>
                 {detail.cancelled_at && <div><strong>Thời điểm:</strong> {dayjs(detail.cancelled_at).format('DD/MM/YYYY HH:mm')}</div>}
-                {detail.cancelled_by && <div><strong>Người hủy:</strong> ID {detail.cancelled_by}</div>}
+                {detail.cancelled_by && <div><strong>Người hủy:</strong> {detail.cancelled_by_name || `ID ${detail.cancelled_by}`}</div>}
               </div>
             </div>
           )}
@@ -1558,7 +1560,8 @@ export default function HscvDetailPage() {
                 <Form.Item
                   name="content"
                   rules={[{ required: true, message: 'Vui lòng nhập ý kiến' }]}
-                  style={{ marginBottom: 8 }}
+                  /* BUG #78: tăng margin để showCount của TextArea không chồng lấn nút Gửi ý kiến */
+                  style={{ marginBottom: 28 }}
                 >
                   <TextArea rows={4} placeholder="Nhập ý kiến xử lý..." maxLength={2000} showCount />
                 </Form.Item>
@@ -1819,7 +1822,22 @@ export default function HscvDetailPage() {
         title="Cập nhật tiến độ"
         open={progressModalOpen}
         onOk={handleUpdateProgress}
-        onCancel={() => setProgressModalOpen(false)}
+        onCancel={() => {
+          // BUG #85: xác nhận hủy nếu user đã đổi giá trị tiến độ so với hiện tại
+          const original = detail?.progress ?? 0;
+          if (progressValue !== original) {
+            modal.confirm({
+              title: 'Xác nhận hủy',
+              content: 'Dữ liệu đã thay đổi sẽ không được lưu. Bạn có chắc chắn muốn hủy?',
+              okText: 'Hủy nhập',
+              okButtonProps: { danger: true },
+              cancelText: 'Tiếp tục nhập',
+              onOk: () => setProgressModalOpen(false),
+            });
+          } else {
+            setProgressModalOpen(false);
+          }
+        }}
         okText="Cập nhật"
         cancelText="Hủy bỏ"
         confirmLoading={updatingProgress} maskClosable={false}>
@@ -1837,10 +1855,26 @@ export default function HscvDetailPage() {
             <InputNumber
               min={0}
               max={100}
+              precision={0}
               value={progressValue}
-              onChange={(v) => setProgressValue(v || 0)}
+              onChange={(v) => {
+                // BUG #84: chặn text/ký tự đặc biệt/số âm — clamp về [0, 100]
+                if (v == null || Number.isNaN(Number(v))) {
+                  setProgressValue(0);
+                  return;
+                }
+                const num = Math.max(0, Math.min(100, Math.floor(Number(v))));
+                setProgressValue(num);
+              }}
               formatter={(v) => `${v}%`}
-              parser={(s) => Number((s || '').replace('%', '')) as number & (0 | 100)}
+              parser={(s) => {
+                // Strip mọi ký tự không phải digit (đảm bảo không cho text/ký tự đặc biệt/dấu âm)
+                const digits = (s || '').replace(/[^\d]/g, '');
+                const n = digits ? Number(digits) : 0;
+                return Math.max(0, Math.min(100, n)) as number & (0 | 100);
+              }}
+              keyboard={false}
+              controls={false}
               style={{ width: 100 }}
             />
           </div>
@@ -1956,7 +1990,21 @@ export default function HscvDetailPage() {
         title="Chọn sổ văn bản để lấy số"
         open={laySoOpen}
         onOk={handleConfirmLaySo}
-        onCancel={() => setLaySoOpen(false)}
+        onCancel={() => {
+          // BUG #83: xác nhận hủy nếu user đã chọn sổ văn bản
+          if (selectedBookId != null) {
+            modal.confirm({
+              title: 'Xác nhận hủy',
+              content: 'Dữ liệu đã chọn sẽ không được lưu. Bạn có chắc chắn muốn hủy?',
+              okText: 'Hủy nhập',
+              okButtonProps: { danger: true },
+              cancelText: 'Tiếp tục nhập',
+              onOk: () => setLaySoOpen(false),
+            });
+          } else {
+            setLaySoOpen(false);
+          }
+        }}
         okText="Lấy số"
         cancelText="Hủy"
         confirmLoading={layingNumber} maskClosable={false}>
@@ -2124,7 +2172,8 @@ export default function HscvDetailPage() {
           }}>
             <span style={{ color: '#fff', fontSize: 16, fontWeight: 600 }}>Tạo hồ sơ con</span>
             <Space>
-              <Button ghost style={{ borderColor: 'rgba(255,255,255,0.5)', color: '#fff' }} onClick={() => setChildDrawerOpen(false)}>Hủy</Button>
+              {/* BUG #80: xác nhận hủy khi form dirty */}
+              <Button ghost style={{ borderColor: 'rgba(255,255,255,0.5)', color: '#fff' }} onClick={() => confirmCloseIfDirty(childForm, modal, () => setChildDrawerOpen(false))}>Hủy</Button>
               <Button style={{ background: '#fff', color: '#1B3A5C' }} icon={<SaveOutlined />} loading={savingChild} onClick={handleSaveChild}>Lưu</Button>
             </Space>
           </div>
@@ -2137,10 +2186,47 @@ export default function HscvDetailPage() {
                 <Input maxLength={500} placeholder="Nhập tên hồ sơ công việc con..." />
               </Form.Item>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px' }}>
-                <Form.Item name="start_date" label="Ngày mở" rules={[{ required: true, message: 'Vui lòng chọn ngày mở' }]}>
-                  <DatePicker format="DD/MM/YYYY" style={{ width: '100%' }} />
+                <Form.Item
+                  name="start_date"
+                  label="Ngày mở"
+                  /* BUG #79: chặn ngày mở < ngày hiện tại */
+                  validateTrigger={['onChange', 'onBlur']}
+                  rules={[
+                    { required: true, message: 'Vui lòng chọn ngày mở' },
+                    {
+                      validator: (_, value) => {
+                        if (!value) return Promise.resolve();
+                        if (value.isBefore(dayjs(), 'day')) {
+                          return Promise.reject(new Error('Ngày mở phải >= ngày hiện tại'));
+                        }
+                        return Promise.resolve();
+                      },
+                    },
+                  ]}
+                >
+                  <DatePicker
+                    format="DD/MM/YYYY"
+                    style={{ width: '100%' }}
+                    disabledDate={(d) => d && d.isBefore(dayjs(), 'day')}
+                  />
                 </Form.Item>
-                <Form.Item name="end_date" label="Hạn giải quyết" rules={[{ required: true, message: 'Vui lòng chọn hạn' }]}>
+                <Form.Item
+                  name="end_date"
+                  label="Hạn giải quyết"
+                  dependencies={['start_date']}
+                  validateTrigger={['onChange', 'onBlur']}
+                  rules={[
+                    { required: true, message: 'Vui lòng chọn hạn' },
+                    ({ getFieldValue }) => ({
+                      validator(_, value) {
+                        const startDate = getFieldValue('start_date');
+                        if (!value || !startDate) return Promise.resolve();
+                        if (!value.isBefore(startDate, 'day')) return Promise.resolve();
+                        return Promise.reject(new Error('Hạn giải quyết phải sau hoặc bằng ngày mở'));
+                      },
+                    }),
+                  ]}
+                >
                   <DatePicker format="DD/MM/YYYY" style={{ width: '100%' }} />
                 </Form.Item>
                 <Form.Item name="curator_id" label="Người phụ trách">

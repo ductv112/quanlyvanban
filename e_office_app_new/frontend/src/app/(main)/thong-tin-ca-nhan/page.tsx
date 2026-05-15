@@ -40,9 +40,12 @@ export default function ProfilePage() {
     try {
       const values = await form.validateFields();
       setSaving(true);
-      await api.patch(`/quan-tri/nguoi-dung/${user?.staffId}/change-password`, {
-        oldPassword: values.oldPassword,
-        newPassword: values.newPassword,
+      // BUG #70: endpoint /quan-tri/... yêu cầu quyền admin → non-admin user bị 403.
+      // Chuyển sang /auth/change-password (chỉ cần authenticate, không cần admin).
+      await api.post('/auth/change-password', {
+        old_password: values.oldPassword,
+        new_password: values.newPassword,
+        confirm_password: values.confirmPassword ?? values.newPassword,
       });
       // BUG #12: sau khi đổi mật khẩu thành công → modal thông báo + đăng xuất + redirect login
       form.resetFields();

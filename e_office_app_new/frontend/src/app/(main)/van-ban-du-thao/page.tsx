@@ -661,7 +661,7 @@ export default function DraftingDocPage() {
         size="small"
         scroll={{ x: 1100 }}
         rowClassName={(record) => record.i_am_recipient && !record.is_read ? 'drafting-row-unread-recipient' : ''}
-        rowSelection={{ selectedRowKeys, onChange: setSelectedRowKeys }}
+        rowSelection={{ selectedRowKeys, onChange: setSelectedRowKeys, preserveSelectedRowKeys: true }}
         pagination={{
           current: page,
           pageSize,
