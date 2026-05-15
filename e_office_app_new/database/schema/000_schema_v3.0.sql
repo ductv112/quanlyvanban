@@ -14276,7 +14276,7 @@ CREATE TABLE IF NOT EXISTS edoc.sign_transactions (
     completed_at timestamp with time zone,
     expires_at timestamp with time zone,
     CONSTRAINT chk_sign_transaction_attachment_type CHECK (((attachment_type)::text = ANY ((ARRAY['incoming'::character varying, 'outgoing'::character varying, 'drafting'::character varying, 'handling'::character varying])::text[]))),
-    CONSTRAINT chk_sign_transaction_provider_code CHECK (((provider_code)::text = ANY ((ARRAY['SMARTCA_VNPT'::character varying, 'MYSIGN_VIETTEL'::character varying])::text[]))),
+    CONSTRAINT chk_sign_transaction_provider_code CHECK (((provider_code)::text = ANY ((ARRAY['SMARTCA_VNPT'::character varying, 'MYSIGN_VIETTEL'::character varying, 'SMARTCA_VNPT_TH'::character varying])::text[]))),
     CONSTRAINT chk_sign_transaction_status CHECK (((status)::text = ANY ((ARRAY['pending'::character varying, 'completed'::character varying, 'failed'::character varying, 'cancelled'::character varying, 'expired'::character varying])::text[])))
 );
 
@@ -15534,7 +15534,7 @@ CREATE TABLE IF NOT EXISTS public.signing_provider_config (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_by integer,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT chk_provider_code CHECK (((provider_code)::text = ANY ((ARRAY['SMARTCA_VNPT'::character varying, 'MYSIGN_VIETTEL'::character varying])::text[])))
+    CONSTRAINT chk_provider_code CHECK (((provider_code)::text = ANY ((ARRAY['SMARTCA_VNPT'::character varying, 'MYSIGN_VIETTEL'::character varying, 'SMARTCA_VNPT_TH'::character varying])::text[])))
 );
 
 
@@ -15645,7 +15645,7 @@ CREATE TABLE IF NOT EXISTS public.staff_signing_config (
     last_error text,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT chk_staff_signing_provider_code CHECK (((provider_code)::text = ANY ((ARRAY['SMARTCA_VNPT'::character varying, 'MYSIGN_VIETTEL'::character varying])::text[])))
+    CONSTRAINT chk_staff_signing_provider_code CHECK (((provider_code)::text = ANY ((ARRAY['SMARTCA_VNPT'::character varying, 'MYSIGN_VIETTEL'::character varying, 'SMARTCA_VNPT_TH'::character varying])::text[])))
 );
 
 

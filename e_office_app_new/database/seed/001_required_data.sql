@@ -260,5 +260,25 @@ BEGIN
   )
   ON CONFLICT (provider_code) DO NOTHING;
 
-  RAISE NOTICE 'seed/001_required_data.sql: Master data OK (admin/Admin@123, 2 providers disabled — admin must configure via /ky-so/cau-hinh)';
+  -- SmartCA VNPT Tích hợp — chỉ dùng cho DEV TEST E2E.
+  -- KHÁC SmartCA Thường: dùng endpoint v2 + TOTP secret + user password (KHÔNG cần app mobile confirm).
+  -- KHÔNG khuyến nghị bật cho khách hàng cuối — rủi ro bảo mật (server giữ password + TOTP của user).
+  -- User-level credentials (password, TOTP secret) đọc từ env vars SMARTCA_TH_USER_PASSWORD + SMARTCA_TH_TOTP_SECRET.
+  INSERT INTO public.signing_provider_config
+    (provider_code, provider_name, base_url, client_id, client_secret,
+     profile_id, extra_config, is_active, created_by, updated_by)
+  VALUES (
+    'SMARTCA_VNPT_TH',
+    'SmartCA VNPT Tích hợp (DEV TEST)',
+    'https://rmgateway.vnptit.vn',
+    '',
+    pgp_sym_encrypt('', v_key),
+    NULL,
+    '{}'::jsonb,
+    FALSE,
+    1, 1
+  )
+  ON CONFLICT (provider_code) DO NOTHING;
+
+  RAISE NOTICE 'seed/001_required_data.sql: Master data OK (admin/Admin@123, 3 providers disabled — admin must configure via /ky-so/cau-hinh; SMARTCA_VNPT_TH chi dung cho dev test)';
 END $$;
