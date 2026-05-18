@@ -55,7 +55,7 @@ export function CoverSlide({
         <BrandMarkOnDark size="lg" />
         <div className="border-l border-white/30 pl-5 leading-tight">
           <div className="text-[20px] font-bold tracking-[0.12em] text-white/95 uppercase">
-            Smart Digiword
+            Smart Digiworld
           </div>
           <div className="text-[18px] tracking-wide text-white/50 mt-1">
             Giải pháp công nghệ doanh nghiệp
@@ -66,9 +66,13 @@ export function CoverSlide({
       {/* Customer side top-right */}
       <div className="absolute top-12 right-16 text-right z-10">
         <div className="text-[18px] uppercase tracking-[0.2em] font-bold text-white/55">
-          Triển khai cho
+          Đơn vị triển khai
         </div>
-        <div className="text-3xl font-black text-white mt-1">DOANH NGHIỆP</div>
+        <div className="text-3xl font-black text-white mt-1 leading-tight">
+          KHỐI DOANH NGHIỆP
+          <br />
+          TỈNH LẠNG SƠN
+        </div>
       </div>
 
       {/* Body */}
@@ -118,7 +122,7 @@ export function CoverSlide({
           Hệ thống Quản lý Văn bản
         </div>
         <div className="w-1.5 h-1.5 rounded-full bg-accent-500" />
-        <div className="text-white/40 text-xl">[Ngày/Tháng/Năm]</div>
+        <div className="text-white/40 text-xl">19/05/2026</div>
       </div>
     </div>
   );

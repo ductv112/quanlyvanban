@@ -45,8 +45,8 @@ export function Slide01Cover() {
       subtitle="Một nơi duy nhất quản lý toàn bộ vòng đời văn bản đến — đi — dự thảo — hồ sơ công việc — ký số."
       meta={[
         { label: 'Thời lượng', value: '90 phút' },
-        { label: 'Đối tượng', value: 'Người dùng cuối' },
-        { label: 'Giảng viên', value: '[Họ tên]' },
+        { label: 'Ngày đào tạo', value: '19/05/2026' },
+        { label: 'Người đào tạo', value: 'Khương PD' },
       ]}
     />
   );
@@ -637,9 +637,9 @@ export function Slide11RulesSupport() {
               Kênh hỗ trợ
             </motion.div>
             {[
-              { icon: <Phone size={26} />, label: 'Hotline', value: '[Số điện thoại]' },
+              { icon: <Phone size={26} />, label: 'Hotline', value: '0374 813 705' },
               { icon: <MessageCircle size={26} />, label: 'Zalo Group', value: '[QR code dán tại lớp]' },
-              { icon: <Mail size={26} />, label: 'Email', value: '[Địa chỉ email]' },
+              { icon: <Mail size={26} />, label: 'Email', value: 'khuongpd@sdgw.vn' },
             ].map((c) => (
               <motion.div
                 key={c.label}
@@ -677,7 +677,7 @@ export function Slide12ThankYou() {
     <StatementSlide
       eyebrow="Bây giờ — Thao tác trực tiếp"
       statement="Cảm ơn anh/chị. Chúng ta cùng vào hệ thống thực tế!"
-      attribution="Smart Digiword · Đào tạo Hệ thống Quản lý Văn bản"
+      attribution="Smart Digiworld · Đào tạo Hệ thống Quản lý Văn bản"
     />
   );
 }

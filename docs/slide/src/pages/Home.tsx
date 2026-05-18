@@ -17,10 +17,10 @@ export function Home() {
           <BrandMarkOnDark size="lg" />
           <div className="border-l border-white/20 pl-5">
             <div className="text-base font-bold tracking-wide text-white/90">
-              CÔNG TY CỔ PHẦN GIẢI PHÁP CÔNG NGHỆ SMART DIGIWORD
+              CÔNG TY CỔ PHẦN GIẢI PHÁP CÔNG NGHỆ SMART DIGIWORLD
             </div>
             <div className="text-sm text-white/50 mt-0.5">
-              Triển khai cho: DOANH NGHIỆP
+              Đơn vị triển khai: Khối doanh nghiệp tỉnh Lạng Sơn
             </div>
           </div>
         </motion.div>
@@ -101,7 +101,7 @@ export function Home() {
             <kbd className="px-2 py-0.5 rounded bg-white/5 mx-1">F</kbd> Fullscreen ·{' '}
             <kbd className="px-2 py-0.5 rounded bg-white/5 mx-1">O</kbd> Overview
           </div>
-          <div>Smart Digiword · [Ngày/Tháng/Năm]</div>
+          <div>Smart Digiworld · 19/05/2026</div>
         </motion.div>
       </div>
     </div>

@@ -1,7 +1,7 @@
 import { MapPin, Phone, Mail } from 'lucide-react';
 
 /**
- * Smart Digiword brand chrome — header & footer used on every "content" slide.
+ * Smart Digiworld brand chrome — header & footer used on every "content" slide.
  */
 
 export function BrandHeader({ variant = 'light' }: { variant?: 'light' | 'dark' }) {
@@ -11,7 +11,7 @@ export function BrandHeader({ variant = 'light' }: { variant?: 'light' | 'dark' 
         variant === 'dark' ? 'bg-neutral-900' : 'bg-white'
       }`}
     >
-      <img src="/brand/logo.jpg" alt="Smart Digiword" className="h-16 w-auto rounded" />
+      <img src="/brand/logo.jpg" alt="Smart Digiworld" className="h-16 w-auto rounded" />
       <div
         className={`ml-6 pl-6 border-l-2 ${
           variant === 'dark' ? 'border-white/20' : 'border-neutral-200'
@@ -22,7 +22,7 @@ export function BrandHeader({ variant = 'light' }: { variant?: 'light' | 'dark' 
             variant === 'dark' ? 'text-white' : 'text-neutral-900'
           }`}
         >
-          CÔNG TY CỔ PHẦN GIẢI PHÁP CÔNG NGHỆ SMART DIGIWORD
+          CÔNG TY CỔ PHẦN GIẢI PHÁP CÔNG NGHỆ SMART DIGIWORLD
         </div>
         <div
           className={`text-[20px] mt-1 ${
@@ -42,11 +42,13 @@ export function BrandHeader({ variant = 'light' }: { variant?: 'light' | 'dark' 
             Triển khai cho
           </div>
           <div
-            className={`text-2xl font-black ${
+            className={`text-xl font-black leading-tight ${
               variant === 'dark' ? 'text-white' : 'text-brand-700'
             }`}
           >
-            DOANH NGHIỆP
+            KHỐI DOANH NGHIỆP
+            <br />
+            TỈNH LẠNG SƠN
           </div>
         </div>
       </div>
@@ -78,17 +80,17 @@ export function BrandFooter({
         <div className="flex items-center gap-3">
           <MapPin size={20} className="text-white shrink-0" strokeWidth={2.2} />
           <div className="leading-snug">
-            <div>Smart Digiword</div>
+            <div>Smart Digiworld</div>
             <div className="text-white/70 text-[18px]">Giải pháp công nghệ doanh nghiệp</div>
           </div>
         </div>
         <div className="flex items-center gap-3">
           <Phone size={20} className="text-white shrink-0" strokeWidth={2.2} />
-          <div className="font-semibold">[Hotline hỗ trợ]</div>
+          <div className="font-semibold">0374 813 705</div>
         </div>
         <div className="flex items-center gap-3">
           <Mail size={20} className="text-white shrink-0" strokeWidth={2.2} />
-          <div className="font-semibold">[Email hỗ trợ]</div>
+          <div className="font-semibold">khuongpd@sdgw.vn</div>
         </div>
 
         {pageNumber !== undefined && (
