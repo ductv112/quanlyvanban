@@ -1,4 +1,4 @@
-import { callFunction, callFunctionOne } from '../lib/db/query.js';
+import { callFunction, callFunctionOne, rawQuery } from '../lib/db/query.js';
 
 export interface DepartmentTreeRow {
   id: number;
@@ -33,7 +33,32 @@ export interface DepartmentDetailRow extends DepartmentTreeRow {
 
 export const departmentRepository = {
   async getTree(unitId: number | null): Promise<DepartmentTreeRow[]> {
-    return callFunction<DepartmentTreeRow>('public.fn_department_get_tree', [unitId]);
+    // Inline SQL with explicit $1::integer cast. SP fn_department_get_tree on
+    // some prod environments returns 0 rows when called via node-pg with untyped
+    // NULL even though psql with explicit NULL::integer returns full data — root
+    // cause appears to be pg-driver ↔ SP signature resolution on specific PG
+    // versions. Raw query removes the SP layer and forces param type.
+    return rawQuery<DepartmentTreeRow>(
+      `SELECT
+         d.id, d.parent_id,
+         d.code::VARCHAR AS code, d.name::VARCHAR AS name, d.name_en::VARCHAR AS name_en,
+         d.short_name::VARCHAR AS short_name, d.abb_name::VARCHAR AS abb_name,
+         d.is_unit, d.level, d.sort_order,
+         d.phone::VARCHAR AS phone, d.fax::VARCHAR AS fax, d.email::VARCHAR AS email,
+         d.address, d.allow_doc_book, d.is_locked,
+         (SELECT COUNT(*) FROM public.staff s
+          WHERE s.department_id = d.id AND s.is_deleted = FALSE) AS staff_count
+       FROM public.departments d
+       WHERE d.is_deleted = FALSE
+         AND ($1::integer IS NULL
+              OR d.id = $1::integer
+              OR d.parent_id = $1::integer
+              OR d.parent_id IN (
+                SELECT dd.id FROM public.departments dd
+                WHERE dd.parent_id = $1::integer AND dd.is_deleted = FALSE))
+       ORDER BY d.sort_order, d.name`,
+      [unitId],
+    );
   },
 
   async getById(id: number): Promise<DepartmentDetailRow | null> {
