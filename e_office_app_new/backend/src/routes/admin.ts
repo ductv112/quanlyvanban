@@ -27,7 +27,9 @@ function buildTree<T extends { id: number; parent_id: number | null }>(flatList:
   for (const item of flatList) {
     const node = map.get(item.id)!;
     const parentId = item.parent_id;
-    if (parentId && map.has(parentId)) {
+    // Skip self-reference (parent_id === id) to prevent silent empty tree
+    // when data has been corrupted by admin setting parent to itself.
+    if (parentId && parentId !== item.id && map.has(parentId)) {
       map.get(parentId)!.children!.push(node);
     } else {
       roots.push(node);
@@ -184,6 +186,13 @@ router.put('/don-vi/:id', async (req: Request, res: Response) => {
 
     if (!name?.trim()) {
       res.status(400).json({ success: false, message: 'Tên đơn vị là bắt buộc' });
+      return;
+    }
+
+    // Prevent self-reference: parent_id === id would corrupt tree (buildTree
+    // pushes dept into its own children, never reaches roots → empty tree).
+    if (parent_id != null && Number(parent_id) === id) {
+      res.status(400).json({ success: false, message: 'Đơn vị cha không được là chính nó' });
       return;
     }
 

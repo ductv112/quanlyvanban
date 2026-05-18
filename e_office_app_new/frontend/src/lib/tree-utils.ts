@@ -43,15 +43,20 @@ export function filterTree(nodes: TreeNode[], keyword: string): TreeNode[] {
 /**
  * Chuyển đổi TreeNode[] thành định dạng treeData cho Ant Design TreeSelect.
  * Mỗi node: { value: key, title, children }
+ *
+ * excludeId: nếu truyền, sẽ loại node có id này VÀ toàn bộ con cháu của nó.
+ * Dùng khi sửa đơn vị → tránh chọn chính nó hoặc con của nó làm parent → cycle.
  */
 export function flattenTreeForSelect(
-  nodes: TreeNode[]
+  nodes: TreeNode[],
+  excludeId?: number | null,
 ): { value: number; title: string; children?: any[] }[] {
   return nodes
     .filter((n) => (n.key ?? n.id) != null)
+    .filter((n) => excludeId == null || (n.key ?? n.id) !== excludeId)
     .map((n) => ({
       value: n.key ?? n.id,
       title: n.title ?? n.name ?? '',
-      children: n.children?.length ? flattenTreeForSelect(n.children) : undefined,
+      children: n.children?.length ? flattenTreeForSelect(n.children, excludeId) : undefined,
     }));
 }

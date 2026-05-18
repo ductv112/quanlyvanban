@@ -372,7 +372,8 @@ export default function DepartmentPage() {
         <Form form={form} layout="vertical" autoComplete="off" validateTrigger="onSubmit">
           <Form.Item label="Đơn vị cha" name="parent_id">
             <TreeSelect
-              treeData={flattenTreeForSelect(treeData)}
+              // Khi sửa, loại chính nó + con cháu khỏi options để tránh cycle (parent_id = id)
+              treeData={flattenTreeForSelect(treeData, editingRecord?.id ?? null)}
               placeholder="Chọn đơn vị cha (bỏ trống nếu là gốc)"
               allowClear
               treeDefaultExpandAll

@@ -87,7 +87,8 @@ router.get('/don-vi/tree', async (_req: Request, res: Response) => {
     const roots: any[] = [];
     rows.forEach((r) => {
       const node = map.get(r.id)!;
-      if (r.parent_id && map.has(r.parent_id)) {
+      // Skip self-reference (parent_id === id) to prevent empty tree from corrupt data
+      if (r.parent_id && r.parent_id !== r.id && map.has(r.parent_id)) {
         map.get(r.parent_id)!.children.push(node);
       } else {
         roots.push(node);
