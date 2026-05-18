@@ -23,7 +23,7 @@
 | 0.5 | Verify env trỏ đúng domain (lần đầu / khi đổi domain) | ~1 phút |
 | 1 | Pull code mới | ~5s |
 | 2 | Re-apply master schema (idempotent) | ~30s |
-| 3 | Build backend + frontend | ~3-5 phút |
+| 3 | Stop pm2 + Build backend + frontend | ~3-5 phút |
 | 4 | Restart pm2 + verify | ~10s |
 
 ---
@@ -102,9 +102,17 @@ Schema sẽ tự:
 - Update SPs (DROP+CREATE per signature)
 - Run migration block cuối file (status, unit_id sync, ...)
 
-### Bước 3 — Build backend + frontend
+### Bước 3 — Stop pm2 + Build backend + frontend
+
+> ⚠️ **PHẢI stop pm2 TRƯỚC khi `npm install/ci`** — pm2 đang chạy giữ file lock
+> trên native modules (`msgpackr-extract/node.abi115.node` etc.) → `npm install`
+> fail với `EPERM: operation not permitted, unlink ...` → `node_modules` lỗi
+> nửa chừng → `tsc` không tìm thấy → build fail.
 
 ```powershell
+# 0. Stop pm2 truoc de giai phong file lock
+pm2 stop all
+
 # Backend (set NODE_ENV=development để có typescript CLI cho tsc)
 cd C:\qlvb\quanlyvanban\e_office_app_new\backend
 $env:NODE_ENV = 'development'
@@ -120,6 +128,7 @@ npm run build
 ```
 
 ⚠️ **Quan trọng**:
+- **`pm2 stop all` TRƯỚC `npm install`** — tránh EPERM unlink native modules
 - Backend: cần `NODE_ENV=development` để có `typescript` CLI cho `tsc` build
 - Frontend: PHẢI `Remove-Item Env:NODE_ENV` TRƯỚC `next build` — nếu để `development` thì Next.js prerender fail "Cannot read properties of null (reading 'useContext')"
 
