@@ -18,15 +18,27 @@
  */
 
 import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
 import { SignPdf } from '@signpdf/signpdf';
 import { Signer } from '@signpdf/utils';
 import { plainAddPlaceholder } from '@signpdf/placeholder-plain';
-import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
+import { PDFDocument, rgb } from 'pdf-lib';
+import fontkit from '@pdf-lib/fontkit';
 import type {
   PdfHashResult,
   PdfSignResult,
   PlaceholderOptions,
 } from './types.js';
+
+// Roboto font hỗ trợ tiếng Việt full Unicode — load 1 lần khi module init.
+// Đặt tại backend/assets/fonts/, build (tsc) copy assets qua tsconfig include hoặc serve relative __dirname.
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const FONT_DIR = path.resolve(__dirname, '../../../assets/fonts');
+const FONT_REGULAR = readFileSync(path.join(FONT_DIR, 'Roboto-Regular.ttf'));
+const FONT_BOLD = readFileSync(path.join(FONT_DIR, 'Roboto-Bold.ttf'));
 
 const DEFAULT_SIGNATURE_LENGTH = 16384; // PKCS7 detached thường ~8KB, 16KB để an toàn
 
@@ -48,20 +60,9 @@ async function normalizePdf(pdfBuffer: Buffer): Promise<Buffer> {
 }
 
 /**
- * Strip dấu tiếng Việt — pdf-lib StandardFonts (Helvetica) chỉ render ASCII.
- * Để hỗ trợ tiếng Việt thực sự, embed custom font (Roboto.ttf) qua fontkit — defer.
- */
-function stripDiacritics(s: string): string {
-  return s
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .replace(/đ/g, 'd')
-    .replace(/Đ/g, 'D');
-}
-
-/**
  * Vẽ visual signature box vào góc dưới-phải page cuối của PDF.
- * Layout: rectangle 220x70px, viền xanh navy, chứa "KY SO DIEN TU" / "Nguoi ky: <name>" / "Thoi gian: <date>".
+ * Layout: rectangle 230x70px, viền xanh navy, chứa "KÝ SỐ ĐIỆN TỬ" / "Người ký: <name>" / "Thời gian: <date>".
+ * Embed Roboto-Regular + Roboto-Bold (full Unicode, support tiếng Việt có dấu).
  *
  * Note: PDF bị thay đổi sẽ làm placeholder hash khác — nên CHỈ gọi function này
  * TRƯỚC khi addSignaturePlaceholder.
@@ -72,8 +73,9 @@ export async function addVisualSignatureOverlay(
 ): Promise<Buffer> {
   const { signerName, signedAt = new Date() } = options;
   const pdf = await PDFDocument.load(pdfBuffer);
-  const font = await pdf.embedFont(StandardFonts.Helvetica);
-  const fontBold = await pdf.embedFont(StandardFonts.HelveticaBold);
+  pdf.registerFontkit(fontkit);
+  const font = await pdf.embedFont(FONT_REGULAR);
+  const fontBold = await pdf.embedFont(FONT_BOLD);
   const pages = pdf.getPages();
   if (pages.length === 0) {
     throw new Error('PDF không có trang nào để vẽ visual signature');
@@ -81,7 +83,7 @@ export async function addVisualSignatureOverlay(
   const lastPage = pages[pages.length - 1];
   const { width } = lastPage.getSize();
 
-  const boxW = 220;
+  const boxW = 230;
   const boxH = 70;
   const x = width - boxW - 30;
   const y = 30;
@@ -96,7 +98,7 @@ export async function addVisualSignatureOverlay(
     borderWidth: 1.5,
   });
 
-  const name = stripDiacritics(signerName).slice(0, 35);
+  const name = signerName.slice(0, 40);
   const dateStr = signedAt.toLocaleString('vi-VN', {
     day: '2-digit',
     month: '2-digit',
@@ -105,21 +107,21 @@ export async function addVisualSignatureOverlay(
     minute: '2-digit',
   });
 
-  lastPage.drawText('KY SO DIEN TU', {
+  lastPage.drawText('KÝ SỐ ĐIỆN TỬ', {
     x: x + 10,
     y: y + boxH - 16,
     size: 9,
     font: fontBold,
     color: navy,
   });
-  lastPage.drawText('Nguoi ky: ' + name, {
+  lastPage.drawText('Người ký: ' + name, {
     x: x + 10,
     y: y + boxH - 34,
     size: 8,
     font,
     color: rgb(0, 0, 0),
   });
-  lastPage.drawText('Thoi gian: ' + dateStr, {
+  lastPage.drawText('Thời gian: ' + dateStr, {
     x: x + 10,
     y: y + boxH - 50,
     size: 8,
