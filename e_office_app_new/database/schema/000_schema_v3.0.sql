@@ -11713,29 +11713,10 @@ END;
 $$;
 
 
---
--- Name: fn_staff_change_password(integer, character varying); Type: FUNCTION; Schema: public; Owner: -
---
-
-CREATE OR REPLACE FUNCTION public.fn_staff_change_password(p_id integer, p_new_password_hash character varying) RETURNS TABLE(success boolean, message text)
-    LANGUAGE plpgsql
-    AS $$
-DECLARE
-  v_current_hash VARCHAR;
-BEGIN
-  SELECT password_hash INTO v_current_hash FROM public.staff WHERE id = p_id AND is_deleted = FALSE AND is_locked = FALSE;
-
-  IF v_current_hash IS NULL THEN
-    RETURN QUERY SELECT FALSE, 'Tài khoản không tồn tại hoặc đã bị khóa'::TEXT;
-    RETURN;
-  END IF;
-
-  -- Note: So sánh old vs new password phải check ở app layer (bcrypt compare)
-  -- Ở đây chỉ update
-  UPDATE public.staff SET password_hash = p_new_password_hash, password_changed = TRUE WHERE id = p_id;
-  RETURN QUERY SELECT TRUE, 'Đổi mật khẩu thành công'::TEXT;
-END;
-$$;
+-- Legacy version (integer, character varying) đã bị Phase 31 thay bằng version
+-- (bigint, text, text) ở cuối file. KHÔNG re-create version cũ — DROP để tránh
+-- "function is ambiguous" runtime error. Backend chỉ gọi version 3-args.
+DROP FUNCTION IF EXISTS public.fn_staff_change_password(integer, character varying);
 
 
 --
