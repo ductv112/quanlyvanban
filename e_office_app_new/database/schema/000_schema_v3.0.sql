@@ -2848,11 +2848,24 @@ BEGIN
   )
   RETURNING edoc.outgoing_docs.id INTO v_out_id;
 
-  -- Copy đính kèm từ dự thảo sang VB đi
-  INSERT INTO edoc.attachment_outgoing_docs (outgoing_doc_id, file_name, file_path, file_size, content_type, sort_order, created_by)
-  SELECT v_out_id, file_name, file_path, file_size, content_type, sort_order, created_by
+  -- Copy đính kèm từ dự thảo sang VB đi (kèm metadata ký số nếu attachment dự thảo đã ký)
+  INSERT INTO edoc.attachment_outgoing_docs (
+    outgoing_doc_id, file_name, file_path, file_size, content_type, sort_order, created_by,
+    is_ca, ca_date, signed_file_path, sign_provider_code, sign_transaction_id
+  )
+  SELECT v_out_id, file_name, file_path, file_size, content_type, sort_order, created_by,
+         is_ca, ca_date, signed_file_path, sign_provider_code, sign_transaction_id
   FROM edoc.attachment_drafting_docs
   WHERE drafting_doc_id = p_id;
+
+  -- Đánh dấu VB đi đã ký số nếu ít nhất 1 attachment được copy đã có chữ ký
+  UPDATE edoc.outgoing_docs
+     SET is_digital_signed = 1
+   WHERE id = v_out_id
+     AND EXISTS (
+       SELECT 1 FROM edoc.attachment_outgoing_docs
+        WHERE outgoing_doc_id = v_out_id AND is_ca = TRUE
+     );
 
   -- Đánh dấu dự thảo đã phát hành
   UPDATE edoc.drafting_docs SET
