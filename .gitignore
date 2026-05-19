@@ -70,3 +70,10 @@ tools/mocks/node_modules/
 # Tools internal dump outputs (analysis scratch — re-generated khi cần)
 tools/test-report/_*-dump.txt
 .vercel
+
+# Signing encryption keys (local backup only — NEVER commit)
+# Lý do: mất file = mất ALL credential KH đã encrypt; lộ file = ai cũng decrypt được DB
+SIGNING_SECRET_KEY*.txt
+**/SIGNING_SECRET_KEY*.txt
+**/*SIGNING_KEY*.txt
+**/.env.bak.*
