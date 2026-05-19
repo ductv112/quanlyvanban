@@ -614,14 +614,11 @@ router.get('/:id/dinh-kem/:attachmentId/download', async (req: Request, res: Res
       res.status(404).json({ success: false, message: 'Không tìm thấy file' });
       return;
     }
-    // Ưu tiên file đã ký số nếu có. Đổi tên file thêm suffix `_signed` để user
-    // phân biệt khi save về máy. KHÔNG đụng vào file_path gốc (audit trail).
-    const useSignedFile = att.is_ca && att.signed_file_path;
-    const path = useSignedFile ? att.signed_file_path! : att.file_path;
-    const fileName = useSignedFile
-      ? att.file_name.replace(/(\.[^.]+)?$/, '_signed$1')
-      : att.file_name;
-    await streamFileToResponse(res, path, fileName, (att as any).mime_type);
+    // Ưu tiên file đã ký số nếu có. GIỮ tên gốc để KH nhận file không bối rối —
+    // file đã ký vẫn là bản chính thức của VB, panel Signature trong Adobe Reader
+    // đã đủ truyền tải trạng thái ký. file_path gốc giữ trong DB cho audit trail.
+    const path = (att.is_ca && att.signed_file_path) ? att.signed_file_path : att.file_path;
+    await streamFileToResponse(res, path, att.file_name, (att as any).mime_type);
   } catch (error) {
     handleDbError(error, res);
   }

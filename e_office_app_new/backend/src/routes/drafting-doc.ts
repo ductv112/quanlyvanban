@@ -543,13 +543,9 @@ router.get('/:id/dinh-kem/:attachmentId/download', async (req: Request, res: Res
       res.status(404).json({ success: false, message: 'Không tìm thấy file' });
       return;
     }
-    // Ưu tiên file đã ký nếu có (audit trail giữ file_path gốc).
-    const useSignedFile = att.is_ca && att.signed_file_path;
-    const path = useSignedFile ? att.signed_file_path! : att.file_path;
-    const fileName = useSignedFile
-      ? att.file_name.replace(/(\.[^.]+)?$/, '_signed$1')
-      : att.file_name;
-    await streamFileToResponse(res, path, fileName, (att as any).mime_type);
+    // Ưu tiên file đã ký nếu có. Giữ tên gốc — file_path gốc giữ trong DB cho audit.
+    const path = (att.is_ca && att.signed_file_path) ? att.signed_file_path : att.file_path;
+    await streamFileToResponse(res, path, att.file_name, (att as any).mime_type);
   } catch (error) {
     handleDbError(error, res);
   }
