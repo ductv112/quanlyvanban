@@ -74,7 +74,9 @@ import { useAuthStore } from '@/stores/auth.store';
 // Types — match GET /ky-so/cau-hinh response shape
 // ============================================================================
 
-type ProviderCode = 'SMARTCA_VNPT' | 'MYSIGN_VIETTEL' | 'SMARTCA_VNPT_TH';
+// Page này chỉ render 2 provider chính phục vụ KH cuối. SMARTCA_VNPT_TH (DEV TEST)
+// luôn ẩn — backend VALID_CODES cũng đã restrict tương ứng.
+type ProviderCode = 'SMARTCA_VNPT' | 'MYSIGN_VIETTEL';
 
 interface ProviderStats {
   total_users: number;
@@ -125,8 +127,10 @@ interface TestResultState {
 // Constants
 // ============================================================================
 
+// SMARTCA_VNPT_TH cố ý KHÔNG xuất hiện ở đây — provider DEV TEST chỉ phục vụ
+// verify code Node.js, KHÔNG render UI Admin cho khách hàng cuối.
 const PROVIDER_META: Record<
-  ProviderCode,
+  'SMARTCA_VNPT' | 'MYSIGN_VIETTEL',
   { label: string; baseUrlHint: string; needsProfileId: boolean; gradient: string }
 > = {
   SMARTCA_VNPT: {
@@ -140,12 +144,6 @@ const PROVIDER_META: Record<
     baseUrlHint: 'https://remotesigning.viettel.vn',
     needsProfileId: true,
     gradient: 'linear-gradient(135deg, #7c3aed, #a78bfa)',
-  },
-  SMARTCA_VNPT_TH: {
-    label: 'SmartCA VNPT Tích hợp (DEV TEST)',
-    baseUrlHint: 'https://rmgateway.vnptit.vn',
-    needsProfileId: false,
-    gradient: 'linear-gradient(135deg, #059669, #10b981)',
   },
 };
 

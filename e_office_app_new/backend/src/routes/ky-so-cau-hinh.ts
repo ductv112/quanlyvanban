@@ -56,7 +56,10 @@ const router = Router();
 // Constants
 // ============================================================================
 
-const VALID_CODES: ProviderCode[] = ['SMARTCA_VNPT', 'MYSIGN_VIETTEL', 'SMARTCA_VNPT_TH'];
+// SMARTCA_VNPT_TH cố ý KHÔNG có trong list này — provider DEV TEST chỉ phục vụ
+// verify code Node.js (qua psql trực tiếp set is_active=true để test). KHÔNG hiển
+// thị trên UI Admin /cau-hinh để tránh khách hàng cuối nhìn thấy "(DEV TEST)" lộ.
+const VALID_CODES: ProviderCode[] = ['SMARTCA_VNPT', 'MYSIGN_VIETTEL'];
 
 // ============================================================================
 // Helpers
