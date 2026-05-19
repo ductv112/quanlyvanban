@@ -107,7 +107,7 @@ export default function DraftingDocDetailPage() {
   const [noteContent, setNoteContent] = useState('');
   const [addingNote, setAddingNote] = useState(false);
   // Ký số — sử dụng useSigning hook (Plan 11-06, thay thế mock OTP Plan 1)
-  const { openSign, renderSignModal } = useSigning();
+  const { openSign, renderSignModal, isOpen: isSigningOpen } = useSigning();
 
   const fetchDoc = useCallback(async () => { try { const { data: res } = await api.get(`/van-ban-du-thao/${docId}`); setDoc(res.data); } catch { message.error('Không tìm thấy văn bản'); router.push('/van-ban-du-thao'); } }, [docId, message, router]);
   const fetchBookmarkStatus = useCallback(async () => { try { const { data: res } = await api.get('/van-ban-du-thao/danh-dau-ca-nhan'); const bookmarks: { doc_id: number | string }[] = res.data || []; setIsBookmarked(bookmarks.some((b) => Number(b.doc_id) === Number(docId))); } catch {} }, [docId]);
@@ -423,7 +423,7 @@ export default function DraftingDocDetailPage() {
                       {att.is_ca ? (
                         <Tag color="success" icon={<CheckCircleOutlined />}>Đã ký số</Tag>
                       ) : (
-                        <Button size="small" type="primary" ghost icon={<SafetyOutlined />} onClick={() => openSign({
+                        <Button size="small" type="primary" ghost icon={<SafetyOutlined />} disabled={isSigningOpen} onClick={() => openSign({
                           attachment: { id: att.id, file_name: att.file_name },
                           attachmentType: 'drafting',
                           docId: doc.id,

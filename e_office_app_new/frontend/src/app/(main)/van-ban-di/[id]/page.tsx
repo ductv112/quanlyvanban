@@ -148,7 +148,7 @@ export default function OutgoingDocDetailPage() {
   const [selectedLgspOrgs, setSelectedLgspOrgs] = useState<number[]>([]);
   const [lgspSending, setLgspSending] = useState(false);
   // Ký số — sử dụng useSigning hook (Plan 11-06, thay thế mock OTP Plan 1)
-  const { openSign, renderSignModal } = useSigning();
+  const { openSign, renderSignModal, isOpen: isSigningOpen } = useSigning();
   // Gửi trục CP (HDSD II.3.8)
   const [cpModalOpen, setCpModalOpen] = useState(false);
   const [cpSelected, setCpSelected] = useState<string[]>([]);
@@ -625,7 +625,7 @@ export default function OutgoingDocDetailPage() {
               </div>
               <div className="info-grid">
                 <div><div className="info-label">Số tờ / Số bản</div><div className="info-value">{doc.number_paper} tờ / {doc.number_copies} bản</div></div>
-                <div><div className="info-label">Ký số</div>{doc.is_digital_signed ? <Tag color="success">Đã ký số</Tag> : <Tag>Chưa ký số</Tag>}</div>
+                <div><div className="info-label">Ký số</div>{(doc.is_digital_signed || attachments.some((a) => a.is_ca)) ? <Tag color="success">Đã ký số</Tag> : <Tag>Chưa ký số</Tag>}</div>
               </div>
               <div className="info-grid">
                 <div><div className="info-label">Liên thông</div>{doc.is_inter_doc ? <Tag color="processing">Liên thông</Tag> : <Tag>Nội bộ</Tag>}</div>
@@ -671,7 +671,7 @@ export default function OutgoingDocDetailPage() {
                       {att.is_ca ? (
                         <Tag color="success" icon={<CheckCircleOutlined />}>Đã ký số</Tag>
                       ) : (
-                        <Button size="small" type="primary" ghost icon={<SafetyOutlined />} onClick={() => openSign({
+                        <Button size="small" type="primary" ghost icon={<SafetyOutlined />} disabled={isSigningOpen} onClick={() => openSign({
                           attachment: { id: att.id, file_name: att.file_name },
                           attachmentType: 'outgoing',
                           docId: doc.id,

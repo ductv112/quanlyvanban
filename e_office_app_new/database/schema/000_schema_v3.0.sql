@@ -637,13 +637,16 @@ $$;
 -- Name: fn_attachment_drafting_get_list(bigint); Type: FUNCTION; Schema: edoc; Owner: -
 --
 
-CREATE OR REPLACE FUNCTION edoc.fn_attachment_drafting_get_list(p_doc_id bigint) RETURNS TABLE(id bigint, file_name character varying, file_path character varying, file_size bigint, content_type character varying, sort_order integer, created_by integer, created_at timestamp with time zone, created_by_name character varying)
+-- Doi signature -> DROP truoc CREATE. Tra them 4 cot ky so de UI hien Tag "Da ky so".
+DROP FUNCTION IF EXISTS edoc.fn_attachment_drafting_get_list(bigint);
+CREATE OR REPLACE FUNCTION edoc.fn_attachment_drafting_get_list(p_doc_id bigint) RETURNS TABLE(id bigint, file_name character varying, file_path character varying, file_size bigint, content_type character varying, sort_order integer, created_by integer, created_at timestamp with time zone, created_by_name character varying, is_ca boolean, ca_date timestamp with time zone, signed_file_path character varying, sign_provider_code character varying)
     LANGUAGE plpgsql
     AS $$
 BEGIN
   RETURN QUERY
   SELECT a.id, a.file_name, a.file_path, a.file_size, a.content_type,
-         a.sort_order, a.created_by, a.created_at, s.full_name
+         a.sort_order, a.created_by, a.created_at, s.full_name,
+         a.is_ca, a.ca_date, a.signed_file_path, a.sign_provider_code
   FROM edoc.attachment_drafting_docs a
   LEFT JOIN public.staff s ON s.id = a.created_by
   WHERE a.drafting_doc_id = p_doc_id
@@ -886,15 +889,19 @@ $$;
 
 --
 -- Name: fn_attachment_outgoing_get_list(bigint); Type: FUNCTION; Schema: edoc; Owner: -
+-- Returns: 9 cot ban + 4 cot ky so (is_ca, ca_date, signed_file_path, sign_provider_code)
+-- Doi signature -> DROP truoc CREATE.
 --
 
-CREATE OR REPLACE FUNCTION edoc.fn_attachment_outgoing_get_list(p_doc_id bigint) RETURNS TABLE(id bigint, file_name character varying, file_path character varying, file_size bigint, content_type character varying, sort_order integer, created_by integer, created_at timestamp with time zone, created_by_name character varying)
+DROP FUNCTION IF EXISTS edoc.fn_attachment_outgoing_get_list(bigint);
+CREATE OR REPLACE FUNCTION edoc.fn_attachment_outgoing_get_list(p_doc_id bigint) RETURNS TABLE(id bigint, file_name character varying, file_path character varying, file_size bigint, content_type character varying, sort_order integer, created_by integer, created_at timestamp with time zone, created_by_name character varying, is_ca boolean, ca_date timestamp with time zone, signed_file_path character varying, sign_provider_code character varying)
     LANGUAGE plpgsql
     AS $$
 BEGIN
   RETURN QUERY
   SELECT a.id, a.file_name, a.file_path, a.file_size, a.content_type,
-         a.sort_order, a.created_by, a.created_at, s.full_name
+         a.sort_order, a.created_by, a.created_at, s.full_name,
+         a.is_ca, a.ca_date, a.signed_file_path, a.sign_provider_code
   FROM edoc.attachment_outgoing_docs a
   LEFT JOIN public.staff s ON s.id = a.created_by
   WHERE a.outgoing_doc_id = p_doc_id
@@ -3454,7 +3461,9 @@ $$;
 -- Name: fn_handling_doc_get_attachments(bigint); Type: FUNCTION; Schema: edoc; Owner: -
 --
 
-CREATE OR REPLACE FUNCTION edoc.fn_handling_doc_get_attachments(p_doc_id bigint) RETURNS TABLE(id bigint, file_name character varying, file_path character varying, file_size bigint, content_type character varying, sort_order integer, created_by integer, created_by_name text, created_at timestamp with time zone)
+-- Doi signature -> DROP truoc CREATE. Tra them 4 cot ky so de UI hien Tag "Da ky so".
+DROP FUNCTION IF EXISTS edoc.fn_handling_doc_get_attachments(bigint);
+CREATE OR REPLACE FUNCTION edoc.fn_handling_doc_get_attachments(p_doc_id bigint) RETURNS TABLE(id bigint, file_name character varying, file_path character varying, file_size bigint, content_type character varying, sort_order integer, created_by integer, created_by_name text, created_at timestamp with time zone, is_ca boolean, ca_date timestamp with time zone, signed_file_path character varying, sign_provider_code character varying)
     LANGUAGE plpgsql
     AS $$
 BEGIN
@@ -3468,7 +3477,11 @@ BEGIN
     a.sort_order,
     a.created_by,
     CONCAT(s.first_name, ' ', s.last_name)::TEXT AS created_by_name,
-    a.created_at
+    a.created_at,
+    a.is_ca,
+    a.ca_date,
+    a.signed_file_path,
+    a.sign_provider_code
   FROM edoc.attachment_handling_docs a
   LEFT JOIN public.staff s ON s.id = a.created_by
   WHERE a.handling_doc_id = p_doc_id

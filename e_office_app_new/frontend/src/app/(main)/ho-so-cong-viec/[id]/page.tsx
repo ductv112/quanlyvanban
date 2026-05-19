@@ -329,7 +329,7 @@ export default function HscvDetailPage() {
   const user = useAuthStore((s) => s.user);
 
   // Phase 11 — Ký số HSCV (Plan 11-08): shared hook + SignModal
-  const { openSign, renderSignModal } = useSigning();
+  const { openSign, renderSignModal, isOpen: isSigningOpen } = useSigning();
 
   // Core state
   const [detail, setDetail] = useState<HscvDetail | null>(null);
@@ -1661,6 +1661,7 @@ export default function HscvDetailPage() {
                         size="small"
                         type="primary"
                         icon={<SafetyOutlined />}
+                        disabled={isSigningOpen}
                         style={{ backgroundColor: '#059669', borderColor: '#059669' }}
                         onClick={() => openSign({
                           attachment: { id: att.id, file_name: att.file_name },

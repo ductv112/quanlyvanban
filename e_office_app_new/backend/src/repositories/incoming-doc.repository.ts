@@ -83,6 +83,7 @@ export interface AttachmentRow {
   is_ca?: boolean;
   ca_date?: string | null;
   signed_file_path?: string | null;
+  sign_provider_code?: string | null;
 }
 
 export interface AttachmentDeleteResult extends DbResult {
