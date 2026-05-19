@@ -31,6 +31,23 @@ import type {
 const DEFAULT_SIGNATURE_LENGTH = 16384; // PKCS7 detached thường ~8KB, 16KB để an toàn
 
 /**
+ * Normalize PDF về plain xref table format mà `@signpdf/placeholder-plain` hỗ trợ.
+ *
+ * PDF 1.5+ thường dùng **compressed cross-reference stream** (PDF spec mục 7.5.8)
+ * thay vì plain xref table. Gemini, Word, Chrome "Save as PDF" đều xuất xref stream.
+ * `plainAddPlaceholder` parse plain xref table only → throw "Expected xref at NaN".
+ *
+ * Pass-through qua pdf-lib với `useObjectStreams: false` ép output về plain xref +
+ * decompress mọi compressed object streams. Adobe Reader vẫn nhận file kết quả là PDF
+ * hợp lệ (chỉ tăng size ~5-10%).
+ */
+async function normalizePdf(pdfBuffer: Buffer): Promise<Buffer> {
+  const pdf = await PDFDocument.load(pdfBuffer, { ignoreEncryption: true });
+  const saved = await pdf.save({ useObjectStreams: false });
+  return Buffer.from(saved);
+}
+
+/**
  * Strip dấu tiếng Việt — pdf-lib StandardFonts (Helvetica) chỉ render ASCII.
  * Để hỗ trợ tiếng Việt thực sự, embed custom font (Roboto.ttf) qua fontkit — defer.
  */
@@ -110,7 +127,8 @@ export async function addVisualSignatureOverlay(
     color: rgb(0.27, 0.31, 0.36), // grey
   });
 
-  const modified = await pdf.save();
+  // useObjectStreams: false → output plain xref table (compat với @signpdf/placeholder-plain).
+  const modified = await pdf.save({ useObjectStreams: false });
   return Buffer.from(modified);
 }
 
@@ -263,10 +281,15 @@ export async function prepareSignPdf(
 ): Promise<PdfHashResult> {
   let pdf = pdfBuffer;
   if (options.signerName) {
+    // addVisualSignatureOverlay đã pass qua pdf-lib save({useObjectStreams:false}) → normalized.
     pdf = await addVisualSignatureOverlay(pdf, {
       signerName: options.signerName,
       signedAt: options.signedAt,
     });
+  } else {
+    // Không có overlay → vẫn phải normalize để decompress xref stream (PDF 1.5+).
+    // Nếu không, @signpdf/placeholder-plain throw "Expected xref at NaN".
+    pdf = await normalizePdf(pdf);
   }
   const withPlaceholder = addSignaturePlaceholder(pdf, options);
   return computePdfHash(withPlaceholder);
