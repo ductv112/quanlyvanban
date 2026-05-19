@@ -127,6 +127,11 @@ Script check `tsc --noEmit` + `npm run build` backend + frontend. Nếu PASS →
 13. **pm2 restart không `--update-env`** → không pick up `.env` thay đổi.
     - **Rule:** Khi `.env` thay đổi, phải `pm2 restart all --update-env`.
 
+14. **`.env` prod thiếu `SIGNING_SECRET_KEY` nhưng vẫn có 2 row provider ký số** (placeholder seed) — phát hiện 2026-05-19 trên `doanhnghiep.vatk.org`. Lần đầu seed dùng default dev key rồi xóa khỏi `.env`. Backend hiện KHÔNG decrypt được nếu admin kích hoạt ký số.
+    - **Trạng thái:** Không bug user-facing (KH chưa cấu hình ký số), nhưng là time-bomb.
+    - **Rule khi KH yêu cầu kích hoạt ký số thật:** (a) Sinh random 32+ char key, set vào `backend/.env` `SIGNING_SECRET_KEY=...`, BACKUP an toàn (mất key = mất toàn bộ credential đã encrypt). (b) Re-encrypt 2 row placeholder bằng `UPDATE signing_provider_config SET client_secret=pgp_sym_encrypt('', '<key>') WHERE provider_code='SMARTCA_VNPT'; UPDATE ... SET ... pgp_sym_encrypt('placeholder_not_configured', ...) WHERE provider_code='MYSIGN_VIETTEL';`. (c) `pm2 restart all --update-env`. (d) Admin nhập credential VNPT/Viettel qua `/ky-so/cau-hinh` → Test Connection → Kích hoạt.
+    - **KHÔNG seed row `SMARTCA_VNPT_TH` trên prod** — đây là provider DEV TEST, chỉ phục vụ dev verify Node.js code đúng chuẩn PAdES E2E, KHÔNG cho KH cuối.
+
 **Lưu ý cho AI:** KHÔNG cần hỏi user về env vars/passwords — `.env.example` đã có dev defaults match docker-compose.yml. Chỉ cần chạy script + verify backend start OK + admin login OK qua curl.
 
 ### ⚠️ Customer-Facing Scope — Module ĐÃ ẨN, KHÔNG nhắc đến trong tài liệu KH
