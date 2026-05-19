@@ -272,7 +272,7 @@ BEGIN
   VALUES (
     'SMARTCA_VNPT_TH',
     'SmartCA VNPT Tích hợp (DEV TEST)',
-    'https://rmgateway.vnptit.vn',
+    'https://gwsca.vnpt.vn',
     '4185-637127995547330633.apps.signserviceapi.com',
     pgp_sym_encrypt('NGNhMzdmOGE-OGM2Mi00MTg0', v_key),
     NULL,
