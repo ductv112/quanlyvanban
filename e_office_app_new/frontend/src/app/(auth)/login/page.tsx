@@ -83,16 +83,10 @@ export default function LoginPage() {
             name="login"
             size="large"
             onFinish={onFinish}
-            autoComplete="off"
+            autoComplete="on"
             layout="vertical"
             initialValues={{ remember: true }}
           >
-            {/* Hidden fields to prevent browser autofill */}
-            <div style={{ position: 'absolute', opacity: 0, height: 0, overflow: 'hidden' }}>
-              <input type="text" name="prevent_autofill" tabIndex={-1} />
-              <input type="password" name="prevent_autofill_pw" tabIndex={-1} />
-            </div>
-
             <Form.Item
               name="username"
               label={<span style={{ fontWeight: 600, color: '#334155', fontSize: 13 }}>Tên đăng nhập</span>}
@@ -101,7 +95,7 @@ export default function LoginPage() {
               <Input
                 prefix={<UserOutlined style={{ color: '#94a3b8' }} />}
                 placeholder="Nhập tên đăng nhập"
-                autoComplete="off"
+                autoComplete="username"
                 style={{ borderRadius: 8, height: 44 }}
               />
             </Form.Item>
@@ -114,7 +108,7 @@ export default function LoginPage() {
               <Input.Password
                 prefix={<LockOutlined style={{ color: '#94a3b8' }} />}
                 placeholder="Nhập mật khẩu"
-                autoComplete="new-password"
+                autoComplete="current-password"
                 style={{ borderRadius: 8, height: 44 }}
               />
             </Form.Item>
