@@ -573,21 +573,16 @@ export default function HoSoCongViecPage() {
         <div className="list-filter-bar">
           <div className="filter-row" style={{ marginTop: 12 }}>
             <Space wrap>
-              {/* BUG #71: Input "Tìm kiếm" + Button "Tìm kiếm" đặt cạnh nhau (Compact) */}
-              <Space.Compact>
-                <Input
-                  placeholder="Tìm kiếm tên hồ sơ..."
-                  value={keyword}
-                  onChange={(e) => setKeyword(e.target.value)}
-                  onPressEnter={handleSearch}
-                  style={{ width: 240 }}
-                  prefix={<SearchOutlined style={{ color: '#94A3B8' }} />}
-                  allowClear
-                />
-                <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>
-                  Tìm kiếm
-                </Button>
-              </Space.Compact>
+              {/* BUG #89: Input.Search KHÔNG enterButton → match đúng VB Đến/Đi
+                  (chỉ icon search bên phải, không có nút xanh) */}
+              <Input.Search
+                placeholder="Tìm kiếm tên hồ sơ..."
+                allowClear
+                value={keyword}
+                onChange={(e) => setKeyword(e.target.value)}
+                onSearch={(val) => { setKeyword(val); handleSearch(); }}
+                style={{ width: 280 }}
+              />
               <Select
                 placeholder="Lĩnh vực"
                 allowClear
@@ -691,7 +686,7 @@ export default function HoSoCongViecPage() {
               Lưu hồ sơ
             </Button>
           </Space>
-        } maskClosable={false}>
+        } mask={{ closable: false }}>
         <Form
           form={form}
           layout="vertical"

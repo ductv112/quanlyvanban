@@ -278,40 +278,79 @@ router.get('/:id/can-bo', async (req: Request, res: Response) => {
 });
 
 // POST /:id/phan-cong — Phân công cán bộ
+//
+// BUG #77 follow-up (2026-05-19): Frontend gửi per-staff payload
+//   { staff: [{staff_id, role, deadline}, ...] }
+// vì UI cho phép mỗi cán bộ có role (Phụ trách/Phối hợp) + deadline riêng.
+// Backward-compat: vẫn accept format cũ { staff_ids, role_type, deadline }
+// (seed_sprint5.js + 1 số legacy caller).
 router.post('/:id/phan-cong', async (req: Request, res: Response) => {
   try {
     const { staffId } = (req as AuthRequest).user;
     const docId = Number(req.params.id);
-    const { staff_ids, role_type, deadline } = req.body;
+    const { staff, staff_ids, role_type, deadline } = req.body;
 
-    if (!Array.isArray(staff_ids) || staff_ids.length === 0) {
+    // Chuẩn hoá payload về list { staff_id, role, deadline }
+    type Assignment = { staff_id: number; role: number; deadline: string | null };
+    let assignments: Assignment[] = [];
+    if (Array.isArray(staff) && staff.length > 0) {
+      assignments = staff.map((s: any) => ({
+        staff_id: Number(s.staff_id),
+        role: s.role ? Number(s.role) : 1,
+        deadline: s.deadline || null,
+      })).filter((a) => Number.isFinite(a.staff_id) && a.staff_id > 0);
+    } else if (Array.isArray(staff_ids) && staff_ids.length > 0) {
+      assignments = staff_ids.map((sid: any) => ({
+        staff_id: Number(sid),
+        role: role_type ? Number(role_type) : 1,
+        deadline: deadline || null,
+      })).filter((a) => Number.isFinite(a.staff_id) && a.staff_id > 0);
+    }
+
+    if (assignments.length === 0) {
       res.status(400).json({ success: false, message: 'Vui lòng chọn ít nhất một cán bộ' });
       return;
     }
-    // T-02-08: limit staff_ids array to prevent DoS
-    if (staff_ids.length > 50) {
+    if (assignments.length > 50) {
       res.status(400).json({ success: false, message: 'Không được phân công quá 50 cán bộ cùng lúc' });
       return;
     }
-    // BUG-HSCV-WF-004: cảnh báo duplicate staff_ids trong cùng request
-    const uniqueIds = new Set(staff_ids.map(Number));
-    if (uniqueIds.size !== staff_ids.length) {
+    const uniqueIds = new Set(assignments.map((a) => a.staff_id));
+    if (uniqueIds.size !== assignments.length) {
       res.status(400).json({ success: false, message: 'Danh sách cán bộ phân công có giá trị trùng — vui lòng kiểm tra lại' });
       return;
     }
 
-    const result = await handlingDocRepository.assignStaff(
-      docId,
-      staff_ids.map(Number),
-      role_type ? Number(role_type) : 1,
-      deadline || null,
-      staffId,
-    );
+    // Nhóm theo (role, deadline) để gọi SP assignStaff cho từng nhóm (SP nhận
+    // array staff_ids chung 1 role/1 deadline). Per-staff customization giữ
+    // được mà không phải sửa SP.
+    const groups = new Map<string, { role: number; deadline: string | null; ids: number[] }>();
+    for (const a of assignments) {
+      const k = `${a.role}|${a.deadline ?? ''}`;
+      const g = groups.get(k) ?? { role: a.role, deadline: a.deadline, ids: [] };
+      g.ids.push(a.staff_id);
+      groups.set(k, g);
+    }
+
+    let lastMessage = '';
+    for (const g of groups.values()) {
+      const result = await handlingDocRepository.assignStaff(
+        docId, g.ids, g.role, g.deadline, staffId,
+      );
+      if (!result.success) {
+        res.status(400).json({ success: false, message: result.message });
+        return;
+      }
+      lastMessage = result.message;
+    }
+    const result = { success: true, message: lastMessage } as const;
 
     if (!result.success) {
       res.status(400).json({ success: false, message: result.message });
       return;
     }
+    // Mảng dùng tiếp ở notification block bên dưới
+    const allStaffIds = assignments.map((a) => a.staff_id);
 
     // Bell notification — best-effort. Cán bộ được phân công vào HSCV (phụ trách
     // hoặc phối hợp tuỳ role_type) đều nhận thông báo.
@@ -324,15 +363,18 @@ router.post('/:id/phan-cong', async (req: Request, res: Response) => {
       );
       const senderName = senderRows[0]?.full_name?.trim() || 'Cán bộ';
       const hscvName = docRows[0]?.name?.trim() || `HSCV #${docId}`;
-      const roleLabel = role_type && Number(role_type) === 2 ? 'phối hợp' : 'xử lý';
+      // BUG #77 follow-up: assignments có thể mixed role → notification dùng
+      // role của staff đầu tiên làm label chung (giữ message tóm tắt).
+      const firstRole = assignments[0]?.role ?? 1;
+      const roleLabel = firstRole === 2 ? 'phối hợp' : 'xử lý';
       await notifyBell({
-        targetStaffIds: staff_ids.map(Number),
+        targetStaffIds: allStaffIds,
         senderStaffId: staffId,
         type: 'task_assigned',
         title: 'Bạn được giao xử lý hồ sơ công việc',
         message: `${senderName} đã giao bạn ${roleLabel} "${hscvName}"`,
         link: `/ho-so-cong-viec/${docId}`,
-        metadata: { hscv_id: docId, role_type: role_type ? Number(role_type) : 1, sender_id: staffId },
+        metadata: { hscv_id: docId, role_type: firstRole, sender_id: staffId },
       });
     } catch (err) {
       req.log?.warn({ err, hscvId: docId }, 'Bell notification (task_assigned/assign) failed');

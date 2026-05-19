@@ -330,7 +330,7 @@ export default function DelegationPage() {
               Thêm mới
             </Button>
           </Space>
-        } maskClosable={false}>
+        } mask={{ closable: false }}>
         <Form form={form} layout="vertical" autoComplete="off" validateTrigger="onSubmit">
           <Form.Item
             label="Người ủy quyền"

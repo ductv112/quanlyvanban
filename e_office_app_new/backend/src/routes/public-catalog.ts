@@ -49,6 +49,11 @@ router.get('/don-vi', async (_req: Request, res: Response) => {
 // GET /don-vi/:id/nhan-vien — list cán bộ trong 1 đơn vị (cho HSCV "Cán bộ xử lý" picker)
 // Frontend HSCV detail → tab "Cán bộ xử lý" → click node đơn vị trên cây → load danh sách.
 // Mount ở public-catalog để cả admin + chuyên viên đều dùng được.
+//
+// BUG #77 (2026-05-19): Click parent dept (UNIT level / cha) không hiển thị cán bộ
+// vì SQL chỉ filter department_id = parent. YC: phải show cán bộ ở subtree (cha + con cháu)
+// để admin chọn được nhanh, đặc biệt với UBND có nhiều phòng con.
+// Dùng fn_get_department_subtree(p_dept_id) → INT[] subtree ids.
 router.get('/don-vi/:id/nhan-vien', async (req: Request, res: Response) => {
   try {
     const deptId = Number(req.params.id);
@@ -56,14 +61,15 @@ router.get('/don-vi/:id/nhan-vien', async (req: Request, res: Response) => {
       res.status(400).json({ success: false, message: 'Thiếu mã đơn vị' });
       return;
     }
-    const rows = await rawQuery<{ id: number; full_name: string; position_name: string | null }>(
-      `SELECT s.id, s.full_name, p.name AS position_name
+    const rows = await rawQuery<{ id: number; full_name: string; position_name: string | null; department_name: string | null }>(
+      `SELECT s.id, s.full_name, p.name AS position_name, d.name AS department_name
        FROM public.staff s
        LEFT JOIN public.positions p ON p.id = s.position_id
-       WHERE s.department_id = $1
+       LEFT JOIN public.departments d ON d.id = s.department_id
+       WHERE s.department_id = ANY(public.fn_get_department_subtree($1::int))
          AND COALESCE(s.is_deleted, false) = false
          AND COALESCE(s.is_locked, false) = false
-       ORDER BY s.last_name, s.first_name`,
+       ORDER BY d.sort_order NULLS LAST, d.name, s.last_name, s.first_name`,
       [deptId],
     );
     res.json({ success: true, data: rows });

@@ -821,7 +821,7 @@ export default function KhoLuuTruPage() {
                 : 'Thêm mới'}
             </Button>
           </Space>
-        } maskClosable={false}>
+        } mask={{ closable: false }}>
         <Form form={form} layout="vertical" autoComplete="off" validateTrigger="onSubmit">
 
           {/* ── Warehouse form ── */}

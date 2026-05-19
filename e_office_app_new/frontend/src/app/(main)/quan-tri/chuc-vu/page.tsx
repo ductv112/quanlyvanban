@@ -318,7 +318,7 @@ export default function PositionPage() {
               {editingRecord ? 'Cập nhật' : 'Thêm mới'}
             </Button>
           </Space>
-        } maskClosable={false}>
+        } mask={{ closable: false }}>
         <Form form={form} layout="vertical" autoComplete="off" validateTrigger="onSubmit">
           <Form.Item label="Tên chức vụ" name="name" rules={[{ required: true, message: 'Nhập tên chức vụ' }]}>
             <Input placeholder="VD: Giám đốc" maxLength={100} style={{ borderRadius: 8 }} />

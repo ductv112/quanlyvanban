@@ -86,15 +86,23 @@ interface HscvDetail {
   cancelled_by_name?: string | null;
 }
 
+// BUG #75: field names khớp SP fn_handling_doc_get_linked_docs
+// (doc_abstract / doc_notation / doc_date — trước đây frontend dùng abstract / signed_date không khớp)
 interface LinkedDoc {
-  id: number;
   link_id: number;
-  doc_number: number | string;
-  abstract: string;
-  doc_type: string;
-  doc_type_name?: string;
-  signed_date?: string;
+  doc_id: number;
+  doc_type: string;                  // 'incoming' | 'outgoing' | 'drafting'
+  doc_number: number | null;
+  doc_notation: string | null;
+  doc_abstract: string | null;
+  doc_date: string | null;
 }
+
+const DOC_TYPE_LABEL: Record<string, string> = {
+  incoming: 'Văn bản đến',
+  outgoing: 'Văn bản đi',
+  drafting: 'Văn bản dự thảo',
+};
 
 interface StaffItem {
   id: number;
@@ -119,6 +127,7 @@ interface AvailableStaff {
   staff_id: number;
   staff_name: string;
   position_name: string;
+  department_name?: string;   // BUG #77: hiển thị tên đơn vị để phân biệt (subtree expand)
   checked: boolean;
 }
 
@@ -903,12 +912,20 @@ export default function HscvDetailPage() {
       message.warning('Vui lòng chọn ít nhất một văn bản');
       return;
     }
+    // BUG #90: searchDocTab dùng key tiếng Việt (den/di/du-thao), backend validate
+    // canonical [incoming/outgoing/drafting] → 400 "Loại văn bản không hợp lệ". Map sang.
+    const DOC_TYPE_MAP: Record<string, string> = {
+      den: 'incoming',
+      di: 'outgoing',
+      'du-thao': 'drafting',
+    };
+    const docTypeBackend = DOC_TYPE_MAP[searchDocTab] || searchDocTab;
     try {
       await Promise.all(
         selectedDocKeys.map((docId) =>
           api.post(`/ho-so-cong-viec/${id}/lien-ket-van-ban`, {
             doc_id: docId,
-            doc_type: searchDocTab,
+            doc_type: docTypeBackend,
           })
         )
       );
@@ -949,6 +966,7 @@ export default function HscvDetailPage() {
           staff_id: s.id || s.staff_id,
           staff_name: s.staff_name || s.full_name,
           position_name: s.position_name || '',
+          department_name: s.department_name || '',  // BUG #77
           checked: false,
           alreadyAdded: assigned.has(s.id || s.staff_id),
         }))
@@ -1116,19 +1134,27 @@ export default function HscvDetailPage() {
   // ===========================
 
   const linkedDocsColumns: ColumnsType<LinkedDoc> = [
-    { title: 'Số VB', dataIndex: 'doc_number', width: 120 },
-    { title: 'Trích yếu', dataIndex: 'abstract', ellipsis: true },
+    {
+      title: 'Số VB',
+      width: 140,
+      render: (_: unknown, r: LinkedDoc) => {
+        const num = r.doc_number ?? '';
+        const not = r.doc_notation ?? '';
+        return num && not ? `${num}/${not}` : (num || not || '-');
+      },
+    },
+    { title: 'Trích yếu', dataIndex: 'doc_abstract', ellipsis: true, render: (v: string | null) => v || '-' },
     {
       title: 'Loại',
-      dataIndex: 'doc_type_name',
-      width: 130,
-      render: (v: string) => v ? <Tag color="blue">{v}</Tag> : '-',
+      dataIndex: 'doc_type',
+      width: 140,
+      render: (v: string) => v ? <Tag color="blue">{DOC_TYPE_LABEL[v] || v}</Tag> : '-',
     },
     {
       title: 'Ngày ký',
-      dataIndex: 'signed_date',
+      dataIndex: 'doc_date',
       width: 110,
-      render: (v: string) => v ? dayjs(v).format('DD/MM/YYYY') : '-',
+      render: (v: string | null) => v ? dayjs(v).format('DD/MM/YYYY') : '-',
     },
     {
       title: 'Thao tác',
@@ -1414,7 +1440,9 @@ export default function HscvDetailPage() {
                             />
                             <div style={{ flex: 1 }}>
                               <div style={{ fontWeight: 500, fontSize: 13 }}>{s.staff_name}</div>
-                              <div style={{ fontSize: 11, color: '#64748B' }}>{s.position_name}</div>
+                              <div style={{ fontSize: 11, color: '#64748B' }}>
+                                {[s.position_name, s.department_name].filter(Boolean).join(' • ')}
+                              </div>
                             </div>
                           </div>
                         ))
@@ -1781,7 +1809,7 @@ export default function HscvDetailPage() {
         okText="Từ chối"
         okType="danger"
         cancelText="Hủy"
-        okButtonProps={{ disabled: !rejectReason.trim() }} maskClosable={false}>
+        okButtonProps={{ disabled: !rejectReason.trim() }} mask={{ closable: false }}>
         <p>Nhập lý do từ chối để thông báo cho người xử lý.</p>
         <TextArea
           rows={3}
@@ -1803,7 +1831,7 @@ export default function HscvDetailPage() {
         onCancel={() => setReturnModalOpen(false)}
         okText="Trả về"
         cancelText="Hủy"
-        okButtonProps={{ disabled: !returnReason.trim() }} maskClosable={false}>
+        okButtonProps={{ disabled: !returnReason.trim() }} mask={{ closable: false }}>
         <p>Nhập lý do trả về để người xử lý biết cần chỉnh sửa gì.</p>
         <TextArea
           rows={3}
@@ -1840,7 +1868,7 @@ export default function HscvDetailPage() {
         }}
         okText="Cập nhật"
         cancelText="Hủy bỏ"
-        confirmLoading={updatingProgress} maskClosable={false}>
+        confirmLoading={updatingProgress} mask={{ closable: false }}>
         <div style={{ padding: '16px 0' }}>
           <div style={{ marginBottom: 12 }}>Tiến độ hoàn thành (%)</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
@@ -1890,7 +1918,7 @@ export default function HscvDetailPage() {
         okText="Chuyển tiếp"
         cancelText="Hủy"
         confirmLoading={transferring}
-        width={500} maskClosable={false}>
+        width={500} mask={{ closable: false }}>
         <div style={{ marginBottom: 12, padding: 10, background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: 6, fontSize: 12, color: '#1E40AF' }}>
           <ExclamationCircleOutlined /> Chỉ có thể chuyển HSCV cho người cùng đơn vị
         </div>
@@ -1924,7 +1952,7 @@ export default function HscvDetailPage() {
         open={historyOpen}
         onCancel={() => setHistoryOpen(false)}
         footer={<Button onClick={() => setHistoryOpen(false)}>Đóng</Button>}
-        width={720} maskClosable={false}>
+        width={720} mask={{ closable: false }}>
         {historyLoading ? (
           <Skeleton active paragraph={{ rows: 4 }} />
         ) : historyList.length === 0 ? (
@@ -1970,7 +1998,7 @@ export default function HscvDetailPage() {
         cancelText="Hủy thao tác"
         okButtonProps={{ danger: true }}
         confirmLoading={cancelling}
-        width={480} maskClosable={false}>
+        width={480} mask={{ closable: false }}>
         <Form layout="vertical" style={{ marginTop: 16 }}>
           <Form.Item label="Lý do hủy HSCV" required>
             <Input.TextArea
@@ -2007,7 +2035,7 @@ export default function HscvDetailPage() {
         }}
         okText="Lấy số"
         cancelText="Hủy"
-        confirmLoading={layingNumber} maskClosable={false}>
+        confirmLoading={layingNumber} mask={{ closable: false }}>
         <Form layout="vertical" style={{ marginTop: 16 }}>
           <Form.Item label="Sổ văn bản" required>
             <Select
@@ -2098,7 +2126,7 @@ export default function HscvDetailPage() {
         onCancel={() => { setAddDocModalOpen(false); setSelectedDocKeys([]); }}
         okText="Liên kết"
         cancelText="Hủy bỏ"
-        width={800} maskClosable={false}>
+        width={800} mask={{ closable: false }}>
         <div style={{ marginBottom: 12 }}>
           <Tabs
             activeKey={searchDocTab}

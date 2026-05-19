@@ -1052,7 +1052,7 @@ export default function KySoCauHinhPage() {
               </Button>
             )}
           </Space>
-        } maskClosable={false}>
+        } mask={{ closable: false }}>
         {editingRecord && (
           <Form form={form} layout="vertical" autoComplete="off" validateTrigger="onSubmit">
             <Alert

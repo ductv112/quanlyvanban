@@ -59,6 +59,7 @@ export interface HandlingDocDetailRow {
   cancel_reason: string | null;
   cancelled_at: string | null;
   cancelled_by: number | null;
+  cancelled_by_name: string | null;   // BUG #86: SP trả CONCAT(last_name, ' ', first_name)
 }
 
 export interface StatusCountRow {

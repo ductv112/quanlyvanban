@@ -385,7 +385,7 @@ export default function DanhSachKySoPage() {
         okText: 'Hủy giao dịch',
         okType: 'danger',
         cancelText: 'Đóng',
-        maskClosable: false,
+        mask: { closable: false },
         onOk: async () => {
           try {
             const { data: res } = await api.post<{

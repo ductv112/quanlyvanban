@@ -2058,7 +2058,7 @@ BEGIN
   SELECT
     ss.id,
     ss.staff_id,
-    CONCAT(s.last_name, ' ', s.first_name)::TEXT AS staff_name,
+    CONCAT(s.first_name, ' ', s.last_name)::TEXT AS staff_name,
     p.name                                        AS position_name,
     d.name                                        AS department_name
   FROM edoc.doc_flow_step_staff ss
@@ -3351,10 +3351,16 @@ $$;
 
 
 --
--- Name: fn_handling_doc_create_from_doc(bigint, character varying, text, date, date, integer[], text, integer); Type: FUNCTION; Schema: edoc; Owner: -
+-- Name: fn_handling_doc_create_from_doc(bigint, character varying, text, timestamptz, timestamptz, integer[], text, integer); Type: FUNCTION; Schema: edoc; Owner: -
 --
+-- BUG #88 (2026-05-19): đổi p_start_date/p_end_date từ date → timestamptz.
+-- Lý do: column start_date/end_date là timestamptz; client gửi ISO UTC datetime;
+-- nếu cast về date trong session UTC (docker default) → lệch 1 ngày khi user GMT+7
+-- pick midnight local (2026-05-19 00:00:00+07 = 2026-05-18 17:00:00 UTC → date = 2026-05-18).
+-- Drop old signature trước CREATE để tránh overload.
+DROP FUNCTION IF EXISTS edoc.fn_handling_doc_create_from_doc(bigint, character varying, text, date, date, integer[], text, integer);
 
-CREATE OR REPLACE FUNCTION edoc.fn_handling_doc_create_from_doc(p_doc_id bigint, p_doc_type character varying, p_name text, p_start_date date, p_end_date date, p_curator_ids integer[], p_note text, p_created_by integer) RETURNS TABLE(success boolean, message text, id bigint)
+CREATE OR REPLACE FUNCTION edoc.fn_handling_doc_create_from_doc(p_doc_id bigint, p_doc_type character varying, p_name text, p_start_date timestamptz, p_end_date timestamptz, p_curator_ids integer[], p_note text, p_created_by integer) RETURNS TABLE(success boolean, message text, id bigint)
     LANGUAGE plpgsql SECURITY DEFINER
     AS $$
 DECLARE
@@ -3461,7 +3467,7 @@ BEGIN
     a.content_type,
     a.sort_order,
     a.created_by,
-    CONCAT(s.last_name, ' ', s.first_name)::TEXT AS created_by_name,
+    CONCAT(s.first_name, ' ', s.last_name)::TEXT AS created_by_name,
     a.created_at
   FROM edoc.attachment_handling_docs a
   LEFT JOIN public.staff s ON s.id = a.created_by
@@ -3541,9 +3547,9 @@ BEGIN
     h.start_date,
     h.end_date,
     h.curator                                   AS curator_id,
-    CONCAT(sc.last_name, ' ', sc.first_name)    AS curator_name,
+    CONCAT(sc.first_name, ' ', sc.last_name)    AS curator_name,
     h.signer                                    AS signer_id,
-    CONCAT(ss.last_name, ' ', ss.first_name)    AS signer_name,
+    CONCAT(ss.first_name, ' ', ss.last_name)    AS signer_name,
     h.status,
     h.progress,
     h.workflow_id,
@@ -3562,7 +3568,7 @@ BEGIN
     h.cancelled_at,
     h.cancelled_by,
     -- Đề xuất #5: tên người hủy
-    CONCAT(scancel.last_name, ' ', scancel.first_name)::TEXT AS cancelled_by_name
+    CONCAT(scancel.first_name, ' ', scancel.last_name)::TEXT AS cancelled_by_name
   FROM edoc.handling_docs h
   LEFT JOIN public.departments du ON du.id = h.unit_id
   LEFT JOIN public.departments dd ON dd.id = h.department_id
@@ -3594,9 +3600,9 @@ BEGIN
     h.end_date,
     h.status,
     h.curator                                  AS curator_id,
-    CONCAT(sc.last_name, ' ', sc.first_name)   AS curator_name,
+    CONCAT(sc.first_name, ' ', sc.last_name)   AS curator_name,
     h.signer                                   AS signer_id,
-    CONCAT(ss.last_name, ' ', ss.first_name)   AS signer_name,
+    CONCAT(ss.first_name, ' ', ss.last_name)   AS signer_name,
     h.progress,
     df.name                                    AS doc_field_name,
     dt.name                                    AS doc_type_name,
@@ -3700,9 +3706,9 @@ BEGIN
       h.end_date,
       h.status,
       h.curator       AS curator_id,
-      CONCAT(sc.last_name, ' ', sc.first_name) AS curator_name,
+      CONCAT(sc.first_name, ' ', sc.last_name) AS curator_name,
       h.signer        AS signer_id,
-      CONCAT(ss.last_name, ' ', ss.first_name) AS signer_name,
+      CONCAT(ss.first_name, ' ', ss.last_name) AS signer_name,
       h.progress,
       df.name         AS doc_field_name,
       dt.name         AS doc_type_name,
@@ -3776,7 +3782,7 @@ BEGIN
   SELECT
     shd.id,
     shd.staff_id,
-    CONCAT(s.last_name, ' ', s.first_name)::TEXT AS staff_name,
+    CONCAT(s.first_name, ' ', s.last_name)::TEXT AS staff_name,
     p.name                                        AS position_name,
     d.name                                        AS department_name,
     shd.role,
@@ -4439,12 +4445,12 @@ BEGIN
         h.handling_doc_id,
         h.action_type,
         h.from_staff_id,
-        CASE WHEN fs.id IS NOT NULL THEN CONCAT(fs.last_name, ' ', fs.first_name)::TEXT ELSE NULL::TEXT END AS from_staff_name,
+        CASE WHEN fs.id IS NOT NULL THEN CONCAT(fs.first_name, ' ', fs.last_name)::TEXT ELSE NULL::TEXT END AS from_staff_name,
         h.to_staff_id,
-        CASE WHEN ts.id IS NOT NULL THEN CONCAT(ts.last_name, ' ', ts.first_name)::TEXT ELSE NULL::TEXT END AS to_staff_name,
+        CASE WHEN ts.id IS NOT NULL THEN CONCAT(ts.first_name, ' ', ts.last_name)::TEXT ELSE NULL::TEXT END AS to_staff_name,
         h.note,
         h.created_by,
-        CASE WHEN cs.id IS NOT NULL THEN CONCAT(cs.last_name, ' ', cs.first_name)::TEXT ELSE NULL::TEXT END AS created_by_name,
+        CASE WHEN cs.id IS NOT NULL THEN CONCAT(cs.first_name, ' ', cs.last_name)::TEXT ELSE NULL::TEXT END AS created_by_name,
         h.created_at
     FROM edoc.handling_doc_history h
     LEFT JOIN public.staff fs ON fs.id = h.from_staff_id
@@ -6068,14 +6074,14 @@ BEGIN
   SELECT
     m.id,
     m.from_staff_id,
-    CONCAT(s.last_name, ' ', s.first_name) AS from_staff_name,
+    CONCAT(s.first_name, ' ', s.last_name) AS from_staff_name,
     m.subject,
     m.content,
     m.parent_id,
     m.created_at,
     COALESCE(mr.is_read, FALSE) AS is_read,
     (
-      SELECT STRING_AGG(CONCAT(sr.last_name, ' ', sr.first_name), ', ' ORDER BY sr.last_name)
+      SELECT STRING_AGG(CONCAT(sr.first_name, ' ', sr.last_name), ', ' ORDER BY sr.last_name)
       FROM edoc.message_recipients mr2
       JOIN public.staff sr ON sr.id = mr2.staff_id
       WHERE mr2.message_id = m.id
@@ -6111,7 +6117,7 @@ BEGIN
     SELECT
       m.id,
       m.from_staff_id,
-      CONCAT(s.last_name, ' ', s.first_name) AS from_staff_name,
+      CONCAT(s.first_name, ' ', s.last_name) AS from_staff_name,
       m.subject,
       m.content,
       m.parent_id,
@@ -6166,7 +6172,7 @@ BEGIN
       m.parent_id,
       m.created_at,
       (
-        SELECT STRING_AGG(CONCAT(sr.last_name, ' ', sr.first_name), ', ' ORDER BY sr.last_name)
+        SELECT STRING_AGG(CONCAT(sr.first_name, ' ', sr.last_name), ', ' ORDER BY sr.last_name)
         FROM edoc.message_recipients mr2
         JOIN public.staff sr ON sr.id = mr2.staff_id
         WHERE mr2.message_id = m.id
@@ -6212,7 +6218,7 @@ BEGIN
     SELECT
       m.id,
       m.from_staff_id,
-      CONCAT(s.last_name, ' ', s.first_name) AS from_staff_name,
+      CONCAT(s.first_name, ' ', s.last_name) AS from_staff_name,
       m.subject,
       m.content,
       m.parent_id,
@@ -6645,13 +6651,13 @@ BEGIN
   SELECT
     o.id,
     o.staff_id,
-    CONCAT(s.last_name, ' ', s.first_name)::TEXT AS staff_name,
+    CONCAT(s.first_name, ' ', s.last_name)::TEXT AS staff_name,
     o.content,
     o.attachment_path,
     o.created_at,
     o.forwarded_to_staff_id,
     CASE
-        WHEN ts.id IS NOT NULL THEN CONCAT(ts.last_name, ' ', ts.first_name)::TEXT
+        WHEN ts.id IS NOT NULL THEN CONCAT(ts.first_name, ' ', ts.last_name)::TEXT
         ELSE NULL::TEXT
     END AS forwarded_to_name,
     o.forwarded_at,
@@ -7344,7 +7350,7 @@ BEGIN
   RETURN QUERY
   SELECT
     s.id                                                                   AS staff_id,
-    CONCAT(s.last_name, ' ', s.first_name)::TEXT                          AS staff_name,
+    CONCAT(s.first_name, ' ', s.last_name)::TEXT                          AS staff_name,
     d.name::TEXT                                                           AS department_name,
     COUNT(h.id)::BIGINT                                                    AS total,
     COUNT(h.id) FILTER (WHERE h.status = 4)::BIGINT                        AS completed,
@@ -7382,7 +7388,7 @@ BEGIN
   RETURN QUERY
   SELECT
     s.id                                                                   AS staff_id,
-    CONCAT(s.last_name, ' ', s.first_name)::TEXT                          AS staff_name,
+    CONCAT(s.first_name, ' ', s.last_name)::TEXT                          AS staff_name,
     d.name::TEXT                                                           AS department_name,
     COUNT(h.id)::BIGINT                                                    AS total,
     COUNT(h.id) FILTER (WHERE h.status = 4)::BIGINT                        AS completed,
@@ -21460,7 +21466,9 @@ $$;
 DO $$ BEGIN RAISE NOTICE '✅ 030-8: fn_outgoing_doc_count_unread updated'; END $$;
 
 -- ============================================================
--- 9. SP: fn_outgoing_doc_create — thêm p_department_id
+-- 9. SP: fn_outgoing_doc_create — thêm p_department_id + p_approver
+-- BUG #69 (2026-05-19): bổ sung p_approver (đã có ở def line 6815 nhưng bị drop+recreate
+-- ở block consolidate này, mất p_approver → SP 24 params nhưng repo gọi 25 → 500)
 -- ============================================================
 CREATE OR REPLACE FUNCTION edoc.fn_outgoing_doc_create(
   p_unit_id           INT,
@@ -21486,7 +21494,8 @@ CREATE OR REPLACE FUNCTION edoc.fn_outgoing_doc_create(
   p_expired_date      TIMESTAMPTZ DEFAULT NULL,
   p_recipients        TEXT       DEFAULT NULL,
   p_created_by        INT        DEFAULT NULL,
-  p_department_id     INT        DEFAULT NULL     -- NEW
+  p_department_id     INT        DEFAULT NULL,     -- NEW
+  p_approver          VARCHAR    DEFAULT NULL      -- BUG #69
 )
 RETURNS TABLE (success BOOLEAN, message TEXT, id BIGINT)
 LANGUAGE plpgsql
@@ -21518,7 +21527,7 @@ BEGIN
     signer, sign_date, expired_date,
     number_paper, number_copies, secret_id, urgent_id,
     recipients, doc_book_id, doc_type_id, doc_field_id,
-    created_by, updated_by
+    approver, created_by, updated_by
   ) VALUES (
     p_unit_id, COALESCE(p_department_id, p_unit_id), COALESCE(p_received_date, NOW()), p_number,
     NULLIF(TRIM(p_sub_number), ''), NULLIF(TRIM(p_notation), ''), NULLIF(TRIM(p_document_code), ''),
@@ -21527,7 +21536,7 @@ BEGIN
     COALESCE(p_number_paper, 1), COALESCE(p_number_copies, 1),
     COALESCE(p_secret_id, 1), COALESCE(p_urgent_id, 1),
     NULLIF(TRIM(p_recipients), ''), p_doc_book_id, p_doc_type_id, p_doc_field_id,
-    p_created_by, p_created_by
+    NULLIF(TRIM(p_approver), ''), p_created_by, p_created_by
   )
   RETURNING edoc.outgoing_docs.id INTO v_id;
 
@@ -21535,7 +21544,7 @@ BEGIN
 END;
 $$;
 
-DO $$ BEGIN RAISE NOTICE '✅ 030-9: fn_outgoing_doc_create updated'; END $$;
+DO $$ BEGIN RAISE NOTICE '✅ 030-9: fn_outgoing_doc_create updated (+ p_approver BUG #69)'; END $$;
 
 -- ============================================================
 -- 10. SP: fn_drafting_doc_get_list — thêm p_dept_ids
@@ -21824,9 +21833,9 @@ BEGIN
       h.end_date,
       h.status,
       h.curator       AS curator_id,
-      CONCAT(sc.last_name, ' ', sc.first_name) AS curator_name,
+      CONCAT(sc.first_name, ' ', sc.last_name) AS curator_name,
       h.signer        AS signer_id,
-      CONCAT(ss.last_name, ' ', ss.first_name) AS signer_name,
+      CONCAT(ss.first_name, ' ', ss.last_name) AS signer_name,
       h.progress,
       df.name         AS doc_field_name,
       dt.name         AS doc_type_name,
@@ -22456,8 +22465,8 @@ BEGIN
   RETURN QUERY
   WITH filtered AS (
     SELECT h.id, h.name, h.start_date, h.end_date, h.status,
-      h.curator AS curator_id, CONCAT(sc.last_name, ' ', sc.first_name) AS curator_name,
-      h.signer AS signer_id, CONCAT(ss.last_name, ' ', ss.first_name) AS signer_name,
+      h.curator AS curator_id, CONCAT(sc.first_name, ' ', sc.last_name) AS curator_name,
+      h.signer AS signer_id, CONCAT(ss.first_name, ' ', ss.last_name) AS signer_name,
       h.progress, df.name AS doc_field_name, dt.name AS doc_type_name, h.created_at
     FROM edoc.handling_docs h
     LEFT JOIN public.staff sc ON sc.id = h.curator LEFT JOIN public.staff ss ON ss.id = h.signer
@@ -24275,7 +24284,7 @@ RETURNS TABLE (
 LANGUAGE plpgsql AS $$
 BEGIN
   RETURN QUERY
-  SELECT s.id AS staff_id, CONCAT(s.last_name, ' ', s.first_name)::TEXT AS staff_name,
+  SELECT s.id AS staff_id, CONCAT(s.first_name, ' ', s.last_name)::TEXT AS staff_name,
     d.name::TEXT AS department_name,
     COUNT(h.id)::BIGINT AS total,
     COUNT(h.id) FILTER (WHERE h.status = 4)::BIGINT AS completed,
@@ -24313,7 +24322,7 @@ RETURNS TABLE (
 LANGUAGE plpgsql AS $$
 BEGIN
   RETURN QUERY
-  SELECT s.id AS staff_id, CONCAT(s.last_name, ' ', s.first_name)::TEXT AS staff_name,
+  SELECT s.id AS staff_id, CONCAT(s.first_name, ' ', s.last_name)::TEXT AS staff_name,
     d.name::TEXT AS department_name,
     COUNT(h.id)::BIGINT AS total,
     COUNT(h.id) FILTER (WHERE h.status = 4)::BIGINT AS completed,
@@ -25498,10 +25507,10 @@ BEGIN
 
   RETURN QUERY
   SELECT m.id, m.from_staff_id,
-    CONCAT(s.last_name, ' ', s.first_name)::TEXT,
+    CONCAT(s.first_name, ' ', s.last_name)::TEXT,
     m.subject, m.content, m.parent_id, m.created_at,
     COALESCE(mr.is_read, FALSE),
-    (SELECT STRING_AGG(CONCAT(sr.last_name, ' ', sr.first_name), ', ' ORDER BY sr.last_name)
+    (SELECT STRING_AGG(CONCAT(sr.first_name, ' ', sr.last_name), ', ' ORDER BY sr.last_name)
      FROM edoc.message_recipients mr2 JOIN public.staff sr ON sr.id = mr2.staff_id
      WHERE mr2.message_id = m.id)::TEXT
   FROM edoc.messages m
@@ -25668,7 +25677,7 @@ BEGIN
   RETURN QUERY
   WITH filtered AS (
     SELECT m.id, m.subject, m.content, m.parent_id, m.created_at,
-      (SELECT STRING_AGG(CONCAT(sr.last_name, ' ', sr.first_name), ', ' ORDER BY sr.last_name)
+      (SELECT STRING_AGG(CONCAT(sr.first_name, ' ', sr.last_name), ', ' ORDER BY sr.last_name)
        FROM edoc.message_recipients mr2 JOIN public.staff sr ON sr.id = mr2.staff_id WHERE mr2.message_id = m.id) AS recipient_names
     FROM edoc.messages m
     WHERE m.from_staff_id = p_staff_id AND m.parent_id IS NULL
@@ -25686,14 +25695,14 @@ DECLARE v_offset INT := (COALESCE(p_page, 1) - 1) * COALESCE(p_page_size, 20);
 BEGIN
   RETURN QUERY
   WITH filtered AS (
-    SELECT m.id, m.from_staff_id, CONCAT(s.last_name, ' ', s.first_name) AS from_staff_name,
+    SELECT m.id, m.from_staff_id, CONCAT(s.first_name, ' ', s.last_name) AS from_staff_name,
       m.subject, m.content, m.parent_id, m.created_at, mr.deleted_at::TIMESTAMP
     FROM edoc.messages m
     JOIN edoc.message_recipients mr ON mr.message_id = m.id AND mr.staff_id = p_staff_id
     JOIN public.staff s ON s.id = m.from_staff_id
     WHERE mr.is_deleted = TRUE
     UNION
-    SELECT m.id, m.from_staff_id, CONCAT(s.last_name, ' ', s.first_name),
+    SELECT m.id, m.from_staff_id, CONCAT(s.first_name, ' ', s.last_name),
       m.subject, m.content, m.parent_id, m.created_at, m.sender_deleted_at::TIMESTAMP
     FROM edoc.messages m
     JOIN public.staff s ON s.id = m.from_staff_id

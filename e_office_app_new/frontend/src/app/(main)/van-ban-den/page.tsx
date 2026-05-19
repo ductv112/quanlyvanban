@@ -457,7 +457,7 @@ export default function IncomingDocPage() {
         title={editingRecord ? 'Sửa văn bản đến' : 'Thêm văn bản đến'}
         size={800} open={drawerOpen} onClose={() => handleCancelDrawer()}
         rootClassName="drawer-gradient"
-        extra={<Space><Button onClick={() => handleCancelDrawer()} ghost style={{ borderColor: 'rgba(255,255,255,0.6)', color: '#fff' }}>Hủy</Button><Button type="primary" loading={saving} onClick={handleSave}>{editingRecord ? 'Cập nhật' : 'Tạo mới'}</Button></Space>} maskClosable={false}>
+        extra={<Space><Button onClick={() => handleCancelDrawer()} ghost style={{ borderColor: 'rgba(255,255,255,0.6)', color: '#fff' }}>Hủy</Button><Button type="primary" loading={saving} onClick={handleSave}>{editingRecord ? 'Cập nhật' : 'Tạo mới'}</Button></Space>} mask={{ closable: false }}>
         <Form form={form} layout="vertical" autoComplete="off">
           <Row gutter={16}>
             <Col span={9}><Form.Item name="doc_book_id" label="Sổ văn bản" rules={[{ required: true, message: 'Bắt buộc' }]}><Select placeholder="Chọn sổ văn bản" allowClear options={docBooks} onChange={(val) => { if (val && !editingRecord) fetchNextNumber(val); }} /></Form.Item></Col>

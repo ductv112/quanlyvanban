@@ -54,7 +54,7 @@ export default function ProfilePage() {
         content: 'Vui lòng đăng nhập lại với mật khẩu mới.',
         okText: 'Đăng nhập lại',
         centered: true,
-        maskClosable: false,
+        mask: { closable: false },
         onOk: async () => {
           await logout();
         },
@@ -430,7 +430,7 @@ export default function ProfilePage() {
         okText="Lưu"
         cancelText="Hủy"
         confirmLoading={savingEdit}
-        maskClosable={false}
+        mask={{ closable: false }}
         destroyOnHidden
         width={520}
       >

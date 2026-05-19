@@ -526,7 +526,7 @@ export default function DraftingDocDetailPage() {
       </Row>
 
       {/* ====== MODAL GỬI ====== */}
-      <Modal title="Gửi văn bản dự thảo" open={sendModalOpen} onCancel={() => setSendModalOpen(false)} onOk={handleSend} okText={`Gửi (${selectedStaffIds.length})`} cancelText="Hủy" confirmLoading={sending} width={560} maskClosable={false}>
+      <Modal title="Gửi văn bản dự thảo" open={sendModalOpen} onCancel={() => setSendModalOpen(false)} onOk={handleSend} okText={`Gửi (${selectedStaffIds.length})`} cancelText="Hủy" confirmLoading={sending} width={560} mask={{ closable: false }}>
         <div style={{ marginBottom: 12 }}>
           {(() => {
             // IMP #3: chỉ "Chọn tất cả" cho cán bộ chưa được gửi
@@ -584,7 +584,7 @@ export default function DraftingDocDetailPage() {
         okType="danger"
         cancelText="Hủy"
         confirmLoading={rejecting}
-        width={480} maskClosable={false}>
+        width={480} mask={{ closable: false }}>
         <div style={{ marginBottom: 8, fontSize: 13, color: '#595959' }}>
           Nhập lý do từ chối (không bắt buộc):
         </div>

@@ -804,7 +804,7 @@ export default function IncomingDocDetailPage() {
       </Row>
 
       {/* ====== MODAL GỬI ====== */}
-      <Modal title="Gửi văn bản" open={sendModalOpen} onCancel={() => setSendModalOpen(false)} onOk={handleSend} okText={`Gửi (${selectedStaffIds.length})`} cancelText="Hủy" confirmLoading={sending} width={560} maskClosable={false}>
+      <Modal title="Gửi văn bản" open={sendModalOpen} onCancel={() => setSendModalOpen(false)} onOk={handleSend} okText={`Gửi (${selectedStaffIds.length})`} cancelText="Hủy" confirmLoading={sending} width={560} mask={{ closable: false }}>
         <div style={{ marginBottom: 12 }}>
           {/* IMP #3: "Chọn tất cả" chỉ áp dụng cho cán bộ CHƯA được gửi */}
           {(() => {
@@ -865,7 +865,7 @@ export default function IncomingDocDetailPage() {
             <Button onClick={() => { setGiaoViecOpen(false); giaoViecForm.resetFields(); }} ghost style={{ borderColor: 'rgba(255,255,255,0.6)', color: '#fff' }}>Hủy</Button>
             <Button type="primary" loading={giaoViecSaving} onClick={handleGiaoViec}>Tạo và giao việc</Button>
           </Space>
-        } maskClosable={false}>
+        } mask={{ closable: false }}>
         <Form form={giaoViecForm} layout="vertical" validateTrigger="onSubmit" autoComplete="off">
           <Form.Item
             name="name"
@@ -946,7 +946,7 @@ export default function IncomingDocDetailPage() {
         okText="Chuyển lại"
         cancelText="Hủy"
         confirmLoading={chuyenLaiSaving}
-        width={480} maskClosable={false}>
+        width={480} mask={{ closable: false }}>
         <Form form={chuyenLaiForm} layout="vertical" validateTrigger="onSubmit" style={{ marginTop: 16 }}>
           <Form.Item
             name="reason"
@@ -985,7 +985,7 @@ export default function IncomingDocDetailPage() {
         onOk={handleLinkHscv}
         confirmLoading={hscvSaving}
         okText="Thêm vào HSCV"
-        cancelText="Hủy" maskClosable={false}>
+        cancelText="Hủy" mask={{ closable: false }}>
         <Select
           style={{ width: '100%', marginTop: 8 }}
           placeholder="Chọn hồ sơ công việc..."
@@ -1005,7 +1005,7 @@ export default function IncomingDocDetailPage() {
         onOk={handleSendLgsp}
         confirmLoading={lgspSending}
         okText="Gửi liên thông"
-        cancelText="Hủy" maskClosable={false}>
+        cancelText="Hủy" mask={{ closable: false }}>
         <Select
           mode="multiple"
           style={{ width: '100%', marginTop: 8 }}
@@ -1022,7 +1022,7 @@ export default function IncomingDocDetailPage() {
       <Drawer
         title="Chuyển lưu trữ" open={archiveModalOpen} onClose={() => setArchiveModalOpen(false)}
         size={640} rootClassName="drawer-gradient" forceRender
-        extra={<Space><Button onClick={() => setArchiveModalOpen(false)}>Hủy</Button><Button type="primary" onClick={handleArchive} loading={archiveSaving}>Chuyển lưu trữ</Button></Space>} maskClosable={false}>
+        extra={<Space><Button onClick={() => setArchiveModalOpen(false)}>Hủy</Button><Button type="primary" onClick={handleArchive} loading={archiveSaving}>Chuyển lưu trữ</Button></Space>} mask={{ closable: false }}>
         <Form form={archiveForm} layout="vertical">
           <Row gutter={16}>
             <Col span={12}><Form.Item name="warehouse_id" label="Kho lưu trữ" rules={[{ required: true, message: 'Vui lòng chọn kho lưu trữ' }]}><Select placeholder="Chọn kho..." allowClear options={warehouseOptions} /></Form.Item></Col>

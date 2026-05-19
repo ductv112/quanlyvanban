@@ -317,7 +317,7 @@ export default function DocTypePage() {
               {editingRecord ? 'Cập nhật' : 'Thêm mới'}
             </Button>
           </Space>
-        } maskClosable={false}>
+        } mask={{ closable: false }}>
         <Form form={form} layout="vertical" autoComplete="off" validateTrigger="onSubmit">
           <Form.Item label="Loại cha" name="parent_id">
             <Select

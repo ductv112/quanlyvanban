@@ -688,7 +688,7 @@ export default function DraftingDocPage() {
               {editingRecord ? 'Cập nhật' : 'Tạo mới'}
             </Button>
           </Space>
-        } maskClosable={false}>
+        } mask={{ closable: false }}>
         <Form form={form} layout="vertical" autoComplete="off">
           <Row gutter={16}>
             <Col span={12}>

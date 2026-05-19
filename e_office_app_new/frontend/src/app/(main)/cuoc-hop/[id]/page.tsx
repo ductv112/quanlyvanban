@@ -765,7 +765,7 @@ export default function CuocHopDetailPage() {
         onClose={() => { setAddStaffModalOpen(false); setSelectedStaffIds([]); }}
         title="Thêm thành viên cuộc họp"
         size={480} rootClassName="drawer-gradient"
-        extra={<Space><Button onClick={() => { setAddStaffModalOpen(false); setSelectedStaffIds([]); }}>Hủy</Button><Button type="primary" onClick={handleAddStaff} loading={addStaffLoading}>Thêm</Button></Space>} maskClosable={false}>
+        extra={<Space><Button onClick={() => { setAddStaffModalOpen(false); setSelectedStaffIds([]); }}>Hủy</Button><Button type="primary" onClick={handleAddStaff} loading={addStaffLoading}>Thêm</Button></Space>} mask={{ closable: false }}>
         <Form layout="vertical">
           <Form.Item label="Vai trò">
             <Select
@@ -800,7 +800,7 @@ export default function CuocHopDetailPage() {
         onClose={() => { setAddQuestionModalOpen(false); questionForm.resetFields(); }}
         title="Thêm câu hỏi biểu quyết"
         size={480} rootClassName="drawer-gradient"
-        extra={<Space><Button onClick={() => { setAddQuestionModalOpen(false); questionForm.resetFields(); }}>Hủy</Button><Button type="primary" onClick={handleAddQuestion}>Thêm</Button></Space>} maskClosable={false}>
+        extra={<Space><Button onClick={() => { setAddQuestionModalOpen(false); questionForm.resetFields(); }}>Hủy</Button><Button type="primary" onClick={handleAddQuestion}>Thêm</Button></Space>} mask={{ closable: false }}>
         <Form form={questionForm} layout="vertical">
           <Form.Item name="name" label="Nội dung câu hỏi" rules={[{ required: true, message: 'Vui lòng nhập câu hỏi' }]}>
             <Input placeholder="Nhập nội dung câu hỏi biểu quyết" maxLength={500} />
@@ -820,7 +820,7 @@ export default function CuocHopDetailPage() {
         onClose={() => { setAddAnswerModalOpen(false); answerForm.resetFields(); }}
         title="Thêm đáp án"
         size={480} rootClassName="drawer-gradient"
-        extra={<Space><Button onClick={() => { setAddAnswerModalOpen(false); answerForm.resetFields(); }}>Hủy</Button><Button type="primary" onClick={handleAddAnswer}>Thêm</Button></Space>} maskClosable={false}>
+        extra={<Space><Button onClick={() => { setAddAnswerModalOpen(false); answerForm.resetFields(); }}>Hủy</Button><Button type="primary" onClick={handleAddAnswer}>Thêm</Button></Space>} mask={{ closable: false }}>
         <Form form={answerForm} layout="vertical">
           <Form.Item name="name" label="Tên đáp án" rules={[{ required: true, message: 'Vui lòng nhập đáp án' }]}>
             <Input placeholder="VD: Đồng ý / Không đồng ý / Ý kiến khác" maxLength={500} />

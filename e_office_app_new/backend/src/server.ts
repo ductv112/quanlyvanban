@@ -60,6 +60,9 @@ app.use(cors({ origin: process.env.CORS_ORIGIN || 'http://localhost:3000', crede
 app.use(compression());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true }));
+// BUG #41: axios.patch(url) không gửi body + Content-Type → express.json() bỏ qua
+// → req.body = undefined → `const { x } = req.body` throw 500. Default về {} cho an toàn.
+app.use((req, _res, next) => { if (req.body == null) req.body = {}; next(); });
 app.use(cookieParser());
 app.use(pinoHttp({ logger }));
 

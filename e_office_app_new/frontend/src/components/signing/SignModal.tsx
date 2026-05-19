@@ -30,7 +30,7 @@
  *   - Color state theo remaining: xanh > 60s, vàng 30-60s, đỏ < 30s
  *   - Expired transition khi remainingMs=0 (idempotent với BE Socket event qua expiredFired ref)
  *   - Spam-click disable: caller page dùng useSigning.isOpen (D-18, D-19)
- *   - maskClosable={false} giữ AntD 6 API `mask={{ closable: false }}` (Phase 12 hotfix)
+ *   - mask={{ closable: false }} giữ AntD 6 API `mask={{ closable: false }}` (Phase 12 hotfix)
  */
 
 import { useEffect, useRef, useState } from 'react';

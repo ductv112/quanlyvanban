@@ -741,7 +741,7 @@ export default function CuocHopPage() {
             <Button onClick={() => setDrawerOpen(false)}>Hủy</Button>
             <Button type="primary" icon={<SaveOutlined />} loading={formLoading} onClick={handleSave}>Lưu</Button>
           </Space>
-        } maskClosable={false}>
+        } mask={{ closable: false }}>
         <Form form={form} layout="vertical" validateTrigger="onSubmit">
           <Row gutter={16}>
             <Col span={24}>
@@ -828,7 +828,7 @@ export default function CuocHopPage() {
         onClose={() => setRoomDrawerOpen(false)}
         title="Quản lý phòng họp"
         size={600}
-        extra={<Button type="primary" icon={<PlusOutlined />} onClick={() => openRoomForm()}>Thêm phòng</Button>} maskClosable={false}>
+        extra={<Button type="primary" icon={<PlusOutlined />} onClick={() => openRoomForm()}>Thêm phòng</Button>} mask={{ closable: false }}>
         <Table<Room>
           rowKey="id"
           columns={roomColumns}
@@ -846,7 +846,7 @@ export default function CuocHopPage() {
           onOk={handleSaveRoom}
           confirmLoading={roomFormLoading}
           okText="Lưu"
-          cancelText="Hủy" maskClosable={false}>
+          cancelText="Hủy" mask={{ closable: false }}>
           <Form form={roomForm} layout="vertical">
             <Form.Item name="code" label="Mã phòng" rules={[{ required: true, message: 'Vui lòng nhập mã phòng' }]}>
               <Input placeholder="VD: P101" maxLength={50} />
@@ -873,7 +873,7 @@ export default function CuocHopPage() {
         onClose={() => { setTypeDrawerOpen(false); setEditingType(null); typeForm.resetFields(); }}
         title="Quản lý loại cuộc họp"
         size={600}
-        rootClassName="drawer-gradient" maskClosable={false}>
+        rootClassName="drawer-gradient" mask={{ closable: false }}>
         <Card
           size="small"
           title={editingType ? 'Chỉnh sửa loại cuộc họp' : 'Thêm loại cuộc họp mới'}
@@ -918,7 +918,7 @@ export default function CuocHopPage() {
         onOk={handleReject}
         okText="Xác nhận từ chối"
         okButtonProps={{ danger: true }}
-        cancelText="Hủy" maskClosable={false}>
+        cancelText="Hủy" mask={{ closable: false }}>
         <div style={{ marginBottom: 8 }}>Lý do từ chối:</div>
         <TextArea
           rows={3}

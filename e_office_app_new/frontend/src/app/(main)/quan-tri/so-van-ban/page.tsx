@@ -285,7 +285,7 @@ export default function DocBookPage() {
               {editingRecord ? 'Cập nhật' : 'Thêm mới'}
             </Button>
           </Space>
-        } maskClosable={false}>
+        } mask={{ closable: false }}>
         <Form form={form} layout="vertical" autoComplete="off" validateTrigger="onSubmit">
           <Form.Item label="Tên sổ" name="name" rules={[{ required: true, message: 'Nhập tên sổ văn bản' }]}>
             <Input placeholder="VD: Sổ văn bản đến" maxLength={200} style={{ borderRadius: 8 }} />
