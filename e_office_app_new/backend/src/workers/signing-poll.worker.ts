@@ -221,7 +221,10 @@ async function rescheduleOrExpire(
  * BullMQ call function này với mỗi job từ queue `signing`.
  */
 async function processJob(job: Job<PollSignStatusJob>): Promise<void> {
-  const { signTransactionId, providerTransactionId, attempt } = job.data;
+  // pg driver trả BIGINT dạng string (CLAUDE.md pitfall #9). BullMQ JSON-serialize
+  // giữ nguyên string -> Number.isInteger fail ở buildSignedObjectKey. Coerce sớm.
+  const signTransactionId = Number(job.data.signTransactionId);
+  const { providerTransactionId, attempt } = job.data;
   const ctx = { jobId: job.id, txnId: signTransactionId, attempt };
   logger.info(ctx, 'Processing poll-sign-status job');
 

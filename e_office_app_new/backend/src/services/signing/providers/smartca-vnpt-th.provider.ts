@@ -344,8 +344,8 @@ export function createSmartCaVnptThProvider(httpClient?: HttpClient): SigningPro
     ): Promise<GetStatusResult> {
       const signatureBase64 = cacheGet(providerTxnId);
       if (signatureBase64) {
-        // Cleanup sau khi lấy — single-use
-        signatureCache.delete(providerTxnId);
+        // KHÔNG delete ngay — worker có thể fail downstream (vd: pdf-signer error,
+        // MinIO upload fail) -> retry job cần cache còn. TTL 5 phút tự expire.
         return { status: 'completed', signatureBase64 };
       }
       return {
