@@ -74,7 +74,7 @@ import { useAuthStore } from '@/stores/auth.store';
 // Types — match GET /ky-so/cau-hinh response shape
 // ============================================================================
 
-type ProviderCode = 'SMARTCA_VNPT' | 'MYSIGN_VIETTEL';
+type ProviderCode = 'SMARTCA_VNPT' | 'MYSIGN_VIETTEL' | 'SMARTCA_VNPT_TH';
 
 interface ProviderStats {
   total_users: number;
@@ -127,17 +127,25 @@ interface TestResultState {
 
 const PROVIDER_META: Record<
   ProviderCode,
-  { label: string; baseUrlHint: string; needsProfileId: boolean }
+  { label: string; baseUrlHint: string; needsProfileId: boolean; gradient: string }
 > = {
   SMARTCA_VNPT: {
     label: 'SmartCA VNPT',
     baseUrlHint: 'https://gwsca.vnpt.vn',
     needsProfileId: false,
+    gradient: 'linear-gradient(135deg, #1B3A5C, #0891B2)',
   },
   MYSIGN_VIETTEL: {
     label: 'MySign Viettel',
     baseUrlHint: 'https://remotesigning.viettel.vn',
     needsProfileId: true,
+    gradient: 'linear-gradient(135deg, #7c3aed, #a78bfa)',
+  },
+  SMARTCA_VNPT_TH: {
+    label: 'SmartCA VNPT Tích hợp (DEV TEST)',
+    baseUrlHint: 'https://rmgateway.vnptit.vn',
+    needsProfileId: false,
+    gradient: 'linear-gradient(135deg, #059669, #10b981)',
   },
 };
 
@@ -236,9 +244,6 @@ export default function KySoCauHinhPage() {
 
   // Stats hiển thị từ provider đang active (không có switcher tab)
   const displayStats: ProviderStats | null = activeProvider?.stats ?? null;
-
-  const smartcaProvider = providers.find((p) => p.provider_code === 'SMARTCA_VNPT') ?? null;
-  const mysignProvider = providers.find((p) => p.provider_code === 'MYSIGN_VIETTEL') ?? null;
 
   // ──────────────────────────────────────────────────────────────────────────
   // Drawer handlers
@@ -841,8 +846,8 @@ export default function KySoCauHinhPage() {
           Cấu hình ký số hệ thống
         </h2>
         <p className="page-description">
-          Hệ thống hỗ trợ 2 nhà cung cấp dịch vụ ký số: SmartCA VNPT và MySign Viettel. Admin cấu
-          hình credentials và kích hoạt 1 provider cho toàn hệ thống.
+          Hệ thống hỗ trợ các nhà cung cấp dịch vụ ký số. Admin cấu hình credentials và kích hoạt 1
+          provider cho toàn hệ thống.
         </p>
       </div>
 
@@ -989,36 +994,27 @@ export default function KySoCauHinhPage() {
         )}
       </Card>
 
-      {/* 2 Provider Cards — side by side (stack on mobile) */}
+      {/* Provider Cards — dynamic theo PROVIDER_META keys (md=12 → 2 col tablet, xl=8 → 3 col desktop) */}
       {loading ? (
         <Row gutter={[16, 16]}>
-          <Col xs={24} md={12}>
-            <Card>
-              <Skeleton active paragraph={{ rows: 5 }} />
-            </Card>
-          </Col>
-          <Col xs={24} md={12}>
-            <Card>
-              <Skeleton active paragraph={{ rows: 5 }} />
-            </Card>
-          </Col>
+          {(Object.keys(PROVIDER_META) as ProviderCode[]).map((code) => (
+            <Col key={code} xs={24} md={12} xl={8}>
+              <Card>
+                <Skeleton active paragraph={{ rows: 5 }} />
+              </Card>
+            </Col>
+          ))}
         </Row>
       ) : (
         <Row gutter={[16, 16]}>
-          <Col xs={24} md={12}>
-            {renderProviderCard(
-              smartcaProvider,
-              'SMARTCA_VNPT',
-              'linear-gradient(135deg, #1B3A5C, #0891B2)',
-            )}
-          </Col>
-          <Col xs={24} md={12}>
-            {renderProviderCard(
-              mysignProvider,
-              'MYSIGN_VIETTEL',
-              'linear-gradient(135deg, #7c3aed, #a78bfa)',
-            )}
-          </Col>
+          {(Object.keys(PROVIDER_META) as ProviderCode[]).map((code) => {
+            const p = providers.find((x) => x.provider_code === code) ?? null;
+            return (
+              <Col key={code} xs={24} md={12} xl={8}>
+                {renderProviderCard(p, code, PROVIDER_META[code].gradient)}
+              </Col>
+            );
+          })}
         </Row>
       )}
 
