@@ -5,7 +5,7 @@ import {
   Card, Tag, Button, Space, Row, Col, Timeline, Avatar,
   Upload, Modal, Input, Popconfirm, Checkbox, Empty, Spin, App,
   Badge, Typography, Flex, Dropdown, Drawer, Form, DatePicker, Select,
-  InputNumber,
+  InputNumber, Tooltip,
 } from 'antd';
 import {
   ArrowLeftOutlined, CheckCircleOutlined, CloseCircleOutlined, SendOutlined,
@@ -14,13 +14,12 @@ import {
   ClockCircleOutlined, UserOutlined, FilePdfOutlined,
   FileImageOutlined, FileWordOutlined, FileExcelOutlined, FileOutlined,
   EditOutlined, SafetyCertificateOutlined, StopOutlined, RollbackOutlined,
-  ThunderboltOutlined, InboxOutlined, CommentOutlined, SafetyOutlined,
+  ThunderboltOutlined, InboxOutlined, CommentOutlined,
   CloudUploadOutlined,
 } from '@ant-design/icons';
 import { api } from '@/lib/api';
 import { downloadAttachment } from '@/lib/download';
 import { useAuthStore } from '@/stores/auth.store';
-import { useSigning } from '@/hooks/use-signing';
 import { useParams, useRouter } from 'next/navigation';
 import dayjs from 'dayjs';
 
@@ -147,8 +146,9 @@ export default function OutgoingDocDetailPage() {
   const [lgspOrgs, setLgspOrgs] = useState<{ id: number; org_code: string; org_name: string }[]>([]);
   const [selectedLgspOrgs, setSelectedLgspOrgs] = useState<number[]>([]);
   const [lgspSending, setLgspSending] = useState(false);
-  // Ký số — sử dụng useSigning hook (Plan 11-06, thay thế mock OTP Plan 1)
-  const { openSign, renderSignModal, isOpen: isSigningOpen } = useSigning();
+  // Ký số trên VB đi: KHÔNG cho ký lại — VB đi là bản chính thức, chữ ký lãnh đạo
+  // đã có từ dự thảo (qua fn_drafting_doc_release copy). Ký lần 2 sẽ invalidate
+  // chữ ký lãnh đạo (PAdES rule). Chỉ hiển thị status Tag.
   // Gửi trục CP (HDSD II.3.8)
   const [cpModalOpen, setCpModalOpen] = useState(false);
   const [cpSelected, setCpSelected] = useState<string[]>([]);
@@ -671,16 +671,9 @@ export default function OutgoingDocDetailPage() {
                       {att.is_ca ? (
                         <Tag color="success" icon={<CheckCircleOutlined />}>Đã ký số</Tag>
                       ) : (
-                        <Button size="small" type="primary" ghost icon={<SafetyOutlined />} disabled={isSigningOpen} onClick={() => openSign({
-                          attachment: { id: att.id, file_name: att.file_name },
-                          attachmentType: 'outgoing',
-                          docId: doc.id,
-                          signReason: `Phê duyệt VB đi số ${doc.number}/${doc.notation}`,
-                          signLocation: doc.drafting_unit_name || 'Lào Cai',
-                          onSuccess: fetchAttachments,
-                        })}>
-                          Ký số
-                        </Button>
+                        <Tooltip title="VB đi chỉ hiển thị trạng thái ký số. Để ký, vào mục Văn bản dự thảo trước khi phát hành.">
+                          <Tag color="warning">Chưa ký số</Tag>
+                        </Tooltip>
                       )}
                       <Button size="small" type="link" icon={<DownloadOutlined />} onClick={() => handleDownload(att)} />
                       {!doc.approved && <Popconfirm title="Xóa file?" onConfirm={() => handleDeleteAttachment(att)}><Button size="small" type="link" danger icon={<DeleteOutlined />} /></Popconfirm>}
@@ -1002,9 +995,6 @@ export default function OutgoingDocDetailPage() {
           ))}
         </Checkbox.Group>
       </Modal>
-
-      {/* Sign modal từ useSigning hook (Plan 11-06) — replace mock OTP với real async flow */}
-      {renderSignModal()}
 
       {/* Phase 17 v3.0: Modal Gửi nội bộ — chọn đơn vị nhận, auto-sinh incoming_docs */}
       <Modal
