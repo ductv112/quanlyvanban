@@ -28042,6 +28042,15 @@ BEGIN
         p_user_id, NOW(), NOW(),
         'internal'::edoc.doc_source_type, TRUE, v_sender_unit, v_doc.id
       ) RETURNING id INTO v_new_inc_id;
+      -- Copy attachments tu outgoing -> incoming (kem 4 fields ky so giu nguyen chu ky lanh dao)
+      INSERT INTO edoc.attachment_incoming_docs (
+        incoming_doc_id, file_name, file_path, file_size, content_type, sort_order, created_by,
+        is_ca, ca_date, signed_file_path, sign_provider_code, sign_transaction_id
+      )
+      SELECT v_new_inc_id, file_name, file_path, file_size, content_type, sort_order, created_by,
+             is_ca, ca_date, signed_file_path, sign_provider_code, sign_transaction_id
+      FROM edoc.attachment_outgoing_docs
+      WHERE outgoing_doc_id = p_id;
       UPDATE edoc.outgoing_doc_recipients SET sent_at = NOW(), sent_status = 'sent', generated_incoming_doc_id = v_new_inc_id WHERE id = v_recipient.id;
       v_internal := v_internal + 1;
     ELSIF v_recipient.recipient_type = 'external_org' THEN
