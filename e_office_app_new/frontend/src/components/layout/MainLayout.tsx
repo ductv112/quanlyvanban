@@ -302,10 +302,13 @@ function buildMenuItems({ badgeCounts, isAdmin, roles, menuLinks, userRights }: 
   // ── ĐỐI TÁC ── (flat list, everyone can see)
   items.push(
     { key: 'grp-doitac', type: 'group', label: 'ĐỐI TÁC' },
-    { key: 'ext-vnpt', icon: <LinkOutlined />, label: <a href="https://vinvoice.vn" target="_blank" rel="noopener noreferrer">Hóa đơn VNPT</a> },
-    { key: 'ext-viettel', icon: <LinkOutlined />, label: <a href="https://sinvoice.viettel.vn" target="_blank" rel="noopener noreferrer">Hóa đơn Viettel</a> },
-    { key: 'ext-bhxh', icon: <LinkOutlined />, label: <a href="https://dichvucong.baohiemxahoi.gov.vn" target="_blank" rel="noopener noreferrer">Bảo hiểm XH</a> },
-    { key: 'ext-thue', icon: <LinkOutlined />, label: <a href="https://thuedientu.gdt.gov.vn" target="_blank" rel="noopener noreferrer">Thuế điện tử</a> },
+    { key: 'ext-vnpt-invoice', icon: <LinkOutlined />, label: <a href="https://hst.vnpt-invoice.com.vn/login" target="_blank" rel="noopener noreferrer">VNPT Invoice</a> },
+    { key: 'ext-vnpt-econtract', icon: <LinkOutlined />, label: <a href="https://econtract.vnpt.vn/" target="_blank" rel="noopener noreferrer">VNPT eContract</a> },
+    { key: 'ext-vnpt-bhxh', icon: <LinkOutlined />, label: <a href="https://vnpt-bhxh.vn/" target="_blank" rel="noopener noreferrer">VNPT BHXH</a> },
+    { key: 'ext-viettel-vinvoice', icon: <LinkOutlined />, label: <a href="https://vinvoice.viettel.vn/account/login" target="_blank" rel="noopener noreferrer">Viettel vInvoice</a> },
+    { key: 'ext-viettel-econtract', icon: <LinkOutlined />, label: <a href="https://hopdongdientu.viettel.vn/enterprise-login" target="_blank" rel="noopener noreferrer">Viettel eContract</a> },
+    { key: 'ext-viettel-vbhxh', icon: <LinkOutlined />, label: <a href="https://vbhxh.viettel.vn/dang-nhap" target="_blank" rel="noopener noreferrer">Viettel vBHXH</a> },
+    { key: 'ext-kekhai-thue', icon: <LinkOutlined />, label: <a href="https://www.gdt.gov.vn/wps/portal/home/hotrokekhai" target="_blank" rel="noopener noreferrer">Kê khai thuế</a> },
   );
 
   // ── HỆ THỐNG ── (gate theo rights granular, không hardcode isAdmin)
