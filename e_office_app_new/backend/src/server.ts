@@ -44,6 +44,7 @@ import { initSocket } from './lib/socket.js';
 import { ensureBucket } from './lib/minio/client.js';
 import { startSigningWorker, stopSigningWorker } from './workers/signing-poll.worker.js';
 import { closeSigningQueue } from './lib/queue/signing-queue.js';
+import { closeLgspSendQueue } from './lib/queue/lgsp-send-queue.js';
 import { closeRedisConnection } from './lib/queue/redis-connection.js';
 
 const app = express();
@@ -192,6 +193,7 @@ async function shutdown(signal: string): Promise<void> {
 
   try { await stopSigningWorker(); } catch (err) { logger.warn({ err }, 'stopSigningWorker error'); }
   try { await closeSigningQueue(); } catch (err) { logger.warn({ err }, 'closeSigningQueue error'); }
+  try { await closeLgspSendQueue(); } catch (err) { logger.warn({ err }, 'closeLgspSendQueue error'); }
   try { await closeRedisConnection(); } catch (err) { logger.warn({ err }, 'closeRedisConnection error'); }
 
   httpServer.close(() => {

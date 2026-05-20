@@ -3,6 +3,10 @@ import { Worker } from 'bullmq';
 import IORedis from 'ioredis';
 import pg from 'pg';
 import pino from 'pino';
+import {
+  startLgspSendWorker,
+  stopLgspSendWorker,
+} from './jobs/lgsp-send-worker.js';
 
 const { Pool } = pg;
 
@@ -143,28 +147,9 @@ async function lgspReceiveList(): Promise<LgspReceivedItem[]> {
   return json.data.filter((d) => d.status === 'initial');
 }
 
-async function lgspSendEdoc(edxml: string, destOrgCode: string): Promise<{ ok: boolean; docId?: string; message: string }> {
-  const token = await lgspLogin();
-  const ep = process.env.LGSP_ENDPOINT!.replace(/\/$/, '');
-  const res = await fetch(`${ep}/api/lgspedoc/send-edoc`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      token,
-      edocContent: edxml,
-      messageType: 'edoc',
-      systemId: process.env.LGSP_SYSTEM_ID || '',
-      secretKey: process.env.LGSP_SECRET_KEY || '',
-      destOrgCode,
-    }),
-  });
-  const json = await res.json() as { success: boolean; message: string; docId?: string; data?: { docId?: string; errorDesc?: string } };
-  return {
-    ok: !!json.success,
-    docId: json.docId || json.data?.docId,
-    message: json.message || json.data?.errorDesc || 'unknown',
-  };
-}
+// NOTE: `lgspSendEdoc()` helper (Phase 18 BROKEN /api/lgspedoc/send-edoc) DELETED
+// Phase 34-02 — replaced by workers/src/jobs/lgsp-send-worker.ts dung
+// /v1/sendEdoc multipart + X-SystemId/X-SecretKey headers (Postman authoritative).
 
 // --- LGSP Receive Worker (polling) ---
 const lgspReceiveWorker = new Worker(
@@ -206,41 +191,16 @@ const lgspReceiveWorker = new Worker(
   { connection },
 );
 
-// --- LGSP Send Worker ---
-const lgspSendWorker = new Worker(
-  'lgsp-send',
-  async (job) => {
-    const { tracking_id, dest_org_code, edxml_content } = job.data;
-    logger.info({ jobId: job.id, trackingId: tracking_id, destOrg: dest_org_code, mock: LGSP_MOCK }, 'LGSP: sending...');
-
-    if (LGSP_MOCK) {
-      await pool.query(
-        'SELECT * FROM edoc.fn_lgsp_tracking_update_status($1, $2, $3, $4)',
-        [tracking_id, 'success', `LGSP-MOCK-${Date.now()}`, null],
-      );
-      logger.info({ trackingId: tracking_id }, 'LGSP MOCK: sent OK');
-      return;
-    }
-
-    try {
-      const result = await lgspSendEdoc(edxml_content || '<edXML/>', dest_org_code);
-      if (result.ok) {
-        await pool.query('SELECT * FROM edoc.fn_lgsp_tracking_update_status($1, $2, $3, $4)',
-          [tracking_id, 'success', result.docId || '', null]);
-        logger.info({ trackingId: tracking_id, lgspDocId: result.docId }, 'LGSP: sent OK');
-      } else {
-        await pool.query('SELECT * FROM edoc.fn_lgsp_tracking_update_status($1, $2, $3, $4)',
-          [tracking_id, 'error', null, result.message]);
-        logger.warn({ trackingId: tracking_id, message: result.message }, 'LGSP: sent failed');
-      }
-    } catch (err) {
-      await pool.query('SELECT * FROM edoc.fn_lgsp_tracking_update_status($1, $2, $3, $4)',
-        [tracking_id, 'error', null, (err as Error).message]).catch(() => null);
-      logger.error({ trackingId: tracking_id, err: (err as Error).message }, 'LGSP: send error');
-    }
-  },
-  { connection },
-);
+// --- LGSP Send Worker (Phase 34) ---
+// REPLACED Phase 18 inline worker. New handler in workers/src/jobs/lgsp-send-worker.ts:
+//   - Job data shape: LgspSendJobData { recipient_id, outgoing_doc_id, tracking_id, sender_unit_id, environment }
+//   - 1 job = 1 external recipient (granularity per-recipient — D-02)
+//   - Concurrency 3 (D-04), retry 5 attempts exp backoff 30s/60s/120s/240s/480s (D-10)
+//   - Per-attempt credential fresh-load (D-14 rotation, no in-worker cache)
+//   - Build edXML + multipart /v1/sendEdoc + X-SystemId/X-SecretKey headers (Phase 34-01)
+//   - 4xx LGSP errorCode = no-retry mark tracking error (D-11)
+//   - Network/5xx = throw -> BullMQ retry, exhausted -> on('failed') mark error (D-13)
+const lgspSendWorker = startLgspSendWorker();
 
 // --- FCM Push Worker ---
 const fcmWorker = new Worker(
@@ -303,7 +263,7 @@ const notificationWorker = new Worker(
   { connection },
 );
 
-logger.info('Workers started: email-send, sms-send, lgsp-receive, lgsp-send, fcm-push, zalo-send, notification-send');
+logger.info('Workers started: email-send, sms-send, lgsp-receive, lgsp-send (Phase 34), fcm-push, zalo-send, notification-send');
 
 // Graceful shutdown
 process.on('SIGTERM', async () => {
@@ -311,7 +271,7 @@ process.on('SIGTERM', async () => {
   await emailWorker.close();
   await smsWorker.close();
   await lgspReceiveWorker.close();
-  await lgspSendWorker.close();
+  await stopLgspSendWorker(lgspSendWorker);
   await fcmWorker.close();
   await zaloWorker.close();
   await notificationWorker.close();
