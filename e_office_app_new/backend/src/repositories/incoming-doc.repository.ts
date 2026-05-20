@@ -1,5 +1,37 @@
-import { callFunction, callFunctionOne } from '../lib/db/query.js';
+import { callFunction, callFunctionOne, rawQuery } from '../lib/db/query.js';
 import type { DbResult, DbResultWithId } from './doc-book.repository.js';
+
+// ============ Phase 35 Plan 35-01: LGSP receive types ============
+
+/**
+ * Input for createFromLgsp -- assembled by Plan 35-02 worker from ParsedEdxml.messageHeader.
+ *
+ * All string fields must be pre-trimmed by caller. Repo slices to DB VARCHAR limits as a safety net.
+ */
+export interface CreateFromLgspInput {
+  unit_id: number;                          // root unit id of the receiving DN (from job data)
+  external_doc_id: string;                  // lgsp_doc_id (UUID from /v1/syncReceivedEdocList) -- UNIQUE dedup key
+  lgsp_sender_org_code: string;             // From.OrganId (e.g. 'H37.DN.002')
+  publish_unit: string;                     // From.OrganName
+  notation: string;                         // Code.CodeNumber
+  document_code: string;                    // Code.CodeNotation
+  abstract: string;                         // Subject
+  signer: string;                           // SignerInfo.Signer
+  sign_date: string | null;                 // PromulgationInfo.PromulgationDate (ISO-ish)
+  publish_date: string | null;              // Same as sign_date per CONTEXT D-06
+  doc_type_id: number | null;               // Lookup by name OR null (admin assigns later)
+  number_paper: number;                     // OtherInfo.PageAmount fallback 1
+  recipients_text: string;                  // From.OrganName + ' -> ' + To.OrganName concat
+  created_by: number;                       // system staff_id (1=admin TODO Phase 37 dedicated lgsp-system user)
+  edxml_raw: string;                        // Full edXML for audit (currently not stored; reserved for future extra_fields column)
+}
+
+export interface CreateFromLgspResult {
+  inserted: boolean;
+  skipped: boolean;            // true when dedup catch fired (already exists)
+  id: number | null;           // present when inserted=true
+  message: string;
+}
 
 // ============ Row types ============
 
@@ -409,5 +441,120 @@ export const incomingDocRepository = {
 
   async getWarehouses(unitId?: number): Promise<{ id: number; name: string; code: string }[]> {
     return callFunction('esto.fn_get_warehouses_list', [unitId ?? null]);
+  },
+
+  // --- Phase 35 Plan 35-01: LGSP receive (createFromLgsp + dedup catch) ---
+
+  /**
+   * Phase 35: Insert an incoming_docs row from a parsed LGSP edXML.
+   *
+   * Uses the existing SP `edoc.fn_incoming_doc_create` (28 positional args) which supports
+   * `p_source_type='external_lgsp'` + `p_external_doc_id`. The UNIQUE INDEX
+   * `idx_incoming_docs_external_dedupe` enforces dedup per CONTEXT D-09.
+   *
+   * Dedup behavior: When `p_external_doc_id` already exists, the underlying INSERT raises
+   * SQLSTATE 23505 inside the SP's BEGIN block, the WHEN OTHERS catch converts it to
+   * { success: false, message: <SQLERRM mentioning idx_incoming_docs_external_dedupe> }.
+   * This method detects that case via message substring + returns skipped=true (no throw).
+   *
+   * After insert, populates the new `lgsp_sender_org_code` column (Phase 35 new column
+   * NOT in SP signature -- append UPDATE).
+   */
+  async createFromLgsp(input: CreateFromLgspInput): Promise<CreateFromLgspResult> {
+    const row = await callFunctionOne<{ success: boolean; message: string; id: number | null }>(
+      'edoc.fn_incoming_doc_create',
+      [
+        input.unit_id,                                                         // p_unit_id
+        new Date().toISOString(),                                              // p_received_date = NOW
+        null,                                                                  // p_number -- SP auto-increment per unit
+        input.notation.slice(0, 50),                                           // p_notation VARCHAR(50)
+        input.document_code.slice(0, 100),                                     // p_document_code VARCHAR(100)
+        input.abstract,                                                        // p_abstract TEXT
+        input.publish_unit.slice(0, 500),                                      // p_publish_unit VARCHAR(500)
+        input.publish_date,                                                    // p_publish_date timestamptz
+        input.signer.slice(0, 200),                                            // p_signer VARCHAR(200)
+        input.sign_date,                                                       // p_sign_date timestamptz
+        null,                                                                  // p_doc_book_id -- LGSP doc has no in-DN book
+        input.doc_type_id,                                                     // p_doc_type_id (may be null)
+        null,                                                                  // p_doc_field_id
+        1,                                                                     // p_secret_id DEFAULT 1 (Thuong)
+        1,                                                                     // p_urgent_id DEFAULT 1 (Khan thuong)
+        input.number_paper,                                                    // p_number_paper
+        1,                                                                     // p_number_copies
+        null,                                                                  // p_expired_date
+        input.recipients_text.slice(0, 1000),                                  // p_recipients
+        null,                                                                  // p_sents
+        false,                                                                 // p_is_received_paper
+        input.created_by,                                                      // p_created_by
+        input.unit_id,                                                         // p_department_id = unit_id (root pattern Phase 17)
+        'external_lgsp',                                                       // p_source_type ENUM
+        false,                                                                 // p_is_unit_send
+        input.publish_unit.slice(0, 500),                                      // p_unit_send (display "from <org>")
+        null,                                                                  // p_previous_outgoing_doc_id
+        input.external_doc_id.slice(0, 200),                                   // p_external_doc_id (UNIQUE dedup)
+      ],
+    );
+
+    if (!row) {
+      return { inserted: false, skipped: false, id: null, message: 'SP returned no row' };
+    }
+
+    if (row.success && row.id) {
+      // Populate the new lgsp_sender_org_code column (NOT in SP signature -- append UPDATE).
+      await rawQuery(
+        'UPDATE edoc.incoming_docs SET lgsp_sender_org_code = $1 WHERE id = $2',
+        [input.lgsp_sender_org_code.slice(0, 13), row.id],
+      );
+      return { inserted: true, skipped: false, id: Number(row.id), message: row.message };
+    }
+
+    // Dedup detection: SP message contains the unique index name OR generic 23505 marker.
+    const msg = (row.message || '').toLowerCase();
+    const isDedup =
+      msg.includes('idx_incoming_docs_external_dedupe') ||
+      msg.includes('duplicate key') ||
+      msg.includes('unique constraint');
+    if (isDedup) {
+      return {
+        inserted: false,
+        skipped: true,
+        id: null,
+        message: `LGSP doc ${input.external_doc_id} already exists -- skipped (dedup)`,
+      };
+    }
+
+    // Other SP failures -- bubble up (caller may decide retry).
+    return { inserted: false, skipped: false, id: null, message: row.message };
+  },
+
+  /**
+   * Phase 35 Plan 35-01: Insert an attachment row for an LGSP-received incoming_doc.
+   *
+   * MinIO upload happens BEFORE this -- caller passes the final `file_path`
+   * (e.g. 'lgsp/<docId>/<fileName>').
+   *
+   * Uses the existing SP `edoc.fn_attachment_incoming_create` (verified at
+   * schema/000_schema_v3.0.sql line 722).
+   */
+  async createLgspAttachment(params: {
+    incoming_doc_id: number;
+    file_name: string;
+    file_path: string;
+    file_size: number;
+    content_type: string;
+    uploaded_by: number;
+  }): Promise<{ success: boolean; id: number | null; message: string }> {
+    const row = await callFunctionOne<{ success: boolean; message: string; id: number | null }>(
+      'edoc.fn_attachment_incoming_create',
+      [
+        params.incoming_doc_id,
+        params.file_name.slice(0, 500),
+        params.file_path.slice(0, 1000),
+        params.file_size,
+        params.content_type.slice(0, 200),
+        params.uploaded_by,
+      ],
+    );
+    return row ?? { success: false, id: null, message: 'attachment SP returned no row' };
   },
 };
