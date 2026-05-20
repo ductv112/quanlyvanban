@@ -28796,3 +28796,24 @@ $func$;
 DO $$ BEGIN
   RAISE NOTICE 'Phase 33 SPs: 7 lgsp_agency_config + 4 lgsp_status_outbox -- OK';
 END $$;
+
+-- ============================================================
+-- Phase 35: Receive Flow (cron syncReceivedEdocList) -- schema append
+-- REQ: LGSP-RECV-05 (denormalize sender org code on incoming_docs for UI badge + filter)
+-- Date: 2026-05-20
+-- Idempotent: ADD COLUMN IF NOT EXISTS + CREATE INDEX IF NOT EXISTS, safe to re-apply N times
+-- ============================================================
+
+ALTER TABLE edoc.incoming_docs
+  ADD COLUMN IF NOT EXISTS lgsp_sender_org_code VARCHAR(13) NULL;
+
+COMMENT ON COLUMN edoc.incoming_docs.lgsp_sender_org_code IS
+  'Phase 35: Sender org code (H37.xx.xxx) of the DN that pushed this doc via LGSP -- populated only when source_type=external_lgsp. Denormalized from edXML MessageHeader.From.OrganId for fast UI badge + filter without JOIN to inter_organizations.';
+
+CREATE INDEX IF NOT EXISTS idx_incoming_docs_lgsp_sender
+  ON edoc.incoming_docs(lgsp_sender_org_code)
+  WHERE lgsp_sender_org_code IS NOT NULL;
+
+DO $$ BEGIN
+  RAISE NOTICE 'Phase 35 schema: incoming_docs.lgsp_sender_org_code + idx_incoming_docs_lgsp_sender -- OK';
+END $$;
