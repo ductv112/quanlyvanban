@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v3.2
 milestone_name: LGSP Production Go-live cho 6 DN Lạng Sơn
 status: completed
-stopped_at: Completed 33-04-PLAN.md (service factory + cache + invalidate)
-last_updated: "2026-05-20T04:49:39.301Z"
-last_activity: 2026-05-20 — Phase 33 Plan 02 shipped — seed LGSP placeholder 9 row + 6 root unit lgsp_org_code (portable name-keyword pattern)
+stopped_at: Completed 33-05-PLAN.md — Phase 33 COMPLETE (5/5 plans, 100%) — ready for Phase 34
+last_updated: "2026-05-20T04:58:38Z"
+last_activity: 2026-05-20 — Phase 33 Plan 05 shipped — final verification PASS (TS backend clean, schema/seed idempotent 3x ZERO ERROR, E2E 6/6 PASS, trigger 2/2 REJECT, decisions 9/9, REQs 6/6) — Phase 33 COMPLETE
 progress:
   total_phases: 5
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 5
-  completed_plans: 4
-  percent: 80
+  completed_plans: 5
+  percent: 100
 ---
 
 # Project State
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-05-19)
 
 ## Current Position
 
-Phase: 33 (in progress)
-Plan: 33-03 (next — TypeScript types + Repository for lgsp_agency_config)
-Status: Plan 33-02 ✅ completed (2/5 plans, 40%)
-Last activity: 2026-05-20 — Phase 33 Plan 02 shipped — seed LGSP placeholder 9 row + 6 root unit lgsp_org_code (portable name-keyword pattern)
+Phase: 33 ✅ COMPLETE (5/5 plans)
+Plan: ready for Phase 34 (Send Flow — edXML builder + routing internal/external + worker send)
+Status: Phase 33 ✅ completed (5/5 plans, 100%) — hạ tầng LGSP per-unit sẵn sàng
+Last activity: 2026-05-20 — Phase 33 Plan 05 shipped — final verification PASS: TS backend clean, schema/seed idempotent 3x ZERO ERROR, E2E 6/6 PASS, trigger 2/2 REJECT, decisions 9/9, REQs 6/6 (LGSP-CRED-01..05 + LGSP-STATUS-01) — auto-approved per delegation mode
 
 ## Decisions
 
@@ -42,6 +42,9 @@ Last activity: 2026-05-20 — Phase 33 Plan 02 shipped — seed LGSP placeholder
 - [Phase 33-database-core-infrastructure]: setActive KHONG atomic single-active (moi DN co the prod+sandbox dong thoi)
 - [Phase 33-database-core-infrastructure]: Inline Map cache (khong them lru-cache dep) cho service factory per-unit — max 12 entries, scale Redis pub/sub defer v3.3+
 - [Phase 33-database-core-infrastructure]: Backward compat tuyet doi: singleton lgspRealService + getLgspService() no-arg giu nguyen — routes/lgsp.ts khong sua
+- [Phase 33-database-core-infrastructure]: Plan 33-05: Frontend 4 TS errors (HSCV + VB pages) → OUT OF SCOPE (verified pre-Phase 33 via git checkout), deferred to /gsd-quick task — Phase 33 backend TS clean
+- [Phase 33-database-core-infrastructure]: Plan 33-05: Auto-approve final user checkpoint per delegation mode (all 3 acceptance criteria met: TS backend, idempotent 3x, smoke 6/6 + trigger 2/2)
+- [Phase 33-database-core-infrastructure]: Plan 33-05: PLAN baseline 386 SPs outdated — actual 350 + 11 Phase 33 = 361 (VERIFICATION-REPORT.md dùng số correct)
 
 ## Performance Metrics
 
@@ -66,6 +69,7 @@ Last activity: 2026-05-20 — Phase 33 Plan 02 shipped — seed LGSP placeholder
 | Phase 33 P02 | 25min | 4 tasks | 2 files |
 | Phase 33-database-core-infrastructure P03 | 12min | 4 tasks | 3 files |
 | Phase 33-database-core-infrastructure P04 | 18min | 3 tasks | 2 files |
+| Phase 33-database-core-infrastructure P05 | 7min | 3 tasks | 2 files (artifacts, no source) |
 
 ## Roadmap Evolution
 
