@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v3.2
 milestone_name: LGSP Production Go-live cho 6 DN Lạng Sơn
 status: completed
-stopped_at: Completed 33-03-PLAN.md
-last_updated: "2026-05-20T04:39:51.013Z"
+stopped_at: Completed 33-04-PLAN.md (service factory + cache + invalidate)
+last_updated: "2026-05-20T04:49:39.301Z"
 last_activity: 2026-05-20 — Phase 33 Plan 02 shipped — seed LGSP placeholder 9 row + 6 root unit lgsp_org_code (portable name-keyword pattern)
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 5
-  completed_plans: 3
-  percent: 60
+  completed_plans: 4
+  percent: 80
 ---
 
 # Project State
@@ -40,6 +40,8 @@ Last activity: 2026-05-20 — Phase 33 Plan 02 shipped — seed LGSP placeholder
 - [Phase 33]: Plan 33-02: Doi UPDATE pattern hardcode dept_id sang match by name keyword (ILIKE) — portable across dev/prod DBs
 - [Phase 33-database-core-infrastructure]: Repo Buffer pass-through (KHONG decrypt) — service layer decrypt via crypto.ts
 - [Phase 33-database-core-infrastructure]: setActive KHONG atomic single-active (moi DN co the prod+sandbox dong thoi)
+- [Phase 33-database-core-infrastructure]: Inline Map cache (khong them lru-cache dep) cho service factory per-unit — max 12 entries, scale Redis pub/sub defer v3.3+
+- [Phase 33-database-core-infrastructure]: Backward compat tuyet doi: singleton lgspRealService + getLgspService() no-arg giu nguyen — routes/lgsp.ts khong sua
 
 ## Performance Metrics
 
@@ -63,6 +65,7 @@ Last activity: 2026-05-20 — Phase 33 Plan 02 shipped — seed LGSP placeholder
 **Roll-out post-Phase 37:** Wave 1 (DN.001/002/003 sandbox) → Wave 2 (DN.004/005/006 prod) qua toggle `lgsp_agency_config.is_active=true` per row — KHÔNG cần deploy/restart.
 | Phase 33 P02 | 25min | 4 tasks | 2 files |
 | Phase 33-database-core-infrastructure P03 | 12min | 4 tasks | 3 files |
+| Phase 33-database-core-infrastructure P04 | 18min | 3 tasks | 2 files |
 
 ## Roadmap Evolution
 
@@ -76,8 +79,8 @@ Last activity: 2026-05-20 — Phase 33 Plan 02 shipped — seed LGSP placeholder
 
 ## Session Continuity
 
-Last session: 2026-05-20T04:39:41.097Z
-Stopped at: Completed 33-03-PLAN.md
+Last session: 2026-05-20T04:49:39.293Z
+Stopped at: Completed 33-04-PLAN.md (service factory + cache + invalidate)
 Resume: `/gsd-execute-phase 33` (continue with Plan 33-02 seed 9 row placeholder) or chain auto-mode
 
 ### Notes

@@ -85,11 +85,11 @@ Detail: `.planning/milestones/v3.1-phases/`, archive: `.planning/milestones/v3.1
   3. Seed `seed/002_demo_data.sql` insert 9 row (6 prod + 3 sandbox với `is_active=FALSE`), `client_secret` encrypted bằng `pgp_sym_encrypt` với `SIGNING_SECRET_KEY` (verify decrypt OK qua test SP)
   4. Backend service `getLgspService(unit_id)` test: input user thuộc subtree unit nào → trace root → trả về `LGSPRealService` instance với credential đúng; cache LRU 5 phút hit lần 2; throw error nếu root unit không có credential active
   5. Bảng `lgsp_status_outbox` tồn tại với đủ cột (`incoming_doc_id`, `target_status`, `payload`, `sent_status`, `retry_count`, `error_message`) sẵn sàng cho Phase 36 worker consume
-**Plans:** 3/5 plans executed
+**Plans:** 4/5 plans executed
   - [x] 33-01-PLAN.md — Schema infra (lgsp_agency_config + lgsp_status_outbox + departments.lgsp_org_code + trigger validate root)
   - [x] 33-02-PLAN.md — Seed 9 row placeholder + UPDATE 6 root unit lgsp_org_code (user checkpoint mapping)
   - [x] 33-03-PLAN.md — 11 SPs + 2 repository (lgsp-agency-config + lgsp-status-outbox)
-  - [ ] 33-04-PLAN.md — Refactor LGSPRealService constructor inject + factory getLgspService(unit_id) + cache + invalidate
+  - [x] 33-04-PLAN.md — Refactor LGSPRealService constructor inject + factory getLgspService(unit_id) + cache + invalidate
   - [ ] 33-05-PLAN.md — Final verification (TypeScript + idempotent re-apply + E2E smoke test + user approval)
 
 ### Phase 34: Send Flow (sendEdoc)
@@ -155,7 +155,7 @@ Detail: `.planning/milestones/v3.1-phases/`, archive: `.planning/milestones/v3.1
 | 8-14 + 11.1 | v2.0 | Complete | 2026-04-21 → 2026-04-23 |
 | 15-20 | v3.0 | Complete | 2026-04-23 → 2026-04-24 |
 | 21-32 | v3.1 | Complete | 2026-05-05 → 2026-05-19 |
-| 33 | 3/5 | In Progress|  |
+| 33 | 4/5 | In Progress|  |
 | 34 | v3.2 — Send Flow | Not started | — |
 | 35 | v3.2 — Receive Flow | Not started | — |
 | 36 | v3.2 — Status Callback Chain | Not started | — |
