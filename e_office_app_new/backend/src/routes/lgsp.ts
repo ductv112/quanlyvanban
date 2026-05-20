@@ -1,8 +1,9 @@
 import { Router, type Request, type Response } from 'express';
-import type { AuthRequest } from '../middleware/auth.js';
+import { type AuthRequest, requireRoles } from '../middleware/auth.js';
 import { lgspRepository } from '../repositories/lgsp.repository.js';
 import { getLgspService } from '../services/lgsp.service.js';
 import { lgspSendQueue } from '../lib/queue/client.js';
+import { enqueueReceiveTick } from '../lib/queue/lgsp-receive-queue.js';
 import { handleDbError } from '../lib/error-handler.js';
 
 const router = Router();
@@ -162,60 +163,67 @@ router.post('/organizations/sync', async (req: Request, res: Response) => {
 });
 
 // ============================================================
-// POST /receive-poll — Manual trigger polling LGSP (dev/debug)
+// POST /sync-now - Admin manual trigger LGSP receive sync (Phase 35 Plan 03)
+// Enqueues a 'receive-tick' job which spawns N 'receive-dn' child jobs
+// (1 per active DN in lgsp_agency_config). Useful when admin doesn't want
+// to wait for the 5-min cron interval (e.g. just after enabling a new DN).
 //
-// Phase 35: Updated cho interface moi (2-arg receiveDocuments + getEdocById detail).
-// Sau Plan 35-03 nay se duoc thay the boi POST /api/lgsp/sync-now (enqueue tick job).
-// Hien tai giu lai cho dev debug — log full payload + create tracking row per doc.
+// Returns 202 Accepted immediately - actual sync happens async via BullMQ.
+// Phase 37 admin UI will add a "Sync ngay" button that hits this route.
+//
+// Role check: 'Quan tri he thong' (real DB role name, see public.roles).
+// Plan text says 'admin' but the project uses Vietnamese role names; using
+// the actual role name keeps the auth gate functional.
 // ============================================================
-function formatYmd(date: Date): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}/${m}/${d}`;
-}
-
-router.post('/receive-poll', async (req: Request, res: Response) => {
-  try {
-    const { staffId } = (req as AuthRequest).user;
-    const service = await getLgspService();
-    const now = new Date();
-    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const summaries = await service.receiveDocuments(formatYmd(sevenDaysAgo), formatYmd(now));
-
-    const trackingIds: number[] = [];
-    for (const summary of summaries) {
-      // Fetch full payload de co edXML + sender name (Phase 35 split LIST/DETAIL API)
-      const full = await service.getEdocById(summary.lgsp_doc_id);
-      if (!full) continue;
-      const result = await lgspRepository.createTracking(
-        null, // incoming — no outgoing_doc_id
-        'receive',
-        full.sender_org_code,
-        full.sender_org_name,
-        full.edxml,
-        staffId,
-      );
-      if (result.success) {
-        trackingIds.push(result.id);
-        // Update status to success with lgsp_doc_id
-        await lgspRepository.updateTrackingStatus(
-          result.id,
-          'success',
-          full.lgsp_doc_id,
-          null,
-        );
-      }
+router.post(
+  '/sync-now',
+  requireRoles('Quản trị hệ thống'),
+  async (req: Request, res: Response) => {
+    try {
+      const { staffId } = (req as AuthRequest).user;
+      const jobId = await enqueueReceiveTick({
+        trigger_source: 'manual',
+        triggered_by_staff_id: staffId,
+      });
+      res.status(202).json({
+        success: true,
+        message: 'Da xep hang dong bo LGSP - worker se chay trong giay lat',
+        job_id: jobId,
+      });
+    } catch (error) {
+      handleDbError(error, res);
     }
+  },
+);
 
-    res.json({
-      success: true,
-      message: `Da nhan ${summaries.length} van ban tu LGSP`,
-      data: { received: summaries.length, tracking_ids: trackingIds },
-    });
-  } catch (error) {
-    handleDbError(error, res);
-  }
-});
+// ============================================================
+// POST /receive-poll - Phase 18 deprecated, forwards to /sync-now (Plan 35-03)
+//
+// Phase 18 inline receive-poll handler removed - the new BullMQ
+// async pipeline via /sync-now replaces it. Kept here as 1-month deprecation
+// window for any admin scripts that still call /receive-poll. Phase 37 will
+// fully remove this forward.
+// ============================================================
+router.post(
+  '/receive-poll',
+  requireRoles('Quản trị hệ thống'),
+  async (req: Request, res: Response) => {
+    try {
+      const { staffId } = (req as AuthRequest).user;
+      const jobId = await enqueueReceiveTick({
+        trigger_source: 'manual',
+        triggered_by_staff_id: staffId,
+      });
+      res.status(202).json({
+        success: true,
+        message: 'DEPRECATED: use POST /api/lgsp/sync-now. Da xep hang dong bo.',
+        job_id: jobId,
+        deprecated: true,
+      });
+    } catch (error) {
+      handleDbError(error, res);
+    }
+  },
+);
 
 export default router;
