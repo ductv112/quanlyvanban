@@ -85,7 +85,12 @@ Detail: `.planning/milestones/v3.1-phases/`, archive: `.planning/milestones/v3.1
   3. Seed `seed/002_demo_data.sql` insert 9 row (6 prod + 3 sandbox với `is_active=FALSE`), `client_secret` encrypted bằng `pgp_sym_encrypt` với `SIGNING_SECRET_KEY` (verify decrypt OK qua test SP)
   4. Backend service `getLgspService(unit_id)` test: input user thuộc subtree unit nào → trace root → trả về `LGSPRealService` instance với credential đúng; cache LRU 5 phút hit lần 2; throw error nếu root unit không có credential active
   5. Bảng `lgsp_status_outbox` tồn tại với đủ cột (`incoming_doc_id`, `target_status`, `payload`, `sent_status`, `retry_count`, `error_message`) sẵn sàng cho Phase 36 worker consume
-**Plans:** TBD
+**Plans:** 5 plans
+  - [ ] 33-01-PLAN.md — Schema infra (lgsp_agency_config + lgsp_status_outbox + departments.lgsp_org_code + trigger validate root)
+  - [ ] 33-02-PLAN.md — Seed 9 row placeholder + UPDATE 6 root unit lgsp_org_code (user checkpoint mapping)
+  - [ ] 33-03-PLAN.md — 11 SPs + 2 repository (lgsp-agency-config + lgsp-status-outbox)
+  - [ ] 33-04-PLAN.md — Refactor LGSPRealService constructor inject + factory getLgspService(unit_id) + cache + invalidate
+  - [ ] 33-05-PLAN.md — Final verification (TypeScript + idempotent re-apply + E2E smoke test + user approval)
 
 ### Phase 34: Send Flow (sendEdoc)
 **Goal:** Khi văn thư bấm "Gửi" VB đi với recipient `external_org`, hệ thống tự build edXML đúng spec QĐ 28, gọi `POST /v1/sendEdoc` qua credential của DN gửi, và hiển thị tracking inline. Recipient `internal_unit` (6 DN với nhau) vẫn dùng flow nội bộ — không qua LGSP.
