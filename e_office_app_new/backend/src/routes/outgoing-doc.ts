@@ -15,7 +15,12 @@ import {
   computeOutgoingPermsWithContext,
 } from '../lib/permissions/outgoing-doc.js';
 import { getUserPermissionContext, type DocPermissionContext } from '../lib/permissions/_shared.js';
+import { enqueueLgspSendJob } from '../lib/queue/lgsp-send-queue.js';
+import pino from 'pino';
 import dayjs from 'dayjs';
+
+// Phase 34 Plan 34-03: logger rieng cho LGSP send enqueue chain
+const lgspLogger = pino({ name: 'route-outgoing-doc-lgsp' });
 
 const router = Router();
 
@@ -713,7 +718,9 @@ router.post('/:id/noi-nhan', async (req: Request, res: Response) => {
   }
 });
 
-// POST /:id/gui-noi-bo — Gửi tới recipients (auto-sinh incoming + lgsp_tracking)
+// POST /:id/gui-noi-bo — Gửi tới recipients (auto-sinh incoming + lgsp_tracking + enqueue LGSP send job)
+// Phase 34 Plan 34-03: sau khi SP commit, enqueue 1 BullMQ job per external recipient
+// (CONTEXT D-01 async, D-02 per-recipient granularity, D-03 enqueue sau commit, D-14 env per attempt)
 router.post('/:id/gui-noi-bo', async (req: Request, res: Response) => {
   try {
     const { staffId, departmentId, isAdmin } = (req as AuthRequest).user;
@@ -721,17 +728,73 @@ router.post('/:id/gui-noi-bo', async (req: Request, res: Response) => {
     const loaded = await loadDocAndPerms(docId, { staffId, departmentId, isAdmin });
     if (!loaded) { res.status(404).json({ success: false, message: 'Không tìm thấy văn bản đi' }); return; }
     if (!loaded.perms.canSend) { res.status(403).json({ success: false, message: 'Không có quyền gửi văn bản đi này' }); return; }
+
+    // 1. Goi SP — auto INSERT lgsp_tracking pending cho external recipient,
+    //            UPDATE outgoing_doc_recipients.generated_lgsp_tracking_id,
+    //            UPDATE internal recipients sent_status='sent'.
     const result = await outgoingDocRepository.sendToRecipients(docId, staffId);
     if (!result.success) {
       res.status(400).json({ success: false, message: result.message });
       return;
     }
+
+    // 2. Phase 34: enqueue LGSP send job cho moi external recipient
+    //    (D-03: sau SP commit; D-02: 1 job = 1 recipient)
+    let enqueuedCount = 0;
+    let enqueueErrors = 0;
+    const externalCount = result.external_count ?? 0;
+    if (externalCount > 0) {
+      try {
+        // Resolve sender root unit (trace user.departmentId -> ancestor unit)
+        const senderUnitId = await resolveAncestorUnit(departmentId);
+        // D-14 environment: default 'prod', override qua env var (Plan 34-05 dev/test set 'sandbox')
+        const environment: 'sandbox' | 'prod' =
+          process.env.LGSP_DEFAULT_ENVIRONMENT === 'sandbox' ? 'sandbox' : 'prod';
+
+        const recipients = await outgoingDocRepository.getExternalRecipientsForSend(docId);
+        for (const r of recipients) {
+          try {
+            await enqueueLgspSendJob({
+              recipient_id: r.recipient_id,
+              outgoing_doc_id: docId,
+              tracking_id: r.tracking_id,
+              sender_unit_id: senderUnitId,
+              environment,
+            });
+            enqueuedCount++;
+          } catch (enqErr: unknown) {
+            enqueueErrors++;
+            const msg = enqErr instanceof Error ? enqErr.message : String(enqErr);
+            lgspLogger.error(
+              { docId, recipientId: r.recipient_id, trackingId: r.tracking_id, err: msg },
+              'enqueueLgspSendJob failed — tracking remains pending',
+            );
+          }
+        }
+        lgspLogger.info(
+          { docId, senderUnitId, environment, externalCount, enqueuedCount, enqueueErrors },
+          'LGSP send jobs enqueued',
+        );
+      } catch (resolveErr: unknown) {
+        // Redis down / unit resolve fail -> log + tiep tuc return success.
+        // Tracking rows da pending san; admin Phase 37 "Gui lai" se retry sau.
+        const msg = resolveErr instanceof Error ? resolveErr.message : String(resolveErr);
+        lgspLogger.error(
+          { docId, departmentId, err: msg },
+          'Failed to resolve sender unit / enqueue chain — tracking remains pending',
+        );
+      }
+    }
+
+    // 3. Response — UI Plan 34-04 dung enqueued_count de quyet dinh polling
     res.json({
       success: true,
       data: {
         message: result.message,
         internal_count: result.internal_count,
-        external_count: result.external_count,
+        external_count: externalCount,
+        enqueued_count: enqueuedCount,
+        ...(enqueueErrors > 0 ? { enqueue_errors: enqueueErrors } : {}),
       },
     });
   } catch (error) {
