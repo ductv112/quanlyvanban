@@ -25,10 +25,10 @@ Phân loại tự động theo `outgoing_doc_recipients.recipient_type` — KHÔ
 
 ### LGSP-CRED — Credential Management theo Đơn vị (5 reqs)
 
-- [ ] **LGSP-CRED-01**: Schema — Bảng `lgsp_agency_config` (`id, unit_id BIGINT NOT NULL FK→departments(id), environment ENUM('sandbox','prod'), system_id VARCHAR(13), secret_key_encrypted TEXT, base_url, is_active BOOLEAN DEFAULT FALSE, last_synced_at TIMESTAMPTZ, created_at, updated_at`) + UNIQUE(`unit_id`, `environment`)
-- [ ] **LGSP-CRED-02**: Schema — Cột `lgsp_org_code VARCHAR(13)` trong `departments` (NULL cho non-LGSP unit) — chỉ root unit của 6 DN có giá trị (H37.DN.001..006)
+- [x] **LGSP-CRED-01**: Schema — Bảng `lgsp_agency_config` (`id, unit_id BIGINT NOT NULL FK→departments(id), environment ENUM('sandbox','prod'), system_id VARCHAR(13), secret_key_encrypted TEXT, base_url, is_active BOOLEAN DEFAULT FALSE, last_synced_at TIMESTAMPTZ, created_at, updated_at`) + UNIQUE(`unit_id`, `environment`)
+- [x] **LGSP-CRED-02**: Schema — Cột `lgsp_org_code VARCHAR(13)` trong `departments` (NULL cho non-LGSP unit) — chỉ root unit của 6 DN có giá trị (H37.DN.001..006)
 - [ ] **LGSP-CRED-03**: Backend — Service `getLgspService(unit_id)` trace user → root unit → lookup credential, cache LRU 5 phút
-- [ ] **LGSP-CRED-04**: Backend — `secret_key` encrypted bằng `pgcrypto.pgp_sym_encrypt` với `SIGNING_SECRET_KEY` (pattern đã dùng cho `signing_provider_config`)
+- [x] **LGSP-CRED-04**: Backend — `secret_key` encrypted bằng `pgcrypto.pgp_sym_encrypt` với `SIGNING_SECRET_KEY` (pattern đã dùng cho `signing_provider_config`)
 - [ ] **LGSP-CRED-05**: Seed — 6 row prod + 3 row sandbox với credential từ Excel + List.txt (DN.001/002/003 sandbox, DN.004/005/006 prod-only), `is_active=FALSE` mặc định
 
 ### LGSP-SEND — Gửi VB đi qua trục (6 reqs)
@@ -52,7 +52,7 @@ Phân loại tự động theo `outgoing_doc_recipients.recipient_type` — KHÔ
 
 ### LGSP-STATUS — Status callback chain (9 mã QĐ 28) (10 reqs)
 
-- [ ] **LGSP-STATUS-01**: Schema — Bảng `lgsp_status_outbox` (`id, incoming_doc_id, target_status VARCHAR(2), payload JSONB, sent_at, sent_status ENUM('pending','success','error'), retry_count INT DEFAULT 0, error_message TEXT, created_at`) — outbox pattern cho async LGSP callback
+- [x] **LGSP-STATUS-01**: Schema — Bảng `lgsp_status_outbox` (`id, incoming_doc_id, target_status VARCHAR(2), payload JSONB, sent_at, sent_status ENUM('pending','success','error'), retry_count INT DEFAULT 0, error_message TEXT, created_at`) — outbox pattern cho async LGSP callback
 - [ ] **LGSP-STATUS-02**: Backend — Auto fire status `03` "Đã tiếp nhận" khi văn thư bấm "Tiếp nhận" VB đến nguồn LGSP
 - [ ] **LGSP-STATUS-03**: Backend — Auto fire status `04` "Phân công" khi lãnh đạo bấm "Tạo và giao việc" trên VB LGSP
 - [ ] **LGSP-STATUS-04**: Backend — Auto fire status `05` "Đang xử lý" khi chuyên viên có activity đầu tiên trên HSCV (bấm "Bắt đầu xử lý" hoặc upload file/comment đầu tiên)

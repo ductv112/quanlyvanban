@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v3.2
 milestone_name: LGSP Production Go-live cho 6 DN Lạng Sơn
-status: roadmap_ready
-stopped_at: ROADMAP v3.2 created — Phases 33-37 mapped 36/36 REQ-IDs, ready for /gsd-discuss-phase 33 hoặc /gsd-plan-phase 33
-last_updated: "2026-05-19T18:30:00.000Z"
-last_activity: 2026-05-19
+status: "Roadmap v3.2 ready (5 phases: 33-37, 36/36 REQ covered)"
+stopped_at: Completed 33-01-PLAN.md (DB Schema Infrastructure) — 2 tables + 1 column + 2 triggers idempotent, smoke test pass
+last_updated: "2026-05-20T04:15:59.716Z"
+last_activity: 2026-05-20 — Phase 33 Plan 01 executed (schema append + apply + verify idempotent)
 progress:
   total_phases: 5
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  total_plans: 5
+  completed_plans: 1
+  percent: 20
 ---
 
 # Project State
@@ -25,10 +25,18 @@ See: .planning/PROJECT.md (updated 2026-05-19)
 
 ## Current Position
 
-Phase: 33 (Not started, planned)
-Plan: —
-Status: Roadmap v3.2 ready (5 phases: 33-37, 36/36 REQ covered)
-Last activity: 2026-05-19 — ROADMAP v3.2 created via /gsd-roadmapper
+Phase: 33 (in progress)
+Plan: 33-02 (next — seed 9 row LGSP placeholder + UPDATE 6 root unit lgsp_org_code)
+Status: Plan 33-01 ✅ completed (1/5 plans, 20%)
+Last activity: 2026-05-20 — Phase 33 Plan 01 shipped — schema infrastructure 2 tables + outbox + triggers
+
+## Decisions
+
+- 2026-05-20 (33-01): Append vào master schema thay vì tạo file migrations rời (CLAUDE.md DB Migration Strategy mandate)
+- 2026-05-20 (33-01): Reuse SIGNING_SECRET_KEY env var (chung signing module) cho lgsp_agency_config secret_key_encrypted — không tạo LGSP_SECRET_KEY riêng
+- 2026-05-20 (33-01): Trigger BEFORE INSERT/UPDATE validate root unit thay vì CHECK constraint (CHECK không gọi subquery được)
+- 2026-05-20 (33-01): FK departments ON DELETE RESTRICT (chặn xóa root unit có LGSP config) + FK incoming_docs ON DELETE CASCADE (outbox event mồ côi vô nghĩa)
+- 2026-05-20 (33-01): Partial index WHERE sent_status='pending' tối ưu worker poll 30s + regular index per doc cho UI history query
 
 ## Performance Metrics
 
@@ -63,11 +71,12 @@ Last activity: 2026-05-19 — ROADMAP v3.2 created via /gsd-roadmapper
 
 ## Session Continuity
 
-Last session: 2026-05-19T18:30:00.000Z
-Stopped at: ROADMAP v3.2 created, 36/36 REQ mapped to 5 phases (33-37)
-Resume: `/gsd-discuss-phase 33` (review scope chi tiết với user) hoặc `/gsd-plan-phase 33` (decompose Phase 33 thành plans)
+Last session: 2026-05-20T04:14:37Z
+Stopped at: Completed 33-01-PLAN.md (DB Schema Infrastructure) — 2 tables + 1 column + 2 triggers idempotent
+Resume: `/gsd-execute-phase 33` (continue with Plan 33-02 seed 9 row placeholder) or chain auto-mode
 
 ### Notes
+
 - Phase 32 UAT note: HDSD đã out-of-date so với reality (code drift 8 ngày). Defer "HDSD full refresh round 2" vào v3.2+ scope.
 - 6 DN Lạng Sơn đang dùng prod thật trên `doanhnghiep.vatk.org` — kích hoạt LGSP phải KHÔNG mất data nghiệp vụ KH. Phase 37 roll-out qua toggle config, không deploy.
 - Memory `project_lgsp_architecture` + `project_hdsd_refresh_backlog` đã ghi nhận decision context.
