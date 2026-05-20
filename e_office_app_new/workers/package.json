@@ -10,6 +10,7 @@
   "dependencies": {
     "bullmq": "^5.73.5",
     "dotenv": "^17.4.2",
+    "fast-xml-parser": "^4.4.0",
     "form-data": "^4.0.5",
     "ioredis": "^5.10.1",
     "minio": "^8.0.7",
