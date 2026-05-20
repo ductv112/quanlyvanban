@@ -5,6 +5,7 @@ import {
   Card, Tag, Button, Space, Row, Col, Timeline, Avatar,
   Upload, Modal, Input, Popconfirm, Checkbox, Empty, Spin, App,
   Badge, Typography, Flex, Dropdown, Drawer, Form, DatePicker, Select, InputNumber, Tooltip,
+  Descriptions,
 } from 'antd';
 import {
   ArrowLeftOutlined, CheckCircleOutlined, CloseCircleOutlined, SendOutlined,
@@ -13,11 +14,12 @@ import {
   InboxOutlined, ClockCircleOutlined, UserOutlined, FilePdfOutlined,
   FileImageOutlined, FileWordOutlined, FileExcelOutlined, FileOutlined,
   EditOutlined, SafetyCertificateOutlined, ThunderboltOutlined,
-  RollbackOutlined,
+  RollbackOutlined, ApiOutlined,
 } from '@ant-design/icons';
 import { api } from '@/lib/api';
 import { downloadAttachment } from '@/lib/download';
 import { useAuthStore } from '@/stores/auth.store';
+import { LgspSourceBadge, type DocSourceType } from '@/lib/lgsp-source-badge';
 import { useParams, useRouter } from 'next/navigation';
 import dayjs from 'dayjs';
 
@@ -35,6 +37,11 @@ interface DocDetail {
   created_by: number; created_at: string; updated_by: number; updated_at: string;
   doc_book_name: string; doc_type_name: string; doc_type_code: string;
   doc_field_name: string; created_by_name: string; is_read: boolean;
+  // Phase 35-04: nguon van ban (manual/internal/external_lgsp) + metadata LGSP
+  source_type?: DocSourceType;
+  external_doc_id?: string | null;
+  lgsp_sender_org_code?: string | null;
+  unit_send?: string | null;
   permissions?: {
     canEdit: boolean;
     canApprove: boolean;
@@ -544,6 +551,40 @@ export default function IncomingDocDetailPage() {
           )}
         </Space>
       </div>
+
+      {/* ====== Phase 35-04: Nguon LGSP — chi hien khi source_type='external_lgsp' ====== */}
+      {doc.source_type === 'external_lgsp' && (
+        <Card
+          size="small"
+          title={
+            <Space>
+              <ApiOutlined style={{ color: '#1B3A5C' }} />
+              <span style={{ color: '#1B3A5C', fontWeight: 600 }}>Nguồn LGSP</span>
+              <LgspSourceBadge
+                sourceType={doc.source_type}
+                lgspSenderOrgCode={doc.lgsp_sender_org_code}
+                publishUnit={doc.publish_unit}
+              />
+            </Space>
+          }
+          style={{ marginBottom: 16, borderRadius: 10, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}
+        >
+          <Descriptions size="small" column={{ xs: 1, sm: 2, md: 3 }} bordered>
+            <Descriptions.Item label="Mã văn bản LGSP">
+              <code style={{ fontSize: 12, wordBreak: 'break-all' }}>{doc.external_doc_id ?? '—'}</code>
+            </Descriptions.Item>
+            <Descriptions.Item label="Đơn vị gửi">
+              {doc.publish_unit ?? '—'}
+            </Descriptions.Item>
+            <Descriptions.Item label="Mã đơn vị gửi">
+              {doc.lgsp_sender_org_code ?? '—'}
+            </Descriptions.Item>
+            <Descriptions.Item label="Ngày nhận từ trục" span={3}>
+              {doc.received_date ? dayjs(doc.received_date).format('DD/MM/YYYY HH:mm') : '—'}
+            </Descriptions.Item>
+          </Descriptions>
+        </Card>
+      )}
 
       <Row gutter={16}>
         {/* ====== LEFT COLUMN ====== */}
