@@ -23,6 +23,13 @@ export interface LgspSendResult {
   success: boolean;
   lgsp_doc_id: string;
   message: string;
+  /**
+   * Phase 34: ma errorCode tu LGSP response.data.errorCode (9 ma: 0/10/15/18/19/20/21/22/23).
+   * Worker (Plan 34-02) dung de classify retry vs no-retry per CONTEXT D-11
+   * (qua isLgspNonRetryableError trong ./lgsp/error-codes.js).
+   * `'0'` = success; undefined = chua co code (luc network/timeout truoc khi nhan response).
+   */
+  errorCode?: string;
 }
 
 export interface LgspOrganization {
@@ -37,7 +44,18 @@ export interface LgspOrganization {
 export interface ILgspService {
   getToken(): Promise<string>;
   receiveDocuments(): Promise<LgspReceivedDoc[]>;
-  sendDocument(edxmlContent: string, destOrgCode: string): Promise<LgspSendResult>;
+  /**
+   * Phase 34: signature doi tu (string, string) -> (Buffer, string, string).
+   *
+   * @param edxmlBuffer Buffer chua edXML envelope (built tu services/lgsp/edxml-builder.ts)
+   * @param destOrgCode Code don vi nhan (cho log only - LGSP parse tu edXML MessageHeader.To)
+   * @param docCode Notation/document_code (lam filename trong multipart .edxml)
+   */
+  sendDocument(
+    edxmlBuffer: Buffer,
+    destOrgCode: string,
+    docCode: string,
+  ): Promise<LgspSendResult>;
   syncOrganizations(): Promise<LgspOrganization[]>;
 }
 

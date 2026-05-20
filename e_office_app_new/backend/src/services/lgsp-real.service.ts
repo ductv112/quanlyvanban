@@ -4,13 +4,21 @@
 // Phase 33 refactor: constructor injection credential thay vì đọc env hardcoded
 //   - Nếu truyền `credentials` vào constructor → per-unit instance (factory dùng)
 //   - Nếu không truyền → fallback đọc env (Phase 18 backward compat — test/mock)
+// Phase 34 (Plan 34-01): sendDocument() rewrite dung dung LGSP API real:
+//   - Endpoint POST {baseUrl}/v1/sendEdoc (KHONG /api/lgspedoc/send-edoc)
+//   - Body multipart/form-data: edocFile (Buffer) + messageType=edoc
+//   - Auth: HTTP headers X-SystemId + X-SecretKey (KHONG login token)
+//   - Signature doi: (string, string) -> (Buffer, string, string)
+//   - Error throw LgspSendError voi code 9 ma LGSP (D-12)
 // ============================================================
+import FormData from 'form-data';
 import type {
   ILgspService,
   LgspReceivedDoc,
   LgspSendResult,
   LgspOrganization,
 } from './lgsp.service.js';
+import { LgspSendError, mapLgspError } from './lgsp/error-codes.js';
 
 interface LoginResponse {
   success: boolean;
@@ -19,11 +27,22 @@ interface LoginResponse {
   data?: { id: string; username: string; name: string; token: string };
 }
 
+/**
+ * Phase 34: response shape 2 variants (Postman 03.sendEdoc + sandbox real test):
+ *   Success: { success: true, message: 'OK', docId: '<uuid>' }
+ *   Error:   { success: false, message: 'Loi', data: { docId: null, status: 'error', errorCode, errorDesc } }
+ * All fields trong `data` optional vi server co the omit khi success.
+ */
 interface SendEdocResponse {
   success: boolean;
   message: string;
   docId?: string;
-  data?: { status: string; errorCode: string; errorDesc: string; docId: string };
+  data?: {
+    docId?: string | null;
+    status?: string;
+    errorCode?: string;
+    errorDesc?: string;
+  };
 }
 
 interface ReceivedEdocItem {
@@ -158,29 +177,114 @@ export class LGSPRealService implements ILgspService {
     return this.cachedToken;
   }
 
-  async sendDocument(edxmlContent: string, destOrgCode: string): Promise<LgspSendResult> {
-    const token = await this.getToken();
-    // LGSP spec: edxml gửi qua filePath. Vì backend giữ trong memory, ghi tạm xuống disk hoặc
-    // gửi qua endpoint khác (tùy implementation thực tế của LGSP). Dưới đây giả định endpoint
-    // accept inline edxml content qua field `edocContent` (cần verify với LGSP support khi triển khai).
-    const res = await this.fetchJson<SendEdocResponse>(`${this.endpoint}/api/lgspedoc/send-edoc`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        token,
-        edocContent: edxmlContent,
-        messageType: 'edoc',
-        systemId: this.systemId,
-        secretKey: this.secretKey,
-        destOrgCode, // forward đến LGSP để route
-      }),
-    });
+  /**
+   * Send edXML doc qua LGSP `/v1/sendEdoc` (Phase 34 - CONTEXT D-07).
+   *
+   * AUTHORITATIVE shape (Postman collection 03.sendEdoc):
+   *   POST {baseUrl}/v1/sendEdoc
+   *   Headers: X-SystemId, X-SecretKey
+   *   Body: multipart/form-data
+   *     edocFile: <Buffer> (Content-Type: application/xml, filename: {docCode}.edxml)
+   *     messageType: 'edoc'
+   *
+   * Response variants:
+   *   { success: true, message: 'OK', docId: '<uuid>' }
+   *   { success: false, message: 'Loi', data: { docId, status, errorCode, errorDesc } }
+   *
+   * NO login/token flow cho document API - khac voi Phase 18 dung OAuth2 endpoint
+   * `/api/lgspedoc/send-edoc`. Postman collection cua tinh Lang Son xac dinh ro
+   * doc API dung HTTP headers, login token chi cho admin API (registerAgency, etc.).
+   *
+   * @param edxmlBuffer edXML envelope bytes (built boi edxml-builder.ts buildEdxml())
+   * @param destOrgCode Code don vi nhan (cho log only - LGSP parse tu edXML MessageHeader.To)
+   * @param docCode Notation/document_code (lam filename trong multipart, .edxml extension)
+   * @returns LgspSendResult { success, lgsp_doc_id, message, errorCode }
+   * @throws LgspSendError khi network/timeout/non-JSON response (no code = retryable per D-11)
+   */
+  async sendDocument(
+    edxmlBuffer: Buffer,
+    destOrgCode: string,
+    docCode: string,
+  ): Promise<LgspSendResult> {
+    const sysId = this.systemId;
+    const secret = this.secretKey;
+    if (!sysId || !secret) {
+      throw new LgspSendError(
+        `LGSP credential missing: systemId=${sysId ? 'OK' : 'EMPTY'}, secretKey=${secret ? 'OK' : 'EMPTY'}`,
+      );
+    }
 
-    return {
-      success: !!res.success,
-      lgsp_doc_id: res.docId || res.data?.docId || '',
-      message: res.message || res.data?.errorDesc || 'unknown',
-    };
+    // Sanitize docCode for filename - replace path chars + cap length + add extension
+    const safeFilename =
+      (docCode || 'edoc').replace(/[\\/:*?"<>|]/g, '_').slice(0, 100) + '.edxml';
+
+    // Build multipart form (form-data lib - tuong thich Node fetch via stream)
+    const form = new FormData();
+    form.append('edocFile', edxmlBuffer, {
+      filename: safeFilename,
+      contentType: 'application/xml',
+      knownLength: edxmlBuffer.length,
+    });
+    form.append('messageType', 'edoc');
+
+    // Fetch - Node 22+ native, 60s timeout (LGSP send may take long voi big attachments)
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 60000);
+    try {
+      const res = await fetch(`${this.endpoint}/v1/sendEdoc`, {
+        method: 'POST',
+        headers: {
+          'X-SystemId': sysId,
+          'X-SecretKey': secret,
+          ...form.getHeaders(),
+        },
+        // form-data lib tra ve readable stream (Node compatible).
+        // Cast unknown as BodyInit vi Node fetch type khong overload cho stream + content-length.
+        body: form as unknown as BodyInit,
+        signal: controller.signal,
+      });
+
+      const text = await res.text();
+      let json: SendEdocResponse;
+      try {
+        json = JSON.parse(text) as SendEdocResponse;
+      } catch {
+        // Server tra ve non-JSON (HTML error page, 502 Bad Gateway, ...)
+        throw new LgspSendError(
+          `LGSP /v1/sendEdoc HTTP ${res.status} non-JSON response: ${text.slice(0, 200)}`,
+        );
+      }
+
+      // Parse 2 shape variants (Postman docs)
+      const docId = json.docId || json.data?.docId || '';
+      const errorCode = json.data?.errorCode;
+      const rawMessage = json.message || json.data?.errorDesc || 'unknown';
+
+      if (!json.success) {
+        // No-throw - return result de worker biet update tracking status='error'
+        // (no-retry per D-11 vi 4xx LGSP error la business error, retry vo nghia)
+        return {
+          success: false,
+          lgsp_doc_id: docId || '',
+          message: mapLgspError(errorCode, rawMessage),
+          errorCode: errorCode || undefined,
+        };
+      }
+
+      return {
+        success: true,
+        lgsp_doc_id: docId || '',
+        message: rawMessage,
+        errorCode: errorCode || '0',
+      };
+    } catch (err: unknown) {
+      // AbortController / network / DNS / connection - throw de BullMQ retry
+      if (err instanceof LgspSendError) throw err;
+      const msg = err instanceof Error ? err.message : String(err);
+      throw new LgspSendError(`LGSP /v1/sendEdoc network/timeout: ${msg}`);
+    } finally {
+      clearTimeout(timer);
+    }
   }
 
   async receiveDocuments(): Promise<LgspReceivedDoc[]> {

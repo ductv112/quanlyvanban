@@ -69,12 +69,20 @@ export const lgspMockService: ILgspService = {
     return docs;
   },
 
-  async sendDocument(edxmlContent: string, destOrgCode: string): Promise<LgspSendResult> {
-    logger.info(`MOCK: Sending document to ${destOrgCode}`);
+  async sendDocument(
+    edxmlBuffer: Buffer,
+    destOrgCode: string,
+    docCode: string,
+  ): Promise<LgspSendResult> {
+    logger.info(
+      { destOrgCode, docCode, bytes: edxmlBuffer.length },
+      'MOCK: Sending document',
+    );
     return {
       success: true,
       lgsp_doc_id: `LGSP-${Date.now()}`,
       message: 'Mock: Document sent successfully',
+      errorCode: '0',
     };
   },
 
