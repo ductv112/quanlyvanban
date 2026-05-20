@@ -28302,3 +28302,175 @@ AS $$
     WHERE s.id = p_staff_id AND s.is_deleted = FALSE
     LIMIT 1;
 $$;
+
+-- ============================================================================
+-- Phase 33: LGSP Production Go-live — DB Infrastructure (REQ LGSP-CRED-01/02/04, LGSP-STATUS-01)
+-- Goal: Per-unit credential schema cho 6 DN Lang Son + outbox pattern cho status callback
+-- Pattern: mirror signing_provider_config (encrypted BYTEA via pgp_sym_encrypt + SIGNING_SECRET_KEY)
+-- ============================================================================
+
+-- --- 1. ALTER public.departments: ADD COLUMN lgsp_org_code (idempotent) ---
+ALTER TABLE public.departments
+  ADD COLUMN IF NOT EXISTS lgsp_org_code VARCHAR(13);
+
+COMMENT ON COLUMN public.departments.lgsp_org_code IS
+  'Phase 33 - Ma dinh danh QD 28/2018 (VD: H37.DN.001). Chi root unit cua 6 DN Lang Son co gia tri, NULL cho subtree.';
+
+-- Index phuc vu Phase 35 receive flow (find unit_id tu MessageHeader.To.OrganId)
+CREATE INDEX IF NOT EXISTS idx_departments_lgsp_org_code
+  ON public.departments (lgsp_org_code)
+  WHERE lgsp_org_code IS NOT NULL;
+
+-- --- 2. edoc.lgsp_agency_config - Per-unit credential (REQ LGSP-CRED-01/04) ---
+CREATE TABLE IF NOT EXISTS edoc.lgsp_agency_config (
+  id                   BIGSERIAL PRIMARY KEY,
+  unit_id              INTEGER NOT NULL,                          -- FK departments(id) root unit only - enforce qua trigger
+  environment          VARCHAR(10) NOT NULL,                      -- 'sandbox' | 'prod'
+  system_id            VARCHAR(13) NOT NULL,                      -- LGSP system_id (= lgsp_org_code, VD: H37.DN.001)
+  secret_key_encrypted BYTEA NOT NULL,                            -- pgp_sym_encrypt(plaintext, SIGNING_SECRET_KEY)
+  base_url             VARCHAR(500) NOT NULL,                     -- 'https://apiltvb.langson.gov.vn' | 'https://trucltvb.langson.gov.vn/apithunghiem'
+  is_active            BOOLEAN NOT NULL DEFAULT FALSE,            -- Admin bat qua UI Phase 37 sau khi nhap credential that
+  last_synced_at       TIMESTAMPTZ,                               -- Phase 35 cron update sau moi vong receive
+  last_sync_error      TEXT,                                      -- Error message vong cron gan nhat (NULL neu OK)
+  created_by           INT REFERENCES public.staff(id),
+  created_at           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_by           INT REFERENCES public.staff(id),
+  updated_at           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT chk_lgsp_agency_config_environment CHECK (environment IN ('sandbox','prod'))
+);
+
+-- UNIQUE constraint per CONTEXT D-09 + REQ LGSP-CRED-01
+DO $$
+BEGIN
+  BEGIN
+    ALTER TABLE edoc.lgsp_agency_config
+      ADD CONSTRAINT uq_lgsp_agency_config_unit_env UNIQUE (unit_id, environment);
+  EXCEPTION
+    WHEN duplicate_object THEN NULL;        -- 42710
+    WHEN duplicate_table THEN NULL;         -- 42P07
+    WHEN invalid_table_definition THEN NULL; -- 42P16
+    WHEN duplicate_column THEN NULL;        -- 42701
+  END;
+END $$;
+
+-- FK to departments - ON DELETE RESTRICT (D-05): chan xoa root unit neu con LGSP config
+DO $$
+BEGIN
+  BEGIN
+    ALTER TABLE edoc.lgsp_agency_config
+      ADD CONSTRAINT fk_lgsp_agency_config_unit_id
+      FOREIGN KEY (unit_id) REFERENCES public.departments(id) ON DELETE RESTRICT;
+  EXCEPTION
+    WHEN duplicate_object THEN NULL;
+    WHEN duplicate_table THEN NULL;
+    WHEN invalid_table_definition THEN NULL;
+    WHEN duplicate_column THEN NULL;
+  END;
+END $$;
+
+COMMENT ON TABLE edoc.lgsp_agency_config IS
+  'Phase 33 - Cau hinh LGSP per root unit (6 DN Lang Son). secret_key_encrypted dung SIGNING_SECRET_KEY (reuse signing module key).';
+COMMENT ON COLUMN edoc.lgsp_agency_config.secret_key_encrypted IS
+  'BYTEA = pgp_sym_encrypt(plaintext, SIGNING_SECRET_KEY). Decrypt bang decryptSecret() trong services/signing/crypto.ts.';
+
+-- --- 3. Helper function fn_set_updated_at (idempotent guard) ---
+-- Pattern da co o cac trigger updated_at khac nhung safe-guard tao lai neu chua
+CREATE OR REPLACE FUNCTION public.fn_set_updated_at()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $func$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$func$;
+
+-- --- 4. Trigger validate root unit (D-04) - chan INSERT/UPDATE voi non-root unit ---
+CREATE OR REPLACE FUNCTION edoc.fn_lgsp_agency_config_validate_root_unit()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $func$
+DECLARE
+  v_parent INTEGER;
+BEGIN
+  -- Verify unit_id ton tai trong departments + parent_id IS NULL (root)
+  SELECT parent_id INTO v_parent
+    FROM public.departments
+    WHERE id = NEW.unit_id;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'unit_id=% khong ton tai trong departments', NEW.unit_id
+      USING ERRCODE = '23503'; -- foreign_key_violation
+  END IF;
+
+  IF v_parent IS NOT NULL THEN
+    RAISE EXCEPTION 'unit_id=% khong phai root unit (parent_id=% phai NULL). LGSP chi cau hinh cho 6 DN cap cao nhat.',
+      NEW.unit_id, v_parent
+      USING ERRCODE = '23514'; -- check_violation
+  END IF;
+
+  RETURN NEW;
+END;
+$func$;
+
+DROP TRIGGER IF EXISTS trg_lgsp_agency_config_validate_root_unit ON edoc.lgsp_agency_config;
+CREATE TRIGGER trg_lgsp_agency_config_validate_root_unit
+  BEFORE INSERT OR UPDATE OF unit_id ON edoc.lgsp_agency_config
+  FOR EACH ROW
+  EXECUTE FUNCTION edoc.fn_lgsp_agency_config_validate_root_unit();
+
+-- --- 5. Trigger auto-update updated_at (mirror trg_departments_updated_at pattern) ---
+DROP TRIGGER IF EXISTS trg_lgsp_agency_config_updated_at ON edoc.lgsp_agency_config;
+CREATE TRIGGER trg_lgsp_agency_config_updated_at
+  BEFORE UPDATE ON edoc.lgsp_agency_config
+  FOR EACH ROW
+  EXECUTE FUNCTION public.fn_set_updated_at();
+
+-- --- 6. edoc.lgsp_status_outbox - Outbox pattern status callback (REQ LGSP-STATUS-01) ---
+CREATE TABLE IF NOT EXISTS edoc.lgsp_status_outbox (
+  id               BIGSERIAL PRIMARY KEY,
+  incoming_doc_id  BIGINT NOT NULL,                                -- FK incoming_docs(id) ON DELETE CASCADE
+  target_status    VARCHAR(2) NOT NULL,                            -- '01' da gui, '02' tu choi, '03' tiep nhan, '04' phan cong, '05' dang xu ly, '06' hoan thanh, '13' lay lai, '15' dong y lay lai, '16' tu choi lay lai
+  payload          JSONB NOT NULL DEFAULT '{}'::jsonb,             -- Phase 36 worker doc: { lgsp_doc_id, sender_org_code, reason?, ... }
+  sent_status      VARCHAR(10) NOT NULL DEFAULT 'pending',         -- 'pending' | 'success' | 'error'
+  sent_at          TIMESTAMPTZ,                                    -- Thoi diem worker day thanh cong len truc
+  retry_count      INT NOT NULL DEFAULT 0,                         -- So lan worker da retry (max 5 per LGSP-STATUS-09)
+  next_retry_at    TIMESTAMPTZ,                                    -- Worker poll WHERE sent_status='pending' AND (next_retry_at IS NULL OR next_retry_at <= NOW())
+  error_message    TEXT,                                           -- Error gan nhat (NULL neu success)
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT chk_lgsp_status_outbox_target_status CHECK (target_status IN ('01','02','03','04','05','06','13','15','16')),
+  CONSTRAINT chk_lgsp_status_outbox_sent_status CHECK (sent_status IN ('pending','success','error'))
+);
+
+-- FK ON DELETE CASCADE (D-06): outbox event mo coi khong co nghia khi VB nguon bi xoa
+DO $$
+BEGIN
+  BEGIN
+    ALTER TABLE edoc.lgsp_status_outbox
+      ADD CONSTRAINT fk_lgsp_status_outbox_incoming_doc
+      FOREIGN KEY (incoming_doc_id) REFERENCES edoc.incoming_docs(id) ON DELETE CASCADE;
+  EXCEPTION
+    WHEN duplicate_object THEN NULL;
+    WHEN duplicate_table THEN NULL;
+    WHEN invalid_table_definition THEN NULL;
+    WHEN duplicate_column THEN NULL;
+  END;
+END $$;
+
+-- Index 1: Partial index cho worker poll (D-07) - index nho, optimize cuc tot
+CREATE INDEX IF NOT EXISTS idx_lgsp_status_outbox_pending
+  ON edoc.lgsp_status_outbox (created_at)
+  WHERE sent_status = 'pending';
+
+-- Index 2: Query history trang thai cua 1 VB cho UI VB den chi tiet
+CREATE INDEX IF NOT EXISTS idx_lgsp_status_outbox_doc_status
+  ON edoc.lgsp_status_outbox (incoming_doc_id, target_status, sent_at DESC);
+
+COMMENT ON TABLE edoc.lgsp_status_outbox IS
+  'Phase 33 - Outbox queue cho LGSP status callback (9 ma QD 28). Phase 36 worker poll moi 30s, exponential backoff.';
+COMMENT ON COLUMN edoc.lgsp_status_outbox.target_status IS
+  '9 ma QD 28/2018: 01 da gui, 02 tu choi tiep nhan, 03 da tiep nhan, 04 phan cong, 05 dang xu ly, 06 hoan thanh, 13 lay lai, 15 dong y lay lai, 16 tu choi lay lai.';
+
+DO $$ BEGIN
+  RAISE NOTICE 'Phase 33 schema: lgsp_agency_config + lgsp_status_outbox + departments.lgsp_org_code + trigger validate_root_unit - OK';
+END $$;
