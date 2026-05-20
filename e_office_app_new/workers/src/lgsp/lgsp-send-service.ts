@@ -159,6 +159,12 @@ export async function sendDocument(
   });
   form.append('messageType', 'edoc');
 
+  // form-data lib KHONG stream qua Node native fetch dung cach (sandbox tra ve
+  // "Unexpected end of Stream"). Convert sang Buffer + set Content-Length header
+  // de fetch send body fully.
+  const formBuffer = form.getBuffer();
+  const formHeaders = form.getHeaders();
+
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 60_000);
   try {
@@ -167,9 +173,11 @@ export async function sendDocument(
       headers: {
         'X-SystemId': credentials.systemId,
         'X-SecretKey': credentials.secretKey,
-        ...form.getHeaders(),
+        ...formHeaders,
+        'Content-Length': String(formBuffer.length),
       },
-      body: form as unknown as BodyInit,
+      // Buffer = Uint8Array — fetch BodyInit accept BufferSource, cast de TS happy.
+      body: formBuffer as unknown as BodyInit,
       signal: controller.signal,
     });
 

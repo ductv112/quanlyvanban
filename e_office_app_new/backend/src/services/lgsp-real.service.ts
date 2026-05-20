@@ -218,7 +218,7 @@ export class LGSPRealService implements ILgspService {
     const safeFilename =
       (docCode || 'edoc').replace(/[\\/:*?"<>|]/g, '_').slice(0, 100) + '.edxml';
 
-    // Build multipart form (form-data lib - tuong thich Node fetch via stream)
+    // Build multipart form (form-data lib)
     const form = new FormData();
     form.append('edocFile', edxmlBuffer, {
       filename: safeFilename,
@@ -226,6 +226,13 @@ export class LGSPRealService implements ILgspService {
       knownLength: edxmlBuffer.length,
     });
     form.append('messageType', 'edoc');
+
+    // form-data lib KHONG stream qua Node native fetch dung cach (LGSP sandbox tra
+    // ve "Unexpected end of Stream, the content may have already been read..."
+    // khi pass form-data stream truc tiep). Convert sang Buffer + set Content-Length
+    // header de fetch send body fully.
+    const formBuffer = form.getBuffer();
+    const formHeaders = form.getHeaders();
 
     // Fetch - Node 22+ native, 60s timeout (LGSP send may take long voi big attachments)
     const controller = new AbortController();
@@ -236,11 +243,11 @@ export class LGSPRealService implements ILgspService {
         headers: {
           'X-SystemId': sysId,
           'X-SecretKey': secret,
-          ...form.getHeaders(),
+          ...formHeaders,
+          'Content-Length': String(formBuffer.length),
         },
-        // form-data lib tra ve readable stream (Node compatible).
-        // Cast unknown as BodyInit vi Node fetch type khong overload cho stream + content-length.
-        body: form as unknown as BodyInit,
+        // Buffer = Uint8Array — fetch BodyInit accept BufferSource, cast de TS happy.
+        body: formBuffer as unknown as BodyInit,
         signal: controller.signal,
       });
 

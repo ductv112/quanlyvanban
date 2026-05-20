@@ -186,7 +186,7 @@ async function loadDocTypeName(
 ): Promise<string | null> {
   if (!docTypeId) return null;
   const res = await pool.query<{ name: string }>(
-    `SELECT name FROM public.doc_types WHERE id = $1`,
+    `SELECT name FROM edoc.doc_types WHERE id = $1`,
     [docTypeId],
   );
   return res.rows[0]?.name ?? null;
