@@ -8,28 +8,53 @@ Hệ thống quản lý văn bản điện tử (e-Office) dành cho cơ quan nh
 
 Luồng văn bản đến → xử lý → văn bản đi phải hoạt động đúng nghiệp vụ cơ quan nhà nước — đây là flow cốt lõi mà mọi công chức sử dụng hàng ngày.
 
-## Current Milestone: v3.2 LGSP Production Go-live cho 6 DN Lạng Sơn (Planning)
+## Current Milestone: v3.2 LGSP Production Go-live cho 6 DN Lạng Sơn
 
-**Trigger:** Có credential thật từ tỉnh Lạng Sơn (6 SystemId + SecretKey + 3 sandbox) — tài liệu trong [`docs/Trục EDOC Lạng Sơn - QLVB Doanh nghiệp/`](../docs/Trục%20EDOC%20Lạng%20Sơn%20-%20QLVB%20Doanh%20nghiệp/). 6 DN đã đang dùng prod trên `doanhnghiep.vatk.org` (multi-tenant 1 system / 1 DB).
+**Started:** 2026-05-19
 
-**Goal sơ bộ:** Wire LGSP API thật cho 6 DN gửi/nhận VB qua trục liên thông tỉnh:
-- Status callback chain (03 Tiếp nhận / 04 Phân công / 05 Xử lý / 06 Hoàn thành + 02 Từ chối + 13/15/16 Lấy lại)
-- Cron `syncReceivedEdocList` loop 6 DN mỗi 5 phút (mỗi DN dùng credential riêng)
-- Admin UI cấu hình `lgsp_agency_config` per `unit_id` + environment switch (sandbox/prod)
-- Edxml builder + parser (theo spec QĐ 28/2018/QĐ-TTg + LGSP_LANGSON guide)
-- Roll-out theo wave: Wave 1 (3 DN có sandbox: H37.DN.001/002/003) → Wave 2 (3 DN còn lại: 004/005/006)
-- HDSD full refresh round 2 sau khi LGSP ship (vì HDSD Phase 32 đã drift sau 8 ngày fix bug)
+**Trigger:** Có credential thật từ tỉnh Lạng Sơn (6 SystemId + SecretKey + 3 sandbox) — tài liệu trong [`docs/Trục EDOC Lạng Sơn - QLVB Doanh nghiệp/`](../docs/Trục%20EDOC%20Lạng%20Sơn%20-%20QLVB%20Doanh%20nghiệp/). 6 DN đang dùng prod trên `doanhnghiep.vatk.org` — là 6 đơn vị cấp cao trong cây `departments` của 1 hệ thống chung.
 
-**Kiến trúc cốt lõi (chốt 2026-05-19 sau clarification của user):**
-- Multi-tenant single-system: 1 deploy / 1 DB / 6 DN = 6 root unit trong cây `departments`
-- `lgsp_agency_config` per `unit_id` (KHÔNG đọc từ `.env`)
-- `getLgspService(unit_id)` lookup credential động khi gọi LGSP
-- Roll-out không qua deploy wave — chỉ toggle `lgsp_agency_config.is_active=true` per row (config-level)
+**Goal:** Wire toàn bộ LGSP API thật để 6 DN gửi/nhận VB **với các đơn vị NGOÀI hệ thống** qua trục liên thông tỉnh `apiltvb.langson.gov.vn`. Giao tiếp giữa 6 DN với nhau vẫn dùng flow nội bộ (Phase 17 v3.0) — KHÔNG qua LGSP.
 
-**Decision point chưa chốt** (sẽ hỏi khi `/gsd-discuss-phase`):
-- Khi User DN.001 gửi VB → DN.002 (cả 2 cùng trong 6 DN): qua LGSP / nội bộ thuần / cả 2?
+**Routing rule (đã chốt):**
 
-**Next step:** `/gsd-new-milestone` để tạo ROADMAP v3.2 chính thức + REQUIREMENTS + breakdown 4-5 phase.
+| Sender → Recipient | Cách xử lý |
+|---|---|
+| 6 DN ↔ 6 DN (cả 2 trong `departments`) | Internal flow (auto-spawn `incoming_docs` đã có) |
+| 6 DN → đơn vị ngoài (`external_org`, lấy từ catalog `inter_organizations`) | **LGSP sendEdoc** (credential của DN gửi) |
+| Đơn vị ngoài → 1 trong 6 DN | **LGSP cron sync** (credential của DN nhận) |
+
+→ Phân loại tự động theo `recipient_type` trong `outgoing_doc_recipients`, KHÔNG hỏi user.
+
+**Target features (5 nhóm):**
+
+1. **LGSP credential management theo đơn vị cấp cao**
+   - Bảng `lgsp_agency_config` với `unit_id` (FK → `departments.id` đơn vị cấp cao) + UNIQUE(`unit_id`, `environment`)
+   - 6 row prod + 3 row sandbox (DN.001/002/003 có sandbox)
+   - Cột `lgsp_org_code VARCHAR(13)` trong `departments` (map root unit ↔ H37.DN.001..006)
+   - `getLgspService(unit_id)` lookup credential động theo root unit của user gửi
+
+2. **LGSP gửi VB đi** (sendEdoc + edXML builder) — chỉ khi recipient `external_org`
+
+3. **LGSP nhận VB đến** (cron `syncReceivedEdocList` loop 6 đơn vị mỗi 5 phút + parser edXML + INSERT `incoming_docs` với dedup `lgsp_doc_id`)
+
+4. **LGSP status callback chain** (9 mã QĐ 28: 03/04/05/06 + 02 Từ chối tiếp nhận + 13/15/16 Lấy lại) — bao gồm DEFER-07 từ v3.1 (status 02)
+
+5. **Admin UI cấu hình + bật lại menu LGSP** (`/quan-tri/lgsp-config` CRUD per-unit + test connection + toggle `is_active` + catalog `inter_organizations` + gỡ `/lgsp` khỏi hidden-routes)
+
+**Roll-out plan:** Wave 1 (3 đơn vị có sandbox H37.DN.001/002/003) → Wave 2 (3 đơn vị còn lại H37.DN.004/005/006). Qua toggle `lgsp_agency_config.is_active=true` per row — KHÔNG cần deploy/restart.
+
+**Out of scope:**
+- HDSD full refresh — user sẽ tự yêu cầu sau khi cần (defer ngoài milestone)
+- Tự động sync danh mục `inter_organizations` từ trục (chỉ làm CRUD manual ở v3.2, sync auto defer)
+- Multi-level approval LGSP-side
+- Mobile responsive LGSP config UI
+
+**Kiến trúc decisions (chốt 2026-05-19):**
+- KHÔNG dùng từ "multi-tenant" — 6 DN chỉ là cây đơn vị thông thường trong `departments`
+- `lgsp_agency_config` per `unit_id`, KHÔNG đọc credential từ `.env`
+- Recipient routing: `internal_unit` → nội bộ, `external_org` → LGSP (chốt tự động theo type, không hỏi user)
+- Roll-out qua config toggle, không qua deploy wave
 
 ## Requirements
 
@@ -81,16 +106,15 @@ Luồng văn bản đến → xử lý → văn bản đi phải hoạt động 
 - ✓ Phase 32 HDSD: 16 file HDSD updated + 6 screenshots + HDSD_full.md (4496 dòng) + HDSD_full.docx (13.3MB, 82 ảnh)
 - ✓ Setup 6 KH DN Lạng Sơn dùng prod thật trên `doanhnghiep.vatk.org`
 
-### Active (v3.2 — LGSP Production Go-live, planning 2026-05-19)
+### Active (v3.2 — LGSP Production Go-live, started 2026-05-19)
 
-Requirements sẽ được define qua `/gsd-new-milestone`. Sơ bộ:
+Requirements sẽ được define chi tiết khi `/gsd-roadmapper` chạy. Sơ bộ (5 nhóm):
 
-- [ ] LGSP-CRED-*: Bảng `lgsp_agency_config` per `unit_id` + 6 row + cột `lgsp_org_code` trong `departments`
-- [ ] LGSP-SEND-*: Builder edXML + sendEdoc với credential dynamic theo sender unit
-- [ ] LGSP-RECV-*: Cron syncReceivedEdocList loop 6 DN mỗi 5 phút + parser edXML + INSERT incoming_docs
-- [ ] LGSP-STATUS-*: Callback chain status 03/04/05/06 + 02 Từ chối + 13/15/16 Lấy lại
-- [ ] LGSP-UI-*: Admin UI cấu hình credential + environment switch (sandbox/prod) + bật lại menu `/lgsp`
-- [ ] HDSD-REFRESH-*: Re-audit + re-capture ~80 screenshots + re-merge full.docx sau khi LGSP ship
+- [ ] LGSP-CRED-*: Bảng `lgsp_agency_config` per `unit_id` (6 prod + 3 sandbox) + cột `lgsp_org_code` trong `departments` (map root unit ↔ H37.DN.001..006) + `getLgspService(unit_id)` lookup động
+- [ ] LGSP-SEND-*: Builder edXML + sendEdoc với credential dynamic theo sender unit — **chỉ khi recipient `external_org`**, recipient `internal_unit` (6 DN với nhau) vẫn dùng flow nội bộ
+- [ ] LGSP-RECV-*: Cron syncReceivedEdocList loop 6 đơn vị mỗi 5 phút + parser edXML + INSERT incoming_docs với dedup `lgsp_doc_id`
+- [ ] LGSP-STATUS-*: Callback chain 9 mã (03/04/05/06 auto + 02 Từ chối tiếp nhận + 13/15/16 Lấy lại) — bao gồm DEFER-07 từ v3.1
+- [ ] LGSP-UI-*: Admin UI `/quan-tri/lgsp-config` CRUD per-unit credential + test connection + toggle is_active + catalog `inter_organizations` + bật lại menu `/lgsp` khỏi hidden-routes
 
 ### Deferred (v3.3+ backlog)
 
@@ -151,10 +175,11 @@ Requirements sẽ được define qua `/gsd-new-milestone`. Sơ bộ:
 | **v3.1: Phase 22-30 không dùng GSD plan discipline** | Manual execute không cần multi-wave plan, RESULTS.md đủ trace | ✓ Good (giảm overhead, ship nhanh) |
 | **v3.1: Phase 31 fix-gom commit trực tiếp ngoài GSD** | Tester batch + đào tạo KH ép tốc độ | ⚠️ Trade-off: 164 commit không có PLAN/SUMMARY (audit khó) |
 | **v3.1: Setup 6 DN Lạng Sơn dùng prod thật** | KH đang dùng thử trên `doanhnghiep.vatk.org` để feedback nghiệp vụ | ✓ Good (kiểm chứng đa-tenant + UAT thật) |
-| **v3.2: Multi-tenant single-system kiến trúc** | 6 DN chung 1 deploy / 1 DB / 6 root unit trong departments (không phải 6 deploy riêng) | — Pending (chốt 2026-05-19) |
-| **v3.2: `lgsp_agency_config` per `unit_id`** | Mỗi DN có SystemId + SecretKey riêng, lookup động qua getLgspService(unit_id) | — Pending |
-| **v3.2: Roll-out wave config-level (không deploy)** | Toggle `is_active=true` per row, không cần restart server, giảm rủi ro 5 DN khác | — Pending |
-| **v3.2: HDSD full refresh round 2 sau LGSP ship** | HDSD Phase 32 đã drift 8 ngày, defer refresh để bundle với LGSP content mới | — Pending |
+| **v3.2: 1 system / cây đơn vị tổ chức** (KHÔNG dùng từ "multi-tenant") | 6 DN chung 1 deploy / 1 DB / 6 đơn vị cấp cao trong `departments` — chỉ là cây tổ chức bình thường, không có khái niệm tenant SaaS | ✓ Chốt (2026-05-19) |
+| **v3.2: `lgsp_agency_config` per `unit_id`** | Mỗi DN có SystemId + SecretKey riêng, lookup động qua getLgspService(unit_id) | ✓ Chốt (2026-05-19) |
+| **v3.2: Routing rule recipient-based, không hỏi user** | `internal_unit` (trong departments) → nội bộ; `external_org` (ngoài) → LGSP. 6 DN ↔ 6 DN luôn nội bộ, không cần LGSP | ✓ Chốt (2026-05-19) |
+| **v3.2: Roll-out wave config-level (không deploy)** | Toggle `is_active=true` per row, không cần restart server, giảm rủi ro 5 DN khác | ✓ Chốt (2026-05-19) |
+| **v3.2: HDSD refresh OUT-OF-SCOPE** | User sẽ tự yêu cầu sau khi cần, KHÔNG bundle vào v3.2 | ✓ Chốt (2026-05-19) |
 
 ## Evolution
 

@@ -1,10 +1,10 @@
 ---
 gsd_state_version: 1.0
-milestone: null
-milestone_name: "(between milestones — v3.1 shipped, v3.2 planning)"
-status: ready_for_next_milestone
-stopped_at: v3.1 milestone closed via /gsd-complete-milestone
-last_updated: "2026-05-19T17:30:00.000Z"
+milestone: v3.2
+milestone_name: LGSP Production Go-live cho 6 DN Lạng Sơn
+status: defining_requirements
+stopped_at: Milestone v3.2 started — defining REQUIREMENTS via /gsd-new-milestone
+last_updated: "2026-05-19T17:45:00.000Z"
 last_activity: 2026-05-19
 progress:
   total_phases: 0
@@ -20,15 +20,15 @@ progress:
 
 See: .planning/PROJECT.md (updated 2026-05-19)
 
-**Core value:** Luồng văn bản đến → xử lý → văn bản đi phải hoạt động đúng nghiệp vụ cơ quan nhà nước (multi-tenant cho 6 DN Lạng Sơn dùng prod thật)
-**Current focus:** Planning v3.2 LGSP Production Go-live — chạy `/gsd-new-milestone` để define scope chính thức
+**Core value:** Luồng văn bản đến → xử lý → văn bản đi phải hoạt động đúng nghiệp vụ cơ quan nhà nước (6 DN Lạng Sơn dùng prod thật trên `doanhnghiep.vatk.org`, là 6 đơn vị cấp cao trong cây tổ chức `departments`)
+**Current focus:** Defining REQUIREMENTS + ROADMAP cho v3.2 LGSP Production Go-live (5 nhóm: CRED, SEND, RECV, STATUS, UI)
 
 ## Current Position
 
-Phase: — (v3.1 closed, v3.2 chưa start)
+Phase: Not started (defining requirements)
 Plan: —
-Status: Ready for `/gsd-new-milestone`
-Last activity: 2026-05-19
+Status: Defining requirements for v3.2 LGSP
+Last activity: 2026-05-19 — Milestone v3.2 started
 
 ## Performance Metrics
 
