@@ -15,6 +15,7 @@ import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth.store';
 import { buildTree, flattenTreeForSelect } from '@/lib/tree-utils';
 import { confirmCloseIfDirty } from '@/lib/form-confirm';
+import { LgspSourceBadge, LgspSourceFilter, type DocSourceType } from '@/lib/lgsp-source-badge';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import dayjs from 'dayjs';
 
@@ -42,6 +43,10 @@ interface IncomingDoc {
   i_am_recipient?: boolean;
   sent_by_name?: string | null;
   received_at?: string | null;
+  // Phase 35-04: source + LGSP metadata
+  source_type?: DocSourceType;
+  external_doc_id?: string | null;
+  lgsp_sender_org_code?: string | null;
   permissions?: {
     canEdit: boolean;
     canApprove: boolean;
@@ -102,6 +107,7 @@ export default function IncomingDocPage() {
   // Phase 20: cơ quan ngoài LGSP cho field "Nơi gửi" tự nhập VB đến
   const [interOrgs, setInterOrgs] = useState<SelectOption[]>([]);
   const [filterDeptId, setFilterDeptId] = useState<number | undefined>();
+  const [sourceTypeFilter, setSourceTypeFilter] = useState<DocSourceType | null>(null);  // Phase 35-04
   const [deptTreeData, setDeptTreeData] = useState<{ value: number; title: string; children?: any[] }[]>([]);
   const [extraColumns, setExtraColumns] = useState<{ column_name: string; label: string; data_type: string; max_length: number | null; is_mandatory: boolean }[]>([]);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -124,12 +130,13 @@ export default function IncomingDocPage() {
       }
       if (filterSigner) params.signer = filterSigner;
       if (filterDeptId) params.department_id = filterDeptId;
+      if (sourceTypeFilter) params.source_type = sourceTypeFilter;  // Phase 35-04
       const { data: res } = await api.get('/van-ban-den', { params });
       setData(res.data || []);
       setTotal(res.pagination?.total || 0);
     } catch { message.error('Lỗi tải danh sách văn bản đến'); }
     finally { setLoading(false); }
-  }, [page, pageSize, keyword, filterDocBookId, filterDocTypeId, filterUrgentId, filterDateRange, filterSigner, filterDeptId, message]);
+  }, [page, pageSize, keyword, filterDocBookId, filterDocTypeId, filterUrgentId, filterDateRange, filterSigner, filterDeptId, sourceTypeFilter, message]);
 
   const fetchDropdowns = useCallback(async () => {
     try {
@@ -359,8 +366,18 @@ export default function IncomingDocPage() {
       render: (d, r) => <span style={{ fontWeight: r.is_read ? 'normal' : 'bold' }}>{d ? dayjs(d).format('DD/MM/YYYY') : ''}</span>,
     },
     {
-      title: 'Số ký hiệu', dataIndex: 'notation', width: 130,
-      render: (val, r) => <span style={{ fontWeight: r.is_read ? 'normal' : 'bold' }}>{val}</span>,
+      title: 'Số ký hiệu', dataIndex: 'notation', width: 160,
+      render: (val, r) => (
+        <Space size={4} wrap>
+          <span style={{ fontWeight: r.is_read ? 'normal' : 'bold' }}>{val}</span>
+          {/* Phase 35-04: render Tag "LGSP" cho VB nhap tu truc */}
+          <LgspSourceBadge
+            sourceType={r.source_type}
+            lgspSenderOrgCode={r.lgsp_sender_org_code}
+            publishUnit={r.publish_unit}
+          />
+        </Space>
+      ),
     },
     {
       title: 'Trích yếu', dataIndex: 'abstract', ellipsis: true,
@@ -439,8 +456,10 @@ export default function IncomingDocPage() {
           <Col span={4}><Select style={{ width: '100%' }} placeholder="Sổ văn bản" allowClear options={docBooks} value={filterDocBookId} onChange={(val) => { setFilterDocBookId(val); setPage(1); }} /></Col>
           <Col span={4}><Select style={{ width: '100%' }} placeholder="Loại văn bản" allowClear options={docTypes} value={filterDocTypeId} onChange={(val) => { setFilterDocTypeId(val); setPage(1); }} /></Col>
           <Col span={3}><Select style={{ width: '100%' }} placeholder="Độ khẩn" allowClear options={[{ value: 1, label: 'Thường' }, { value: 2, label: 'Khẩn' }, { value: 3, label: 'Hỏa tốc' }]} value={filterUrgentId} onChange={(val) => { setFilterUrgentId(val); setPage(1); }} /></Col>
+          {/* Phase 35-04: filter "Nguon" — Noi bo / LGSP / Thu cong */}
+          <Col span={3}><LgspSourceFilter style={{ width: '100%' }} value={sourceTypeFilter} onChange={(val) => { setSourceTypeFilter(val); setPage(1); }} /></Col>
           <Col span={5}><RangePicker style={{ width: '100%' }} format="DD/MM/YYYY" placeholder={['Từ ngày', 'Đến ngày']} value={filterDateRange} onChange={(val) => { setFilterDateRange(val as [dayjs.Dayjs, dayjs.Dayjs] | null); setPage(1); }} /></Col>
-          <Col span={2}><Tooltip title="Xóa bộ lọc"><Button icon={<ReloadOutlined />} onClick={() => { setKeyword(''); setFilterDocBookId(undefined); setFilterDocTypeId(undefined); setFilterUrgentId(undefined); setFilterDateRange(null); setFilterSigner(''); setFilterDeptId(undefined); setPage(1); }} /></Tooltip></Col>
+          <Col span={2}><Tooltip title="Xóa bộ lọc"><Button icon={<ReloadOutlined />} onClick={() => { setKeyword(''); setFilterDocBookId(undefined); setFilterDocTypeId(undefined); setFilterUrgentId(undefined); setFilterDateRange(null); setFilterSigner(''); setFilterDeptId(undefined); setSourceTypeFilter(null); setPage(1); }} /></Tooltip></Col>
         </Row>
       </div>
 
