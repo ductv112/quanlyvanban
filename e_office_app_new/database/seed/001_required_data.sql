@@ -287,3 +287,175 @@ BEGIN
 
   RAISE NOTICE 'seed/001_required_data.sql: Master data OK (admin/Admin@123, 3 providers disabled — admin must configure via /ky-so/cau-hinh; SMARTCA_VNPT_TH chi dung cho dev test)';
 END $$;
+
+-- ============================================================================
+-- Phase 33: Seed LGSP placeholder data (REQ LGSP-CRED-05)
+-- Source: docs/Truc EDOC Lang Son - QLVB Doanh nghiep/QLVBDNAgencies.xlsx + List.txt
+-- Pattern: production-safe — is_active=FALSE + placeholder secret. Admin nhap real qua UI Phase 37.
+--
+-- IMPORTANT: UPDATE statements match by name keyword (portable across dev/prod DBs):
+--   - Tren dev DB Lao Cai (KHONG co 6 DN Lang Son) → 0 row affected, RAISE NOTICE skip
+--   - Tren prod DB Lang Son (KH tao 6 DN voi name chuan) → UPDATE thanh cong → INSERT 9 row
+-- See: .planning/phases/33-database-core-infrastructure/33-02-root-units-mapping.md
+-- ============================================================================
+
+-- --- Phase 33.1: UPDATE 6 root unit set lgsp_org_code (match by name keyword) ---
+DO $$
+DECLARE
+  v_count_updated INT := 0;
+BEGIN
+  -- DN.001 — Cty CP Huu nghi Xuan Cuong
+  UPDATE public.departments SET lgsp_org_code = 'H37.DN.001'
+    WHERE parent_id IS NULL
+      AND (lgsp_org_code IS NULL OR lgsp_org_code = '')
+      AND (name ILIKE '%Xuân Cương%' OR name ILIKE '%Xuan Cuong%');
+  GET DIAGNOSTICS v_count_updated = ROW_COUNT;
+  IF v_count_updated = 0 THEN RAISE NOTICE 'Phase 33 seed: DN.001 (Xuan Cuong) KHONG match — root unit chua ton tai trong departments'; END IF;
+
+  -- DN.002 — Cty CP San xuat va Thuong Mai Lang Son
+  UPDATE public.departments SET lgsp_org_code = 'H37.DN.002'
+    WHERE parent_id IS NULL
+      AND (lgsp_org_code IS NULL OR lgsp_org_code = '')
+      AND (name ILIKE '%Sản xuất%Thương Mại%Lạng Sơn%' OR name ILIKE '%San xuat%Thuong Mai%Lang Son%');
+  GET DIAGNOSTICS v_count_updated = ROW_COUNT;
+  IF v_count_updated = 0 THEN RAISE NOTICE 'Phase 33 seed: DN.002 (SX TM Lang Son) KHONG match'; END IF;
+
+  -- DN.003 — Cty CP Tap doan DT & XD Phu Loc
+  UPDATE public.departments SET lgsp_org_code = 'H37.DN.003'
+    WHERE parent_id IS NULL
+      AND (lgsp_org_code IS NULL OR lgsp_org_code = '')
+      AND (name ILIKE '%Phú Lộc%' OR name ILIKE '%Phu Loc%');
+  GET DIAGNOSTICS v_count_updated = ROW_COUNT;
+  IF v_count_updated = 0 THEN RAISE NOTICE 'Phase 33 seed: DN.003 (Phu Loc) KHONG match'; END IF;
+
+  -- DN.004 — Cty CP Kim loai mau Bac Bo
+  UPDATE public.departments SET lgsp_org_code = 'H37.DN.004'
+    WHERE parent_id IS NULL
+      AND (lgsp_org_code IS NULL OR lgsp_org_code = '')
+      AND (name ILIKE '%Kim loại màu%Bắc Bộ%' OR name ILIKE '%Kim loai mau%Bac Bo%');
+  GET DIAGNOSTICS v_count_updated = ROW_COUNT;
+  IF v_count_updated = 0 THEN RAISE NOTICE 'Phase 33 seed: DN.004 (Kim loai mau Bac Bo) KHONG match'; END IF;
+
+  -- DN.005 — Cty TNHH TM XD Thien Phu
+  UPDATE public.departments SET lgsp_org_code = 'H37.DN.005'
+    WHERE parent_id IS NULL
+      AND (lgsp_org_code IS NULL OR lgsp_org_code = '')
+      AND (name ILIKE '%Thiên Phú%' OR name ILIKE '%Thien Phu%');
+  GET DIAGNOSTICS v_count_updated = ROW_COUNT;
+  IF v_count_updated = 0 THEN RAISE NOTICE 'Phase 33 seed: DN.005 (Thien Phu) KHONG match'; END IF;
+
+  -- DN.006 — Cty TNHH MTV Xe dien DK Viet Nhat
+  UPDATE public.departments SET lgsp_org_code = 'H37.DN.006'
+    WHERE parent_id IS NULL
+      AND (lgsp_org_code IS NULL OR lgsp_org_code = '')
+      AND (name ILIKE '%Xe điện%DK%' OR name ILIKE '%Xe dien%DK%' OR name ILIKE '%Việt Nhật%' OR name ILIKE '%Viet Nhat%');
+  GET DIAGNOSTICS v_count_updated = ROW_COUNT;
+  IF v_count_updated = 0 THEN RAISE NOTICE 'Phase 33 seed: DN.006 (Xe dien DK Viet Nhat) KHONG match'; END IF;
+
+  RAISE NOTICE 'Phase 33 seed: 6 root unit lgsp_org_code UPDATE done (skip neu name khong match — prod KH Lang Son setup 6 DN truoc khi re-apply)';
+END $$;
+
+-- --- Phase 33.2: INSERT 9 row placeholder vao lgsp_agency_config ---
+-- 6 prod env (DN.001..006) + 3 sandbox env (DN.001/002/003 chi co sandbox)
+-- secret_key_encrypted = pgp_sym_encrypt('placeholder_not_configured', SIGNING_SECRET_KEY)
+-- is_active=FALSE — admin bat qua UI Phase 37 sau khi nhap credential that
+DO $$
+DECLARE
+  v_key TEXT;
+  v_unit_dn_001 INT;
+  v_unit_dn_002 INT;
+  v_unit_dn_003 INT;
+  v_unit_dn_004 INT;
+  v_unit_dn_005 INT;
+  v_unit_dn_006 INT;
+  v_inserted_count INT := 0;
+BEGIN
+  -- Doc SIGNING_SECRET_KEY tu session variable (set boi reset-db script hoac deploy script)
+  BEGIN
+    v_key := current_setting('app.signing_secret_key', FALSE);
+  EXCEPTION WHEN OTHERS THEN
+    v_key := NULL;
+  END;
+
+  IF v_key IS NULL OR length(trim(v_key)) < 16 THEN
+    RAISE EXCEPTION 'Phase 33 seed: app.signing_secret_key chua set hoac < 16 ky tu. Chay: SET app.signing_secret_key=''<key>'' TRUOC khi apply seed/001';
+  END IF;
+
+  -- Lookup unit_id tu lgsp_org_code da UPDATE phia tren (root unit only)
+  SELECT id INTO v_unit_dn_001 FROM public.departments WHERE lgsp_org_code = 'H37.DN.001' AND parent_id IS NULL LIMIT 1;
+  SELECT id INTO v_unit_dn_002 FROM public.departments WHERE lgsp_org_code = 'H37.DN.002' AND parent_id IS NULL LIMIT 1;
+  SELECT id INTO v_unit_dn_003 FROM public.departments WHERE lgsp_org_code = 'H37.DN.003' AND parent_id IS NULL LIMIT 1;
+  SELECT id INTO v_unit_dn_004 FROM public.departments WHERE lgsp_org_code = 'H37.DN.004' AND parent_id IS NULL LIMIT 1;
+  SELECT id INTO v_unit_dn_005 FROM public.departments WHERE lgsp_org_code = 'H37.DN.005' AND parent_id IS NULL LIMIT 1;
+  SELECT id INTO v_unit_dn_006 FROM public.departments WHERE lgsp_org_code = 'H37.DN.006' AND parent_id IS NULL LIMIT 1;
+
+  -- DN.001 prod + sandbox
+  IF v_unit_dn_001 IS NOT NULL THEN
+    INSERT INTO edoc.lgsp_agency_config (unit_id, environment, system_id, secret_key_encrypted, base_url, is_active, created_by, updated_by)
+    VALUES (v_unit_dn_001, 'prod', 'H37.DN.001', pgp_sym_encrypt('placeholder_not_configured', v_key), 'https://apiltvb.langson.gov.vn', FALSE, 1, 1)
+    ON CONFLICT (unit_id, environment) DO NOTHING;
+    GET DIAGNOSTICS v_inserted_count = ROW_COUNT;
+
+    INSERT INTO edoc.lgsp_agency_config (unit_id, environment, system_id, secret_key_encrypted, base_url, is_active, created_by, updated_by)
+    VALUES (v_unit_dn_001, 'sandbox', 'H37.DN.001', pgp_sym_encrypt('placeholder_not_configured', v_key), 'https://trucltvb.langson.gov.vn/apithunghiem', FALSE, 1, 1)
+    ON CONFLICT (unit_id, environment) DO NOTHING;
+  ELSE
+    RAISE NOTICE 'Phase 33 seed: DN.001 unit_id NULL — bo qua INSERT lgsp_agency_config (prod + sandbox)';
+  END IF;
+
+  -- DN.002 prod + sandbox
+  IF v_unit_dn_002 IS NOT NULL THEN
+    INSERT INTO edoc.lgsp_agency_config (unit_id, environment, system_id, secret_key_encrypted, base_url, is_active, created_by, updated_by)
+    VALUES (v_unit_dn_002, 'prod', 'H37.DN.002', pgp_sym_encrypt('placeholder_not_configured', v_key), 'https://apiltvb.langson.gov.vn', FALSE, 1, 1)
+    ON CONFLICT (unit_id, environment) DO NOTHING;
+
+    INSERT INTO edoc.lgsp_agency_config (unit_id, environment, system_id, secret_key_encrypted, base_url, is_active, created_by, updated_by)
+    VALUES (v_unit_dn_002, 'sandbox', 'H37.DN.002', pgp_sym_encrypt('placeholder_not_configured', v_key), 'https://trucltvb.langson.gov.vn/apithunghiem', FALSE, 1, 1)
+    ON CONFLICT (unit_id, environment) DO NOTHING;
+  ELSE
+    RAISE NOTICE 'Phase 33 seed: DN.002 unit_id NULL — bo qua INSERT (prod + sandbox)';
+  END IF;
+
+  -- DN.003 prod + sandbox
+  IF v_unit_dn_003 IS NOT NULL THEN
+    INSERT INTO edoc.lgsp_agency_config (unit_id, environment, system_id, secret_key_encrypted, base_url, is_active, created_by, updated_by)
+    VALUES (v_unit_dn_003, 'prod', 'H37.DN.003', pgp_sym_encrypt('placeholder_not_configured', v_key), 'https://apiltvb.langson.gov.vn', FALSE, 1, 1)
+    ON CONFLICT (unit_id, environment) DO NOTHING;
+
+    INSERT INTO edoc.lgsp_agency_config (unit_id, environment, system_id, secret_key_encrypted, base_url, is_active, created_by, updated_by)
+    VALUES (v_unit_dn_003, 'sandbox', 'H37.DN.003', pgp_sym_encrypt('placeholder_not_configured', v_key), 'https://trucltvb.langson.gov.vn/apithunghiem', FALSE, 1, 1)
+    ON CONFLICT (unit_id, environment) DO NOTHING;
+  ELSE
+    RAISE NOTICE 'Phase 33 seed: DN.003 unit_id NULL — bo qua INSERT (prod + sandbox)';
+  END IF;
+
+  -- DN.004/005/006 chi prod (khong co sandbox credential)
+  IF v_unit_dn_004 IS NOT NULL THEN
+    INSERT INTO edoc.lgsp_agency_config (unit_id, environment, system_id, secret_key_encrypted, base_url, is_active, created_by, updated_by)
+    VALUES (v_unit_dn_004, 'prod', 'H37.DN.004', pgp_sym_encrypt('placeholder_not_configured', v_key), 'https://apiltvb.langson.gov.vn', FALSE, 1, 1)
+    ON CONFLICT (unit_id, environment) DO NOTHING;
+  ELSE
+    RAISE NOTICE 'Phase 33 seed: DN.004 unit_id NULL — bo qua INSERT';
+  END IF;
+
+  IF v_unit_dn_005 IS NOT NULL THEN
+    INSERT INTO edoc.lgsp_agency_config (unit_id, environment, system_id, secret_key_encrypted, base_url, is_active, created_by, updated_by)
+    VALUES (v_unit_dn_005, 'prod', 'H37.DN.005', pgp_sym_encrypt('placeholder_not_configured', v_key), 'https://apiltvb.langson.gov.vn', FALSE, 1, 1)
+    ON CONFLICT (unit_id, environment) DO NOTHING;
+  ELSE
+    RAISE NOTICE 'Phase 33 seed: DN.005 unit_id NULL — bo qua INSERT';
+  END IF;
+
+  IF v_unit_dn_006 IS NOT NULL THEN
+    INSERT INTO edoc.lgsp_agency_config (unit_id, environment, system_id, secret_key_encrypted, base_url, is_active, created_by, updated_by)
+    VALUES (v_unit_dn_006, 'prod', 'H37.DN.006', pgp_sym_encrypt('placeholder_not_configured', v_key), 'https://apiltvb.langson.gov.vn', FALSE, 1, 1)
+    ON CONFLICT (unit_id, environment) DO NOTHING;
+  ELSE
+    RAISE NOTICE 'Phase 33 seed: DN.006 unit_id NULL — bo qua INSERT';
+  END IF;
+
+  -- Update sequence sau bulk INSERT (CLAUDE.md pitfall #12)
+  PERFORM setval(pg_get_serial_sequence('edoc.lgsp_agency_config', 'id'), COALESCE((SELECT MAX(id) FROM edoc.lgsp_agency_config), 1));
+
+  RAISE NOTICE 'Phase 33 seed: lgsp_agency_config INSERT done. So row thuc te phu thuoc 6 root unit DN.001..006 co lgsp_org_code dung khong. Admin bat is_active qua UI Phase 37.';
+END $$;
