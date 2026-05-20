@@ -9,6 +9,10 @@
 import { lgspAgencyConfigRepository } from '../repositories/lgsp-agency-config.repository.js';
 import { decryptSecret } from './signing/crypto.js';
 
+/**
+ * @deprecated Phase 35: dung LgspReceivedDocSummary + LgspReceivedDocFull thay the.
+ * Giu lai cho backward compat voi mock service legacy shape.
+ */
 export interface LgspReceivedDoc {
   lgsp_doc_id: string;
   doc_code: string;
@@ -17,6 +21,39 @@ export interface LgspReceivedDoc {
   sender_org_name: string;
   edxml_content: string;
   attachments: { file_name: string; file_content: string }[];
+}
+
+/**
+ * Phase 35: shape tu /v1/syncReceivedEdocList (LIST API).
+ * Chua co edXML, chua co attachments — chi metadata de worker biet co doc moi can pull.
+ */
+export interface LgspReceivedDocSummary {
+  lgsp_doc_id: string;
+  from_org_code: string;
+  to_org_code: string;
+  status: string;
+  status_desc: string;
+  created_time: string;
+  updated_time: string;
+}
+
+export interface LgspReceivedDocFullAttachment {
+  file_name: string;
+  file_content_base64: string;
+}
+
+/**
+ * Phase 35: shape tu /v1/getEdoc (DETAIL API).
+ * Co edXML envelope + attachments base64 — du de worker parse + INSERT incoming_docs.
+ */
+export interface LgspReceivedDocFull {
+  lgsp_doc_id: string;
+  sender_org_code: string;
+  sender_org_name: string;
+  edoc_code: string;
+  edoc_abstract: string;
+  edxml: string;
+  attachments: LgspReceivedDocFullAttachment[];
 }
 
 export interface LgspSendResult {
@@ -43,7 +80,23 @@ export interface LgspOrganization {
 
 export interface ILgspService {
   getToken(): Promise<string>;
-  receiveDocuments(): Promise<LgspReceivedDoc[]>;
+  /**
+   * Phase 35: signature doi tu () -> (fromDateYmd, toDateYmd).
+   * Caller (Plan 35-02 worker) tinh fromDate = COALESCE(last_synced_at, NOW() - 7d) + format YYYY/MM/DD.
+   *
+   * @returns Array metadata cua doc moi nhan duoc (chua co edXML — goi getEdocById de lay full payload)
+   */
+  receiveDocuments(
+    fromDateYmd: string,
+    toDateYmd: string,
+  ): Promise<LgspReceivedDocSummary[]>;
+  /**
+   * Phase 35: fetch single doc full payload by docId.
+   * Goi /v1/getEdoc voi HTTP headers X-SystemId + X-SecretKey.
+   *
+   * @returns null khi LGSP tra success=false hoac data missing (doc bi xoa)
+   */
+  getEdocById(docId: string): Promise<LgspReceivedDocFull | null>;
   /**
    * Phase 34: signature doi tu (string, string) -> (Buffer, string, string).
    *

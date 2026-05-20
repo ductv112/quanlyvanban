@@ -7,9 +7,10 @@ import pino from 'pino';
 import { redis } from '../lib/redis/client.js';
 import type {
   ILgspService,
-  LgspReceivedDoc,
   LgspSendResult,
   LgspOrganization,
+  LgspReceivedDocSummary,
+  LgspReceivedDocFull,
 } from './lgsp.service.js';
 
 const logger = pino({ name: 'lgsp-mock' });
@@ -25,26 +26,31 @@ const MOCK_ORGS: LgspOrganization[] = [
   { org_code: 'H01.01.07', org_name: 'So Cong thuong tinh Lao Cai', parent_code: 'H01.01', address: '550 Hoang Lien, TP Lao Cai', email: 'socongthuong@laocai.gov.vn', phone: '02143821007' },
 ];
 
-const MOCK_DOCS: LgspReceivedDoc[] = [
+// Phase 35: mock data theo shape moi /v1/syncReceivedEdocList + /v1/getEdoc
+const MOCK_DOC_SUMMARIES: LgspReceivedDocSummary[] = [
   {
     lgsp_doc_id: 'LGSP-MOCK-001',
-    doc_code: '145/UBND-VP',
-    doc_abstract: 'V/v tang cuong phong chong bao lut nam 2026',
-    sender_org_code: 'H01.01',
-    sender_org_name: 'UBND tinh Lao Cai',
-    edxml_content: '<edXML><header><subject>V/v tang cuong phong chong bao lut nam 2026</subject></header></edXML>',
-    attachments: [{ file_name: 'cong_van_145.pdf', file_content: 'base64-mock-content' }],
+    from_org_code: 'H01.01',
+    to_org_code: 'H01.01.99',
+    status: 'initial',
+    status_desc: 'Chua xu ly',
+    created_time: '2026-05-20 08:00:00',
+    updated_time: '2026-05-20 08:00:00',
   },
   {
     lgsp_doc_id: 'LGSP-MOCK-002',
-    doc_code: '89/STC-NSNN',
-    doc_abstract: 'V/v bo sung kinh phi thuc hien nhiem vu cap bach',
-    sender_org_code: 'H01.01.02',
-    sender_org_name: 'So Tai chinh tinh Lao Cai',
-    edxml_content: '<edXML><header><subject>V/v bo sung kinh phi thuc hien nhiem vu cap bach</subject></header></edXML>',
-    attachments: [],
+    from_org_code: 'H01.01.02',
+    to_org_code: 'H01.01.99',
+    status: 'initial',
+    status_desc: 'Chua xu ly',
+    created_time: '2026-05-20 09:00:00',
+    updated_time: '2026-05-20 09:00:00',
   },
 ];
+
+function buildMockEdxml(docId: string, senderCode: string, senderName: string, subject: string): string {
+  return `<?xml version="1.0" encoding="UTF-8"?><EdXMLEnvelope xmlns="http://www.go.vn/eDoc"><MessageHeader><From><OrganId>${senderCode}</OrganId><OrganName>${senderName}</OrganName></From><To><OrganId>H01.01.99</OrganId><OrganName>Mock Receiver</OrganName></To><Code><CodeNumber>1</CodeNumber><CodeNotation>MOCK</CodeNotation></Code><PromulgationInfo><Promulgator>${senderName}</Promulgator><PromulgationDate>2026-05-20</PromulgationDate></PromulgationInfo><DocumentType>Cong van</DocumentType><Subject>${subject}</Subject><SignerInfo><Signer>Mock signer</Signer><Position>GD</Position><Competence>Truc tiep</Competence></SignerInfo><OtherInfo><PageAmount>1</PageAmount></OtherInfo><DocumentId>${docId}</DocumentId></MessageHeader></EdXMLEnvelope>`;
+}
 
 export const lgspMockService: ILgspService = {
   async getToken(): Promise<string> {
@@ -61,12 +67,37 @@ export const lgspMockService: ILgspService = {
     return token;
   },
 
-  async receiveDocuments(): Promise<LgspReceivedDoc[]> {
+  async receiveDocuments(
+    fromDateYmd: string,
+    toDateYmd: string,
+  ): Promise<LgspReceivedDocSummary[]> {
     // Randomly return 0-2 documents to simulate real polling behavior
     const count = Math.floor(Math.random() * 3);
-    const docs = MOCK_DOCS.slice(0, count);
-    logger.info(`MOCK: Polling LGSP — found ${docs.length} documents`);
+    const docs = MOCK_DOC_SUMMARIES.slice(0, count);
+    logger.info(
+      { fromDate: fromDateYmd, toDate: toDateYmd, count: docs.length },
+      'MOCK: Polling LGSP syncReceivedEdocList',
+    );
     return docs;
+  },
+
+  async getEdocById(docId: string): Promise<LgspReceivedDocFull | null> {
+    // Mock: return a deterministic full payload (no real DB lookup)
+    const summary = MOCK_DOC_SUMMARIES.find((d) => d.lgsp_doc_id === docId);
+    const sender = summary?.from_org_code || 'H01.01';
+    const senderName = sender === 'H01.01' ? 'UBND tinh Lao Cai' : 'So Tai chinh tinh Lao Cai';
+    const subject = `Mock doc ${docId}`;
+    const edxml = buildMockEdxml(docId, sender, senderName, subject);
+    logger.info({ docId, sender, bytes: edxml.length }, 'MOCK: getEdocById');
+    return {
+      lgsp_doc_id: docId,
+      sender_org_code: sender,
+      sender_org_name: senderName,
+      edoc_code: 'MOCK-CODE',
+      edoc_abstract: subject,
+      edxml,
+      attachments: [],
+    };
   },
 
   async sendDocument(

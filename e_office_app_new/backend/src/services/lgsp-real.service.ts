@@ -14,9 +14,10 @@
 import FormData from 'form-data';
 import type {
   ILgspService,
-  LgspReceivedDoc,
   LgspSendResult,
   LgspOrganization,
+  LgspReceivedDocSummary,
+  LgspReceivedDocFull,
 } from './lgsp.service.js';
 import { LgspSendError, mapLgspError } from './lgsp/error-codes.js';
 
@@ -149,6 +150,9 @@ export class LGSPRealService implements ILgspService {
     }
   }
 
+  // Phase 35: receiveDocuments/getEdocById KHONG dung token nay --
+  // chi goi qua HTTP headers X-SystemId/X-SecretKey theo Postman authoritative.
+  // getToken van dung cho syncOrganizations (admin API legacy /api/lgspedoc/organizations).
   async getToken(): Promise<string> {
     if (this.cachedToken && Date.now() < this.tokenExpiresAt) return this.cachedToken;
 
@@ -294,46 +298,106 @@ export class LGSPRealService implements ILgspService {
     }
   }
 
-  async receiveDocuments(): Promise<LgspReceivedDoc[]> {
-    const token = await this.getToken();
-    const today = new Date();
-    const fromDate = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000) // 7 ngày qua
-      .toISOString().slice(0, 10);
-    const toDate = today.toISOString().slice(0, 10);
-
-    const url = `${this.endpoint}/api/lgspedoc/received-edocs?token=${encodeURIComponent(token)}` +
-      `&messageType=edoc&fromDate=${fromDate}&toDate=${toDate}` +
-      `&systemId=${encodeURIComponent(this.systemId)}&secretKey=${encodeURIComponent(this.secretKey)}`;
-
-    const res = await this.fetchJson<ReceivedEdocsResponse>(url);
+  /**
+   * Phase 35 (Plan 35-01): Fix Phase 18 BROKEN implementation.
+   *
+   * AUTHORITATIVE shape (Postman collection 04.syncReceivedEdocList):
+   *   GET {baseUrl}/v1/syncReceivedEdocList?messageType=edoc&fromDate=YYYY/MM/DD&toDate=YYYY/MM/DD
+   *   Headers: X-SystemId, X-SecretKey  (NO login token, NO body)
+   *   Response: { success, message, count, data: [{ docId, from, to, status, statusDesc, ... }] }
+   *
+   * Caller (Plan 35-02 worker) is responsible for:
+   *   - Computing fromDate = COALESCE(last_synced_at, NOW() - 7 days), toDate = NOW()
+   *   - Formatting both as YYYY/MM/DD (NOT YYYY-MM-DD per LGSP spec)
+   *   - Filtering out already-processed docs (status='initial' typically the only one need pull)
+   *   - Calling getEdocById() for each new docId to fetch full payload
+   */
+  async receiveDocuments(
+    fromDateYmd: string,
+    toDateYmd: string,
+  ): Promise<LgspReceivedDocSummary[]> {
+    const sysId = this.systemId;
+    const secret = this.secretKey;
+    if (!sysId || !secret) {
+      throw new Error(
+        `LGSP credential missing for receiveDocuments: systemId=${sysId ? 'OK' : 'EMPTY'}, secretKey=${secret ? 'OK' : 'EMPTY'}`,
+      );
+    }
+    const url =
+      `${this.endpoint}/v1/syncReceivedEdocList` +
+      `?messageType=edoc` +
+      `&fromDate=${encodeURIComponent(fromDateYmd)}` +
+      `&toDate=${encodeURIComponent(toDateYmd)}`;
+    const res = await this.fetchJson<ReceivedEdocsResponse>(
+      url,
+      {
+        method: 'GET',
+        headers: {
+          'X-SystemId': sysId,
+          'X-SecretKey': secret,
+          Accept: 'application/json',
+        },
+      },
+      30000,
+    );
     if (!res.success || !Array.isArray(res.data)) return [];
-
-    // Filter docs status='initial' (chưa xử lý) — fetch chi tiết từng doc
-    const initialDocs = res.data.filter((d) => d.status === 'initial');
-    const detailed = await Promise.all(initialDocs.map((d) => this.getDocumentDetail(token, d.docId)));
-    return detailed.filter((d): d is LgspReceivedDoc => d !== null);
+    return res.data.map((d) => ({
+      lgsp_doc_id: d.docId,
+      from_org_code: d.from,
+      to_org_code: d.to,
+      status: d.status,
+      status_desc: d.statusDesc,
+      created_time: d.createdTime,
+      updated_time: d.updatedTime,
+    }));
   }
 
-  private async getDocumentDetail(token: string, docId: string): Promise<LgspReceivedDoc | null> {
-    try {
-      const url = `${this.endpoint}/api/lgspedoc/get-edoc?token=${encodeURIComponent(token)}&docId=${encodeURIComponent(docId)}`;
-      const res = await this.fetchJson<GetEdocResponse>(url);
-      if (!res.success || !res.data) return null;
-      return {
-        lgsp_doc_id: res.data.docId,
-        doc_code: res.data.edocCode || '',
-        doc_abstract: res.data.edocAbstract || '',
-        sender_org_code: res.data.from || '',
-        sender_org_name: res.data.fromName || '',
-        edxml_content: res.data.edxml || '',
-        attachments: (res.data.attachments || []).map((a) => ({
-          file_name: a.fileName,
-          file_content: a.fileContent,
-        })),
-      };
-    } catch {
-      return null;
+  /**
+   * Phase 35 (Plan 35-01): New method -- fetch single doc full payload by docId.
+   *
+   * AUTHORITATIVE shape (Postman collection 05.getEdoc):
+   *   GET {baseUrl}/v1/getEdoc?docId=<uuid>
+   *   Headers: X-SystemId, X-SecretKey
+   *   Response: { success, message, data: { docId, from, fromName?, edocCode?, edocAbstract?,
+   *                                          edxml: string, attachments?: [{ fileName, fileContent(base64) }] } }
+   *
+   * Returns null when LGSP says success=false or data is missing (doc may have been deleted).
+   * Caller (Plan 35-02 worker) parses `edxml` via services/lgsp/edxml-parser.ts.
+   */
+  async getEdocById(docId: string): Promise<LgspReceivedDocFull | null> {
+    const sysId = this.systemId;
+    const secret = this.secretKey;
+    if (!sysId || !secret) {
+      throw new Error(
+        `LGSP credential missing for getEdocById: systemId=${sysId ? 'OK' : 'EMPTY'}, secretKey=${secret ? 'OK' : 'EMPTY'}`,
+      );
     }
+    const url = `${this.endpoint}/v1/getEdoc?docId=${encodeURIComponent(docId)}`;
+    const res = await this.fetchJson<GetEdocResponse>(
+      url,
+      {
+        method: 'GET',
+        headers: {
+          'X-SystemId': sysId,
+          'X-SecretKey': secret,
+          Accept: 'application/json',
+        },
+      },
+      60000, // bigger timeout — payload may include attachments
+    );
+    if (!res.success || !res.data) return null;
+    return {
+      lgsp_doc_id: res.data.docId,
+      sender_org_code: res.data.from || '',
+      sender_org_name: res.data.fromName || '',
+      edoc_code: res.data.edocCode || '',
+      edoc_abstract: res.data.edocAbstract || '',
+      edxml: res.data.edxml || '',
+      attachments: (res.data.attachments || []).map((a) => ({
+        file_name: a.fileName,
+        file_content_base64: a.fileContent,
+      })),
+    };
   }
 
   async syncOrganizations(): Promise<LgspOrganization[]> {

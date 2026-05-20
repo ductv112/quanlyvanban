@@ -163,21 +163,37 @@ router.post('/organizations/sync', async (req: Request, res: Response) => {
 
 // ============================================================
 // POST /receive-poll — Manual trigger polling LGSP (dev/debug)
+//
+// Phase 35: Updated cho interface moi (2-arg receiveDocuments + getEdocById detail).
+// Sau Plan 35-03 nay se duoc thay the boi POST /api/lgsp/sync-now (enqueue tick job).
+// Hien tai giu lai cho dev debug — log full payload + create tracking row per doc.
 // ============================================================
+function formatYmd(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}/${m}/${d}`;
+}
+
 router.post('/receive-poll', async (req: Request, res: Response) => {
   try {
     const { staffId } = (req as AuthRequest).user;
     const service = await getLgspService();
-    const docs = await service.receiveDocuments();
+    const now = new Date();
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const summaries = await service.receiveDocuments(formatYmd(sevenDaysAgo), formatYmd(now));
 
     const trackingIds: number[] = [];
-    for (const doc of docs) {
+    for (const summary of summaries) {
+      // Fetch full payload de co edXML + sender name (Phase 35 split LIST/DETAIL API)
+      const full = await service.getEdocById(summary.lgsp_doc_id);
+      if (!full) continue;
       const result = await lgspRepository.createTracking(
         null, // incoming — no outgoing_doc_id
         'receive',
-        doc.sender_org_code,
-        doc.sender_org_name,
-        doc.edxml_content,
+        full.sender_org_code,
+        full.sender_org_name,
+        full.edxml,
         staffId,
       );
       if (result.success) {
@@ -186,7 +202,7 @@ router.post('/receive-poll', async (req: Request, res: Response) => {
         await lgspRepository.updateTrackingStatus(
           result.id,
           'success',
-          doc.lgsp_doc_id,
+          full.lgsp_doc_id,
           null,
         );
       }
@@ -194,8 +210,8 @@ router.post('/receive-poll', async (req: Request, res: Response) => {
 
     res.json({
       success: true,
-      message: `Da nhan ${docs.length} van ban tu LGSP`,
-      data: { received: docs.length, tracking_ids: trackingIds },
+      message: `Da nhan ${summaries.length} van ban tu LGSP`,
+      data: { received: summaries.length, tracking_ids: trackingIds },
     });
   } catch (error) {
     handleDbError(error, res);
