@@ -67,7 +67,7 @@ Detail: `.planning/milestones/v3.1-phases/`, archive: `.planning/milestones/v3.1
 **Summary phases:**
 
 - [x] **Phase 33: Database + Core Infrastructure** — Schema `lgsp_agency_config` per-unit + `lgsp_org_code` cột + outbox + `getLgspService()` lookup + seed 9 row (completed 2026-05-20)
-- [ ] **Phase 34: Send Flow (sendEdoc)** — edXML builder + routing internal/external + worker send + error mapping + UI badge
+- [x] **Phase 34: Send Flow (sendEdoc)** — edXML builder + routing internal/external + worker send + error mapping + UI badge (completed 2026-05-20)
 - [ ] **Phase 35: Receive Flow (cron syncReceivedEdocList)** — Cron loop 6 DN + parser edXML + INSERT incoming_docs dedup + attachments MinIO + tracking
 - [ ] **Phase 36: Status Callback Chain (9 mã QĐ 28)** — Outbox worker poll + auto fire 03/04/05/06 + refactor "Chuyển lại" → "Từ chối tiếp nhận" (02) + Lấy lại 13/15/16 + UI tag trạng thái
 - [ ] **Phase 37: Admin UI + Catalog + Go-live** — `/quan-tri/lgsp-config` CRUD + test connection + Catalog `inter_organizations` + gỡ hidden-routes + Wave 1/2 roll-out
@@ -103,12 +103,12 @@ Detail: `.planning/milestones/v3.1-phases/`, archive: `.planning/milestones/v3.1
   3. Postman collection trong `docs/Trục EDOC Lạng Sơn - QLVB Doanh nghiệp/` import + chạy `getEdoc?docId=<id vừa send>` từ phía recipient sandbox → nhận lại edXML khớp với gì đã gửi (verify E2E)
   4. Khi gửi lỗi (VD: secret_key sai), backend map 9 ErrorCode LGSP (0/10/15/18/19/20/21/22/23) thành Vietnamese message, lưu `lgsp_tracking.error_message`, hiển thị inline VB đi chi tiết: "Lỗi gửi LGSP: Sai SystemId hoặc SecretKey (Code 15)"
   5. UI VB đi chi tiết hiển thị badge per-recipient: 3 internal "Đã gửi nội bộ", 2 external "Đang chờ worker đẩy LGSP" → sau worker chạy thành công đổi "Đã gửi LGSP" (xanh) hoặc "Lỗi gửi LGSP: ..." (đỏ) — extend tracking inline đã có Phase 19 v3.0
-**Plans:** 5 plans
-  - [ ] 34-01-PLAN.md — Fix LGSPRealService.sendDocument() multipart + headers + tao error-codes + edxml-builder modules
-  - [ ] 34-02-PLAN.md — BullMQ queue producer (backend) + worker (workers) module setup voi concurrency=3 + retry 5x exponential
-  - [ ] 34-03-PLAN.md — Wire enqueue trong route POST /:id/gui-noi-bo sau SP commit + repo method getExternalRecipientsForSend
-  - [ ] 34-04-PLAN.md — Frontend hook useRecipientsPolling 10s + badge state machine 4 state inline VB di chi tiet
-  - [ ] 34-05-PLAN.md — Final verification (TS + production build + E2E sandbox + VERIFICATION-REPORT)
+**Plans:** 5/5 plans complete
+  - [x] 34-01-PLAN.md — Fix LGSPRealService.sendDocument() multipart + headers + tao error-codes + edxml-builder modules
+  - [x] 34-02-PLAN.md — BullMQ queue producer (backend) + worker (workers) module setup voi concurrency=3 + retry 5x exponential
+  - [x] 34-03-PLAN.md — Wire enqueue trong route POST /:id/gui-noi-bo sau SP commit + repo method getExternalRecipientsForSend
+  - [x] 34-04-PLAN.md — Frontend hook useRecipientsPolling 10s + badge state machine 4 state inline VB di chi tiet
+  - [x] 34-05-PLAN.md — Final verification (TS + production build + E2E sandbox + VERIFICATION-REPORT)
 **UI hint**: yes
 
 ### Phase 35: Receive Flow (cron syncReceivedEdocList)
@@ -161,7 +161,7 @@ Detail: `.planning/milestones/v3.1-phases/`, archive: `.planning/milestones/v3.1
 | 15-20 | v3.0 | Complete | 2026-04-23 → 2026-04-24 |
 | 21-32 | v3.1 | Complete | 2026-05-05 → 2026-05-19 |
 | 33 | 5/5 | Complete   | 2026-05-20 |
-| 34 | v3.2 — Send Flow | 0/5 planned | — |
+| 34 | 5/5 | Complete    | 2026-05-20 |
 | 35 | v3.2 — Receive Flow | Not started | — |
 | 36 | v3.2 — Status Callback Chain | Not started | — |
 | 37 | v3.2 — Admin UI + Catalog + Go-live | Not started | — |

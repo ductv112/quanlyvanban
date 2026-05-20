@@ -33,12 +33,12 @@ Phân loại tự động theo `outgoing_doc_recipients.recipient_type` — KHÔ
 
 ### LGSP-SEND — Gửi VB đi qua trục (6 reqs)
 
-- [ ] **LGSP-SEND-01**: Builder — Module `lib/lgsp/edxml-builder.ts` build edXMLEnvelope đúng spec QĐ 28 (MessageHeader: From + To + Code + PromulgationInfo + DocumentType + Subject + SignerInfo + OtherInfo + DocumentId + TraceHeaderList)
-- [ ] **LGSP-SEND-02**: Builder — Hỗ trợ attachment encode base64 trong edXML body + Manifest references
-- [ ] **LGSP-SEND-03**: Routing — Trong flow `Ban hành & Gửi`, phân loại recipient từ `outgoing_doc_recipients.recipient_type`: `internal_unit` → flow nội bộ Phase 17, `external_org` → enqueue LGSP send job
-- [ ] **LGSP-SEND-04**: Worker — `workers/src/lgsp-send.ts` extend: lookup credential theo sender's root unit, build edXML, gọi `POST /v1/sendEdoc` multipart, update `lgsp_tracking.lgsp_doc_id` + sent_status
-- [ ] **LGSP-SEND-05**: Error mapping — Map 9 ErrorCode LGSP (0/10/15/18/19/20/21/22/23) thành Vietnamese message hiển thị inline VB đi
-- [ ] **LGSP-SEND-06**: UI — Badge "Đang chờ worker đẩy LGSP" → "Đã gửi LGSP" / "Lỗi gửi LGSP: <msg>" inline VB đi chi tiết (extend tracking inline đã có Phase 19 v3.0)
+- [x] **LGSP-SEND-01**: Builder — Module `lib/lgsp/edxml-builder.ts` build edXMLEnvelope đúng spec QĐ 28 (MessageHeader: From + To + Code + PromulgationInfo + DocumentType + Subject + SignerInfo + OtherInfo + DocumentId + TraceHeaderList)
+- [x] **LGSP-SEND-02**: Builder — Hỗ trợ attachment encode base64 trong edXML body + Manifest references
+- [x] **LGSP-SEND-03**: Routing — Trong flow `Ban hành & Gửi`, phân loại recipient từ `outgoing_doc_recipients.recipient_type`: `internal_unit` → flow nội bộ Phase 17, `external_org` → enqueue LGSP send job
+- [x] **LGSP-SEND-04**: Worker — `workers/src/lgsp-send.ts` extend: lookup credential theo sender's root unit, build edXML, gọi `POST /v1/sendEdoc` multipart, update `lgsp_tracking.lgsp_doc_id` + sent_status
+- [x] **LGSP-SEND-05**: Error mapping — Map 9 ErrorCode LGSP (0/10/15/18/19/20/21/22/23) thành Vietnamese message hiển thị inline VB đi
+- [x] **LGSP-SEND-06**: UI — Badge "Đang chờ worker đẩy LGSP" → "Đã gửi LGSP" / "Lỗi gửi LGSP: <msg>" inline VB đi chi tiết (extend tracking inline đã có Phase 19 v3.0)
 
 ### LGSP-RECV — Nhận VB đến từ trục (7 reqs)
 

@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v3.2
 milestone_name: LGSP Production Go-live cho 6 DN Lạng Sơn
-status: completed
-stopped_at: Completed 33-05-PLAN.md — Phase 33 COMPLETE (5/5 plans, 100%) — ready for Phase 34
-last_updated: "2026-05-20T04:58:38Z"
-last_activity: 2026-05-20 — Phase 33 Plan 05 shipped — final verification PASS (TS backend clean, schema/seed idempotent 3x ZERO ERROR, E2E 6/6 PASS, trigger 2/2 REJECT, decisions 9/9, REQs 6/6) — Phase 33 COMPLETE
+status: executing
+stopped_at: Completed 33-04-PLAN.md (service factory + cache + invalidate)
+last_updated: "2026-05-20T08:13:26.387Z"
+last_activity: 2026-05-20
 progress:
   total_phases: 5
-  completed_phases: 1
-  total_plans: 5
-  completed_plans: 5
+  completed_phases: 2
+  total_plans: 10
+  completed_plans: 10
   percent: 100
 ---
 
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-19)
 
 **Core value:** Luồng văn bản đến → xử lý → văn bản đi phải hoạt động đúng nghiệp vụ cơ quan nhà nước (6 DN Lạng Sơn dùng prod thật trên `doanhnghiep.vatk.org`, là 6 đơn vị cấp cao trong cây tổ chức `departments`)
-**Current focus:** v3.2 LGSP Production Go-live — Phase 33 (Database + Core Infrastructure) sắp khởi động
+**Current focus:** Phase 34 — Send Flow (sendEdoc)
 
 ## Current Position
 
-Phase: 33 ✅ COMPLETE (5/5 plans)
-Plan: ready for Phase 34 (Send Flow — edXML builder + routing internal/external + worker send)
-Status: Phase 33 ✅ completed (5/5 plans, 100%) — hạ tầng LGSP per-unit sẵn sàng
-Last activity: 2026-05-20 — Phase 33 Plan 05 shipped — final verification PASS: TS backend clean, schema/seed idempotent 3x ZERO ERROR, E2E 6/6 PASS, trigger 2/2 REJECT, decisions 9/9, REQs 6/6 (LGSP-CRED-01..05 + LGSP-STATUS-01) — auto-approved per delegation mode
+Phase: 35
+Plan: Not started
+Status: Executing Phase 34
+Last activity: 2026-05-20
 
 ## Decisions
 
