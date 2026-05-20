@@ -1,8 +1,16 @@
 // ============================================================
 // LGSP Real Service — implements ILgspService với apiltvb.langson.gov.vn
-// Phase 18 v3.0: Replace lgsp-mock.service.ts khi MOCK_EXTERNAL=false
+// Phase 18 v3.0: replace lgsp-mock.service.ts khi MOCK_EXTERNAL=false
+// Phase 33 refactor: constructor injection credential thay vì đọc env hardcoded
+//   - Nếu truyền `credentials` vào constructor → per-unit instance (factory dùng)
+//   - Nếu không truyền → fallback đọc env (Phase 18 backward compat — test/mock)
 // ============================================================
-import type { ILgspService, LgspReceivedDoc, LgspSendResult, LgspOrganization } from './lgsp.service.js';
+import type {
+  ILgspService,
+  LgspReceivedDoc,
+  LgspSendResult,
+  LgspOrganization,
+} from './lgsp.service.js';
 
 interface LoginResponse {
   success: boolean;
@@ -65,21 +73,47 @@ interface OrgListResponse {
 
 const TOKEN_TTL_MS = 29 * 60 * 1000; // 29 phút (LGSP token expire 30')
 
-class LgspRealService implements ILgspService {
+/**
+ * Credential để inject vào LGSPRealService.
+ * Phase 33: lookup từ `edoc.lgsp_agency_config` qua repo, decrypt secret_key trước khi pass vào đây.
+ *
+ * Lưu ý: `username` / `password` / `applicationCode` (LGSP login) vẫn đọc env trong `getToken()` —
+ * 6 DN Lạng Sơn dùng chung 1 LGSP user. Nếu sau này per-unit cần user riêng, thêm field optional ở đây
+ * và override trong `getToken()`.
+ */
+export interface LgspCredentials {
+  baseUrl: string;          // VD: 'https://apiltvb.langson.gov.vn'
+  systemId: string;         // VD: 'H37.DN.001'
+  secretKey: string;        // PLAINTEXT (đã decrypt từ BYTEA)
+}
+
+export class LGSPRealService implements ILgspService {
   private cachedToken: string | null = null;
   private tokenExpiresAt = 0;
+  private readonly credentials: LgspCredentials | undefined;
+
+  /**
+   * @param credentials Nếu undefined → fallback đọc env (Phase 18 backward compat).
+   *                    Nếu defined → per-unit instance (Phase 33 factory dùng).
+   */
+  constructor(credentials?: LgspCredentials) {
+    this.credentials = credentials;
+  }
 
   private get endpoint(): string {
+    if (this.credentials) return this.credentials.baseUrl.replace(/\/$/, '');
     const ep = process.env.LGSP_ENDPOINT;
-    if (!ep) throw new Error('LGSP_ENDPOINT is not set');
+    if (!ep) throw new Error('LGSP_ENDPOINT is not set (no credentials provided)');
     return ep.replace(/\/$/, '');
   }
 
   private get systemId(): string {
+    if (this.credentials) return this.credentials.systemId;
     return process.env.LGSP_SYSTEM_ID || '';
   }
 
   private get secretKey(): string {
+    if (this.credentials) return this.credentials.secretKey;
     return process.env.LGSP_SECRET_KEY || '';
   }
 
@@ -99,6 +133,9 @@ class LgspRealService implements ILgspService {
   async getToken(): Promise<string> {
     if (this.cachedToken && Date.now() < this.tokenExpiresAt) return this.cachedToken;
 
+    // Phase 18 login flow giữ nguyên — username/password vẫn đọc env (per-unit chưa cần)
+    // Phase 33: nếu credentials inject → systemId/secretKey override, nhưng username/password
+    //           vẫn dùng env (giả định 6 DN dùng cùng 1 user LGSP, hoặc per-unit add field sau)
     const username = process.env.LGSP_USERNAME;
     const password = process.env.LGSP_PASSWORD;
     const applicationCode = process.env.LGSP_APPLICATION_CODE;
@@ -208,4 +245,26 @@ class LgspRealService implements ILgspService {
   }
 }
 
-export const lgspRealService = new LgspRealService();
+/**
+ * Phase 33 factory helper — tạo instance per-unit từ credential đã decrypt.
+ *
+ * Usage trong lgsp.service.ts:
+ *   const config = await lgspAgencyConfigRepository.getByUnitId(unitId, env);
+ *   const plaintext = await decryptSecret(config.secret_key_encrypted);
+ *   const service = createLgspRealService({
+ *     baseUrl: config.base_url,
+ *     systemId: config.system_id,
+ *     secretKey: plaintext,
+ *   });
+ */
+export function createLgspRealService(credentials: LgspCredentials): LGSPRealService {
+  return new LGSPRealService(credentials);
+}
+
+/**
+ * Phase 18 backward compat — singleton dùng env vars (LGSP_ENDPOINT, LGSP_SYSTEM_ID, LGSP_SECRET_KEY,
+ * LGSP_USERNAME, LGSP_PASSWORD, LGSP_APPLICATION_CODE).
+ *
+ * `routes/lgsp.ts` Phase 18 vẫn import singleton này qua factory `getLgspService()` (không truyền arg).
+ */
+export const lgspRealService = new LGSPRealService();
