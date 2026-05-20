@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v3.2
 milestone_name: LGSP Production Go-live cho 6 DN Lạng Sơn
-status: executing
-stopped_at: Completed 33-04-PLAN.md (service factory + cache + invalidate)
-last_updated: "2026-05-20T08:13:26.387Z"
-last_activity: 2026-05-20
+status: paused
+stopped_at: Phase 35 — Plan 35-04 done; Plan 35-05 (verification + E2E sandbox) PENDING — user pause cuối ngày 2026-05-20, resume 2026-05-21
+last_updated: "2026-05-20T10:00:00.000Z"
+last_activity: 2026-05-20 -- PAUSED after Plan 35-04 SUMMARY (e9594f1). Resume: /gsd-autonomous --from 35 (will auto-detect 35-05 incomplete) HOẶC /gsd-execute-phase 35 (continue from Plan 35-05).
 progress:
   total_phases: 5
   completed_phases: 2
-  total_plans: 10
-  completed_plans: 10
-  percent: 100
+  total_plans: 25
+  completed_plans: 14
+  percent: 56
 ---
 
 # Project State
@@ -21,14 +21,27 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-19)
 
 **Core value:** Luồng văn bản đến → xử lý → văn bản đi phải hoạt động đúng nghiệp vụ cơ quan nhà nước (6 DN Lạng Sơn dùng prod thật trên `doanhnghiep.vatk.org`, là 6 đơn vị cấp cao trong cây tổ chức `departments`)
-**Current focus:** Phase 34 — Send Flow (sendEdoc)
+**Current focus:** Phase 35 — Receive Flow cron 4/5 plans shipped, còn Plan 35-05 verification cuối
 
 ## Current Position
 
-Phase: 35
-Plan: Not started
-Status: Executing Phase 34
-Last activity: 2026-05-20
+Phase: 35 (Receive Flow (cron syncReceivedEdocList)) — PAUSED 4/5 plans
+Plan: 5 of 5 (Plan 35-05 verification PENDING)
+Status: PAUSED — user về cuối ngày 2026-05-20, resume 2026-05-21
+Last activity: 2026-05-20 -- Plan 35-01..04 PASS (schema + workers + route /sync-now + frontend tag LGSP/filter/detail), git head e9594f1
+
+## Resume Tomorrow (2026-05-21)
+
+**Quick context:**
+- 4/5 plans Phase 35 done: schema migrated dev DB (idempotent 3x verified), BullMQ workers (tick concurrency=1 + dn concurrency=3 retry 3x exp 30s) wired, POST `/api/lgsp/sync-now` admin route + cron 5min auto-register on server.ts startup + SIGTERM cleanup, frontend Tag LGSP + filter "Nguồn" dropdown + detail page section "Nguồn LGSP" + collapse MessageHeader JSON raw
+- Plan 35-05 còn: TS strict 3 modules verify, build pass 3 modules, schema idempotent 3x re-verify, parser smoke 4/4 PASS (đã chạy 35-01 — re-run xác nhận), Approach B audit (workers/ duplicate vs backend/ edxml-parser), **E2E sandbox test DN.001 active** (Postman gửi /v1/sendEdoc từ DN.002 sandbox → trigger `POST /api/lgsp/sync-now` → wait ~10s worker → SELECT incoming_docs WHERE source_type='external_lgsp' assert 1 row + MinIO bucket có file + outbox status='01' pending), dedup test 2 lần, error path test (credential sai → last_sync_error populated)
+- Sau Phase 35-05 PASS → mark Phase 35 complete → tiếp Phase 36 (Status Callback) → Phase 37 (Admin UI + go-live) → milestone v3.2 lifecycle
+
+**Resume command (chọn 1):**
+- `/gsd-autonomous --from 35` — continue autonomous từ phase 35 (sẽ skip 35-01..04 đã có SUMMARY, chạy 35-05 + tiếp Phase 36-37)
+- `/gsd-execute-phase 35` — chỉ chạy Plan 35-05 verification cho Phase 35
+
+**Lưu ý sandbox E2E:** anh đã confirm DN.001 sandbox active (lgsp_agency_config row environment='sandbox' is_active=TRUE). Phase 33 seed đã có. Cần ít nhất 1 DN khác có sandbox active để gửi test edXML (DN.002 hoặc DN.003 sandbox theo List.txt).
 
 ## Decisions
 
