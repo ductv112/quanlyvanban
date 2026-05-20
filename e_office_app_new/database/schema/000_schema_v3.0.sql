@@ -28817,3 +28817,206 @@ CREATE INDEX IF NOT EXISTS idx_incoming_docs_lgsp_sender
 DO $$ BEGIN
   RAISE NOTICE 'Phase 35 schema: incoming_docs.lgsp_sender_org_code + idx_incoming_docs_lgsp_sender -- OK';
 END $$;
+
+-- ============================================================
+-- Phase 35 Plan 35-04: extend fn_incoming_doc_get_list to
+--   (a) expose lgsp_sender_org_code in RETURNS TABLE for UI badge,
+--   (b) accept optional p_source_type filter for "Nguon" dropdown.
+-- REQ: LGSP-RECV-05
+-- Date: 2026-05-20
+-- Idempotent: drop exact prior signature first, then CREATE OR REPLACE.
+-- ============================================================
+
+DROP FUNCTION IF EXISTS edoc.fn_incoming_doc_get_list(
+  integer, integer, integer, integer, integer, smallint, boolean, boolean,
+  timestamp with time zone, timestamp with time zone, text, text,
+  integer, integer, integer, integer, integer[]
+);
+
+CREATE OR REPLACE FUNCTION edoc.fn_incoming_doc_get_list(
+  p_unit_id integer,
+  p_staff_id integer,
+  p_doc_book_id integer DEFAULT NULL::integer,
+  p_doc_type_id integer DEFAULT NULL::integer,
+  p_doc_field_id integer DEFAULT NULL::integer,
+  p_urgent_id smallint DEFAULT NULL::smallint,
+  p_is_read boolean DEFAULT NULL::boolean,
+  p_approved boolean DEFAULT NULL::boolean,
+  p_from_date timestamp with time zone DEFAULT NULL::timestamp with time zone,
+  p_to_date timestamp with time zone DEFAULT NULL::timestamp with time zone,
+  p_keyword text DEFAULT NULL::text,
+  p_signer text DEFAULT NULL::text,
+  p_from_number integer DEFAULT NULL::integer,
+  p_to_number integer DEFAULT NULL::integer,
+  p_page integer DEFAULT 1,
+  p_page_size integer DEFAULT 20,
+  p_dept_ids integer[] DEFAULT NULL::integer[],
+  p_source_type edoc.doc_source_type DEFAULT NULL  -- Phase 35-04: filter "Nguon"
+)
+RETURNS TABLE(
+  id bigint, unit_id integer, received_date timestamp with time zone, number integer,
+  notation character varying, document_code character varying, abstract text,
+  publish_unit character varying, publish_date timestamp with time zone,
+  signer character varying, sign_date timestamp with time zone,
+  doc_book_id integer, doc_type_id integer, doc_field_id integer,
+  secret_id smallint, urgent_id smallint,
+  number_paper integer, number_copies integer, expired_date timestamp with time zone,
+  recipients text, sents text, approver character varying, approved boolean,
+  is_received_paper boolean, archive_status boolean,
+  source_type edoc.doc_source_type, is_unit_send boolean, unit_send character varying,
+  external_doc_id character varying,
+  lgsp_sender_org_code character varying,  -- Phase 35-04 NEW
+  created_by integer, created_at timestamp with time zone,
+  doc_book_name character varying, doc_type_name character varying,
+  doc_type_code character varying, doc_field_name character varying,
+  created_by_name character varying,
+  is_read boolean, read_at timestamp with time zone,
+  attachment_count bigint, total_count bigint,
+  i_am_recipient boolean, sent_by_name character varying, received_at timestamp with time zone
+)
+LANGUAGE plpgsql
+AS $function$
+DECLARE
+  v_offset INTEGER := (p_page - 1) * p_page_size;
+  v_total  BIGINT;
+BEGIN
+  SELECT count(*) INTO v_total FROM edoc.incoming_docs f
+  WHERE (p_unit_id <= 0 OR f.unit_id = p_unit_id)
+    AND (p_doc_book_id IS NULL OR f.doc_book_id = p_doc_book_id)
+    AND (p_doc_type_id IS NULL OR f.doc_type_id = p_doc_type_id)
+    AND (p_doc_field_id IS NULL OR f.doc_field_id = p_doc_field_id)
+    AND (p_urgent_id IS NULL OR f.urgent_id = p_urgent_id)
+    AND (p_approved IS NULL OR f.approved = p_approved)
+    AND (p_from_date IS NULL OR f.received_date >= p_from_date)
+    AND (p_to_date IS NULL OR f.received_date <= p_to_date)
+    AND (p_keyword IS NULL OR f.abstract ILIKE '%' || p_keyword || '%' OR f.notation ILIKE '%' || p_keyword || '%' OR f.document_code ILIKE '%' || p_keyword || '%')
+    AND (p_signer IS NULL OR f.signer ILIKE '%' || p_signer || '%')
+    AND (p_from_number IS NULL OR f.number >= p_from_number)
+    AND (p_to_number IS NULL OR f.number <= p_to_number)
+    AND (p_source_type IS NULL OR f.source_type = p_source_type)  -- Phase 35-04
+    AND (
+      p_dept_ids IS NULL OR f.department_id = ANY(p_dept_ids)
+      OR EXISTS (SELECT 1 FROM edoc.user_incoming_docs uid WHERE uid.incoming_doc_id = f.id AND uid.staff_id = p_staff_id)
+    );
+
+  RETURN QUERY
+  SELECT
+    f.id, f.unit_id, f.received_date, f.number, f.notation, f.document_code, f.abstract,
+    f.publish_unit, f.publish_date, f.signer, f.sign_date,
+    f.doc_book_id, f.doc_type_id, f.doc_field_id, f.secret_id, f.urgent_id,
+    f.number_paper, f.number_copies, f.expired_date,
+    f.recipients, f.sents, f.approver, f.approved,
+    f.is_received_paper, f.archive_status,
+    f.source_type, f.is_unit_send, f.unit_send, f.external_doc_id,
+    f.lgsp_sender_org_code,  -- Phase 35-04 NEW
+    f.created_by, f.created_at,
+    db.name::varchar AS doc_book_name,
+    dt.name::varchar AS doc_type_name,
+    dt.code::varchar AS doc_type_code,
+    df.name::varchar AS doc_field_name,
+    s.full_name::varchar AS created_by_name,
+    COALESCE(uidr.is_read, FALSE) AS is_read,
+    uidr.read_at AS read_at,
+    (SELECT count(*) FROM edoc.attachment_incoming_docs a WHERE a.incoming_doc_id = f.id) AS attachment_count,
+    v_total AS total_count,
+    (uidr.incoming_doc_id IS NOT NULL AND uidr.sent_by IS NOT NULL) AS i_am_recipient,
+    sender.full_name::varchar AS sent_by_name,
+    uidr.created_at AS received_at
+  FROM edoc.incoming_docs f
+  LEFT JOIN edoc.doc_books db ON f.doc_book_id = db.id
+  LEFT JOIN edoc.doc_types dt ON f.doc_type_id = dt.id
+  LEFT JOIN edoc.doc_fields df ON f.doc_field_id = df.id
+  LEFT JOIN public.staff s ON f.created_by = s.id
+  LEFT JOIN edoc.user_incoming_docs uidr ON uidr.incoming_doc_id = f.id AND uidr.staff_id = p_staff_id
+  LEFT JOIN public.staff sender ON sender.id = uidr.sent_by
+  WHERE (p_unit_id <= 0 OR f.unit_id = p_unit_id)
+    AND (p_doc_book_id IS NULL OR f.doc_book_id = p_doc_book_id)
+    AND (p_doc_type_id IS NULL OR f.doc_type_id = p_doc_type_id)
+    AND (p_doc_field_id IS NULL OR f.doc_field_id = p_doc_field_id)
+    AND (p_urgent_id IS NULL OR f.urgent_id = p_urgent_id)
+    AND (p_approved IS NULL OR f.approved = p_approved)
+    AND (p_from_date IS NULL OR f.received_date >= p_from_date)
+    AND (p_to_date IS NULL OR f.received_date <= p_to_date)
+    AND (p_keyword IS NULL OR f.abstract ILIKE '%' || p_keyword || '%' OR f.notation ILIKE '%' || p_keyword || '%' OR f.document_code ILIKE '%' || p_keyword || '%')
+    AND (p_signer IS NULL OR f.signer ILIKE '%' || p_signer || '%')
+    AND (p_from_number IS NULL OR f.number >= p_from_number)
+    AND (p_to_number IS NULL OR f.number <= p_to_number)
+    AND (p_source_type IS NULL OR f.source_type = p_source_type)  -- Phase 35-04
+    AND (
+      p_dept_ids IS NULL OR f.department_id = ANY(p_dept_ids)
+      OR EXISTS (SELECT 1 FROM edoc.user_incoming_docs uid WHERE uid.incoming_doc_id = f.id AND uid.staff_id = p_staff_id)
+    )
+  ORDER BY f.received_date DESC NULLS LAST, f.id DESC
+  LIMIT p_page_size OFFSET v_offset;
+END;
+$function$;
+
+-- ============================================================
+-- Phase 35 Plan 35-04: extend fn_incoming_doc_get_by_id to expose
+-- lgsp_sender_org_code (for detail "Nguon LGSP" section).
+-- ============================================================
+
+DROP FUNCTION IF EXISTS edoc.fn_incoming_doc_get_by_id(bigint, integer);
+
+CREATE OR REPLACE FUNCTION edoc.fn_incoming_doc_get_by_id(p_id bigint, p_staff_id integer)
+RETURNS TABLE(
+  id bigint, unit_id integer, received_date timestamp with time zone, number integer,
+  notation character varying, document_code character varying, abstract text,
+  publish_unit character varying, publish_date timestamp with time zone,
+  signer character varying, sign_date timestamp with time zone,
+  doc_book_id integer, doc_type_id integer, doc_field_id integer,
+  secret_id smallint, urgent_id smallint,
+  number_paper integer, number_copies integer, expired_date timestamp with time zone,
+  recipients text, sents text,
+  approver character varying, approved boolean, approved_at timestamp with time zone,
+  is_received_paper boolean, received_paper_date timestamp with time zone,
+  archive_status boolean,
+  source_type edoc.doc_source_type, is_unit_send boolean, unit_send character varying,
+  previous_outgoing_doc_id bigint, external_doc_id character varying,
+  lgsp_sender_org_code character varying,  -- Phase 35-04 NEW
+  recall_reason text, recall_requested_at timestamp with time zone,
+  recall_response text, recall_responded_at timestamp with time zone,
+  status_before_recall character varying,
+  created_by integer, created_at timestamp with time zone,
+  updated_by integer, updated_at timestamp with time zone,
+  doc_book_name character varying, doc_type_name character varying,
+  doc_type_code character varying, doc_field_name character varying,
+  created_by_name character varying,
+  is_read boolean
+)
+LANGUAGE plpgsql
+AS $function$
+BEGIN
+  RETURN QUERY
+  SELECT
+    d.id, d.unit_id, d.received_date, d.number, d.notation, d.document_code, d.abstract,
+    d.publish_unit, d.publish_date, d.signer, d.sign_date,
+    d.doc_book_id, d.doc_type_id, d.doc_field_id, d.secret_id, d.urgent_id,
+    d.number_paper, d.number_copies, d.expired_date,
+    d.recipients, d.sents,
+    d.approver, d.approved, d.approved_at,
+    d.is_received_paper, d.received_paper_date,
+    d.archive_status,
+    d.source_type, d.is_unit_send, d.unit_send,
+    d.previous_outgoing_doc_id, d.external_doc_id,
+    d.lgsp_sender_org_code,  -- Phase 35-04 NEW
+    d.recall_reason, d.recall_requested_at, d.recall_response, d.recall_responded_at, d.status_before_recall,
+    d.created_by, d.created_at, d.updated_by, d.updated_at,
+    db.name::varchar AS doc_book_name,
+    dt.name::varchar AS doc_type_name,
+    dt.code::varchar AS doc_type_code,
+    df.name::varchar AS doc_field_name,
+    s.full_name::varchar AS created_by_name,
+    EXISTS(SELECT 1 FROM edoc.user_incoming_docs uid WHERE uid.incoming_doc_id = d.id AND uid.staff_id = p_staff_id AND uid.read_at IS NOT NULL) AS is_read
+  FROM edoc.incoming_docs d
+  LEFT JOIN edoc.doc_books db ON d.doc_book_id = db.id
+  LEFT JOIN edoc.doc_types dt ON d.doc_type_id = dt.id
+  LEFT JOIN edoc.doc_fields df ON d.doc_field_id = df.id
+  LEFT JOIN public.staff s ON d.created_by = s.id
+  WHERE d.id = p_id;
+END;
+$function$;
+
+DO $$ BEGIN
+  RAISE NOTICE 'Phase 35-04 schema: fn_incoming_doc_get_list + fn_incoming_doc_get_by_id extended with lgsp_sender_org_code -- OK';
+END $$;

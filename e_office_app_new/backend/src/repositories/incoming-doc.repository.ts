@@ -62,6 +62,12 @@ export interface IncomingDocListRow {
   is_handling: boolean;
   is_received_paper: boolean;
   archive_status: boolean;
+  // Phase 35-04: source tracking + LGSP metadata (exposed by fn_incoming_doc_get_list)
+  source_type: 'manual' | 'internal' | 'external_lgsp';
+  is_unit_send: boolean;
+  unit_send: string | null;
+  external_doc_id: string | null;
+  lgsp_sender_org_code: string | null;
   created_by: number;
   created_at: string;
   doc_book_name: string;
@@ -170,6 +176,7 @@ export const incomingDocRepository = {
       signer?: string; fromNumber?: number; toNumber?: number;
       page?: number; pageSize?: number;
       deptIds?: number[] | null;
+      sourceType?: 'manual' | 'internal' | 'external_lgsp' | null;  // Phase 35-04
     } = {},
   ): Promise<IncomingDocListRow[]> {
     return callFunction<IncomingDocListRow>('edoc.fn_incoming_doc_get_list', [
@@ -180,6 +187,7 @@ export const incomingDocRepository = {
       filters.signer ?? null, filters.fromNumber ?? null, filters.toNumber ?? null,
       filters.page ?? 1, filters.pageSize ?? 20,
       filters.deptIds ?? null,
+      filters.sourceType ?? null,  // Phase 35-04 p_source_type
     ]);
   },
 

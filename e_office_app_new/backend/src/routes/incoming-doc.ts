@@ -95,10 +95,20 @@ router.get('/', async (req: Request, res: Response) => {
       is_read, approved, from_date, to_date, keyword,
       signer: q_signer, from_number, to_number,
       page, page_size, department_id,
+      source_type,  // Phase 35-04: filter "Nguon"
     } = req.query;
 
     const filterDeptId = department_id ? Number(department_id) : undefined;
     const deptIds = await resolveDeptSubtree(departmentId, isAdmin, filterDeptId);
+
+    // Phase 35-04: validate source_type whitelist (per edoc.doc_source_type enum)
+    const validSourceTypes = ['manual', 'internal', 'external_lgsp'] as const;
+    type SrcType = typeof validSourceTypes[number];
+    const rawSource = typeof source_type === 'string' ? source_type.trim() : undefined;
+    const sourceTypeFilter: SrcType | null =
+      rawSource && (validSourceTypes as readonly string[]).includes(rawSource)
+        ? (rawSource as SrcType)
+        : null;
 
     const rows = await incomingDocRepository.getList(0, staffId, {
       docBookId: doc_book_id ? Number(doc_book_id) : undefined,
@@ -116,6 +126,7 @@ router.get('/', async (req: Request, res: Response) => {
       page: page ? Number(page) : 1,
       pageSize: page_size ? Number(page_size) : 20,
       deptIds,
+      sourceType: sourceTypeFilter,  // Phase 35-04
     });
 
     // Enrich rejected_by info
