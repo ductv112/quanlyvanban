@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v3.2
 milestone_name: LGSP Production Go-live cho 6 DN Lạng Sơn
-status: "Roadmap v3.2 ready (5 phases: 33-37, 36/36 REQ covered)"
-stopped_at: Completed 33-01-PLAN.md (DB Schema Infrastructure) — 2 tables + 1 column + 2 triggers idempotent, smoke test pass
-last_updated: "2026-05-20T04:15:59.716Z"
-last_activity: 2026-05-20 — Phase 33 Plan 01 executed (schema append + apply + verify idempotent)
+status: completed
+stopped_at: Completed 33-02-PLAN.md (seed LGSP placeholder)
+last_updated: "2026-05-20T04:26:17.546Z"
+last_activity: 2026-05-20 — Phase 33 Plan 02 shipped — seed LGSP placeholder 9 row + 6 root unit lgsp_org_code (portable name-keyword pattern)
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 5
-  completed_plans: 1
-  percent: 20
+  completed_plans: 2
+  percent: 40
 ---
 
 # Project State
@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-05-19)
 ## Current Position
 
 Phase: 33 (in progress)
-Plan: 33-02 (next — seed 9 row LGSP placeholder + UPDATE 6 root unit lgsp_org_code)
-Status: Plan 33-01 ✅ completed (1/5 plans, 20%)
-Last activity: 2026-05-20 — Phase 33 Plan 01 shipped — schema infrastructure 2 tables + outbox + triggers
+Plan: 33-03 (next — TypeScript types + Repository for lgsp_agency_config)
+Status: Plan 33-02 ✅ completed (2/5 plans, 40%)
+Last activity: 2026-05-20 — Phase 33 Plan 02 shipped — seed LGSP placeholder 9 row + 6 root unit lgsp_org_code (portable name-keyword pattern)
 
 ## Decisions
 
@@ -37,6 +37,7 @@ Last activity: 2026-05-20 — Phase 33 Plan 01 shipped — schema infrastructure
 - 2026-05-20 (33-01): Trigger BEFORE INSERT/UPDATE validate root unit thay vì CHECK constraint (CHECK không gọi subquery được)
 - 2026-05-20 (33-01): FK departments ON DELETE RESTRICT (chặn xóa root unit có LGSP config) + FK incoming_docs ON DELETE CASCADE (outbox event mồ côi vô nghĩa)
 - 2026-05-20 (33-01): Partial index WHERE sent_status='pending' tối ưu worker poll 30s + regular index per doc cho UI history query
+- [Phase 33]: Plan 33-02: Doi UPDATE pattern hardcode dept_id sang match by name keyword (ILIKE) — portable across dev/prod DBs
 
 ## Performance Metrics
 
@@ -58,6 +59,7 @@ Last activity: 2026-05-20 — Phase 33 Plan 01 shipped — schema infrastructure
 **Total estimated:** ~14 ngày làm việc
 
 **Roll-out post-Phase 37:** Wave 1 (DN.001/002/003 sandbox) → Wave 2 (DN.004/005/006 prod) qua toggle `lgsp_agency_config.is_active=true` per row — KHÔNG cần deploy/restart.
+| Phase 33 P02 | 25min | 4 tasks | 2 files |
 
 ## Roadmap Evolution
 
@@ -71,8 +73,8 @@ Last activity: 2026-05-20 — Phase 33 Plan 01 shipped — schema infrastructure
 
 ## Session Continuity
 
-Last session: 2026-05-20T04:14:37Z
-Stopped at: Completed 33-01-PLAN.md (DB Schema Infrastructure) — 2 tables + 1 column + 2 triggers idempotent
+Last session: 2026-05-20T04:26:17.536Z
+Stopped at: Completed 33-02-PLAN.md (seed LGSP placeholder)
 Resume: `/gsd-execute-phase 33` (continue with Plan 33-02 seed 9 row placeholder) or chain auto-mode
 
 ### Notes

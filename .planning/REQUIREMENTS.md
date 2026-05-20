@@ -29,7 +29,7 @@ Phân loại tự động theo `outgoing_doc_recipients.recipient_type` — KHÔ
 - [x] **LGSP-CRED-02**: Schema — Cột `lgsp_org_code VARCHAR(13)` trong `departments` (NULL cho non-LGSP unit) — chỉ root unit của 6 DN có giá trị (H37.DN.001..006)
 - [ ] **LGSP-CRED-03**: Backend — Service `getLgspService(unit_id)` trace user → root unit → lookup credential, cache LRU 5 phút
 - [x] **LGSP-CRED-04**: Backend — `secret_key` encrypted bằng `pgcrypto.pgp_sym_encrypt` với `SIGNING_SECRET_KEY` (pattern đã dùng cho `signing_provider_config`)
-- [ ] **LGSP-CRED-05**: Seed — 6 row prod + 3 row sandbox với credential từ Excel + List.txt (DN.001/002/003 sandbox, DN.004/005/006 prod-only), `is_active=FALSE` mặc định
+- [x] **LGSP-CRED-05**: Seed — 6 row prod + 3 row sandbox với credential từ Excel + List.txt (DN.001/002/003 sandbox, DN.004/005/006 prod-only), `is_active=FALSE` mặc định
 
 ### LGSP-SEND — Gửi VB đi qua trục (6 reqs)
 
