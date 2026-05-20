@@ -1,4 +1,4 @@
-import { callFunction, callFunctionOne } from '../lib/db/query.js';
+import { callFunction, callFunctionOne, rawQuery } from '../lib/db/query.js';
 import type { DbResult, DbResultWithId } from './doc-book.repository.js';
 import type { RecipientRow, HistoryRow, AttachmentRow, AttachmentDeleteResult, BookmarkToggleResult, StaffNoteRow, SendableStaffRow, LeaderNoteRow } from './incoming-doc.repository.js';
 
@@ -224,6 +224,39 @@ export const outgoingDocRepository = {
     const row = await callFunctionOne<DbResult & { internal_count?: number; external_count?: number }>(
       'edoc.fn_outgoing_doc_send_to_recipients', [docId, userId]);
     return row ?? { success: false, message: 'Không thể gửi văn bản' };
+  },
+
+  /**
+   * Phase 34 (Plan 34-03): Sau khi SP fn_outgoing_doc_send_to_recipients commit,
+   * lay danh sach external recipient + tracking_id de route enqueue BullMQ send job
+   * (CONTEXT D-02 per-recipient granularity, D-03 enqueue sau commit).
+   *
+   * Chi tra ve recipient EXTERNAL co generated_lgsp_tracking_id (tuc SP da auto insert
+   * lgsp_tracking row) va sent_status='pending' (chua duoc worker xu ly).
+   * Internal recipients skip vi da xu ly truc tiep boi SP (sent_status='sent').
+   *
+   * @param docId outgoing_docs.id
+   * @returns Array of { recipient_id, tracking_id } — empty array neu khong co external
+   */
+  async getExternalRecipientsForSend(
+    docId: number,
+  ): Promise<Array<{ recipient_id: number; tracking_id: number }>> {
+    const rows = await rawQuery<{ recipient_id: string | number; tracking_id: string | number }>(
+      `SELECT r.id AS recipient_id,
+              r.generated_lgsp_tracking_id AS tracking_id
+       FROM edoc.outgoing_doc_recipients r
+       WHERE r.outgoing_doc_id = $1
+         AND r.recipient_type = 'external_org'
+         AND r.generated_lgsp_tracking_id IS NOT NULL
+         AND r.sent_status = 'pending'
+       ORDER BY r.id`,
+      [docId],
+    );
+    // CLAUDE.md pitfall #9: pg driver tra BIGINT thanh string — wrap Number()
+    return rows.map((r) => ({
+      recipient_id: Number(r.recipient_id),
+      tracking_id: Number(r.tracking_id),
+    }));
   },
 
   // --- Approve ---
