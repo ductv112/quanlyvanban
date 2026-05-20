@@ -45,6 +45,10 @@ import { ensureBucket } from './lib/minio/client.js';
 import { startSigningWorker, stopSigningWorker } from './workers/signing-poll.worker.js';
 import { closeSigningQueue } from './lib/queue/signing-queue.js';
 import { closeLgspSendQueue } from './lib/queue/lgsp-send-queue.js';
+import {
+  registerReceiveTickRepeatJob,
+  closeLgspReceiveQueue,
+} from './lib/queue/lgsp-receive-queue.js';
 import { closeRedisConnection } from './lib/queue/redis-connection.js';
 
 const app = express();
@@ -182,6 +186,21 @@ httpServer.listen(port, async () => {
   } catch (err) {
     logger.error({ err }, 'Failed to start signing worker — async sign flow will not work');
   }
+
+  // Phase 35 Plan 03: Register the 5-min LGSP receive cron repeat scheduler.
+  // Idempotent (removes pre-existing repeat first) — safe to call on every restart.
+  // Non-blocking: failure here does NOT crash server (Redis may not yet be ready);
+  // manual /api/lgsp/sync-now still works because it uses the same queue.
+  registerReceiveTickRepeatJob()
+    .then(() => {
+      // Success log emitted inside registerReceiveTickRepeatJob — no duplicate here.
+    })
+    .catch((err) => {
+      logger.error(
+        { err: err?.message ?? err },
+        'Failed to register LGSP receive tick repeat job (cron will NOT fire — manual /sync-now still works)',
+      );
+    });
 });
 
 // --- Graceful shutdown (Phase 11 — ensure in-flight sign jobs finish before exit) ---
@@ -194,6 +213,7 @@ async function shutdown(signal: string): Promise<void> {
   try { await stopSigningWorker(); } catch (err) { logger.warn({ err }, 'stopSigningWorker error'); }
   try { await closeSigningQueue(); } catch (err) { logger.warn({ err }, 'closeSigningQueue error'); }
   try { await closeLgspSendQueue(); } catch (err) { logger.warn({ err }, 'closeLgspSendQueue error'); }
+  try { await closeLgspReceiveQueue(); } catch (err) { logger.warn({ err }, 'closeLgspReceiveQueue error'); }
   try { await closeRedisConnection(); } catch (err) { logger.warn({ err }, 'closeRedisConnection error'); }
 
   httpServer.close(() => {
