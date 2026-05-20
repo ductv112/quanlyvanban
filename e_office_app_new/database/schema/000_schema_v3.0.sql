@@ -28474,3 +28474,325 @@ COMMENT ON COLUMN edoc.lgsp_status_outbox.target_status IS
 DO $$ BEGIN
   RAISE NOTICE 'Phase 33 schema: lgsp_agency_config + lgsp_status_outbox + departments.lgsp_org_code + trigger validate_root_unit - OK';
 END $$;
+
+-- ============================================================================
+-- Phase 33 SPs — CRUD cho lgsp_agency_config + lgsp_status_outbox
+-- Pattern: mirror public.fn_signing_provider_config_* (verified production)
+-- DROP IF EXISTS TRUOC CREATE de tranh signature overload (CLAUDE.md DB Migration warning)
+-- ============================================================================
+
+-- ─── DROP existing voi chinh xac signature (idempotent, KHONG dung LIKE 'fn_%') ───
+DROP FUNCTION IF EXISTS edoc.fn_lgsp_agency_config_list();
+DROP FUNCTION IF EXISTS edoc.fn_lgsp_agency_config_get_by_id(BIGINT);
+DROP FUNCTION IF EXISTS edoc.fn_lgsp_agency_config_get_by_unit_id(INTEGER, VARCHAR);
+DROP FUNCTION IF EXISTS edoc.fn_lgsp_agency_config_get_all_active(VARCHAR);
+DROP FUNCTION IF EXISTS edoc.fn_lgsp_agency_config_upsert(INTEGER, VARCHAR, VARCHAR, BYTEA, VARCHAR, INTEGER);
+DROP FUNCTION IF EXISTS edoc.fn_lgsp_agency_config_set_active(BIGINT, BOOLEAN, INTEGER);
+DROP FUNCTION IF EXISTS edoc.fn_lgsp_agency_config_update_last_synced(INTEGER, VARCHAR, TIMESTAMPTZ, TEXT);
+DROP FUNCTION IF EXISTS edoc.fn_lgsp_status_outbox_insert(BIGINT, VARCHAR, JSONB);
+DROP FUNCTION IF EXISTS edoc.fn_lgsp_status_outbox_get_pending(INTEGER);
+DROP FUNCTION IF EXISTS edoc.fn_lgsp_status_outbox_mark_sent(BIGINT, TIMESTAMPTZ);
+DROP FUNCTION IF EXISTS edoc.fn_lgsp_status_outbox_mark_error(BIGINT, TEXT, TIMESTAMPTZ);
+
+-- ─── 1. List (KHONG tra secret_key_encrypted) ───
+CREATE OR REPLACE FUNCTION edoc.fn_lgsp_agency_config_list()
+RETURNS TABLE (
+  id BIGINT,
+  unit_id INTEGER,
+  unit_name VARCHAR,
+  lgsp_org_code VARCHAR,
+  environment VARCHAR,
+  system_id VARCHAR,
+  base_url VARCHAR,
+  is_active BOOLEAN,
+  last_synced_at TIMESTAMPTZ,
+  last_sync_error TEXT,
+  created_at TIMESTAMPTZ,
+  updated_at TIMESTAMPTZ
+)
+LANGUAGE plpgsql STABLE AS $func$
+BEGIN
+  RETURN QUERY
+    SELECT c.id, c.unit_id, d.name::VARCHAR AS unit_name, d.lgsp_org_code::VARCHAR,
+           c.environment, c.system_id, c.base_url, c.is_active,
+           c.last_synced_at, c.last_sync_error, c.created_at, c.updated_at
+    FROM edoc.lgsp_agency_config c
+    JOIN public.departments d ON d.id = c.unit_id
+    ORDER BY d.lgsp_org_code ASC, c.environment ASC;
+END;
+$func$;
+
+-- ─── 2. Get by id (FULL — co secret_key_encrypted BYTEA) ───
+CREATE OR REPLACE FUNCTION edoc.fn_lgsp_agency_config_get_by_id(p_id BIGINT)
+RETURNS TABLE (
+  id BIGINT,
+  unit_id INTEGER,
+  environment VARCHAR,
+  system_id VARCHAR,
+  secret_key_encrypted BYTEA,
+  base_url VARCHAR,
+  is_active BOOLEAN,
+  last_synced_at TIMESTAMPTZ,
+  last_sync_error TEXT
+)
+LANGUAGE plpgsql STABLE AS $func$
+BEGIN
+  RETURN QUERY
+    SELECT c.id, c.unit_id, c.environment, c.system_id, c.secret_key_encrypted,
+           c.base_url, c.is_active, c.last_synced_at, c.last_sync_error
+    FROM edoc.lgsp_agency_config c
+    WHERE c.id = p_id;
+END;
+$func$;
+
+-- ─── 3. Get by unit_id + environment (cho service factory lookup) ───
+CREATE OR REPLACE FUNCTION edoc.fn_lgsp_agency_config_get_by_unit_id(
+  p_unit_id INTEGER,
+  p_environment VARCHAR DEFAULT 'prod'
+)
+RETURNS TABLE (
+  id BIGINT,
+  unit_id INTEGER,
+  environment VARCHAR,
+  system_id VARCHAR,
+  secret_key_encrypted BYTEA,
+  base_url VARCHAR,
+  is_active BOOLEAN,
+  last_synced_at TIMESTAMPTZ,
+  last_sync_error TEXT
+)
+LANGUAGE plpgsql STABLE AS $func$
+BEGIN
+  RETURN QUERY
+    SELECT c.id, c.unit_id, c.environment, c.system_id, c.secret_key_encrypted,
+           c.base_url, c.is_active, c.last_synced_at, c.last_sync_error
+    FROM edoc.lgsp_agency_config c
+    WHERE c.unit_id = p_unit_id AND c.environment = p_environment;
+END;
+$func$;
+
+-- ─── 4. Get all active (cho Phase 35 cron loop) ───
+CREATE OR REPLACE FUNCTION edoc.fn_lgsp_agency_config_get_all_active(
+  p_environment VARCHAR DEFAULT NULL
+)
+RETURNS TABLE (
+  id BIGINT,
+  unit_id INTEGER,
+  environment VARCHAR,
+  system_id VARCHAR,
+  secret_key_encrypted BYTEA,
+  base_url VARCHAR,
+  last_synced_at TIMESTAMPTZ
+)
+LANGUAGE plpgsql STABLE AS $func$
+BEGIN
+  RETURN QUERY
+    SELECT c.id, c.unit_id, c.environment, c.system_id, c.secret_key_encrypted,
+           c.base_url, c.last_synced_at
+    FROM edoc.lgsp_agency_config c
+    WHERE c.is_active = TRUE
+      AND (p_environment IS NULL OR c.environment = p_environment)
+    ORDER BY c.unit_id, c.environment;
+END;
+$func$;
+
+-- ─── 5. Upsert (INSERT hoac UPDATE) — secret_key_encrypted PHAI da encrypt phia Node ───
+CREATE OR REPLACE FUNCTION edoc.fn_lgsp_agency_config_upsert(
+  p_unit_id INTEGER,
+  p_environment VARCHAR,
+  p_system_id VARCHAR,
+  p_secret_key_encrypted BYTEA,
+  p_base_url VARCHAR,
+  p_updated_by INTEGER
+)
+RETURNS TABLE (success BOOLEAN, message TEXT, id BIGINT)
+LANGUAGE plpgsql AS $func$
+DECLARE
+  v_id BIGINT;
+BEGIN
+  -- Trigger trg_lgsp_agency_config_validate_root_unit se enforce unit_id phai root
+  INSERT INTO edoc.lgsp_agency_config
+    (unit_id, environment, system_id, secret_key_encrypted, base_url, created_by, updated_by)
+  VALUES
+    (p_unit_id, p_environment, p_system_id, p_secret_key_encrypted, p_base_url, p_updated_by, p_updated_by)
+  ON CONFLICT (unit_id, environment) DO UPDATE SET
+    system_id = EXCLUDED.system_id,
+    secret_key_encrypted = EXCLUDED.secret_key_encrypted,
+    base_url = EXCLUDED.base_url,
+    updated_by = p_updated_by,
+    updated_at = NOW()
+  RETURNING edoc.lgsp_agency_config.id INTO v_id;
+
+  RETURN QUERY SELECT TRUE, 'Luu cau hinh LGSP thanh cong'::TEXT, v_id;
+EXCEPTION
+  WHEN check_violation THEN
+    RETURN QUERY SELECT FALSE, ('Loi rang buoc: ' || SQLERRM)::TEXT, 0::BIGINT;
+  WHEN foreign_key_violation THEN
+    RETURN QUERY SELECT FALSE, ('Loi khoa ngoai (unit_id khong ton tai hoac khong phai root): ' || SQLERRM)::TEXT, 0::BIGINT;
+  WHEN OTHERS THEN
+    RETURN QUERY SELECT FALSE, ('Loi he thong: ' || SQLERRM)::TEXT, 0::BIGINT;
+END;
+$func$;
+
+-- ─── 6. Set active toggle ───
+CREATE OR REPLACE FUNCTION edoc.fn_lgsp_agency_config_set_active(
+  p_id BIGINT,
+  p_is_active BOOLEAN,
+  p_updated_by INTEGER
+)
+RETURNS TABLE (success BOOLEAN, message TEXT)
+LANGUAGE plpgsql AS $func$
+DECLARE
+  v_exists BOOLEAN;
+BEGIN
+  SELECT EXISTS(SELECT 1 FROM edoc.lgsp_agency_config WHERE id = p_id) INTO v_exists;
+  IF NOT v_exists THEN
+    RETURN QUERY SELECT FALSE, ('Khong tim thay cau hinh LGSP id=' || p_id)::TEXT;
+    RETURN;
+  END IF;
+
+  UPDATE edoc.lgsp_agency_config
+    SET is_active = p_is_active,
+        updated_by = p_updated_by,
+        updated_at = NOW()
+    WHERE id = p_id;
+
+  RETURN QUERY SELECT TRUE, (CASE WHEN p_is_active THEN 'Kich hoat thanh cong' ELSE 'Vo hieu hoa thanh cong' END)::TEXT;
+END;
+$func$;
+
+-- ─── 7. Update last_synced (Phase 35 cron callback) ───
+CREATE OR REPLACE FUNCTION edoc.fn_lgsp_agency_config_update_last_synced(
+  p_unit_id INTEGER,
+  p_environment VARCHAR,
+  p_last_synced_at TIMESTAMPTZ,
+  p_error TEXT DEFAULT NULL
+)
+RETURNS TABLE (success BOOLEAN, message TEXT)
+LANGUAGE plpgsql AS $func$
+BEGIN
+  UPDATE edoc.lgsp_agency_config
+    SET last_synced_at = p_last_synced_at,
+        last_sync_error = p_error,
+        updated_at = NOW()
+    WHERE unit_id = p_unit_id AND environment = p_environment;
+
+  IF NOT FOUND THEN
+    RETURN QUERY SELECT FALSE, 'Khong tim thay cau hinh LGSP cho unit_id + environment'::TEXT;
+    RETURN;
+  END IF;
+
+  RETURN QUERY SELECT TRUE, 'Cap nhat last_synced thanh cong'::TEXT;
+END;
+$func$;
+
+-- ============================================================================
+-- lgsp_status_outbox SPs (4)
+-- ============================================================================
+
+-- ─── 1. Insert outbox event ───
+CREATE OR REPLACE FUNCTION edoc.fn_lgsp_status_outbox_insert(
+  p_incoming_doc_id BIGINT,
+  p_target_status VARCHAR,
+  p_payload JSONB
+)
+RETURNS TABLE (success BOOLEAN, message TEXT, id BIGINT)
+LANGUAGE plpgsql AS $func$
+DECLARE
+  v_id BIGINT;
+BEGIN
+  INSERT INTO edoc.lgsp_status_outbox (incoming_doc_id, target_status, payload)
+  VALUES (p_incoming_doc_id, p_target_status, COALESCE(p_payload, '{}'::jsonb))
+  RETURNING edoc.lgsp_status_outbox.id INTO v_id;
+
+  RETURN QUERY SELECT TRUE, 'Da tao outbox event'::TEXT, v_id;
+EXCEPTION
+  WHEN check_violation THEN
+    RETURN QUERY SELECT FALSE, ('target_status khong hop le: ' || SQLERRM)::TEXT, 0::BIGINT;
+  WHEN foreign_key_violation THEN
+    RETURN QUERY SELECT FALSE, ('incoming_doc_id khong ton tai: ' || SQLERRM)::TEXT, 0::BIGINT;
+END;
+$func$;
+
+-- ─── 2. Get pending (cho Phase 36 worker poll) ───
+CREATE OR REPLACE FUNCTION edoc.fn_lgsp_status_outbox_get_pending(
+  p_limit INTEGER DEFAULT 10
+)
+RETURNS TABLE (
+  id BIGINT,
+  incoming_doc_id BIGINT,
+  target_status VARCHAR,
+  payload JSONB,
+  retry_count INTEGER,
+  next_retry_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ
+)
+LANGUAGE plpgsql STABLE AS $func$
+BEGIN
+  RETURN QUERY
+    SELECT o.id, o.incoming_doc_id, o.target_status, o.payload,
+           o.retry_count, o.next_retry_at, o.created_at
+    FROM edoc.lgsp_status_outbox o
+    WHERE o.sent_status = 'pending'
+      AND (o.next_retry_at IS NULL OR o.next_retry_at <= NOW())
+    ORDER BY o.created_at ASC
+    LIMIT p_limit;
+END;
+$func$;
+
+-- ─── 3. Mark sent (success) ───
+CREATE OR REPLACE FUNCTION edoc.fn_lgsp_status_outbox_mark_sent(
+  p_id BIGINT,
+  p_sent_at TIMESTAMPTZ DEFAULT NOW()
+)
+RETURNS TABLE (success BOOLEAN, message TEXT)
+LANGUAGE plpgsql AS $func$
+BEGIN
+  UPDATE edoc.lgsp_status_outbox
+    SET sent_status = 'success',
+        sent_at = p_sent_at,
+        error_message = NULL
+    WHERE id = p_id;
+
+  IF NOT FOUND THEN
+    RETURN QUERY SELECT FALSE, ('Khong tim thay outbox id=' || p_id)::TEXT;
+    RETURN;
+  END IF;
+
+  RETURN QUERY SELECT TRUE, 'Da danh dau gui thanh cong'::TEXT;
+END;
+$func$;
+
+-- ─── 4. Mark error (retry hoac final fail) ───
+CREATE OR REPLACE FUNCTION edoc.fn_lgsp_status_outbox_mark_error(
+  p_id BIGINT,
+  p_error_message TEXT,
+  p_next_retry_at TIMESTAMPTZ
+)
+RETURNS TABLE (success BOOLEAN, message TEXT)
+LANGUAGE plpgsql AS $func$
+DECLARE
+  v_retry_count INTEGER;
+BEGIN
+  -- Increment retry_count + set error_message
+  -- Neu next_retry_at IS NULL -> final fail (sent_status='error'), else giu 'pending' de retry
+  UPDATE edoc.lgsp_status_outbox
+    SET retry_count = retry_count + 1,
+        error_message = p_error_message,
+        next_retry_at = p_next_retry_at,
+        sent_status = CASE WHEN p_next_retry_at IS NULL THEN 'error' ELSE 'pending' END
+    WHERE id = p_id
+    RETURNING retry_count INTO v_retry_count;
+
+  IF NOT FOUND THEN
+    RETURN QUERY SELECT FALSE, ('Khong tim thay outbox id=' || p_id)::TEXT;
+    RETURN;
+  END IF;
+
+  RETURN QUERY SELECT TRUE, ('Da danh dau loi (retry_count=' || v_retry_count || ')')::TEXT;
+END;
+$func$;
+
+DO $$ BEGIN
+  RAISE NOTICE 'Phase 33 SPs: 7 lgsp_agency_config + 4 lgsp_status_outbox -- OK';
+END $$;
