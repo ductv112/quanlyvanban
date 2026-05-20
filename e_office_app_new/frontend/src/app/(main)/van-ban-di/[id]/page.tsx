@@ -5,7 +5,7 @@ import {
   Card, Tag, Button, Space, Row, Col, Timeline, Avatar,
   Upload, Modal, Input, Popconfirm, Checkbox, Empty, Spin, App,
   Badge, Typography, Flex, Dropdown, Drawer, Form, DatePicker, Select,
-  InputNumber,
+  InputNumber, Tooltip,
 } from 'antd';
 import {
   ArrowLeftOutlined, CheckCircleOutlined, CloseCircleOutlined, SendOutlined,
@@ -21,6 +21,7 @@ import { api } from '@/lib/api';
 import { downloadAttachment } from '@/lib/download';
 import { useAuthStore } from '@/stores/auth.store';
 import { useSigning } from '@/hooks/use-signing';
+import { useRecipientsPolling, type RecipientStatus } from '@/hooks/use-recipients-polling';
 import { useParams, useRouter } from 'next/navigation';
 import dayjs from 'dayjs';
 
@@ -94,6 +95,58 @@ function maskPhone(phone: string): string {
   return phone.substring(0, 4) + '***' + phone.substring(phone.length - 3);
 }
 
+// Phase 34: Badge state machine 4 state cho recipient (CONTEXT D-17)
+interface BadgeInfo {
+  label: string;
+  color: 'success' | 'warning' | 'error' | 'processing' | 'default' | 'blue';
+  tooltip?: string;
+}
+
+function getBadgeForRecipient(r: RecipientStatus): BadgeInfo {
+  // Internal — flow Phase 17 v3.0
+  if (r.recipient_type === 'internal_unit') {
+    if (r.sent_status === 'sent') {
+      return {
+        label: 'Đã gửi nội bộ',
+        color: 'success',
+        tooltip: r.sent_at ? `Đã gửi lúc ${dayjs(r.sent_at).format('DD/MM/YYYY HH:mm')}` : undefined,
+      };
+    }
+    return { label: 'Chờ gửi nội bộ', color: 'default' };
+  }
+  // External — flow Phase 34 LGSP
+  if (r.recipient_type === 'external_org') {
+    if (r.lgsp_status === 'success') {
+      const tip = [
+        r.sent_at ? `Đã gửi lúc ${dayjs(r.sent_at).format('DD/MM/YYYY HH:mm')}` : null,
+        r.lgsp_doc_id ? `Mã LGSP: ${r.lgsp_doc_id}` : null,
+      ].filter(Boolean).join('\n');
+      return { label: 'Đã gửi LGSP ✓', color: 'success', tooltip: tip || undefined };
+    }
+    if (r.lgsp_status === 'error') {
+      const errMsg = r.lgsp_error_message || r.error_message || 'Lỗi không xác định';
+      return {
+        label: `Lỗi LGSP: ${errMsg.length > 40 ? errMsg.slice(0, 40) + '…' : errMsg}`,
+        color: 'error',
+        tooltip: errMsg,
+      };
+    }
+    if (r.lgsp_status === 'processing') {
+      return { label: 'Đang xử lý LGSP', color: 'processing' };
+    }
+    if (r.lgsp_status === 'pending') {
+      return {
+        label: 'Đang chờ LGSP',
+        color: 'warning',
+        tooltip: 'Worker đang xử lý gửi LGSP — tự cập nhật sau ~30s',
+      };
+    }
+    // lgsp_status null — chua enqueue (tracking row chua co hoac dang transition)
+    return { label: 'Chờ enqueue', color: 'default' };
+  }
+  return { label: 'Không xác định', color: 'default' };
+}
+
 
 export default function OutgoingDocDetailPage() {
   const { message, modal } = App.useApp();
@@ -106,21 +159,6 @@ export default function OutgoingDocDetailPage() {
   const [doc, setDoc] = useState<DocDetail | null>(null);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [recipients, setRecipients] = useState<Recipient[]>([]);
-  // Phase 19 v3.0: outgoing_doc_recipients (department + inter_org) với tracking inline
-  const [noiNhan, setNoiNhan] = useState<Array<{
-    id: number;
-    recipient_type: 'internal_unit' | 'external_org';
-    recipient_unit_name: string | null;
-    recipient_org_name: string | null;
-    recipient_org_code: string | null;
-    sent_at: string | null;
-    sent_status: string;
-    error_message: string | null;
-    generated_incoming_doc_id: number | null;
-    lgsp_doc_id: string | null;
-    lgsp_status: string | null;
-    lgsp_error_message: string | null;
-  }>>([]);
   const [history, setHistory] = useState<HistoryEvent[]>([]);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [sendModalOpen, setSendModalOpen] = useState(false);
@@ -174,16 +212,22 @@ export default function OutgoingDocDetailPage() {
   const fetchBookmarkStatus = useCallback(async () => { try { const { data: res } = await api.get('/van-ban-di/danh-dau-ca-nhan'); const bookmarks: { doc_id: number | string }[] = res.data || []; setIsBookmarked(bookmarks.some((b) => Number(b.doc_id) === Number(docId))); } catch {} }, [docId]);
   const fetchAttachments = useCallback(async () => { try { const { data: res } = await api.get(`/van-ban-di/${docId}/dinh-kem`); setAttachments(res.data || []); } catch {} }, [docId]);
   const fetchRecipients = useCallback(async () => { try { const { data: res } = await api.get(`/van-ban-di/${docId}/nguoi-nhan`); setRecipients(res.data || []); } catch {} }, [docId]);
-  // Phase 19 v3.0: load outgoing_doc_recipients (departments + inter_orgs) với tracking
-  const fetchNoiNhan = useCallback(async () => { try { const { data: res } = await api.get(`/van-ban-di/${docId}/noi-nhan`); setNoiNhan(res.data || []); } catch {} }, [docId]);
+  // Phase 34: hook polling 10s outgoing_doc_recipients (departments + inter_orgs) voi tracking
+  // (CONTEXT D-16) — polling tu stop khi tat ca recipient khong pending nua / unmount / disabled
+  const {
+    data: noiNhan,
+    hasPending: noiNhanHasPending,
+    refetch: refetchNoiNhan,
+  } = useRecipientsPolling(docId, docId > 0, 10_000);
   const fetchHistory = useCallback(async () => { try { const { data: res } = await api.get(`/van-ban-di/${docId}/lich-su`); setHistory(res.data || []); } catch {} }, [docId]);
   const fetchLeaderNotes = useCallback(async () => { try { const { data: res } = await api.get(`/van-ban-di/${docId}/y-kien`); setLeaderNotes(res.data || []); } catch {} }, [docId]);
 
   useEffect(() => {
     setLoading(true);
-    Promise.all([fetchDoc(), fetchAttachments(), fetchRecipients(), fetchNoiNhan(), fetchHistory(), fetchLeaderNotes(), fetchBookmarkStatus()]).finally(() => setLoading(false));
+    // Phase 34: noiNhan tu fetch qua useRecipientsPolling hook (khong can goi trong Promise.all)
+    Promise.all([fetchDoc(), fetchAttachments(), fetchRecipients(), fetchHistory(), fetchLeaderNotes(), fetchBookmarkStatus()]).finally(() => setLoading(false));
     fetchStaffOptions();
-  }, [fetchDoc, fetchAttachments, fetchRecipients, fetchNoiNhan, fetchHistory, fetchLeaderNotes, fetchBookmarkStatus]);
+  }, [fetchDoc, fetchAttachments, fetchRecipients, fetchHistory, fetchLeaderNotes, fetchBookmarkStatus]);
 
   // Actions
   const handleApprove = async () => { try { await api.patch(`/van-ban-di/${docId}/duyet`); message.success('Duyệt thành công'); fetchDoc(); fetchHistory(); } catch (e: any) { message.error(e?.response?.data?.message || 'Lỗi'); } };
@@ -335,11 +379,17 @@ export default function OutgoingDocDetailPage() {
     setNoiBoSending(true);
     try {
       const { data: res } = await api.post(`/van-ban-di/${docId}/gui-noi-bo`);
-      message.success(res?.data?.message || `Đã gửi: ${res?.data?.internal_count} đơn vị nội bộ + ${res?.data?.external_count} cơ quan ngoài`);
+      // Phase 34: hien thi enqueued_count khi co external > 0 — Worker LGSP se xu ly background
+      const { internal_count, external_count, enqueued_count } = res?.data || {};
+      if (external_count && external_count > 0) {
+        message.success(`Đã gửi ${internal_count ?? 0} đơn vị nội bộ + đang gửi ${enqueued_count ?? 0}/${external_count} cơ quan ngoài qua LGSP (theo dõi tại "Đơn vị / Cơ quan nhận")`);
+      } else {
+        message.success(res?.data?.message || `Đã gửi ${internal_count ?? 0} đơn vị nội bộ`);
+      }
       fetchDoc();
       fetchHistory();
       fetchRecipients();
-      fetchNoiNhan();
+      refetchNoiNhan();
     } catch (e: any) {
       message.error(e?.response?.data?.message || 'Gửi thất bại');
     } finally {
@@ -360,11 +410,17 @@ export default function OutgoingDocDetailPage() {
       const { data: r1 } = await api.patch(`/van-ban-di/${docId}/ban-hanh`);
       if (!r1?.success) { message.error(r1?.data?.message || 'Ban hành thất bại'); return; }
       const { data: r2 } = await api.post(`/van-ban-di/${docId}/gui-noi-bo`);
-      message.success(`Đã ban hành (số ${r1?.data?.doc_number}) và gửi: ${r2?.data?.internal_count} nội bộ + ${r2?.data?.external_count} ngoài`);
+      // Phase 34: hien thi enqueued_count khi co external > 0
+      const { internal_count, external_count, enqueued_count } = r2?.data || {};
+      if (external_count && external_count > 0) {
+        message.success(`Đã ban hành (số ${r1?.data?.doc_number}) — gửi ${internal_count ?? 0} đơn vị nội bộ + đang gửi ${enqueued_count ?? 0}/${external_count} cơ quan ngoài qua LGSP`);
+      } else {
+        message.success(`Đã ban hành (số ${r1?.data?.doc_number}) và gửi ${internal_count ?? 0} đơn vị nội bộ`);
+      }
       fetchDoc();
       fetchHistory();
       fetchRecipients();
-      fetchNoiNhan();
+      refetchNoiNhan();
     } catch (e: any) {
       message.error(e?.response?.data?.message || 'Lỗi');
     } finally {
@@ -404,11 +460,17 @@ export default function OutgoingDocDetailPage() {
       // 3. Gửi
       const { data: res } = await api.post(`/van-ban-di/${docId}/gui-noi-bo`);
       const prefix = noiBoMode === 'release-and-send' ? 'Đã ban hành và gửi' : 'Đã gửi';
-      message.success(res?.data?.message || `${prefix}: ${res?.data?.internal_count} đơn vị nội bộ`);
+      // Phase 34: hien thi enqueued_count khi co external > 0
+      const { internal_count, external_count, enqueued_count } = res?.data || {};
+      if (external_count && external_count > 0) {
+        message.success(`${prefix} ${internal_count ?? 0} đơn vị nội bộ + đang gửi ${enqueued_count ?? 0}/${external_count} cơ quan ngoài qua LGSP`);
+      } else {
+        message.success(res?.data?.message || `${prefix} ${internal_count ?? 0} đơn vị nội bộ`);
+      }
       setNoiBoModalOpen(false);
       fetchDoc();
       fetchHistory();
-      fetchNoiNhan();
+      refetchNoiNhan();
     } catch (e: any) {
       message.error(e?.response?.data?.message || 'Gửi thất bại');
     } finally {
@@ -697,46 +759,48 @@ export default function OutgoingDocDetailPage() {
         {/* ====== RIGHT COLUMN ====== */}
         <Col xs={24} lg={8}>
 
-          {/* --- Phase 19 v3.0: Đơn vị / Cơ quan nhận (recipient_type + tracking inline) --- */}
+          {/* --- Phase 34: Đơn vị / Cơ quan nhận (recipient_type + tracking polling 10s — CONTEXT D-16/D-17) --- */}
           {noiNhan.length > 0 && (
             <div style={{
               background: '#fff', borderRadius: 10, padding: '20px 24px', marginBottom: 16,
               boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
             }}>
-              <div className="section-title" style={{ marginBottom: 12 }}>
-                <SendOutlined /> Đơn vị / Cơ quan nhận ({noiNhan.length})
-              </div>
+              <Flex justify="space-between" align="center" style={{ marginBottom: 12 }}>
+                <div className="section-title" style={{ margin: 0 }}>
+                  <SendOutlined /> Đơn vị / Cơ quan nhận ({noiNhan.length})
+                </div>
+                {noiNhanHasPending && (
+                  <Tooltip title="Đang theo dõi trạng thái gửi LGSP, tự cập nhật mỗi 10 giây">
+                    <Badge status="processing" text={<span style={{ fontSize: 12, color: '#8c8c8c' }}>Đang theo dõi</span>} />
+                  </Tooltip>
+                )}
+              </Flex>
               <div>
-                {noiNhan.map((r) => (
-                  <Flex key={r.id} align="center" gap={10} style={{ padding: '10px 0', borderBottom: '1px solid #f5f5f5' }}>
-                    <Tag color={r.recipient_type === 'internal_unit' ? 'blue' : 'green'} style={{ minWidth: 64, textAlign: 'center', margin: 0 }}>
-                      {r.recipient_type === 'internal_unit' ? 'Nội bộ' : 'LGSP'}
-                    </Tag>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 500, fontSize: 13 }}>
-                        {r.recipient_unit_name || r.recipient_org_name || '—'}
-                        {r.recipient_org_code && <span style={{ color: '#8c8c8c', marginLeft: 6 }}>({r.recipient_org_code})</span>}
-                      </div>
-                      <div style={{ fontSize: 11, color: '#8c8c8c', marginTop: 2 }}>
-                        {r.recipient_type === 'internal_unit' && r.sent_status === 'sent' && r.generated_incoming_doc_id ? (
-                          <span style={{ color: '#52c41a' }}>✓ Đã nhận{r.sent_at ? ` lúc ${dayjs(r.sent_at).format('HH:mm DD/MM')}` : ''}</span>
-                        ) : r.recipient_type === 'external_org' ? (
-                          r.lgsp_status === 'success' ? (
-                            <span style={{ color: '#52c41a' }}>✓ LGSP đã gửi{r.lgsp_doc_id ? ` (#${r.lgsp_doc_id.slice(0, 12)}...)` : ''}</span>
-                          ) : r.lgsp_status === 'error' ? (
-                            <span style={{ color: '#ff4d4f' }}>✗ Lỗi: {r.lgsp_error_message || 'unknown'}</span>
+                {noiNhan.map((r) => {
+                  const badge = getBadgeForRecipient(r);
+                  return (
+                    <Flex key={r.id} align="center" gap={10} style={{ padding: '10px 0', borderBottom: '1px solid #f5f5f5' }}>
+                      <Tag color={r.recipient_type === 'internal_unit' ? 'blue' : 'green'} style={{ minWidth: 64, textAlign: 'center', margin: 0 }}>
+                        {r.recipient_type === 'internal_unit' ? 'Nội bộ' : 'LGSP'}
+                      </Tag>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontWeight: 500, fontSize: 13 }}>
+                          {r.recipient_unit_name || r.recipient_org_name || '—'}
+                          {r.recipient_org_code && <span style={{ color: '#8c8c8c', marginLeft: 6 }}>({r.recipient_org_code})</span>}
+                        </div>
+                        <div style={{ marginTop: 4 }}>
+                          {badge.tooltip ? (
+                            <Tooltip title={<span style={{ whiteSpace: 'pre-wrap' }}>{badge.tooltip}</span>}>
+                              <Tag color={badge.color} style={{ margin: 0, maxWidth: '100%' }}>{badge.label}</Tag>
+                            </Tooltip>
                           ) : (
-                            <span style={{ color: '#faad14' }}>⏳ Đang chờ worker đẩy LGSP</span>
-                          )
-                        ) : r.sent_status === 'pending' ? (
-                          <span style={{ color: '#faad14' }}>⏳ Chưa gửi</span>
-                        ) : (
-                          <span>{r.sent_status}</span>
-                        )}
+                            <Tag color={badge.color} style={{ margin: 0, maxWidth: '100%' }}>{badge.label}</Tag>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  </Flex>
-                ))}
+                    </Flex>
+                  );
+                })}
               </div>
             </div>
           )}
