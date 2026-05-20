@@ -7,6 +7,14 @@ import {
   startLgspSendWorker,
   stopLgspSendWorker,
 } from './jobs/lgsp-send-worker.js';
+import {
+  startLgspReceiveTickWorker,
+  stopLgspReceiveTickWorker,
+} from './jobs/lgsp-receive-tick-worker.js';
+import {
+  startLgspReceiveDnWorker,
+  stopLgspReceiveDnWorker,
+} from './jobs/lgsp-receive-dn-worker.js';
 
 const { Pool } = pg;
 
@@ -97,99 +105,24 @@ const smsWorker = new Worker(
 );
 
 // ============================================================
-// LGSP HTTP client — Phase 18 v3.0: real call apiltvb.langson.gov.vn
-// (fallback mock khi MOCK_EXTERNAL=true)
+// LGSP Receive Workers (Phase 35) — REPLACED Phase 18 inline polling.
+//
+// New: BullMQ 2-worker system on queue 'lgsp-receive':
+//   - 'receive-tick' (concurrency=1): repeat every 5 min OR manual via POST /api/lgsp/sync-now
+//     Handler queries lgsp_agency_config active rows -> enqueues N 'receive-dn' jobs.
+//   - 'receive-dn' (concurrency=3, retry 3x exp 30s): full per-DN sync pipeline
+//     (list + getEdoc + parse + INSERT incoming_docs + MinIO + outbox status 01)
+//
+// Phase 18 helpers DELETED: lgspLogin(), lgspReceiveList(), LGSP_MOCK / LGSP_TOKEN_TTL_MS
+// state vars, inline lgspReceiveWorker. All replaced by workers/src/jobs/lgsp-receive-*.ts
+// using /v1/syncReceivedEdocList + /v1/getEdoc with X-SystemId/X-SecretKey headers
+// (Postman authoritative).
+//
+// Repeat job is registered from backend/src/server.ts on startup
+// (registerReceiveTickRepeatJob in backend/src/lib/queue/lgsp-receive-queue.ts — Plan 35-03).
 // ============================================================
-const LGSP_MOCK = process.env.MOCK_EXTERNAL === 'true' || !process.env.LGSP_ENDPOINT;
-const LGSP_TOKEN_TTL_MS = 29 * 60 * 1000;
-let lgspToken: string | null = null;
-let lgspTokenExp = 0;
-
-async function lgspLogin(): Promise<string> {
-  if (lgspToken && Date.now() < lgspTokenExp) return lgspToken;
-  const ep = process.env.LGSP_ENDPOINT!.replace(/\/$/, '');
-  const res = await fetch(`${ep}/api/lgspedoc/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      username: process.env.LGSP_USERNAME,
-      password: process.env.LGSP_PASSWORD,
-      applicationCode: process.env.LGSP_APPLICATION_CODE,
-    }),
-  });
-  if (!res.ok) throw new Error(`LGSP login failed HTTP ${res.status}`);
-  const json = await res.json() as { success: boolean; message: string; token: string };
-  if (!json.success || !json.token) throw new Error(`LGSP login failed: ${json.message}`);
-  lgspToken = json.token;
-  lgspTokenExp = Date.now() + LGSP_TOKEN_TTL_MS;
-  return lgspToken;
-}
-
-interface LgspReceivedItem {
-  docId: string;
-  from: string;
-  status: string;
-}
-
-async function lgspReceiveList(): Promise<LgspReceivedItem[]> {
-  const token = await lgspLogin();
-  const ep = process.env.LGSP_ENDPOINT!.replace(/\/$/, '');
-  const today = new Date().toISOString().slice(0, 10);
-  const fromDate = new Date(Date.now() - 7 * 86400_000).toISOString().slice(0, 10);
-  const url = `${ep}/api/lgspedoc/received-edocs?token=${encodeURIComponent(token)}` +
-    `&messageType=edoc&fromDate=${fromDate}&toDate=${today}` +
-    `&systemId=${encodeURIComponent(process.env.LGSP_SYSTEM_ID || '')}` +
-    `&secretKey=${encodeURIComponent(process.env.LGSP_SECRET_KEY || '')}`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`LGSP received-edocs HTTP ${res.status}`);
-  const json = await res.json() as { success: boolean; data?: LgspReceivedItem[] };
-  if (!json.success || !Array.isArray(json.data)) return [];
-  return json.data.filter((d) => d.status === 'initial');
-}
-
-// NOTE: `lgspSendEdoc()` helper (Phase 18 BROKEN /api/lgspedoc/send-edoc) DELETED
-// Phase 34-02 — replaced by workers/src/jobs/lgsp-send-worker.ts dung
-// /v1/sendEdoc multipart + X-SystemId/X-SecretKey headers (Postman authoritative).
-
-// --- LGSP Receive Worker (polling) ---
-const lgspReceiveWorker = new Worker(
-  'lgsp-receive',
-  async (job) => {
-    logger.info({ jobId: job.id, mock: LGSP_MOCK }, 'LGSP: polling for new documents...');
-
-    if (LGSP_MOCK) {
-      const mockDocs = [
-        { lgsp_doc_id: `LGSP-MOCK-${Date.now()}`, org_code: 'BNV', org_name: 'Bộ Nội vụ', edxml: '<edXML>Mock</edXML>' },
-      ];
-      const count = Math.floor(Math.random() * 2); // 0-1 mock
-      for (const doc of mockDocs.slice(0, count)) {
-        // Insert incoming_docs với source_type='external_lgsp' (Phase 17 SP fn_incoming_doc_create đã hỗ trợ)
-        await pool.query(
-          'SELECT * FROM edoc.fn_incoming_doc_create($1, NOW(), NULL::integer, $2, $3, $4, $5, NOW(), NULL::varchar, NULL::timestamptz, NULL::integer, NULL::integer, NULL::integer, 1::smallint, 1::smallint, 1::integer, 1::integer, NULL::timestamptz, NULL::text, FALSE::boolean, 1::integer, NULL::integer, $6::edoc.doc_source_type, FALSE::boolean, $7::varchar, NULL::bigint, $8::varchar)',
-          [1, doc.lgsp_doc_id.slice(0, 50), doc.lgsp_doc_id.slice(0, 50), 'Mock LGSP doc ' + doc.lgsp_doc_id, doc.org_name, 'external_lgsp', doc.org_name, doc.lgsp_doc_id],
-        );
-        logger.info({ docId: doc.lgsp_doc_id }, 'LGSP MOCK: incoming created');
-      }
-      return;
-    }
-
-    // Real LGSP polling
-    try {
-      const items = await lgspReceiveList();
-      logger.info({ count: items.length }, 'LGSP: received initial docs');
-      for (const item of items) {
-        // Check dedupe (fn_incoming_doc_create có UNIQUE INDEX trên external_doc_id WHERE source_type='external_lgsp')
-        await pool.query(
-          'SELECT * FROM edoc.fn_incoming_doc_create($1, NOW(), NULL::integer, $2, $3, $4, $5, NOW(), NULL::varchar, NULL::timestamptz, NULL::integer, NULL::integer, NULL::integer, 1::smallint, 1::smallint, 1::integer, 1::integer, NULL::timestamptz, NULL::text, FALSE::boolean, 1::integer, NULL::integer, $6::edoc.doc_source_type, FALSE::boolean, $7::varchar, NULL::bigint, $8::varchar)',
-          [1, item.docId.slice(0, 50), item.docId.slice(0, 50), `LGSP doc from ${item.from}`, item.from, 'external_lgsp', item.from, item.docId],
-        ).catch((e) => logger.warn({ docId: item.docId, err: e.message }, 'LGSP receive insert failed (likely duplicate)'));
-      }
-    } catch (err) {
-      logger.error({ err: (err as Error).message }, 'LGSP receive polling error');
-    }
-  },
-  { connection },
-);
+const lgspReceiveTickWorker = startLgspReceiveTickWorker();
+const lgspReceiveDnWorker = startLgspReceiveDnWorker();
 
 // --- LGSP Send Worker (Phase 34) ---
 // REPLACED Phase 18 inline worker. New handler in workers/src/jobs/lgsp-send-worker.ts:
@@ -263,14 +196,15 @@ const notificationWorker = new Worker(
   { connection },
 );
 
-logger.info('Workers started: email-send, sms-send, lgsp-receive, lgsp-send (Phase 34), fcm-push, zalo-send, notification-send');
+logger.info('Workers started: email-send, sms-send, lgsp-receive (Phase 35: tick + dn), lgsp-send (Phase 34), fcm-push, zalo-send, notification-send');
 
 // Graceful shutdown
 process.on('SIGTERM', async () => {
   logger.info('Shutting down workers...');
   await emailWorker.close();
   await smsWorker.close();
-  await lgspReceiveWorker.close();
+  await stopLgspReceiveTickWorker(lgspReceiveTickWorker);
+  await stopLgspReceiveDnWorker(lgspReceiveDnWorker);
   await stopLgspSendWorker(lgspSendWorker);
   await fcmWorker.close();
   await zaloWorker.close();
