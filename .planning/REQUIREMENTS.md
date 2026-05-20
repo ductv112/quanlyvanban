@@ -103,16 +103,60 @@ Phân loại tự động theo `outgoing_doc_recipients.recipient_type` — KHÔ
 
 ---
 
-## Traceability (sẽ filled bởi gsd-roadmapper)
+## Traceability
 
-| REQ-ID | Phase |
-|---|---|
-| LGSP-CRED-01..05 | TBD |
-| LGSP-SEND-01..06 | TBD |
-| LGSP-RECV-01..07 | TBD |
-| LGSP-STATUS-01..10 | TBD |
-| LGSP-UI-01..08 | TBD |
+Phase mapping — every REQ-ID assigned to exactly one phase. Coverage: **36/36 ✓**
+
+| REQ-ID | Phase | Phase Name |
+|---|---|---|
+| LGSP-CRED-01 | 33 | Database + Core Infrastructure |
+| LGSP-CRED-02 | 33 | Database + Core Infrastructure |
+| LGSP-CRED-03 | 33 | Database + Core Infrastructure |
+| LGSP-CRED-04 | 33 | Database + Core Infrastructure |
+| LGSP-CRED-05 | 33 | Database + Core Infrastructure |
+| LGSP-SEND-01 | 34 | Send Flow (sendEdoc) |
+| LGSP-SEND-02 | 34 | Send Flow (sendEdoc) |
+| LGSP-SEND-03 | 34 | Send Flow (sendEdoc) |
+| LGSP-SEND-04 | 34 | Send Flow (sendEdoc) |
+| LGSP-SEND-05 | 34 | Send Flow (sendEdoc) |
+| LGSP-SEND-06 | 34 | Send Flow (sendEdoc) |
+| LGSP-RECV-01 | 35 | Receive Flow (cron syncReceivedEdocList) |
+| LGSP-RECV-02 | 35 | Receive Flow (cron syncReceivedEdocList) |
+| LGSP-RECV-03 | 35 | Receive Flow (cron syncReceivedEdocList) |
+| LGSP-RECV-04 | 35 | Receive Flow (cron syncReceivedEdocList) |
+| LGSP-RECV-05 | 35 | Receive Flow (cron syncReceivedEdocList) |
+| LGSP-RECV-06 | 35 | Receive Flow (cron syncReceivedEdocList) |
+| LGSP-RECV-07 | 35 | Receive Flow (cron syncReceivedEdocList) |
+| LGSP-STATUS-01 | 33 | Database + Core Infrastructure (outbox schema) |
+| LGSP-STATUS-02 | 36 | Status Callback Chain (9 mã QĐ 28) |
+| LGSP-STATUS-03 | 36 | Status Callback Chain (9 mã QĐ 28) |
+| LGSP-STATUS-04 | 36 | Status Callback Chain (9 mã QĐ 28) |
+| LGSP-STATUS-05 | 36 | Status Callback Chain (9 mã QĐ 28) |
+| LGSP-STATUS-06 | 36 | Status Callback Chain (9 mã QĐ 28) |
+| LGSP-STATUS-07 | 36 | Status Callback Chain (9 mã QĐ 28) |
+| LGSP-STATUS-08 | 36 | Status Callback Chain (9 mã QĐ 28) |
+| LGSP-STATUS-09 | 36 | Status Callback Chain (9 mã QĐ 28) |
+| LGSP-STATUS-10 | 36 | Status Callback Chain (9 mã QĐ 28) |
+| LGSP-UI-01 | 37 | Admin UI + Catalog + Go-live |
+| LGSP-UI-02 | 37 | Admin UI + Catalog + Go-live |
+| LGSP-UI-03 | 37 | Admin UI + Catalog + Go-live |
+| LGSP-UI-04 | 37 | Admin UI + Catalog + Go-live |
+| LGSP-UI-05 | 37 | Admin UI + Catalog + Go-live |
+| LGSP-UI-06 | 37 | Admin UI + Catalog + Go-live |
+| LGSP-UI-07 | 37 | Admin UI + Catalog + Go-live |
+| LGSP-UI-08 | 37 | Admin UI + Catalog + Go-live |
+
+**Summary by phase:**
+
+| Phase | Name | REQ count | REQ-IDs |
+|---|---|---|---|
+| 33 | Database + Core Infrastructure | 6 | LGSP-CRED-01..05 + LGSP-STATUS-01 |
+| 34 | Send Flow (sendEdoc) | 6 | LGSP-SEND-01..06 |
+| 35 | Receive Flow (cron) | 7 | LGSP-RECV-01..07 |
+| 36 | Status Callback Chain | 9 | LGSP-STATUS-02..10 |
+| 37 | Admin UI + Catalog + Go-live | 8 | LGSP-UI-01..08 |
+| **Total** | | **36** | All 36 REQ-IDs mapped ✓ |
 
 ---
 
-*Created 2026-05-19 — 36 REQ-IDs / 5 categories. Source spec: `docs/Trục EDOC Lạng Sơn - QLVB Doanh nghiệp/` + QĐ 28/2018/QĐ-TTg. Phase 18 v3.0 LGSPRealService làm code reference. Roll-out wave config-level (toggle `is_active` per row): Wave 1 (DN.001/002/003 sandbox) → Wave 2 (DN.004/005/006).*
+*Created 2026-05-19 — 36 REQ-IDs / 5 categories. Source spec: `docs/Trục EDOC Lạng Sơn - QLVB Doanh nghiệp/` + QĐ 28/2018/QĐ-TTg. Phase 18 v3.0 LGSPRealService làm code reference. Traceability filled 2026-05-19 via /gsd-roadmapper — 5 phases (33-37), roll-out wave config-level (toggle `is_active` per row): Wave 1 (DN.001/002/003 sandbox) → Wave 2 (DN.004/005/006).*
