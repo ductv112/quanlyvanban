@@ -1,5 +1,59 @@
 # Milestones
 
+## v3.1 — Manual Test Execution + Bug Fix + Setup KH Lạng Sơn (2026-05-05 → 2026-05-19)
+
+**Status:** ✓ Shipped
+
+**Goal:** Re-scope từ "Automation Test Suite production-grade" sang "Claude execute 847 TC thủ công + fill Excel + log bug → user duyệt → fix → re-test". Cùng lúc fix-gom 90+ bug từ tester batches, setup 6 DN Lạng Sơn dùng prod thật trên `doanhnghiep.vatk.org`, audit + cập nhật toàn bộ HDSD cho KH.
+
+**Delivered:**
+
+| # | Phase | Scope |
+|---|-------|-------|
+| 21 | Automation Foundation (INFRA) | Test DB `qlvb_test` tách dev, 6 user fixture, 3 mock server (SmartCA 8181 + MySign 8182 + LGSP 8183), Vitest+Playwright+supertest, Excel sync tool, README onboarding |
+| 22-30 | Execute 847 TC qua 9 wave | Wave a (Auth+Admin 83 TC), b (VB đến/đi/dự thảo 181 TC), c (HSCV+Dự thảo+Ký số DS 203 TC), d (Boundary 126 TC), e (4 Danh mục 75 TC), f (Boundary VARCHAR+upload 97 TC), g (Permission cross-unit 50 TC), h (E2E flow 19 TC), i (Concurrent+race 13 TC) — RESULTS file mỗi wave |
+| 31 | Fix-gom UI | 164+ commit BUG #1 → #90 + IMP #5: ký số polish (SmartCA + MySign + VNPT_TH dev + visual signature tiếng Việt), phân quyền granular (HSCV + sidebar + action_links), menu 7 Đối Tác sidebar, HSCV refactor, setup KH Lạng Sơn (slide đào tạo + cheat-sheet), auth (autofill + JWT 8h), don-vi (chặn self-reference parent_id) |
+| 32 | HDSD audit + update | 16 file `HDSD_*.md` updated (3 GAP critical + 5 cross-ref), 6 screenshots Playwright re-captured, `HDSD_full.md` (4496 dòng), `HDSD_full.docx` (13.3MB, 82 ảnh embedded) |
+
+**Metrics:**
+
+- 12 phases shipped (21 INFRA + 22-30 EXEC 9 wave + 31 fix-gom + 32 HDSD)
+- 164+ commit chính (range `833e15b` → `546711a`)
+- 847 test cases executed qua 9 wave + 90+ bug discovered → fixed
+- Setup 6 KH DN Lạng Sơn dùng prod thật trên `doanhnghiep.vatk.org` (multi-tenant 1 system / 1 DB / 6 root unit trong cây departments)
+
+**Key decisions carried forward:**
+
+- Re-scope 2026-05-06: AI tester thay vì CI/automation framework (vì không có team QA)
+- 6 DN Lạng Sơn = multi-tenant single-system architecture (không phải 6 deploy riêng)
+- Phase 22-30 không dùng GSD plan discipline (manual execute → RESULTS file đủ trace)
+- Phase 31 fix-gom commit trực tiếp ngoài GSD (164 commit, trade-off: audit khó hơn nhưng tốc độ cao)
+- HDSD module v1.0 chưa duyệt → ẩn khỏi UI (`hidden-routes.ts`) + KHÔNG nhắc trong tài liệu KH
+
+**Known gaps khi đóng:**
+
+- HDSD stale: Phase 32 ship 2026-05-11, code drift 8 ngày tới 2026-05-19 → defer "HDSD full refresh round 2" sang v3.2+
+- 6 phase 22-30 không qua `/gsd-verify-work` formal (acceptable vì re-scope intent)
+- Phase 31 không có PLAN/SUMMARY (git log là source-of-truth)
+
+**Tech debt (defer v3.2+):**
+
+- DEFER-07: LGSP "Từ chối tiếp nhận" status 02 production wiring (sẽ activate trong v3.2 LGSP go-live)
+- DEFER-08: Drafting recipients structured
+- DEFER-09: Trang admin CRUD `inter_organizations`
+- DEFER-10: Multi-level approval workflow
+- DEFER-01..06: CI/CD, nightly automation, visual regression, a11y, mobile responsive, k6 — KHÔNG cần (không có team QA)
+- HDSD full refresh round 2 — sau khi v3.2 LGSP go-live xong
+
+**Archive:**
+
+- Roadmap: `.planning/milestones/v3.1-ROADMAP.md`
+- Requirements: `.planning/milestones/v3.1-REQUIREMENTS.md`
+- Helpers: `.planning/milestones/v3.1-helpers/` (FINAL-TEST-REPORT, FIX-GOM-REPORT, PAUSE-RESUME)
+- Phases: `.planning/milestones/v3.1-phases/` (12 phase directories: 21, 22-30, 31, 32)
+
+---
+
 ## v3.0 — Chuẩn hoá quy trình văn bản (2026-04-23 → 2026-04-24)
 
 **Status:** ✓ Shipped

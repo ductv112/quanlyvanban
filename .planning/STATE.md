@@ -1,80 +1,68 @@
 ---
 gsd_state_version: 1.0
-milestone: v3.1
-milestone_name: Automation Test Suite + Bug Fix
-status: verifying
-stopped_at: Completed 32-08-PLAN.md
-last_updated: "2026-05-11T04:54:57.298Z"
-last_activity: 2026-05-11
+milestone: null
+milestone_name: "(between milestones — v3.1 shipped, v3.2 planning)"
+status: ready_for_next_milestone
+stopped_at: v3.1 milestone closed via /gsd-complete-milestone
+last_updated: "2026-05-19T17:30:00.000Z"
+last_activity: 2026-05-19
 progress:
-  total_phases: 13
+  total_phases: 0
   completed_phases: 0
-  total_plans: 7
-  completed_plans: 6
-  percent: 86
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md
+See: .planning/PROJECT.md (updated 2026-05-19)
 
-**Core value:** Luồng văn bản đến → xử lý → văn bản đi phải hoạt động đúng nghiệp vụ cơ quan nhà nước
-**Current focus:** Phase 32 — hdsd-audit-update
+**Core value:** Luồng văn bản đến → xử lý → văn bản đi phải hoạt động đúng nghiệp vụ cơ quan nhà nước (multi-tenant cho 6 DN Lạng Sơn dùng prod thật)
+**Current focus:** Planning v3.2 LGSP Production Go-live — chạy `/gsd-new-milestone` để define scope chính thức
 
 ## Current Position
 
-Phase: 32
-Plan: Not started
-Status: Phase complete — ready for verification
-Last activity: 2026-05-11
+Phase: — (v3.1 closed, v3.2 chưa start)
+Plan: —
+Status: Ready for `/gsd-new-milestone`
+Last activity: 2026-05-19
 
 ## Performance Metrics
 
 - **v1.0 (shipped 2026-04-18):** 7 phases + 3 quick plans, 26 plans, 4 days, 97.8% HDSD coverage
 - **v2.0 (shipped 2026-04-23):** 8 phases (8-14 + 11.1), 39 plans, 3 days, 41/41 REQ Pass
 - **v3.0 (shipped 2026-04-24):** 6 phases (15-20), 23 commits chính, 17 bugs UAT fixed, 29/29 REQ Pass
+- **v3.1 (shipped 2026-05-19):** 12 phases (21 INFRA + 22-30 EXEC + 31 fix-gom + 32 HDSD), 164+ commits, 15 days, 22/22 REQ complete, 847 TC executed, 90+ bug fixed, 6 KH DN Lạng Sơn dùng prod thật
 
-## v3.0 Tech Debt → v3.2+ Backlog
+## v3.2 Tech Debt (sẽ scope trong /gsd-new-milestone)
 
-- Drafting recipients structured + carry-over Outgoing
-- Trang admin CRUD inter_organizations + Sync from LGSP button
-- Multi-level approval workflow (Trưởng phòng → Phó GĐ → Giám đốc)
-- Cleanup 2 modal legacy LGSP/CP code v1.0
-- Default expired_date theo config sổ văn bản
-- Worker LGSP startup script production deploy
-- Phase 24: LGSP "Từ chối tiếp nhận" status 02 — kích hoạt khi LGSP production ready
+- **LGSP-CORE**: Status callback chain (03/04/05/06 + 02 Từ chối + 13/15/16 Lấy lại) — wire `update-status` API
+- **LGSP-MULTI-TENANT**: Bảng `lgsp_agency_config` per `unit_id` + 6 row + cột `lgsp_org_code` trong `departments`
+- **LGSP-CRON**: Cron `syncReceivedEdocList` loop 6 DN mỗi 5 phút (mỗi DN dùng credential riêng)
+- **LGSP-ADMIN-UI**: Trang `/quan-tri/lgsp-config` + bật lại menu `/lgsp` từ hidden-routes
+- **LGSP-EDXML**: Builder + parser theo spec QĐ 28/2018/QĐ-TTg + LGSP_LANGSON guide
+- **HDSD-REFRESH-2**: Re-audit + re-capture ~80 screenshots + re-merge full.docx sau LGSP ship
+- **Phase 24 cũ** (LGSP Từ chối tiếp nhận) đã merge vào LGSP-CORE — không tách riêng
 
 ## Roadmap Evolution
 
-- 2026-05-05: Phase 21 added (LGSP "Từ chối tiếp nhận") — sau renumber thành Phase 24 cùng ngày để nhường slot 21-23 cho v3.1 Automation Test. Phase dir: `.planning/phases/24-hoan-thien-nghiep-vu-tu-choi-tiep-nhan-vb-lien-thong-lgsp-st/`. Lý do gốc: phát hiện trong session review HDSD_full mục 4.3.7 — implementation "Chuyển lại VB" chỉ cosmetic (insert leader_note + flip approved=false), KHÔNG gọi LGSP `update-status` 02 → đơn vị gửi không nhận tín hiệu. Demo cuối tuần (2026-04-18/19) GIỮ NGUYÊN — phase này hoàn thiện khi tích hợp LGSP production thật.
-- 2026-05-05: Milestone v3.1 (Automation Test Suite + Bug Fix) started — phase 21-23 cho automation test 847 TC + reserve slot 25+ cho bug fix khám phá từ regression. Source plan: `.planning/AUTOMATION_TEST_PLAN.md`.
-- 2026-05-05: Roadmap v3.1 created — 3 phases (21 Automation Foundation 3d / 22 Regression Backbone 5d / 23 E2E + Concurrent + Hybrid 3d) = 11 working days. 43 REQ-IDs mapped 100% (AUTO×11 + REG×10 + E2E×7 + CI×8 + RPT×7). Phase 24 LGSP giữ trong v3.2+ backlog.
-- 2026-05-11: Phase 32 added — Audit & cập nhật toàn bộ HDSD (16 module) sau khi test fix nhiều vòng (Phase 21 LGSP foundation + Phase 31 fix-gom UI). Lý do: tester Nhung Phạm Thị (2026-05-06) báo HDSD không mô tả luồng "Giao việc → VB hiển thị ở đâu" + luồng "Ban hành & Gửi" chi tiết. Scope: 16 file `HDSD_*.md` (~4400 dòng) + chụp lại screenshots Playwright + merge `HDSD_full.md` + export `HDSD_full.docx` qua pandoc 3.9. Phase dir: `.planning/phases/32-hdsd-audit-update/`.
+- 2026-05-05: Phase 21 (LGSP Từ chối tiếp nhận) added → renumber Phase 24 cùng ngày để nhường slot 21-23 cho v3.1 Automation Test. Phase 24 sau đó defer sang v3.2 (do v3.1 re-scope manual execute).
+- 2026-05-05: Milestone v3.1 (Automation Test Suite + Bug Fix) started — phase 21-23 cho automation test 847 TC.
+- 2026-05-06: **v3.1 RE-SCOPE** — đổi từ "Automation Test Suite production-grade" → "Claude execute 847 TC thủ công + fill Excel + log bug". Lý do: user clarify không có team QA → CI/CD framework irrelevant. Phase 22-30 split theo 9 wave.
+- 2026-05-11: Phase 32 added — Audit & cập nhật HDSD (16 module) sau khi test fix nhiều vòng.
+- 2026-05-19: **Milestone v3.1 closed** — 12 phases shipped (21 + 22-30 + 31 + 32), 164 commits, 847 TC executed, 90+ bug fixed. UAT Phase 32: 4 passed / 2 skipped (HDSD stale → defer refresh round 2 sang v3.2+).
+- 2026-05-19: **Multi-tenant clarification** — User confirm 6 DN Lạng Sơn dùng chung 1 system / 1 DB (mỗi DN = root unit trong cây departments), KHÔNG phải 6 deploy riêng. Architecture v3.2 LGSP phải dùng `lgsp_agency_config` per `unit_id`.
 
 ## Session Continuity
 
-Last session: 2026-05-11T04:54:03.492Z
-Stopped at: Completed 32-08-PLAN.md
-Resume: `/gsd-plan-phase 21` để bắt đầu Phase 21 Foundation, hoặc `/gsd-discuss-phase 21` nếu cần discuss trước
+Last session: 2026-05-19T17:30:00.000Z
+Stopped at: v3.1 milestone closed, ready for v3.2 planning
+Resume: `/gsd-new-milestone` để define scope + REQUIREMENTS + ROADMAP cho v3.2 LGSP Production Go-live
 
-### Quick Tasks Completed
-
-| # | Description | Date | Commit | Directory |
-|---|-------------|------|--------|-----------|
-| 260425-g4z | Fix HSCV: consolidate 4 archive migrations + fix SP status flow (5-step) + smoke test | 2026-04-25 | fb53494 | [260425-g4z-fix-hscv-consolidate-4-archive-migration](./quick/260425-g4z-fix-hscv-consolidate-4-archive-migration/) |
-| Phase 21 P01 | 12min | 3 tasks | 11 files |
-| Phase 21 P02 | 13min | 3 tasks | 7 files |
-| Phase 21 P03 | 8min | 3 tasks | 9 files |
-| Phase 21 P04 | 6min | 2 tasks | 8 files |
-| Phase 21 P05 | 8min | 3 tasks | 12 files |
-| Phase 21 P06 | 6min | 2 tasks | 4 files |
-| Phase 32 P01 | 25 | 1 tasks | 1 files |
-| Phase 32 P02 | 3 | 3 tasks | 3 files |
-| Phase 32 P03 | 2m | 3 tasks | 2 files |
-| Phase 32 P04 | 8m | 3 tasks | 1 files |
-| Phase 32-hdsd-audit-update P05 | 5m | 2 tasks | 0 files |
-| Phase 32-hdsd-audit-update P06 | 12 | 4 tasks | 7 files |
-| Phase 32-hdsd-audit-update P07 | 2min | 2 tasks | 2 files |
-| Phase 32 P08 | 1min | 2 tasks | 1 files |
+### Notes
+- Phase 32 UAT note: HDSD đã out-of-date so với reality (code drift 8 ngày). Defer "HDSD full refresh round 2" vào v3.2+ scope.
+- 6 DN Lạng Sơn đang dùng prod thật trên `doanhnghiep.vatk.org` — kích hoạt LGSP phải KHÔNG mất data nghiệp vụ KH.
+- Memory `project_lgsp_architecture` + `project_hdsd_refresh_backlog` đã ghi nhận decision context.

@@ -8,24 +8,28 @@ Hệ thống quản lý văn bản điện tử (e-Office) dành cho cơ quan nh
 
 Luồng văn bản đến → xử lý → văn bản đi phải hoạt động đúng nghiệp vụ cơ quan nhà nước — đây là flow cốt lõi mà mọi công chức sử dụng hàng ngày.
 
-## Current Milestone: v3.1 Automation Test Suite + Bug Fix
+## Current Milestone: v3.2 LGSP Production Go-live cho 6 DN Lạng Sơn (Planning)
 
-**Goal:** Tự động hoá ≥ 95% bộ 847 TC ([`docs/hdsd/20260505_Testcase_QLVB_V2.xlsx`](docs/hdsd/20260505_Testcase_QLVB_V2.xlsx)) chạy regression < 45 phút mỗi đêm; CI gate smoke 30 TC < 8 phút trên PR; Pass/Fail map ngược cột "Trạng thái" trong Excel; phát hiện bug nào → fix bằng phase chèn (`/gsd-insert-phase`).
+**Trigger:** Có credential thật từ tỉnh Lạng Sơn (6 SystemId + SecretKey + 3 sandbox) — tài liệu trong [`docs/Trục EDOC Lạng Sơn - QLVB Doanh nghiệp/`](../docs/Trục%20EDOC%20Lạng%20Sơn%20-%20QLVB%20Doanh%20nghiệp/). 6 DN đã đang dùng prod trên `doanhnghiep.vatk.org` (multi-tenant 1 system / 1 DB).
 
-**Target features (3 phase chính + reserve slot bug fix):**
-- Phase 21: Foundation (3d) — Setup Playwright + Vitest + supertest, 4 user fixture (admin/vanthu/lanhdao/canbo + canboX cross-unit), mock SmartCA/LGSP/MinIO offline, smoke 30 TC P-High, Excel report parser MVP, CI `test-pr.yml`.
-- Phase 22: Regression backbone (5d) — Cover Wave a-g (815/847 TC), CI `test-nightly.yml` cron 00:00 ICT, Excel sync đầy đủ cột Trạng thái + Run date + Duration + Error msg + Trace link.
-- Phase 23: E2E + Concurrent + Hybrid (3d) — Wave h (17 auto + 2 hybrid weekly SmartCA/LGSP real), Wave i (10 auto + 3 perf k6 weekly), 110 UI category visual snapshot, hybrid weekly job, onboarding doc QA team.
-- Phase 24+ (reserve): Bug fix khám phá từ regression — chèn bằng `/gsd-insert-phase` khi cần.
+**Goal sơ bộ:** Wire LGSP API thật cho 6 DN gửi/nhận VB qua trục liên thông tỉnh:
+- Status callback chain (03 Tiếp nhận / 04 Phân công / 05 Xử lý / 06 Hoàn thành + 02 Từ chối + 13/15/16 Lấy lại)
+- Cron `syncReceivedEdocList` loop 6 DN mỗi 5 phút (mỗi DN dùng credential riêng)
+- Admin UI cấu hình `lgsp_agency_config` per `unit_id` + environment switch (sandbox/prod)
+- Edxml builder + parser (theo spec QĐ 28/2018/QĐ-TTg + LGSP_LANGSON guide)
+- Roll-out theo wave: Wave 1 (3 DN có sandbox: H37.DN.001/002/003) → Wave 2 (3 DN còn lại: 004/005/006)
+- HDSD full refresh round 2 sau khi LGSP ship (vì HDSD Phase 32 đã drift sau 8 ngày fix bug)
 
-**Quyết định v3.1 (chốt 2026-05-05):**
-- Framework: Playwright (E2E) + Vitest+supertest (Integration) + k6 (Perf) — KHÔNG dùng Cypress
-- Pyramid: 50 unit / 464 integration / 383 E2E (cover 847 TC + 50 helper unit)
-- Test DB: layered seed (`003_test_fixtures.sql`), TX rollback (integration), template-DB clone (E2E parallel)
-- Mock fidelity: SmartCA + MySign + LGSP mock server; MinIO/MongoDB/Redis dùng container thật
-- CI runners: ubuntu-latest only (Windows runner UTF-8 risk với tiếng Việt có dấu)
-- Hybrid weekly trên staging: 4 TC (SmartCA real handshake, LGSP real submit, k6 perf × 3)
-- Source of truth: [`.planning/AUTOMATION_TEST_PLAN.md`](.planning/AUTOMATION_TEST_PLAN.md) (research artifact)
+**Kiến trúc cốt lõi (chốt 2026-05-19 sau clarification của user):**
+- Multi-tenant single-system: 1 deploy / 1 DB / 6 DN = 6 root unit trong cây `departments`
+- `lgsp_agency_config` per `unit_id` (KHÔNG đọc từ `.env`)
+- `getLgspService(unit_id)` lookup credential động khi gọi LGSP
+- Roll-out không qua deploy wave — chỉ toggle `lgsp_agency_config.is_active=true` per row (config-level)
+
+**Decision point chưa chốt** (sẽ hỏi khi `/gsd-discuss-phase`):
+- Khi User DN.001 gửi VB → DN.002 (cả 2 cùng trong 6 DN): qua LGSP / nội bộ thuần / cả 2?
+
+**Next step:** `/gsd-new-milestone` để tạo ROADMAP v3.2 chính thức + REQUIREMENTS + breakdown 4-5 phase.
 
 ## Requirements
 
@@ -68,24 +72,35 @@ Luồng văn bản đến → xử lý → văn bản đi phải hoạt động 
 - ✓ UI-* (8): Form 3 màn đồng bộ + recipient picker + bỏ menu Liên thông + tracking inline — v3.0 Phase 19
 - ✓ QA-* (3): Regression 27/27 endpoints + 17 bugs UAT fixed — v3.0 Phase 20
 
-### Active (v3.1 — Automation Test Suite, in progress 2026-05-05)
+### Validated (v3.1 — Shipped 2026-05-19)
 
-- [ ] AUTO-* (foundation): Setup Playwright + Vitest + supertest + mock servers + 4 user fixtures + smoke 30 TC P-High + Excel report parser — Phase 21
-- [ ] REG-* (regression): 815/847 TC cover Wave a-g + nightly cron + Excel sync đầy đủ — Phase 22
-- [ ] E2E-* (end-to-end): 17 E2E + 10 concurrent + 110 UI visual + hybrid weekly + onboarding doc QA — Phase 23
-- [ ] CI-* (CI/CD): `test-pr.yml` (smoke gate < 8') + `test-nightly.yml` (full < 45') + `test-weekly-hybrid.yml` (SmartCA/LGSP real + k6 perf) — Phase 21-23
+- ✓ INFRA-* (7): Test DB tách dev + 6 user fixture + 3 mock server (SmartCA/MySign/LGSP) + Vitest+Playwright+supertest + Excel sync tool + README onboarding — v3.1 Phase 21
+- ✓ EXEC-* (9): Execute 847 TC qua 9 wave (a Auth+Admin / b VB / c HSCV+KS / d-f Boundary / g Permission / h E2E / i Concurrent) — v3.1 Phase 22-30
+- ✓ REPORT-* (3): Excel results + bug list 90+ severity classified — v3.1 Phase 22-30 (báo qua `docs/20260519_Tester báo lỗi.xlsx`)
+- ✓ Phase 31 fix-gom UI: 164+ commit BUG #1 → #90 + IMP #5 (ký số polish, phân quyền granular, menu, HSCV, setup KH Lạng Sơn)
+- ✓ Phase 32 HDSD: 16 file HDSD updated + 6 screenshots + HDSD_full.md (4496 dòng) + HDSD_full.docx (13.3MB, 82 ảnh)
+- ✓ Setup 6 KH DN Lạng Sơn dùng prod thật trên `doanhnghiep.vatk.org`
 
-### Deferred (v3.2+ backlog)
+### Active (v3.2 — LGSP Production Go-live, planning 2026-05-19)
+
+Requirements sẽ được define qua `/gsd-new-milestone`. Sơ bộ:
+
+- [ ] LGSP-CRED-*: Bảng `lgsp_agency_config` per `unit_id` + 6 row + cột `lgsp_org_code` trong `departments`
+- [ ] LGSP-SEND-*: Builder edXML + sendEdoc với credential dynamic theo sender unit
+- [ ] LGSP-RECV-*: Cron syncReceivedEdocList loop 6 DN mỗi 5 phút + parser edXML + INSERT incoming_docs
+- [ ] LGSP-STATUS-*: Callback chain status 03/04/05/06 + 02 Từ chối + 13/15/16 Lấy lại
+- [ ] LGSP-UI-*: Admin UI cấu hình credential + environment switch (sandbox/prod) + bật lại menu `/lgsp`
+- [ ] HDSD-REFRESH-*: Re-audit + re-capture ~80 screenshots + re-merge full.docx sau khi LGSP ship
+
+### Deferred (v3.3+ backlog)
 
 - [ ] Drafting recipients structured + carry-over Outgoing khi Release
 - [ ] Trang admin CRUD `inter_organizations` + button "Sync from LGSP"
 - [ ] Multi-level approval workflow (Trưởng phòng → Phó GĐ → Giám đốc)
 - [ ] Cleanup 2 modal legacy v1.0 (Gửi liên thông + Gửi trục CP)
 - [ ] Default expired_date theo config sổ văn bản
-- [ ] Worker LGSP startup script + monitoring production
-- [ ] Visual regression pixel-diff (chỉ 110 functional UI test trong v3.1)
-- [ ] Accessibility (a11y) test với axe-core
-- [ ] Mobile responsive E2E full suite
+- [ ] CI/CD pipeline (chỉ kích hoạt khi có team QA — không có team hiện tại → không cần)
+- [ ] Visual regression pixel-diff / a11y / mobile responsive E2E (cùng lý do)
 
 ### Out of Scope
 
@@ -132,11 +147,14 @@ Luồng văn bản đến → xử lý → văn bản đi phải hoạt động 
 | **v3.0: Bỏ menu Liên thông riêng** | VB liên thông bản chất là VB đến (chỉ khác nguồn), gộp giảm điều hướng + 1 chỗ xử lý | — Pending |
 | **v3.0: Tách 2 bước Ban hành / Gửi** | Đúng nghiệp vụ source .NET cũ (`Prc_DraftingDocReleased` vs `Prc_UserOutgoingDocSend`) | — Pending |
 | **v3.0: Approver/Approved 1 cấp boolean** | Source cũ chỉ làm 1 cấp duyệt đơn giản, không cần multi-level workflow | — Pending |
-| **v3.1: Playwright + Vitest+supertest + k6** (KHÔNG Cypress) | Multi-tab native cho 13 concurrent TC, upload tiếng Việt UTF-8, 4 role parallel, k6 cho 3 perf TC; Cypress yếu trên multi-tab + license | — Pending |
-| **v3.1: Pyramid 50 unit / 464 integration / 383 E2E** | 280 Pos + 184 Neg không cần UI → integration nhanh 5×; UI/Boundary form/Permission/E2E/Concurrent → cần browser thật | — Pending |
-| **v3.1: Mock SmartCA/MySign/LGSP server riêng** | Tránh phụ thuộc real provider trong CI; scenario qua header `X-Mock-Scenario`; MinIO/MongoDB/Redis dùng container thật | — Pending |
-| **v3.1: CI ubuntu-latest only** | Windows runner risk UTF-8 corrupt với tiếng Việt có dấu (CLAUDE.md pitfall #1) | — Pending |
-| **v3.1: Hybrid weekly trên staging** | 4 TC giữ real (SmartCA/LGSP/k6 perf × 3) — tránh mock drift, giữ tốc độ CI | — Pending |
+| **v3.1: Re-scope 2026-05-06 — Manual execute by Claude** | User clarify không có team QA → bỏ CI/CD framework, đổi sang AI tester thủ công | ✓ Good (v3.1 shipped 847 TC + 90 bug fix trong 15 ngày) |
+| **v3.1: Phase 22-30 không dùng GSD plan discipline** | Manual execute không cần multi-wave plan, RESULTS.md đủ trace | ✓ Good (giảm overhead, ship nhanh) |
+| **v3.1: Phase 31 fix-gom commit trực tiếp ngoài GSD** | Tester batch + đào tạo KH ép tốc độ | ⚠️ Trade-off: 164 commit không có PLAN/SUMMARY (audit khó) |
+| **v3.1: Setup 6 DN Lạng Sơn dùng prod thật** | KH đang dùng thử trên `doanhnghiep.vatk.org` để feedback nghiệp vụ | ✓ Good (kiểm chứng đa-tenant + UAT thật) |
+| **v3.2: Multi-tenant single-system kiến trúc** | 6 DN chung 1 deploy / 1 DB / 6 root unit trong departments (không phải 6 deploy riêng) | — Pending (chốt 2026-05-19) |
+| **v3.2: `lgsp_agency_config` per `unit_id`** | Mỗi DN có SystemId + SecretKey riêng, lookup động qua getLgspService(unit_id) | — Pending |
+| **v3.2: Roll-out wave config-level (không deploy)** | Toggle `is_active=true` per row, không cần restart server, giảm rủi ro 5 DN khác | — Pending |
+| **v3.2: HDSD full refresh round 2 sau LGSP ship** | HDSD Phase 32 đã drift 8 ngày, defer refresh để bundle với LGSP content mới | — Pending |
 
 ## Evolution
 
@@ -156,4 +174,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-05 — Milestone v3.0 shipped, v3.1 (Automation Test Suite + Bug Fix) started*
+*Last updated: 2026-05-19 — Milestone v3.1 shipped (847 TC + 90 bug fix + setup 6 DN Lạng Sơn prod + HDSD audit), v3.2 (LGSP Production Go-live) planning*
