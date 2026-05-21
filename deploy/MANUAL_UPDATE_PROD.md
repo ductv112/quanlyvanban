@@ -41,14 +41,14 @@ Tính năng "Xem trực tiếp file đính kèm" cho phép user bấm icon Mắt
 2. **Cài đặt mặc định** vào `C:\Program Files\LibreOffice\` (Next → Next → Install)
 3. **Verify đã cài**:
    ```powershell
-   & 'C:\Program Files\LibreOffice\program\soffice.exe' --version
+   & 'C:\Program Files\LibreOffice\program\soffice.com' --version
    # → in ra: LibreOffice 24.x.x.x ...
    ```
 4. **Thêm biến môi trường vào `backend\.env`**:
    ```powershell
    notepad C:\qlvb\quanlyvanban\e_office_app_new\backend\.env
    # Thêm dòng:
-   # LIBREOFFICE_PATH=C:\Program Files\LibreOffice\program\soffice.exe
+   # LIBREOFFICE_PATH=C:\Program Files\LibreOffice\program\soffice.com
    ```
 5. **Apply env mới**: `pm2 restart all --update-env` (BẮT BUỘC `--update-env` để pick up biến mới — pitfall #3).
 

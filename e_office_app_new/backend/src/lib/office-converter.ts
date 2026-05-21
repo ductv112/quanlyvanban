@@ -6,9 +6,18 @@ import type { Readable } from 'node:stream';
 import { minioClient, uploadFile } from './minio/client.js';
 
 const BUCKET = process.env.MINIO_BUCKET || 'documents';
-const SOFFICE = process.env.LIBREOFFICE_PATH || (process.platform === 'win32'
-  ? 'C:\\Program Files\\LibreOffice\\program\\soffice.exe'
-  : '/usr/bin/soffice');
+
+function resolveSofficePath(): string {
+  const raw = process.env.LIBREOFFICE_PATH || (process.platform === 'win32'
+    ? 'C:\\Program Files\\LibreOffice\\program\\soffice.com'
+    : '/usr/bin/soffice');
+  if (process.platform === 'win32' && /\\soffice\.exe$/i.test(raw)) {
+    return raw.replace(/\\soffice\.exe$/i, '\\soffice.com');
+  }
+  return raw;
+}
+
+const SOFFICE = resolveSofficePath();
 
 /** Office MIME types cần convert sang PDF để preview */
 export const OFFICE_MIME_TYPES = new Set<string>([
