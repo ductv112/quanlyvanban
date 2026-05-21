@@ -8,7 +8,7 @@ import {
 } from 'antd';
 import {
   ArrowLeftOutlined, CheckCircleOutlined, CloseCircleOutlined, SendOutlined,
-  DeleteOutlined, DownloadOutlined, UploadOutlined, MoreOutlined,
+  DeleteOutlined, DownloadOutlined, EyeOutlined, UploadOutlined, MoreOutlined,
   StarOutlined, StarFilled, PaperClipOutlined,
   ClockCircleOutlined, UserOutlined, FilePdfOutlined,
   FileImageOutlined, FileWordOutlined, FileExcelOutlined, FileOutlined,
@@ -16,6 +16,8 @@ import {
 } from '@ant-design/icons';
 import { api } from '@/lib/api';
 import { downloadAttachment } from '@/lib/download';
+import { AttachmentPreviewModal } from '@/components/AttachmentPreviewModal';
+import { buildPreviewUrl, buildDownloadUrl, isPreviewable } from '@/lib/preview';
 import { useAuthStore } from '@/stores/auth.store';
 import { useSigning } from '@/hooks/use-signing';
 import { useParams, useRouter } from 'next/navigation';
@@ -108,6 +110,23 @@ export default function DraftingDocDetailPage() {
   const [addingNote, setAddingNote] = useState(false);
   // Ký số — sử dụng useSigning hook (Plan 11-06, thay thế mock OTP Plan 1)
   const { openSign, renderSignModal, isOpen: isSigningOpen } = useSigning();
+
+  // Xem trực tiếp file đính kèm modal
+  const [previewState, setPreviewState] = useState<{
+    open: boolean;
+    attachmentId: number | null;
+    fileName: string;
+    mimeType: string | null;
+  }>({ open: false, attachmentId: null, fileName: '', mimeType: null });
+  const openPreview = (att: Attachment) => {
+    setPreviewState({
+      open: true,
+      attachmentId: Number(att.id),
+      fileName: att.file_name,
+      mimeType: att.content_type ?? null,
+    });
+  };
+  const closePreview = () => setPreviewState((s) => ({ ...s, open: false }));
 
   const fetchDoc = useCallback(async () => { try { const { data: res } = await api.get(`/van-ban-du-thao/${docId}`); setDoc(res.data); } catch { message.error('Không tìm thấy văn bản'); router.push('/van-ban-du-thao'); } }, [docId, message, router]);
   const fetchBookmarkStatus = useCallback(async () => { try { const { data: res } = await api.get('/van-ban-du-thao/danh-dau-ca-nhan'); const bookmarks: { doc_id: number | string }[] = res.data || []; setIsBookmarked(bookmarks.some((b) => Number(b.doc_id) === Number(docId))); } catch {} }, [docId]);
@@ -434,7 +453,14 @@ export default function DraftingDocDetailPage() {
                           Ký số
                         </Button>
                       )}
-                      <Button size="small" type="link" icon={<DownloadOutlined />} onClick={() => handleDownload(att)} />
+                      {isPreviewable(att.content_type ?? null, att.file_name) && (
+                        <Tooltip title="Xem trực tiếp">
+                          <Button size="small" type="link" icon={<EyeOutlined />} onClick={() => openPreview(att)} />
+                        </Tooltip>
+                      )}
+                      <Tooltip title="Tải xuống">
+                        <Button size="small" type="link" icon={<DownloadOutlined />} onClick={() => handleDownload(att)} />
+                      </Tooltip>
                       {!doc.is_released && doc.permissions?.canEdit && <Popconfirm title="Xóa file?" onConfirm={() => handleDeleteAttachment(att)}><Button size="small" type="link" danger icon={<DeleteOutlined />} /></Popconfirm>}
                     </Space>
                   </Flex>
@@ -599,6 +625,19 @@ export default function DraftingDocDetailPage() {
 
       {/* Sign modal từ useSigning hook (Plan 11-06) — replace mock OTP với real async flow */}
       {renderSignModal()}
+
+      <AttachmentPreviewModal
+        open={previewState.open}
+        onClose={closePreview}
+        previewPath={previewState.attachmentId !== null
+          ? buildPreviewUrl('van-ban-du-thao', docId, previewState.attachmentId)
+          : null}
+        downloadPath={previewState.attachmentId !== null
+          ? buildDownloadUrl('van-ban-du-thao', docId, previewState.attachmentId)
+          : null}
+        fileName={previewState.fileName}
+        mimeType={previewState.mimeType}
+      />
     </div>
   );
 }

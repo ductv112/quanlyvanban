@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Card, Tabs, Table, Button, Form, Input, Select, DatePicker, Tag, Badge,
   Progress, Upload, Avatar, Divider, Modal, Slider, InputNumber, Space,
-  Breadcrumb, Skeleton, Radio, Popconfirm, App, Checkbox, Tree,
+  Breadcrumb, Skeleton, Radio, Popconfirm, App, Checkbox, Tree, Tooltip,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { DataNode } from 'antd/es/tree';
@@ -24,7 +24,7 @@ type UploadRequestOption = {
 import {
   ArrowLeftOutlined, FolderOutlined, FileTextOutlined, TeamOutlined,
   CommentOutlined, PaperClipOutlined, ApartmentOutlined, SaveOutlined,
-  UploadOutlined, DeleteOutlined, DownloadOutlined, PlusOutlined,
+  UploadOutlined, DeleteOutlined, DownloadOutlined, EyeOutlined, PlusOutlined,
   ExclamationCircleOutlined, FilePdfOutlined, FileWordOutlined,
   FileExcelOutlined, FileImageOutlined, FileOutlined, LinkOutlined,
   SendOutlined, SwapOutlined, HistoryOutlined,
@@ -34,6 +34,9 @@ import {
 import { useRouter, useParams } from 'next/navigation';
 import dayjs from 'dayjs';
 import { api } from '@/lib/api';
+import { downloadAttachment } from '@/lib/download';
+import { AttachmentPreviewModal } from '@/components/AttachmentPreviewModal';
+import { buildPreviewUrl, buildDownloadUrl, isPreviewable } from '@/lib/preview';
 import { confirmCloseIfDirty } from '@/lib/form-confirm';
 import { useAuthStore } from '@/stores/auth.store';
 import { buildTree } from '@/lib/tree-utils';
@@ -158,7 +161,10 @@ interface Attachment {
   id: number;
   file_name: string;
   file_size: number;
-  file_type: string;
+  /** Legacy field — SP thuc te tra `content_type`, file_type giu lai cho backward compat */
+  file_type?: string;
+  /** MIME tu SP edoc.fn_handling_doc_get_attachments — uu tien dung cho preview kind */
+  content_type?: string;
   created_at: string;
   created_by_name: string;
   // Phase 11 — Ký số (Plan 11-01 ALTER table attachments)
@@ -1066,12 +1072,30 @@ export default function HscvDetailPage() {
 
   const handleDownload = async (attachmentId: number, fileName: string) => {
     try {
-      const { data: res } = await api.get(`/ho-so-cong-viec/${id}/dinh-kem/${attachmentId}/download`);
-      window.open(res.data.url, '_blank');
+      // Backend HSCV /download endpoint (them tu 260521-v8t) stream file qua proxy
+      // -- dong nhat voi 3 module VB den/di/du-thao.
+      await downloadAttachment(`/ho-so-cong-viec/${id}/dinh-kem/${attachmentId}/download`, fileName);
     } catch {
       message.error(`Không thể tải xuống file "${fileName}"`);
     }
   };
+
+  // Xem trực tiếp file đính kèm modal
+  const [previewState, setPreviewState] = useState<{
+    open: boolean;
+    attachmentId: number | null;
+    fileName: string;
+    mimeType: string | null;
+  }>({ open: false, attachmentId: null, fileName: '', mimeType: null });
+  const openPreview = (att: Attachment) => {
+    setPreviewState({
+      open: true,
+      attachmentId: Number(att.id),
+      fileName: att.file_name,
+      mimeType: att.content_type ?? att.file_type ?? null,
+    });
+  };
+  const closePreview = () => setPreviewState((s) => ({ ...s, open: false }));
 
   const handleDeleteAttachment = async (attachmentId: number) => {
     try {
@@ -1644,6 +1668,17 @@ export default function HscvDetailPage() {
                   </div>
                 </div>
                 <Space>
+                  {isPreviewable(att.content_type ?? att.file_type ?? null, att.file_name) && (
+                    <Tooltip title="Xem trực tiếp">
+                      <Button
+                        size="small"
+                        icon={<EyeOutlined />}
+                        onClick={() => openPreview(att)}
+                      >
+                        Xem
+                      </Button>
+                    </Tooltip>
+                  )}
                   <Button
                     size="small"
                     icon={<DownloadOutlined />}
@@ -2275,6 +2310,19 @@ export default function HscvDetailPage() {
 
       {/* Phase 11 — SignModal từ useSigning hook (Plan 11-08) */}
       {renderSignModal()}
+
+      <AttachmentPreviewModal
+        open={previewState.open}
+        onClose={closePreview}
+        previewPath={previewState.attachmentId !== null
+          ? buildPreviewUrl('ho-so-cong-viec', id, previewState.attachmentId)
+          : null}
+        downloadPath={previewState.attachmentId !== null
+          ? buildDownloadUrl('ho-so-cong-viec', id, previewState.attachmentId)
+          : null}
+        fileName={previewState.fileName}
+        mimeType={previewState.mimeType}
+      />
     </div>
   );
 }

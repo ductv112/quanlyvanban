@@ -9,7 +9,7 @@ import {
 } from 'antd';
 import {
   ArrowLeftOutlined, CheckCircleOutlined, CloseCircleOutlined, SendOutlined,
-  DeleteOutlined, DownloadOutlined, UploadOutlined, MoreOutlined,
+  DeleteOutlined, DownloadOutlined, EyeOutlined, UploadOutlined, MoreOutlined,
   StarOutlined, StarFilled, PaperClipOutlined,
   ClockCircleOutlined, UserOutlined, FilePdfOutlined,
   FileImageOutlined, FileWordOutlined, FileExcelOutlined, FileOutlined,
@@ -19,6 +19,8 @@ import {
 } from '@ant-design/icons';
 import { api } from '@/lib/api';
 import { downloadAttachment } from '@/lib/download';
+import { AttachmentPreviewModal } from '@/components/AttachmentPreviewModal';
+import { buildPreviewUrl, buildDownloadUrl, isPreviewable } from '@/lib/preview';
 import { useAuthStore } from '@/stores/auth.store';
 import { useSigning } from '@/hooks/use-signing';
 import { useRecipientsPolling, type RecipientStatus } from '@/hooks/use-recipients-polling';
@@ -199,6 +201,24 @@ export default function OutgoingDocDetailPage() {
   const [archiving, setArchiving] = useState(false);
   const [warehouseOptions, setWarehouseOptions] = useState<{ value: number; label: string }[]>([]);
   const [fondOptions, setFondOptions] = useState<{ value: number; label: string }[]>([]);
+
+  // Xem trực tiếp file đính kèm modal
+  const [previewState, setPreviewState] = useState<{
+    open: boolean;
+    attachmentId: number | null;
+    fileName: string;
+    mimeType: string | null;
+  }>({ open: false, attachmentId: null, fileName: '', mimeType: null });
+  const openPreview = (att: Attachment) => {
+    setPreviewState({
+      open: true,
+      attachmentId: Number(att.id),
+      fileName: att.file_name,
+      mimeType: att.content_type ?? null,
+    });
+  };
+  const closePreview = () => setPreviewState((s) => ({ ...s, open: false }));
+
   // Phase 17 v3.0: Ban hành + Gửi nội bộ
   const [releasing, setReleasing] = useState(false);
   const [noiBoModalOpen, setNoiBoModalOpen] = useState(false);
@@ -768,7 +788,14 @@ export default function OutgoingDocDetailPage() {
                           Ký số
                         </Button>
                       )}
-                      <Button size="small" type="link" icon={<DownloadOutlined />} onClick={() => handleDownload(att)} />
+                      {isPreviewable(att.content_type ?? null, att.file_name) && (
+                        <Tooltip title="Xem trực tiếp">
+                          <Button size="small" type="link" icon={<EyeOutlined />} onClick={() => openPreview(att)} />
+                        </Tooltip>
+                      )}
+                      <Tooltip title="Tải xuống">
+                        <Button size="small" type="link" icon={<DownloadOutlined />} onClick={() => handleDownload(att)} />
+                      </Tooltip>
                       {!doc.approved && <Popconfirm title="Xóa file?" onConfirm={() => handleDeleteAttachment(att)}><Button size="small" type="link" danger icon={<DeleteOutlined />} /></Popconfirm>}
                     </Space>
                   </Flex>
@@ -1140,6 +1167,19 @@ export default function OutgoingDocDetailPage() {
           ))}
         </Checkbox.Group>
       </Modal>
+
+      <AttachmentPreviewModal
+        open={previewState.open}
+        onClose={closePreview}
+        previewPath={previewState.attachmentId !== null
+          ? buildPreviewUrl('van-ban-di', docId, previewState.attachmentId)
+          : null}
+        downloadPath={previewState.attachmentId !== null
+          ? buildDownloadUrl('van-ban-di', docId, previewState.attachmentId)
+          : null}
+        fileName={previewState.fileName}
+        mimeType={previewState.mimeType}
+      />
     </div>
   );
 }

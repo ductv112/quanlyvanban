@@ -28,6 +28,50 @@
 
 ---
 
+## 📦 Pre-requisite: Cài LibreOffice (cho tính năng "Xem trực tiếp file đính kèm")
+
+> Bắt buộc CHỈ khi deploy từ **release 2026-05-21 trở đi** (quick task `260521-v8t`).
+> Chỉ cần cài 1 lần — các deploy sau không phải làm lại.
+
+Tính năng "Xem trực tiếp file đính kèm" cho phép user bấm icon Mắt để xem inline file Office (`.doc/.docx/.xls/.xlsx/.ppt/.pptx`) ngay trong browser, không cần tải xuống. Backend cần LibreOffice headless để convert Office → PDF rồi stream PDF về browser.
+
+**Cài đặt:**
+
+1. **Tải LibreOffice** (bản mới nhất, ~350MB): <https://www.libreoffice.org/download/download-libreoffice/>
+2. **Cài đặt mặc định** vào `C:\Program Files\LibreOffice\` (Next → Next → Install)
+3. **Verify đã cài**:
+   ```powershell
+   & 'C:\Program Files\LibreOffice\program\soffice.exe' --version
+   # → in ra: LibreOffice 24.x.x.x ...
+   ```
+4. **Thêm biến môi trường vào `backend\.env`**:
+   ```powershell
+   notepad C:\qlvb\quanlyvanban\e_office_app_new\backend\.env
+   # Thêm dòng:
+   # LIBREOFFICE_PATH=C:\Program Files\LibreOffice\program\soffice.exe
+   ```
+5. **Apply env mới**: `pm2 restart all --update-env` (BẮT BUỘC `--update-env` để pick up biến mới — pitfall #3).
+
+**Smoke test sau deploy:**
+
+1. Login vào hệ thống
+2. Mở 1 VB đến có file đính kèm `.docx` → bấm icon Mắt cạnh tên file
+3. Modal mở → loading spinner ~3-10s (lần đầu) → hiển thị PDF đã convert
+4. Đóng Modal → mở lại file đó → hiển thị NGAY (cache hit MinIO `previews/{id}.pdf`)
+
+**Troubleshoot:**
+
+| Triệu chứng | Nguyên nhân | Fix |
+|---|---|---|
+| Bấm Mắt → loading mãi → "Không thể tải file" | `LIBREOFFICE_PATH` sai hoặc chưa cài | Verify Bước 3 + `pm2 restart all --update-env` |
+| Log `ENOENT` hoặc `LibreOffice exit code` trong `pm2 logs eoffice-api` | Đường dẫn `soffice.exe` không tồn tại | Cài lại LibreOffice + check path |
+| File PDF/ảnh xem trực tiếp OK, chỉ Office fail | LibreOffice chưa cài | Cài LibreOffice — PDF/ảnh không cần dependency này |
+| File `.zip/.rar` không có icon Mắt | Đúng — loại file này không hỗ trợ xem | Dùng nút Tải xuống |
+
+**Lưu ý:** Lần convert đầu tiên cho mỗi file mất ~3-10s tùy size. Cache MinIO `previews/{attachment_id}.pdf` được tạo → các lần sau load tức thì.
+
+---
+
 ## 📋 Copy-paste run
 
 RDP/SSH vào server Windows prod, mở **PowerShell Administrator**, paste từng block:

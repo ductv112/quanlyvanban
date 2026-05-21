@@ -9,7 +9,7 @@ import {
 } from 'antd';
 import {
   ArrowLeftOutlined, CheckCircleOutlined, CloseCircleOutlined, SendOutlined,
-  DeleteOutlined, DownloadOutlined, UploadOutlined, MoreOutlined,
+  DeleteOutlined, DownloadOutlined, EyeOutlined, UploadOutlined, MoreOutlined,
   StarOutlined, StarFilled, CommentOutlined, PaperClipOutlined,
   InboxOutlined, ClockCircleOutlined, UserOutlined, FilePdfOutlined,
   FileImageOutlined, FileWordOutlined, FileExcelOutlined, FileOutlined,
@@ -18,6 +18,8 @@ import {
 } from '@ant-design/icons';
 import { api } from '@/lib/api';
 import { downloadAttachment } from '@/lib/download';
+import { AttachmentPreviewModal } from '@/components/AttachmentPreviewModal';
+import { buildPreviewUrl, buildDownloadUrl, isPreviewable } from '@/lib/preview';
 import { useAuthStore } from '@/stores/auth.store';
 import { LgspSourceBadge, type DocSourceType } from '@/lib/lgsp-source-badge';
 import { LgspStatusTimeline } from '@/components/lgsp-status-timeline';
@@ -146,6 +148,23 @@ export default function IncomingDocDetailPage() {
   const [archiveForm] = Form.useForm();
   const [fondOptions, setFondOptions] = useState<{ value: number; label: string }[]>([]);
   const [warehouseOptions, setWarehouseOptions] = useState<{ value: number; label: string }[]>([]);
+
+  // Xem trực tiếp file đính kèm modal
+  const [previewState, setPreviewState] = useState<{
+    open: boolean;
+    attachmentId: number | null;
+    fileName: string;
+    mimeType: string | null;
+  }>({ open: false, attachmentId: null, fileName: '', mimeType: null });
+  const openPreview = (att: Attachment) => {
+    setPreviewState({
+      open: true,
+      attachmentId: Number(att.id),
+      fileName: att.file_name,
+      mimeType: att.content_type ?? null,
+    });
+  };
+  const closePreview = () => setPreviewState((s) => ({ ...s, open: false }));
 
   // Action loading
   const [actionLoading, setActionLoading] = useState(false);
@@ -709,7 +728,14 @@ export default function IncomingDocDetailPage() {
                       </div>
                     </Flex>
                     <Space size={4}>
-                      <Button size="small" type="link" icon={<DownloadOutlined />} onClick={() => handleDownload(att)} />
+                      {isPreviewable(att.content_type ?? null, att.file_name) && (
+                        <Tooltip title="Xem trực tiếp">
+                          <Button size="small" type="link" icon={<EyeOutlined />} onClick={() => openPreview(att)} />
+                        </Tooltip>
+                      )}
+                      <Tooltip title="Tải xuống">
+                        <Button size="small" type="link" icon={<DownloadOutlined />} onClick={() => handleDownload(att)} />
+                      </Tooltip>
                       {!doc.approved && <Popconfirm title="Xóa file?" onConfirm={() => handleDeleteAttachment(att)}><Button size="small" type="link" danger icon={<DeleteOutlined />} /></Popconfirm>}
                     </Space>
                   </Flex>
@@ -1092,6 +1118,19 @@ export default function IncomingDocDetailPage() {
           </Row>
         </Form>
       </Drawer>
+
+      <AttachmentPreviewModal
+        open={previewState.open}
+        onClose={closePreview}
+        previewPath={previewState.attachmentId !== null
+          ? buildPreviewUrl('van-ban-den', docId, previewState.attachmentId)
+          : null}
+        downloadPath={previewState.attachmentId !== null
+          ? buildDownloadUrl('van-ban-den', docId, previewState.attachmentId)
+          : null}
+        fileName={previewState.fileName}
+        mimeType={previewState.mimeType}
+      />
     </div>
   );
 }
