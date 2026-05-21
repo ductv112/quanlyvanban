@@ -50,6 +50,13 @@ docs/Function list & Estimate.xlsx
 # Doc tích hợp ký số MySign Viettel (~400MB — SDK + demo code) — chỉ giữ local
 docs/huong_dan_tich_hop_ky_so_MySign_Viettel/
 
+# Credential LGSP Lạng Sơn (List.txt + QLVBDNAgencies.xlsx có secret_key/password) — NEVER commit
+docs/Trục EDOC Lạng Sơn*/
+docs/Trục EDOC*/
+
+# HDSD nội bộ gửi KH — chỉ chia sẻ qua kênh khác, không commit
+docs/hdsd/HDSD gửi KH (Ko commit git)/
+
 # Test artifacts (Phase 21+ automation suite)
 tests/results/
 # Storage state JSON files generated runtime by tests/globalSetup.ts (Plan 21-04).
