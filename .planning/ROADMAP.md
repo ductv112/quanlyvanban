@@ -70,7 +70,7 @@ Detail: `.planning/milestones/v3.1-phases/`, archive: `.planning/milestones/v3.1
 - [x] **Phase 34: Send Flow (sendEdoc)** — edXML builder + routing internal/external + worker send + error mapping + UI badge (completed 2026-05-20)
 - [x] **Phase 35: Receive Flow (cron syncReceivedEdocList)** — Cron loop 6 DN + parser edXML + INSERT incoming_docs dedup + attachments MinIO + tracking (completed 2026-05-21)
 - [x] **Phase 36: Status Callback Chain (9 mã QĐ 28)** — Outbox worker poll + auto fire 03/04/05/06 + refactor "Chuyển lại" → "Từ chối tiếp nhận" (02) + Lấy lại 13/15/16 + UI tag trạng thái (completed 2026-05-21)
-- [ ] **Phase 37: Admin UI + Catalog + Go-live** — `/quan-tri/lgsp-config` CRUD + test connection + Catalog `inter_organizations` + gỡ hidden-routes + Wave 1/2 roll-out
+- [x] **Phase 37: Admin UI + Catalog + Go-live** — `/quan-tri/lgsp-config` CRUD + test connection + Catalog `inter_organizations` + gỡ hidden-routes + Wave 1/2 roll-out (completed 2026-05-21)
 
 ## Phase Details
 
@@ -159,14 +159,14 @@ Detail: `.planning/milestones/v3.1-phases/`, archive: `.planning/milestones/v3.1
   3. Force sync now button hiển thị cạnh mỗi row + `last_synced_at` từ cron → bấm → enqueue ngay job LGSP-RECV (không chờ 5 phút) → trong ≤ 10 giây thấy VB mới (nếu có) trong `incoming_docs`
   4. Trang `/quan-tri/inter-organizations` CRUD đơn vị ngoài (code, name, parent_id, address, mail) Drawer 720; button "Sync danh sách từ trục" gọi `GET /v1/getAgenciesList` qua credential DN active đầu tiên → batch INSERT/UPDATE thành công (verify count tăng); file `frontend/src/config/hidden-routes.ts` đã gỡ `/lgsp` + `/lgsp/co-quan` khỏi `HIDDEN_ROUTES` Set → sidebar hiển thị menu Liên thông
   5. Roll-out verification: Wave 1 ready — bật `is_active=TRUE` cho 3 row sandbox DN.001/002/003 qua UI → 3 DN này thấy VB LGSP trong tab VB đến + gửi được external; 3 row prod còn lại + 3 row sandbox còn lại `is_active=FALSE` → KHÔNG ảnh hưởng. Verify tracking inline VB đi (Phase 19 v3.0) + 5 trạng thái badge (`pending`/`success`/`error`/`đã gửi LGSP`/`lỗi gửi LGSP`) còn hoạt động — không regression flow nội bộ Phase 17.
-**Plans:** 7 plans
-  - [ ] 37-01-PLAN.md — Backend admin endpoints (4 repo extend + admin-lgsp.ts 9 endpoints + server mount)
-  - [ ] 37-02-PLAN.md — Backend test connection + overview + inter-org sync (admin-lgsp.ts +3 endpoints + getOverviewStats)
-  - [ ] 37-03-PLAN.md — Frontend NEW /lgsp/cau-hinh page (table 12 row + Drawer edit + Test Modal + Switch toggle)
-  - [ ] 37-04-PLAN.md — Frontend REWRITE /lgsp/co-quan full CRUD (filter 3-state + Drawer Add/Edit + Popconfirm Delete + Sync button)
-  - [ ] 37-05-PLAN.md — Frontend REWRITE /lgsp Dashboard overview (4 stat cards + 6 DN cards + Sync ngay + tracking history)
-  - [ ] 37-06-PLAN.md — Frontend integration (unhide menu + sidebar entry + retry buttons Timeline/badge + SP extend lgsp_tracking_id)
-  - [ ] 37-07-PLAN.md — Doc rollout + verification report + v3.2-SHIP-READINESS aggregate
+**Plans:** 7/7 plans complete
+  - [x] 37-01-PLAN.md — Backend admin endpoints (4 repo extend + admin-lgsp.ts 9 endpoints + server mount)
+  - [x] 37-02-PLAN.md — Backend test connection + overview + inter-org sync (admin-lgsp.ts +3 endpoints + getOverviewStats)
+  - [x] 37-03-PLAN.md — Frontend NEW /lgsp/cau-hinh page (table 12 row + Drawer edit + Test Modal + Switch toggle)
+  - [x] 37-04-PLAN.md — Frontend REWRITE /lgsp/co-quan full CRUD (filter 3-state + Drawer Add/Edit + Popconfirm Delete + Sync button)
+  - [x] 37-05-PLAN.md — Frontend REWRITE /lgsp Dashboard overview (4 stat cards + 6 DN cards + Sync ngay + tracking history)
+  - [x] 37-06-PLAN.md — Frontend integration (unhide menu + sidebar entry + retry buttons Timeline/badge + SP extend lgsp_tracking_id)
+  - [x] 37-07-PLAN.md — Doc rollout + verification report + v3.2-SHIP-READINESS aggregate
 **UI hint**: yes
 
 ## Progress
@@ -181,4 +181,4 @@ Detail: `.planning/milestones/v3.1-phases/`, archive: `.planning/milestones/v3.1
 | 34 | 5/5 | Complete    | 2026-05-20 |
 | 35 | 5/5 | Complete    | 2026-05-21 |
 | 36 | 5/5 | Complete    | 2026-05-21 |
-| 37 | v3.2 — Admin UI + Catalog + Go-live | Not started | — |
+| 37 | 7/7 | Complete    | 2026-05-21 |

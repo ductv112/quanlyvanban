@@ -4,13 +4,13 @@ milestone: v3.2
 milestone_name: LGSP Production Go-live cho 6 DN Lạng Sơn
 status: executing
 stopped_at: Completed 33-04-PLAN.md (service factory + cache + invalidate)
-last_updated: "2026-05-21T03:33:45.005Z"
+last_updated: "2026-05-21T05:19:01.349Z"
 last_activity: 2026-05-21
 progress:
   total_phases: 5
-  completed_phases: 4
-  total_plans: 20
-  completed_plans: 20
+  completed_phases: 5
+  total_plans: 27
+  completed_plans: 27
   percent: 100
 ---
 
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-19)
 
 **Core value:** Luồng văn bản đến → xử lý → văn bản đi phải hoạt động đúng nghiệp vụ cơ quan nhà nước (6 DN Lạng Sơn dùng prod thật trên `doanhnghiep.vatk.org`, là 6 đơn vị cấp cao trong cây tổ chức `departments`)
-**Current focus:** Phase 36 — Status Callback Chain (9 mã QĐ 28) — outbox worker consume + POST /v1/updateStatus
+**Current focus:** Phase 37 — Admin UI + Catalog + Go-live
 
 ## Current Position
 
 Phase: 37
 Plan: Not started
-Status: Executing autonomous --from 35 → Phase 35 done → moving to Phase 36
+Status: Executing Phase 37
 Last activity: 2026-05-21
 
 ## Decisions

@@ -65,14 +65,14 @@ Phân loại tự động theo `outgoing_doc_recipients.recipient_type` — KHÔ
 
 ### LGSP-UI — Admin UI cấu hình + bật lại menu (8 reqs)
 
-- [ ] **LGSP-UI-01**: Trang `/quan-tri/lgsp-config` CRUD per-unit credential — bảng list 6 row × 2 env (prod/sandbox), Drawer 720 cho Add/Edit (theo pattern admin pages khác)
-- [ ] **LGSP-UI-02**: Form Drawer — Select đơn vị cấp cao (từ root departments), Radio environment (sandbox/prod), Input `base_url`, Input `system_id`, Input.Password `secret_key` (mask), Switch `is_active`, Input `lgsp_org_code` (H37.DN.001..006)
-- [ ] **LGSP-UI-03**: Test connection button — gọi backend `POST /api/lgsp-config/test-connection` ping `/v1/auth/login` với credential trong form, hiển thị OK / Error inline (KHÔNG save credential nếu test fail)
-- [ ] **LGSP-UI-04**: Hiển thị `last_synced_at` từ cron + button "Force sync now" để trigger ngoài cron (queue job LGSP-RECV-01 immediate)
-- [ ] **LGSP-UI-05**: Catalog `inter_organizations` admin CRUD — trang `/quan-tri/inter-organizations`, bảng list + Drawer 720 thêm/sửa đơn vị ngoài (code, name, parent_id, address, mail)
-- [ ] **LGSP-UI-06**: Catalog sync — Button "Sync danh sách từ trục" gọi `GET /v1/getAgenciesList` → batch INSERT/UPDATE `inter_organizations` với credential của 1 trong 6 DN active
-- [ ] **LGSP-UI-07**: Gỡ `/lgsp` + `/lgsp/co-quan` khỏi `hidden-routes.ts` → menu sidebar hiển thị lại (Phase 19 v3.0 đã có UI, chỉ ẩn menu)
-- [ ] **LGSP-UI-08**: Verify regression — Tracking dashboard inline VB đi (Phase 19 v3.0) + 5 trạng thái badge (`pending`/`success`/`error`/`đã gửi LGSP`/`lỗi gửi LGSP`) còn hoạt động sau wire LGSP thật
+- [x] **LGSP-UI-01**: Trang `/quan-tri/lgsp-config` CRUD per-unit credential — bảng list 6 row × 2 env (prod/sandbox), Drawer 720 cho Add/Edit (theo pattern admin pages khác)
+- [x] **LGSP-UI-02**: Form Drawer — Select đơn vị cấp cao (từ root departments), Radio environment (sandbox/prod), Input `base_url`, Input `system_id`, Input.Password `secret_key` (mask), Switch `is_active`, Input `lgsp_org_code` (H37.DN.001..006)
+- [x] **LGSP-UI-03**: Test connection button — gọi backend `POST /api/lgsp-config/test-connection` ping `/v1/auth/login` với credential trong form, hiển thị OK / Error inline (KHÔNG save credential nếu test fail)
+- [x] **LGSP-UI-04**: Hiển thị `last_synced_at` từ cron + button "Force sync now" để trigger ngoài cron (queue job LGSP-RECV-01 immediate)
+- [x] **LGSP-UI-05**: Catalog `inter_organizations` admin CRUD — trang `/quan-tri/inter-organizations`, bảng list + Drawer 720 thêm/sửa đơn vị ngoài (code, name, parent_id, address, mail)
+- [x] **LGSP-UI-06**: Catalog sync — Button "Sync danh sách từ trục" gọi `GET /v1/getAgenciesList` → batch INSERT/UPDATE `inter_organizations` với credential của 1 trong 6 DN active
+- [x] **LGSP-UI-07**: Gỡ `/lgsp` + `/lgsp/co-quan` khỏi `hidden-routes.ts` → menu sidebar hiển thị lại (Phase 19 v3.0 đã có UI, chỉ ẩn menu)
+- [x] **LGSP-UI-08**: Verify regression — Tracking dashboard inline VB đi (Phase 19 v3.0) + 5 trạng thái badge (`pending`/`success`/`error`/`đã gửi LGSP`/`lỗi gửi LGSP`) còn hoạt động sau wire LGSP thật
 
 ---
 
