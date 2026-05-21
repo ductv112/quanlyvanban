@@ -199,3 +199,98 @@ git log --oneline -5
 - `deploy/update-windows.ps1` — script tự động hóa 4 bước (chưa stable, dùng manual cho an toàn)
 - `deploy/deploy-v2-kh-test.ps1` — **CHỈ dùng cho fresh setup**, KHÔNG dùng cho prod đang có data
 - `CLAUDE.md` — section "Deploy Pitfalls"
+
+---
+
+## Kich hoat LGSP v3.2 (post-deploy)
+
+> Sau khi update code v3.2 thanh cong (qua 4 buoc o tren), can buoc bo sung de kich hoat
+> tinh nang lien thong LGSP cho 6 DN Lang Son. Toan bo cau hinh qua UI admin — KHONG can
+> SSH/SQL update direct.
+>
+> **Reference**: file `docs/Truc EDOC Lang Son - QLVB Doanh nghiep/` chua credential
+> sandbox (List.txt) + prod (QLVBDNAgencies.xlsx) tu tinh.
+
+### Buoc A — Admin login + truy cap menu LGSP
+
+1. Mo browser → `http://doanhnghiep.vatk.org` → login `admin / Admin@123` (hoac credential prod)
+2. Sidebar trai → group **TICH HOP** → click **Cau hinh ket noi**
+3. Page `/lgsp/cau-hinh` hien Table 12 row (6 DN x 2 env), tat ca `is_active=FALSE` mac dinh
+
+### Buoc B — Wave 1 (Sandbox testing — 3 DN.001/002/003)
+
+Muc tieu: Verify code v3.2 hoat dong dung voi sandbox truoc khi enable prod.
+
+Cho moi DN trong DN.001 / DN.002 / DN.003:
+
+1. Click **Sua** row DN.00X sandbox
+2. Nhap **SystemId** + **SecretKey** tu file `List.txt` (sandbox section)
+3. Verify **Base URL** = `https://apiltvbsandbox.langson.gov.vn` (sandbox)
+4. **Luu** form (chua bat is_active)
+5. Click **Kiem tra** row vua sua → Modal mo → **Bat dau kiem tra**
+   - Mong doi: Alert green **Ket noi thanh cong** + `So VB tren truc 24h qua: N`
+   - Neu RED **Ket noi that bai** → check SystemId/SecretKey, base URL, firewall — sua + test lai
+6. Sau khi test PASS → toggle **Trang thai** Switch → bat ON
+   - Toast: **Da bat ket noi LGSP**
+7. Cron 5 phut + status callback 30s se tu start cho DN.00X
+
+Verify Wave 1 (sau ~10 phut):
+- Page `/lgsp` dashboard → 3 DN sandbox card hien tag **Sandbox** active (orange)
+- Stats `VB nhan today` co count > 0 (neu sandbox co VB)
+- Postman manual: gui 1 edXML test giua 3 DN sandbox → trong 5 phut VB hien o `/van-ban-den` cua DN nhan
+
+### Buoc C — Wave 2 (Production rollout — TUNG DN MOT, KHONG dong loat)
+
+> **Quan trong**: enable tung DN, test ~24h, moi enable DN tiep theo.
+> **Mat data dichvu = mat uy tin**. KHONG enable batch ca 6 DN cung luc.
+
+Cho moi DN trong DN.001 → DN.002 → ... → DN.006 (theo thu tu prio cua KH):
+
+1. Click **Sua** row DN.00X prod (tag red **Production**)
+2. Nhap **SystemId** + **SecretKey** tu file `QLVBDNAgencies.xlsx` (sheet prod)
+3. Verify **Base URL** = `https://apiltvb.langson.gov.vn` (prod)
+4. **Luu** form
+5. Click **Kiem tra** → modal PASS → toggle **Trang thai** ON
+6. Verify trong 24h:
+   - Page `/lgsp` dashboard → DN.00X prod card hien `last_synced_at` cap nhat moi 5 phut
+   - Stats `VB nhan today` count tang dan
+   - Stats `Callback loi` = 0 (neu khong, click vao VB error → admin co button **Gui lai**)
+7. Sau 24h on dinh → repeat cho DN tiep theo
+
+### Buoc D — Setup catalog co quan ngoai (1 lan dau)
+
+1. Sidebar **TICH HOP** → **Co quan lien thong** → page `/lgsp/co-quan`
+2. Click **Dong bo tu truc LGSP** → toast `Dong bo thanh cong: them moi N, cap nhat M`
+3. Table hien danh sach co quan tu truc (auto-fetch qua `/v1/getAgenciesList`)
+4. Cac co quan **Tu dang ky** (orange tag) la do worker Phase 35 auto-INSERT khi nhan VB tu don vi
+   chua co trong catalog — admin verify, click **Sua** → bat **Da xac nhan** neu hop le
+
+### Buoc E — Monitoring + Recovery
+
+- **Dashboard tong quan**: `/lgsp` polling 30s → admin xem real-time 6 DN status + counts today
+- **VB error**: click vao detail VB den → Timeline **Lich su trang thai LGSP** → entry RED error → click **Gui lai** → worker retry trong 30s
+- **VB di error**: click vao detail VB di → recipient badge external_org RED → click **Gui lai** → worker retry
+- **Force sync**: button **Dong bo ngay** tren page `/lgsp` → ko cho cron 5 phut, trigger immediate
+- **Log file**: `pm2 logs all` → grep `lgsp` cho luong receive/send/status worker
+
+### Lan dau setup — Check encrypt key
+
+> Truoc khi admin nhap credential dau tien, verify backend co `SIGNING_SECRET_KEY` set trong `.env`:
+> ```powershell
+> Get-Content C:\qlvb\quanlyvanban\e_office_app_new\backend\.env | Select-String "SIGNING_SECRET_KEY"
+> ```
+> Mong doi: `SIGNING_SECRET_KEY=<>=32 ky tu ngau nhien>`. Neu thieu → them line, restart pm2 `--update-env`.
+>
+> **CANH BAO**: NEU thay doi `SIGNING_SECRET_KEY` SAU khi admin da nhap credential → toan bo
+> secret_key luu DB se KHONG decrypt duoc → phai nhap lai het. Set 1 lan tu dau + backup key an toan.
+
+### Tom tat Wave plan
+
+| Wave | Pham vi | Thoi gian | Verify |
+|---|---|---|---|
+| Sandbox | DN.001/002/003 sandbox | ~1 ngay | Postman test send/receive E2E PASS |
+| Prod DN.001 | 1 DN prod | 24h | last_synced_at xanh, 0 callback loi |
+| Prod DN.002..006 | Tung DN mot | 24h moi DN | Tuong tu |
+
+Tong roll-out: ~7-10 ngay tu Wave 1 → toan bo 6 DN prod active.
+
