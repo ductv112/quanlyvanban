@@ -653,9 +653,9 @@ export default function LgspCauHinhPage(): React.ReactElement {
           title="Cách thức kiểm tra"
           description={
             <>
-              Backend gọi <code>POST /v1/syncReceivedEdocList</code> với
-              credential hiện tại (đọc 24h gần nhất, KHÔNG ghi DB). Nếu trả về
-              danh sách VB trên trục = credential đúng.
+              Hệ thống gọi thử LGSP đọc danh sách VB 24h gần nhất với credential
+              hiện tại (KHÔNG ghi DB). Nếu trục phản hồi danh sách = credential
+              đúng.
             </>
           }
         />

@@ -183,8 +183,8 @@ export default function LgspCoQuanPage(): React.ReactElement {
       content: (
         <div>
           <p style={{ marginTop: 0 }}>
-            Hệ thống sẽ gọi API <code>/v1/getAgenciesList</code> trên trục LGSP
-            và đồng bộ danh sách cơ quan ngoài về catalog nội bộ.
+            Hệ thống sẽ tải danh sách cơ quan ngoài từ trục LGSP về catalog nội
+            bộ. Quá trình này có thể mất vài giây tùy số lượng cơ quan.
           </p>
           <p style={{ marginBottom: 0, color: '#8c8c8c' }}>
             Yêu cầu: ít nhất 1 cấu hình LGSP đang bật (
