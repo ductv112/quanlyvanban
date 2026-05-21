@@ -239,11 +239,13 @@ async function getLgspServiceForUnit(
   }
 
   // 6. Instantiate per-unit instance (lazy import tránh circular dep)
+  // Phase 37.3: pass environment de getToken() pick LGSP_SANDBOX_* hoac LGSP_PROD_* admin cred.
   const { createLgspRealService } = await import('./lgsp-real.service.js');
   const service = createLgspRealService({
     baseUrl: config.base_url,
     systemId: config.system_id,
     secretKey: plaintextSecret,
+    environment: config.environment,
   });
 
   // 7. Cache + return

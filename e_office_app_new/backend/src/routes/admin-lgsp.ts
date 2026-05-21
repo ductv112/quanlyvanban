@@ -366,10 +366,12 @@ router.post('/lgsp-agency-config/:id/test', requireConfig, async (req: Request, 
 
     // Tạo instance riêng (KHÔNG cache singleton) — admin có thể edit credential rồi test ngay
     // Cache invalidate đã handle ở PUT /lgsp-agency-config/:id (Plan 37-01)
+    // Phase 37.3: pass environment de getToken() pick per-env admin credentials.
     const svc = createLgspRealService({
       baseUrl: config.base_url,
       systemId: config.system_id,
       secretKey: config.secret_key_plaintext,
+      environment: config.environment,
     });
 
     const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);

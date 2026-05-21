@@ -21,11 +21,20 @@ import type {
 } from './lgsp.service.js';
 import { LgspSendError, mapLgspError } from './lgsp/error-codes.js';
 
+// Phase 37.3 fix (2026-05-22): LGSP Lang Son login endpoint /v1/auth/login authoritative shape
+// (Postman LTVB_API_TRUC_PROD_TICHHOP collection). Token nested trong `data.token`, root co code/message.
+// Field `code` may equal 200 hoac string. Token JWT len ~948 chars.
 interface LoginResponse {
-  success: boolean;
-  message: string;
-  token: string;
-  data?: { id: string; username: string; name: string; token: string };
+  code?: number | string;
+  success?: boolean;       // Phase 18 legacy field
+  message?: string;
+  token?: string;          // Phase 18 legacy root-level token
+  data?: {
+    id?: string;
+    username?: string;
+    name?: string;
+    token?: string;        // Phase 37: authoritative location
+  };
 }
 
 /**
@@ -97,14 +106,16 @@ const TOKEN_TTL_MS = 29 * 60 * 1000; // 29 phút (LGSP token expire 30')
  * Credential để inject vào LGSPRealService.
  * Phase 33: lookup từ `edoc.lgsp_agency_config` qua repo, decrypt secret_key trước khi pass vào đây.
  *
- * Lưu ý: `username` / `password` / `applicationCode` (LGSP login) vẫn đọc env trong `getToken()` —
- * 6 DN Lạng Sơn dùng chung 1 LGSP user. Nếu sau này per-unit cần user riêng, thêm field optional ở đây
- * và override trong `getToken()`.
+ * Phase 37.3 (2026-05-22): Add `environment` field để getToken() pick per-env admin creds.
+ *   - sandbox: LGSP_SANDBOX_USERNAME / LGSP_SANDBOX_PASSWORD / LGSP_SANDBOX_APPLICATION_CODE
+ *   - prod:    LGSP_PROD_USERNAME    / LGSP_PROD_PASSWORD    / LGSP_PROD_APPLICATION_CODE
+ *   - fallback (env=undefined): legacy LGSP_USERNAME / LGSP_PASSWORD / LGSP_APPLICATION_CODE
  */
 export interface LgspCredentials {
-  baseUrl: string;          // VD: 'https://apiltvb.langson.gov.vn'
-  systemId: string;         // VD: 'H37.DN.001'
-  secretKey: string;        // PLAINTEXT (đã decrypt từ BYTEA)
+  baseUrl: string;                          // VD: 'https://apiltvb.langson.gov.vn'
+  systemId: string;                         // VD: 'H37.DN.001'
+  secretKey: string;                        // PLAINTEXT (đã decrypt từ BYTEA)
+  environment?: 'sandbox' | 'prod';         // Phase 37.3 — per-env admin cred selection
 }
 
 export class LGSPRealService implements ILgspService {
@@ -150,33 +161,52 @@ export class LGSPRealService implements ILgspService {
     }
   }
 
-  // Phase 35: receiveDocuments/getEdocById KHONG dung token nay --
-  // chi goi qua HTTP headers X-SystemId/X-SecretKey theo Postman authoritative.
-  // getToken van dung cho syncOrganizations (admin API legacy /api/lgspedoc/organizations).
+  // Phase 37.3 fix (2026-05-22): LGSP Lang Son authoritative login endpoint.
+  // - Endpoint: /v1/auth/login?allow_anonymous=true (KHONG /api/lgspedoc/login legacy)
+  // - Body: { username, password, applicationCode, otp:null, twoFactorProvider:null, typeObjs:[0,1] }
+  // - Response: { code, message, data: { token, id, username, name, ... } }  -- token nested in data
+  // - Per-env admin creds: LGSP_SANDBOX_* / LGSP_PROD_* (fallback legacy LGSP_USERNAME etc.)
+  //
+  // Token used as `Authorization: Bearer <token>` in ALL per-DN API calls (Phase 37.3 -- previously
+  // omitted, caused HTTP 401 "licenseInfo:invalid" tu LGSP truc).
   async getToken(): Promise<string> {
     if (this.cachedToken && Date.now() < this.tokenExpiresAt) return this.cachedToken;
 
-    // Phase 18 login flow giữ nguyên — username/password vẫn đọc env (per-unit chưa cần)
-    // Phase 33: nếu credentials inject → systemId/secretKey override, nhưng username/password
-    //           vẫn dùng env (giả định 6 DN dùng cùng 1 user LGSP, hoặc per-unit add field sau)
-    const username = process.env.LGSP_USERNAME;
-    const password = process.env.LGSP_PASSWORD;
-    const applicationCode = process.env.LGSP_APPLICATION_CODE;
+    // Phase 37.3: per-env admin credentials. Pick LGSP_SANDBOX_* or LGSP_PROD_* by environment.
+    // Fallback to legacy LGSP_USERNAME / LGSP_PASSWORD / LGSP_APPLICATION_CODE (dev/test backward compat).
+    const env = this.credentials?.environment;
+    const envPrefix = env === 'prod' ? 'LGSP_PROD' : env === 'sandbox' ? 'LGSP_SANDBOX' : null;
+
+    const username = (envPrefix && process.env[`${envPrefix}_USERNAME`]) || process.env.LGSP_USERNAME;
+    const password = (envPrefix && process.env[`${envPrefix}_PASSWORD`]) || process.env.LGSP_PASSWORD;
+    const applicationCode =
+      (envPrefix && process.env[`${envPrefix}_APPLICATION_CODE`]) || process.env.LGSP_APPLICATION_CODE;
+
     if (!username || !password || !applicationCode) {
-      throw new Error('LGSP credentials missing (LGSP_USERNAME / LGSP_PASSWORD / LGSP_APPLICATION_CODE)');
+      const which = envPrefix ? `${envPrefix}_USERNAME/PASSWORD/APPLICATION_CODE` : 'LGSP_USERNAME/PASSWORD/APPLICATION_CODE';
+      throw new Error(`LGSP admin credentials missing for env=${env ?? 'legacy'} (cần set ${which} trong backend/.env)`);
     }
 
-    const res = await this.fetchJson<LoginResponse>(`${this.endpoint}/api/lgspedoc/login`, {
+    const res = await this.fetchJson<LoginResponse>(`${this.endpoint}/v1/auth/login?allow_anonymous=true`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password, applicationCode }),
+      body: JSON.stringify({
+        username,
+        password,
+        applicationCode,
+        otp: null,
+        twoFactorProvider: null,
+        typeObjs: [0, 1],
+      }),
     });
 
-    if (!res.success || !res.token) {
-      throw new Error(`LGSP login failed: ${res.message}`);
+    // Phase 37.3: token nested in res.data.token (Postman authoritative). Fallback res.token (legacy Phase 18).
+    const token = res.data?.token || res.token;
+    if (!token) {
+      throw new Error(`LGSP login failed: ${res.message || 'no token in response'} (code=${res.code ?? 'n/a'})`);
     }
 
-    this.cachedToken = res.token;
+    this.cachedToken = token;
     this.tokenExpiresAt = Date.now() + TOKEN_TTL_MS;
     return this.cachedToken;
   }
@@ -238,6 +268,10 @@ export class LGSPRealService implements ILgspService {
     const formBuffer = form.getBuffer();
     const formHeaders = form.getHeaders();
 
+    // Phase 37.3: lay admin Bearer token (per-env tu env vars) -- LGSP truc Lang Son yeu cau
+    // ca 3 header: Authorization: Bearer + X-SystemId + X-SecretKey.
+    const bearerToken = await this.getToken();
+
     // Fetch - Node 22+ native, 60s timeout (LGSP send may take long voi big attachments)
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 60000);
@@ -245,6 +279,7 @@ export class LGSPRealService implements ILgspService {
       const res = await fetch(`${this.endpoint}/v1/sendEdoc`, {
         method: 'POST',
         headers: {
+          Authorization: `Bearer ${bearerToken}`,
           'X-SystemId': sysId,
           'X-SecretKey': secret,
           ...formHeaders,
@@ -328,11 +363,14 @@ export class LGSPRealService implements ILgspService {
       `?messageType=edoc` +
       `&fromDate=${encodeURIComponent(fromDateYmd)}` +
       `&toDate=${encodeURIComponent(toDateYmd)}`;
+    // Phase 37.3: LGSP truc Lang Son yeu cau Authorization: Bearer + X-SystemId + X-SecretKey.
+    const bearerToken = await this.getToken();
     const res = await this.fetchJson<ReceivedEdocsResponse>(
       url,
       {
         method: 'GET',
         headers: {
+          Authorization: `Bearer ${bearerToken}`,
           'X-SystemId': sysId,
           'X-SecretKey': secret,
           Accept: 'application/json',
@@ -373,11 +411,14 @@ export class LGSPRealService implements ILgspService {
       );
     }
     const url = `${this.endpoint}/v1/getEdoc?docId=${encodeURIComponent(docId)}`;
+    // Phase 37.3: LGSP truc Lang Son yeu cau Authorization: Bearer + X-SystemId + X-SecretKey.
+    const bearerToken = await this.getToken();
     const res = await this.fetchJson<GetEdocResponse>(
       url,
       {
         method: 'GET',
         headers: {
+          Authorization: `Bearer ${bearerToken}`,
           'X-SystemId': sysId,
           'X-SecretKey': secret,
           Accept: 'application/json',
@@ -436,6 +477,9 @@ export class LGSPRealService implements ILgspService {
     const url = `${this.endpoint}/v1/updateStatus`;
     const bodyJson = JSON.stringify({ docId, status });
 
+    // Phase 37.3: LGSP truc Lang Son yeu cau Authorization: Bearer + X-SystemId + X-SecretKey.
+    const bearerToken = await this.getToken();
+
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 30_000);
     try {
@@ -443,6 +487,7 @@ export class LGSPRealService implements ILgspService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${bearerToken}`,
           'X-SystemId': sysId,
           'X-SecretKey': secret,
           Accept: 'application/json',
@@ -489,13 +534,30 @@ export class LGSPRealService implements ILgspService {
     }
   }
 
+  // Phase 37.3 fix (2026-05-22): Doi endpoint tu legacy /api/lgspedoc/organizations sang
+  // /v1/getAgenciesList (Postman authoritative). Authentication = Authorization: Bearer header
+  // (KHONG con query param ?token=). Response shape co the la flat array hoac { success, data }.
   async syncOrganizations(): Promise<LgspOrganization[]> {
     const token = await this.getToken();
-    const url = `${this.endpoint}/api/lgspedoc/organizations?token=${encodeURIComponent(token)}`;
+    const url = `${this.endpoint}/v1/getAgenciesList`;
     try {
-      const res = await this.fetchJson<OrgListResponse>(url);
-      if (!res.success || !Array.isArray(res.data)) return [];
-      return res.data.map((o) => ({
+      const res = await this.fetchJson<OrgListResponse | { data?: OrgListResponse['data'] } | OrgListResponse['data']>(
+        url,
+        {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/json',
+          },
+        },
+        30000,
+      );
+      // Postman shape: { code:200, data:[...] } | { success, data:[...] } | direct array
+      const list: OrgListResponse['data'] | undefined = Array.isArray(res)
+        ? res
+        : (res as OrgListResponse).data;
+      if (!Array.isArray(list)) return [];
+      return list.map((o) => ({
         org_code: o.orgCode,
         org_name: o.orgName,
         parent_code: o.parentCode || null,
