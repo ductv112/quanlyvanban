@@ -42,13 +42,13 @@ Phân loại tự động theo `outgoing_doc_recipients.recipient_type` — KHÔ
 
 ### LGSP-RECV — Nhận VB đến từ trục (7 reqs)
 
-- [ ] **LGSP-RECV-01**: Cron — `workers/src/lgsp-receive.ts` chạy mỗi 5 phút (BullMQ repeat job), loop tất cả `lgsp_agency_config.is_active=TRUE`
-- [ ] **LGSP-RECV-02**: API call — Mỗi vòng gọi `GET /v1/syncReceivedEdocList?messageType=edoc&fromDate=<last_synced>&toDate=<now>` với credential của đơn vị đó
-- [ ] **LGSP-RECV-03**: API call — Loop từng `docId` mới → `GET /v1/getEdoc?docId=` lấy base64 edXML payload
-- [ ] **LGSP-RECV-04**: Parser — Module `lib/lgsp/edxml-parser.ts` parse edXML → extract MessageHeader + Manifest + attachments base64
-- [ ] **LGSP-RECV-05**: INSERT — Tạo `incoming_docs` với `source='LGSP'`, `unit_id`=đơn vị nhận, `lgsp_doc_id` (UNIQUE constraint dedup), `lgsp_sender_org_code` từ MessageHeader.From.OrganId
-- [ ] **LGSP-RECV-06**: Attachments — Decode base64 → upload MinIO bucket `documents` → INSERT `incoming_doc_attachments`
-- [ ] **LGSP-RECV-07**: Tracking — Update `lgsp_agency_config.last_synced_at` sau mỗi vòng thành công + log errors vào `lgsp_tracking`
+- [x] **LGSP-RECV-01**: Cron — `workers/src/lgsp-receive.ts` chạy mỗi 5 phút (BullMQ repeat job), loop tất cả `lgsp_agency_config.is_active=TRUE`
+- [x] **LGSP-RECV-02**: API call — Mỗi vòng gọi `GET /v1/syncReceivedEdocList?messageType=edoc&fromDate=<last_synced>&toDate=<now>` với credential của đơn vị đó
+- [x] **LGSP-RECV-03**: API call — Loop từng `docId` mới → `GET /v1/getEdoc?docId=` lấy base64 edXML payload
+- [x] **LGSP-RECV-04**: Parser — Module `lib/lgsp/edxml-parser.ts` parse edXML → extract MessageHeader + Manifest + attachments base64
+- [x] **LGSP-RECV-05**: INSERT — Tạo `incoming_docs` với `source='LGSP'`, `unit_id`=đơn vị nhận, `lgsp_doc_id` (UNIQUE constraint dedup), `lgsp_sender_org_code` từ MessageHeader.From.OrganId
+- [x] **LGSP-RECV-06**: Attachments — Decode base64 → upload MinIO bucket `documents` → INSERT `incoming_doc_attachments`
+- [x] **LGSP-RECV-07**: Tracking — Update `lgsp_agency_config.last_synced_at` sau mỗi vòng thành công + log errors vào `lgsp_tracking`
 
 ### LGSP-STATUS — Status callback chain (9 mã QĐ 28) (10 reqs)
 

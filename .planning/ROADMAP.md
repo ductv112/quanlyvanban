@@ -68,7 +68,7 @@ Detail: `.planning/milestones/v3.1-phases/`, archive: `.planning/milestones/v3.1
 
 - [x] **Phase 33: Database + Core Infrastructure** — Schema `lgsp_agency_config` per-unit + `lgsp_org_code` cột + outbox + `getLgspService()` lookup + seed 9 row (completed 2026-05-20)
 - [x] **Phase 34: Send Flow (sendEdoc)** — edXML builder + routing internal/external + worker send + error mapping + UI badge (completed 2026-05-20)
-- [ ] **Phase 35: Receive Flow (cron syncReceivedEdocList)** — Cron loop 6 DN + parser edXML + INSERT incoming_docs dedup + attachments MinIO + tracking
+- [x] **Phase 35: Receive Flow (cron syncReceivedEdocList)** — Cron loop 6 DN + parser edXML + INSERT incoming_docs dedup + attachments MinIO + tracking (completed 2026-05-21)
 - [ ] **Phase 36: Status Callback Chain (9 mã QĐ 28)** — Outbox worker poll + auto fire 03/04/05/06 + refactor "Chuyển lại" → "Từ chối tiếp nhận" (02) + Lấy lại 13/15/16 + UI tag trạng thái
 - [ ] **Phase 37: Admin UI + Catalog + Go-live** — `/quan-tri/lgsp-config` CRUD + test connection + Catalog `inter_organizations` + gỡ hidden-routes + Wave 1/2 roll-out
 
@@ -122,12 +122,12 @@ Detail: `.planning/milestones/v3.1-phases/`, archive: `.planning/milestones/v3.1
   3. Attachment encoded base64 trong edXML decode đúng → upload MinIO bucket `documents` → user click "Tải về" trong VB đến chi tiết tải được file gốc (test với file PDF + DOCX)
   4. Dedup test: gửi cùng 1 edXML 2 lần (cùng `lgsp_doc_id`) → cron loop 2 vòng → DB chỉ có 1 row `incoming_docs` (UNIQUE constraint `lgsp_doc_id` chặn duplicate)
   5. Sau mỗi vòng cron thành công, `lgsp_agency_config.last_synced_at` được update; nếu fail (VD: trục lỗi 500), log vào `lgsp_tracking` với `error_message`, `last_synced_at` GIỮ NGUYÊN giá trị cũ để vòng sau retry từ điểm dừng
-**Plans:** 5 plans
-  - [ ] 35-01-PLAN.md — Schema append (lgsp_sender_org_code + index) + fix LGSPRealService.receiveDocuments/+getEdocById per Postman + edxml-parser module + incoming-doc.repository.createFromLgsp/createLgspAttachment + inter-organization.repository.autoRegisterFromLgsp
-  - [ ] 35-02-PLAN.md — BullMQ queue lgsp-receive (tick concurrency=1 + dn concurrency=3 retry 3x exp 30s) + 2 worker (tick fan-out + dn full pipeline) + worker-local lgsp-receive-service + backend producer queue (Approach B duplicate per Phase 34)
-  - [ ] 35-03-PLAN.md — Route POST /api/lgsp/sync-now (admin) + server.ts startup registerReceiveTickRepeatJob + SIGTERM closeLgspReceiveQueue
-  - [ ] 35-04-PLAN.md — Frontend list VB đến tag LGSP + Nguồn filter dropdown + detail page Nguồn LGSP section + backend list SP/repo/route extend source_type filter + shared helper lgsp-source-badge.tsx
-  - [ ] 35-05-PLAN.md — Final verification (TS + production build cả 3 module + schema idempotent 3x + edxml-parser smoke 4/4 + Approach B parser sync audit + E2E sandbox happy/dedup/error + cleanup + VERIFICATION-REPORT)
+**Plans:** 5/5 plans complete
+  - [x] 35-01-PLAN.md — Schema append (lgsp_sender_org_code + index) + fix LGSPRealService.receiveDocuments/+getEdocById per Postman + edxml-parser module + incoming-doc.repository.createFromLgsp/createLgspAttachment + inter-organization.repository.autoRegisterFromLgsp
+  - [x] 35-02-PLAN.md — BullMQ queue lgsp-receive (tick concurrency=1 + dn concurrency=3 retry 3x exp 30s) + 2 worker (tick fan-out + dn full pipeline) + worker-local lgsp-receive-service + backend producer queue (Approach B duplicate per Phase 34)
+  - [x] 35-03-PLAN.md — Route POST /api/lgsp/sync-now (admin) + server.ts startup registerReceiveTickRepeatJob + SIGTERM closeLgspReceiveQueue
+  - [x] 35-04-PLAN.md — Frontend list VB đến tag LGSP + Nguồn filter dropdown + detail page Nguồn LGSP section + backend list SP/repo/route extend source_type filter + shared helper lgsp-source-badge.tsx
+  - [x] 35-05-PLAN.md — Final verification (TS + production build cả 3 module + schema idempotent 3x + edxml-parser smoke 4/4 + Approach B parser sync audit + E2E sandbox happy/dedup/error + cleanup + VERIFICATION-REPORT)
 
 ### Phase 36: Status Callback Chain (9 mã QĐ 28)
 **Goal:** Mỗi khi văn thư/lãnh đạo/chuyên viên thực hiện hành động trên VB nguồn LGSP (tiếp nhận, phân công, xử lý, hoàn thành, từ chối tiếp nhận, lấy lại), hệ thống tự enqueue outbox event và worker poll mỗi 30s đẩy `POST /v1/updateStatus` lên trục với credential đúng. Đơn vị gửi biết trạng thái xử lý real-time qua trục.
@@ -167,6 +167,6 @@ Detail: `.planning/milestones/v3.1-phases/`, archive: `.planning/milestones/v3.1
 | 21-32 | v3.1 | Complete | 2026-05-05 → 2026-05-19 |
 | 33 | 5/5 | Complete   | 2026-05-20 |
 | 34 | 5/5 | Complete    | 2026-05-20 |
-| 35 | v3.2 — Receive Flow | Planned (5 plans) | — |
+| 35 | 5/5 | Complete    | 2026-05-21 |
 | 36 | v3.2 — Status Callback Chain | Not started | — |
 | 37 | v3.2 — Admin UI + Catalog + Go-live | Not started | — |
