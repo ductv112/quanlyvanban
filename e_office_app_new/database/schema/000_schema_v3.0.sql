@@ -28385,16 +28385,20 @@ BEGIN
 END;
 $func$;
 
--- --- 4. Trigger validate root unit (D-04) - chan INSERT/UPDATE voi non-root unit ---
+-- --- 4. Trigger validate LGSP unit (D-04) - chan INSERT/UPDATE voi unit khong co lgsp_org_code ---
+-- Phase 37.2 fix (2026-05-21): Doi semantic tu "parent_id IS NULL" sang "lgsp_org_code IS NOT NULL".
+-- Ly do: prod KH Lang Son setup 6 DN duoi parent 'UBND tinh Lang Son' (parent_id NOT NULL) — hop le
+-- ve mat to chuc nhung block trigger cu. Business rule thuc te: don vi nao co lgsp_org_code thi
+-- duoc cau hinh LGSP, bat ke vi tri trong tree.
 CREATE OR REPLACE FUNCTION edoc.fn_lgsp_agency_config_validate_root_unit()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $func$
 DECLARE
-  v_parent INTEGER;
+  v_lgsp_code VARCHAR(13);
 BEGIN
-  -- Verify unit_id ton tai trong departments + parent_id IS NULL (root)
-  SELECT parent_id INTO v_parent
+  -- Verify unit_id ton tai + co lgsp_org_code (don vi duoc dang ky LGSP)
+  SELECT lgsp_org_code INTO v_lgsp_code
     FROM public.departments
     WHERE id = NEW.unit_id;
 
@@ -28403,9 +28407,9 @@ BEGIN
       USING ERRCODE = '23503'; -- foreign_key_violation
   END IF;
 
-  IF v_parent IS NOT NULL THEN
-    RAISE EXCEPTION 'unit_id=% khong phai root unit (parent_id=% phai NULL). LGSP chi cau hinh cho 6 DN cap cao nhat.',
-      NEW.unit_id, v_parent
+  IF v_lgsp_code IS NULL OR length(trim(v_lgsp_code)) = 0 THEN
+    RAISE EXCEPTION 'unit_id=% chua co lgsp_org_code. Set lgsp_org_code truoc khi cau hinh LGSP.',
+      NEW.unit_id
       USING ERRCODE = '23514'; -- check_violation
   END IF;
 
