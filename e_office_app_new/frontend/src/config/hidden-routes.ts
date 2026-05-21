@@ -27,9 +27,8 @@ export const HIDDEN_ROUTES: ReadonlySet<string> = new Set([
   'cuoc-hop',
   '/cuoc-hop',
   '/cuoc-hop/thong-ke',
-  // LGSP + kênh thông báo
-  '/lgsp',
-  '/lgsp/co-quan',
+  // Phase 37: LGSP menu unhide (/lgsp + /lgsp/co-quan + /lgsp/cau-hinh hiện trên sidebar admin)
+  // Kênh thông báo vẫn ẩn
   '/thong-bao-kenh',
   // Quản trị items bị ẩn (chuyển sang Phase 2)
   '/quan-tri/chuc-nang',

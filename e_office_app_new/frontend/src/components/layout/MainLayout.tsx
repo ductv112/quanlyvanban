@@ -270,8 +270,9 @@ function buildMenuItems({ badgeCounts, isAdmin, roles, menuLinks, userRights }: 
   if (isAdmin) {
     items.push(
       { key: 'grp-tichhop', type: 'group', label: 'TÍCH HỢP' },
-      { key: '/lgsp', icon: <SwapOutlined />, label: 'Liên thông LGSP' },
+      { key: '/lgsp', icon: <ApiOutlined />, label: 'Liên thông LGSP' },
       { key: '/lgsp/co-quan', icon: <BankOutlined />, label: 'Cơ quan liên thông' },
+      { key: '/lgsp/cau-hinh', icon: <SettingOutlined />, label: 'Cấu hình kết nối' },
       { key: '/thong-bao-kenh', icon: <NotificationOutlined />, label: 'Kênh thông báo' },
     );
   }
@@ -424,6 +425,7 @@ const breadcrumbMap: Record<string, string> = {
   '/cuoc-hop/thong-ke': 'Thống kê cuộc họp',
   '/lgsp': 'Liên thông văn bản',
   '/lgsp/co-quan': 'Cơ quan liên thông',
+  '/lgsp/cau-hinh': 'Cấu hình kết nối LGSP',
   '/thong-bao-kenh': 'Cấu hình thông báo',
   '/ky-so': 'Ký số',
   '/ky-so/cau-hinh': 'Cấu hình ký số hệ thống',
