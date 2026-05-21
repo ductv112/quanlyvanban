@@ -76,6 +76,40 @@ export interface LgspTrackingFullRow {
   error_message: string | null;
 }
 
+/**
+ * Phase 37 Plan 37-02: Dashboard overview row per root unit (DN).
+ *
+ * Aggregate count today (DATE = CURRENT_DATE) cho 4 metric:
+ *   - send: lgsp_tracking direction='send' grouped by outgoing_docs.unit_id
+ *   - receive: incoming_docs WHERE source_type='external_lgsp' grouped by unit_id
+ *   - outbox: lgsp_status_outbox JOIN incoming_docs grouped by unit_id
+ *
+ * 6 DN (Lạng Sơn) × 2 env config → 6 row (env stacked horizontally trong cùng row,
+ * NULL nếu DN chưa cấu hình env đó).
+ *
+ * Source: GET /api/admin/lgsp-overview cho Plan 37-04 dashboard UI.
+ */
+export interface LgspOverviewRow {
+  unit_id: number;
+  unit_name: string;
+  lgsp_org_code: string | null;
+  prod_config_id: number | null;
+  prod_is_active: boolean | null;
+  prod_last_synced_at: string | null;
+  prod_last_sync_error: string | null;
+  sandbox_config_id: number | null;
+  sandbox_is_active: boolean | null;
+  sandbox_last_synced_at: string | null;
+  sandbox_last_sync_error: string | null;
+  send_today_total: number;
+  send_today_success: number;
+  send_today_error: number;
+  send_today_pending: number;
+  receive_today_total: number;
+  outbox_today_pending: number;
+  outbox_today_error: number;
+}
+
 // ============================================================
 // lgspRepository
 // ============================================================
@@ -260,5 +294,94 @@ export const lgspRepository = {
       };
     }
     return { success: true, message: 'Đã reset tracking, worker sẽ gửi lại' };
+  },
+
+  // ==========================================
+  // Phase 37 Plan 37-02 — Admin overview dashboard
+  // ==========================================
+
+  /**
+   * Phase 37 Plan 37-02: Get overview stats per root unit (6 DN Lạng Sơn).
+   *
+   * Strategy:
+   *   - Base CTE = root unit có `lgsp_org_code IS NOT NULL` (6 DN)
+   *   - LEFT JOIN `lgsp_agency_config` per env (prod/sandbox stacked horizontally)
+   *   - LEFT JOIN aggregation send (lgsp_tracking direction='send' grouped by outgoing_docs.unit_id)
+   *   - LEFT JOIN aggregation receive (incoming_docs WHERE source_type='external_lgsp' grouped by unit_id)
+   *   - LEFT JOIN aggregation outbox (lgsp_status_outbox JOIN incoming_docs grouped by unit_id)
+   *
+   * Verified schema (2026-05-21 \d):
+   *   - lgsp_tracking: status ∈ {pending, processing, success, error}; direction ∈ {send, receive}
+   *   - lgsp_status_outbox: sent_status ∈ {pending, success, error}
+   *   - incoming_docs: source_type enum doc_source_type — value 'external_lgsp' (Phase 35)
+   *   - departments.lgsp_org_code VARCHAR(13) NULL — root unit Lạng Sơn DN
+   *
+   * Used by GET /api/admin/lgsp-overview (Plan 37-02 route, Plan 37-04 frontend UI).
+   */
+  async getOverviewStats(): Promise<LgspOverviewRow[]> {
+    return rawQuery<LgspOverviewRow>(
+      `WITH root_units AS (
+          SELECT id::bigint AS unit_id, name AS unit_name, lgsp_org_code
+            FROM public.departments
+           WHERE lgsp_org_code IS NOT NULL
+        ),
+        send_today AS (
+          SELECT od.unit_id::bigint AS unit_id,
+                 COUNT(*)::bigint AS total,
+                 COUNT(*) FILTER (WHERE t.status = 'success')::bigint AS success,
+                 COUNT(*) FILTER (WHERE t.status = 'error')::bigint   AS error,
+                 COUNT(*) FILTER (WHERE t.status = 'pending')::bigint AS pending
+            FROM edoc.lgsp_tracking t
+            JOIN edoc.outgoing_docs od ON od.id = t.outgoing_doc_id
+           WHERE t.direction = 'send'
+             AND t.created_at::date = CURRENT_DATE
+           GROUP BY od.unit_id
+        ),
+        receive_today AS (
+          SELECT ind.unit_id::bigint AS unit_id,
+                 COUNT(*)::bigint AS total
+            FROM edoc.incoming_docs ind
+           WHERE ind.source_type = 'external_lgsp'
+             AND ind.created_at::date = CURRENT_DATE
+           GROUP BY ind.unit_id
+        ),
+        outbox_today AS (
+          SELECT ind.unit_id::bigint AS unit_id,
+                 COUNT(*) FILTER (WHERE o.sent_status = 'pending')::bigint AS pending,
+                 COUNT(*) FILTER (WHERE o.sent_status = 'error')::bigint   AS error
+            FROM edoc.lgsp_status_outbox o
+            JOIN edoc.incoming_docs ind ON ind.id = o.incoming_doc_id
+           WHERE o.created_at::date = CURRENT_DATE
+           GROUP BY ind.unit_id
+        )
+        SELECT ru.unit_id,
+               ru.unit_name,
+               ru.lgsp_org_code,
+               prod.id::bigint                AS prod_config_id,
+               prod.is_active                 AS prod_is_active,
+               prod.last_synced_at            AS prod_last_synced_at,
+               prod.last_sync_error           AS prod_last_sync_error,
+               sb.id::bigint                  AS sandbox_config_id,
+               sb.is_active                   AS sandbox_is_active,
+               sb.last_synced_at              AS sandbox_last_synced_at,
+               sb.last_sync_error             AS sandbox_last_sync_error,
+               COALESCE(st.total,   0)::bigint   AS send_today_total,
+               COALESCE(st.success, 0)::bigint   AS send_today_success,
+               COALESCE(st.error,   0)::bigint   AS send_today_error,
+               COALESCE(st.pending, 0)::bigint   AS send_today_pending,
+               COALESCE(rt.total,   0)::bigint   AS receive_today_total,
+               COALESCE(ot.pending, 0)::bigint   AS outbox_today_pending,
+               COALESCE(ot.error,   0)::bigint   AS outbox_today_error
+          FROM root_units ru
+          LEFT JOIN edoc.lgsp_agency_config prod
+                 ON prod.unit_id = ru.unit_id AND prod.environment = 'prod'
+          LEFT JOIN edoc.lgsp_agency_config sb
+                 ON sb.unit_id = ru.unit_id AND sb.environment = 'sandbox'
+          LEFT JOIN send_today    st ON st.unit_id = ru.unit_id
+          LEFT JOIN receive_today rt ON rt.unit_id = ru.unit_id
+          LEFT JOIN outbox_today  ot ON ot.unit_id = ru.unit_id
+         ORDER BY ru.lgsp_org_code`,
+      [],
+    );
   },
 };
