@@ -121,4 +121,16 @@ export const lgspMockService: ILgspService = {
     logger.info(`MOCK: Synced ${MOCK_ORGS.length} organizations`);
     return MOCK_ORGS;
   },
+
+  async updateStatus(docId: string, status: string): Promise<LgspSendResult> {
+    // Phase 36 (Plan 36-01): mock mirror real signature.
+    // Always returns success -- worker dev test khong can goi LGSP real.
+    logger.info({ docId, status }, 'MOCK: updateStatus called');
+    return {
+      success: true,
+      lgsp_doc_id: docId,
+      message: 'Mock: Status updated successfully',
+      errorCode: '0',
+    };
+  },
 };

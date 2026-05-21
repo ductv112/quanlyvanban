@@ -400,6 +400,95 @@ export class LGSPRealService implements ILgspService {
     };
   }
 
+  /**
+   * Phase 36 (Plan 36-01): NEW method -- status callback ve LGSP truc (9 ma QD 28).
+   *
+   * AUTHORITATIVE shape (Postman collection 06.updateStatus):
+   *   POST {baseUrl}/v1/updateStatus
+   *   Headers: Content-Type: application/json, X-SystemId, X-SecretKey
+   *   Body (JSON): { "docId": "<uuid>", "status": "<ma QD 28 hoac keyword>" }
+   *
+   * Postman sample dung "status": "done" (keyword). Phase 36 default dung MA SO QD 28
+   * ('02','03','04','05','06') -- chuan re tu spec QD 28/2018/QD-TTg. Neu LGSP reject ma so
+   * (errorCode 22 -- format khong dung), Plan 36-05 verification report flag de switch keyword map.
+   *
+   * Response variants (Postman + sandbox):
+   *   { success: true, message: 'OK' }  -- no docId echo, no errorCode
+   *   { success: false, message: 'Loi', data?: { errorCode, errorDesc } }
+   *
+   * Reuse LgspSendResult shape (lgsp.service.ts) -- Phase 36 worker xu ly errorCode classify
+   * retry vs no-retry qua isLgspNonRetryableError() (Phase 34 error-codes.ts shared).
+   *
+   * @param docId LGSP doc UUID (lgsp_status_outbox.payload.lgsp_doc_id)
+   * @param status Target status code per QD 28
+   * @returns LgspSendResult { success, lgsp_doc_id (=docId echo), message, errorCode }
+   * @throws LgspSendError khi network/timeout/non-JSON response
+   */
+  async updateStatus(docId: string, status: string): Promise<LgspSendResult> {
+    const sysId = this.systemId;
+    const secret = this.secretKey;
+    if (!sysId || !secret) {
+      throw new LgspSendError(
+        `LGSP credential missing for updateStatus: systemId=${sysId ? 'OK' : 'EMPTY'}, secretKey=${secret ? 'OK' : 'EMPTY'}`,
+      );
+    }
+
+    const url = `${this.endpoint}/v1/updateStatus`;
+    const bodyJson = JSON.stringify({ docId, status });
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 30_000);
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-SystemId': sysId,
+          'X-SecretKey': secret,
+          Accept: 'application/json',
+        },
+        body: bodyJson,
+        signal: controller.signal,
+      });
+
+      const text = await res.text();
+      let json: { success: boolean; message?: string; data?: { errorCode?: string; errorDesc?: string } };
+      try {
+        json = JSON.parse(text);
+      } catch {
+        throw new LgspSendError(
+          `LGSP /v1/updateStatus HTTP ${res.status} non-JSON response: ${text.slice(0, 200)}`,
+        );
+      }
+
+      const errorCode = json.data?.errorCode;
+      const rawMessage = json.message || json.data?.errorDesc || 'unknown';
+
+      if (!json.success) {
+        // No-throw -- return result de worker biet mark outbox error
+        return {
+          success: false,
+          lgsp_doc_id: docId,
+          message: mapLgspError(errorCode, rawMessage),
+          errorCode: errorCode || undefined,
+        };
+      }
+
+      return {
+        success: true,
+        lgsp_doc_id: docId,
+        message: rawMessage,
+        errorCode: '0',
+      };
+    } catch (err: unknown) {
+      if (err instanceof LgspSendError) throw err;
+      const msg = err instanceof Error ? err.message : String(err);
+      throw new LgspSendError(`LGSP /v1/updateStatus network/timeout: ${msg}`);
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
   async syncOrganizations(): Promise<LgspOrganization[]> {
     const token = await this.getToken();
     const url = `${this.endpoint}/api/lgspedoc/organizations?token=${encodeURIComponent(token)}`;

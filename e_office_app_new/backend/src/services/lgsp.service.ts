@@ -110,6 +110,19 @@ export interface ILgspService {
     docCode: string,
   ): Promise<LgspSendResult>;
   syncOrganizations(): Promise<LgspOrganization[]>;
+  /**
+   * Phase 36: status callback ve LGSP truc (9 ma QD 28).
+   * POST /v1/updateStatus voi JSON body {docId, status} + X-SystemId/X-SecretKey headers.
+   *
+   * Reuse `LgspSendResult` shape vi response giong nhau (success/message/errorCode).
+   * Worker (Plan 36-02) xu ly retry per errorCode qua isLgspNonRetryableError().
+   *
+   * @param docId LGSP doc UUID (lgsp_status_outbox.payload.lgsp_doc_id, original tu MessageHeader.DocumentId)
+   * @param status target_status code per QD 28: '01'-'06', '13', '15', '16'
+   * @returns LgspSendResult { success, lgsp_doc_id (=docId echo), message, errorCode? }
+   * @throws LgspSendError khi network/timeout/non-JSON response (no code -> retryable per D-10)
+   */
+  updateStatus(docId: string, status: string): Promise<LgspSendResult>;
 }
 
 // ============================================================================
