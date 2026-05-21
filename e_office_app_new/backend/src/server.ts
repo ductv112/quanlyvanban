@@ -131,9 +131,10 @@ app.use('/api/cuoc-hop', authenticate, meetingRoutes);
 
 // --- Phase 6: Tich hop he thong ngoai ---
 app.use('/api/lgsp', authenticate, lgspRoutes);
-// Phase 37: Admin LGSP namespace — wrap với authenticate + requireRoles('Quản trị hệ thống')
-// 9 endpoints: config CRUD (list/update/active), outbox/tracking retry, inter-organizations CRUD
-app.use('/api/admin', authenticate, requireRoles('Quản trị hệ thống'), adminLgspRoutes);
+// Phase 37 + Phase 37.1: Admin LGSP namespace — granular permission per-route
+// (admin-lgsp.ts dung requireRightOrNext(24/25/26) tuong ung Overview/Catalog/Config)
+// Authenticate global, KHONG check role o day de role khac (vd: Van thu) co the cap right rieng le
+app.use('/api/admin', authenticate, adminLgspRoutes);
 // Phase 9: Admin config cho ký số — MUST mount BEFORE /api/ky-so generic (longer prefix wins)
 // Fix 2026-05-11: dùng requireRightOrNext(20) — check right "Cấu hình ký số hệ
 // thống" qua action_of_role table thay vì hardcode role name "Quản trị hệ thống"

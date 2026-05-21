@@ -19,7 +19,7 @@
  */
 
 import { Router, type Request, type Response } from 'express';
-import type { AuthRequest } from '../middleware/auth.js';
+import { type AuthRequest, requireRightOrNext } from '../middleware/auth.js';
 import { lgspAgencyConfigRepository } from '../repositories/lgsp-agency-config.repository.js';
 import { lgspStatusOutboxRepository } from '../repositories/lgsp-status-outbox.repository.js';
 import { lgspRepository } from '../repositories/lgsp.repository.js';
@@ -41,12 +41,21 @@ function formatLgspDate(d: Date): string {
   return `${yyyy}/${mm}/${dd}`;
 }
 
+// Phase 37.1: granular permission — 3 right tuong ung 3 nhom endpoint
+// (DB seed: public.rights id 23 parent + 24/25/26 children, auto-assigned cho role admin id=5)
+const RIGHT_LGSP_OVERVIEW = 24; // /lgsp dashboard + sync-now
+const RIGHT_LGSP_CATALOG = 25;  // /lgsp/co-quan inter_organizations CRUD + sync
+const RIGHT_LGSP_CONFIG = 26;   // /lgsp/cau-hinh credential + test + retry buttons
+const requireOverview = requireRightOrNext(RIGHT_LGSP_OVERVIEW);
+const requireCatalog = requireRightOrNext(RIGHT_LGSP_CATALOG);
+const requireConfig = requireRightOrNext(RIGHT_LGSP_CONFIG);
+
 const router = Router();
 
 // ============================================================
 // GET /lgsp-agency-config — List 12 row (KHÔNG decrypt secret)
 // ============================================================
-router.get('/lgsp-agency-config', async (_req: Request, res: Response) => {
+router.get('/lgsp-agency-config', requireConfig, async (_req: Request, res: Response) => {
   try {
     const rows = await lgspAgencyConfigRepository.list();
     // SP fn_lgsp_agency_config_list KHÔNG trả secret_key_encrypted. Add explicit mask
@@ -63,7 +72,7 @@ router.get('/lgsp-agency-config', async (_req: Request, res: Response) => {
 // Body: { systemId?, secretKey?, baseUrl?, environment? }
 //   secretKey OPTIONAL — nếu undefined hoặc rỗng → giữ nguyên ciphertext cũ
 // ============================================================
-router.put('/lgsp-agency-config/:id', async (req: Request, res: Response) => {
+router.put('/lgsp-agency-config/:id', requireConfig, async (req: Request, res: Response) => {
   try {
     const id = Number(req.params.id);
     const { staffId } = (req as AuthRequest).user;
@@ -115,7 +124,7 @@ router.put('/lgsp-agency-config/:id', async (req: Request, res: Response) => {
 // PATCH /lgsp-agency-config/:id/active — Toggle is_active
 // Body: { is_active: boolean }
 // ============================================================
-router.patch('/lgsp-agency-config/:id/active', async (req: Request, res: Response) => {
+router.patch('/lgsp-agency-config/:id/active', requireConfig, async (req: Request, res: Response) => {
   try {
     const id = Number(req.params.id);
     const { staffId } = (req as AuthRequest).user;
@@ -147,7 +156,7 @@ router.patch('/lgsp-agency-config/:id/active', async (req: Request, res: Respons
 // ============================================================
 // POST /lgsp-status-outbox/:id/retry — Reset outbox event lỗi
 // ============================================================
-router.post('/lgsp-status-outbox/:id/retry', async (req: Request, res: Response) => {
+router.post('/lgsp-status-outbox/:id/retry', requireConfig, async (req: Request, res: Response) => {
   try {
     const id = Number(req.params.id);
     const result = await lgspStatusOutboxRepository.resetForRetry(id);
@@ -164,7 +173,7 @@ router.post('/lgsp-status-outbox/:id/retry', async (req: Request, res: Response)
 // ============================================================
 // POST /lgsp-tracking/:id/retry — Reset tracking + re-enqueue send job
 // ============================================================
-router.post('/lgsp-tracking/:id/retry', async (req: Request, res: Response) => {
+router.post('/lgsp-tracking/:id/retry', requireConfig, async (req: Request, res: Response) => {
   try {
     const trackingId = Number(req.params.id);
     const tracking = await lgspRepository.getTrackingForRetry(trackingId);
@@ -203,7 +212,7 @@ router.post('/lgsp-tracking/:id/retry', async (req: Request, res: Response) => {
 // ============================================================
 // GET /inter-organizations — List (search, isActive filter, pagination)
 // ============================================================
-router.get('/inter-organizations', async (req: Request, res: Response) => {
+router.get('/inter-organizations', requireCatalog, async (req: Request, res: Response) => {
   try {
     const search = (req.query.search as string) || null;
     const isActiveQ = req.query.is_active;
@@ -233,7 +242,7 @@ router.get('/inter-organizations', async (req: Request, res: Response) => {
 // POST /inter-organizations — Create new
 // Body: { code, name, lgsp_organ_id?, parent_id?, is_active?, address?, email?, phone? }
 // ============================================================
-router.post('/inter-organizations', async (req: Request, res: Response) => {
+router.post('/inter-organizations', requireCatalog, async (req: Request, res: Response) => {
   try {
     const b = req.body as Record<string, unknown>;
     const code = String(b.code ?? '').trim();
@@ -270,7 +279,7 @@ router.post('/inter-organizations', async (req: Request, res: Response) => {
 // ============================================================
 // PUT /inter-organizations/:id — Update
 // ============================================================
-router.put('/inter-organizations/:id', async (req: Request, res: Response) => {
+router.put('/inter-organizations/:id', requireCatalog, async (req: Request, res: Response) => {
   try {
     const id = Number(req.params.id);
     const b = req.body as Record<string, unknown>;
@@ -295,9 +304,28 @@ router.put('/inter-organizations/:id', async (req: Request, res: Response) => {
 });
 
 // ============================================================
+// GET /inter-organizations/:id/usage — Count refs for pre-delete Modal
+// (outgoing_count: VB di tham chieu -> DB block xoa neu >0,
+//  incoming_count: VB den LGSP voi sender code -> mat display name neu xoa)
+// ============================================================
+router.get('/inter-organizations/:id/usage', requireCatalog, async (req: Request, res: Response) => {
+  try {
+    const id = Number(req.params.id);
+    const result = await interOrganizationRepository.getUsageCount(id);
+    if (!result.found) {
+      res.status(404).json({ success: false, message: 'Không tìm thấy cơ quan ngoài' });
+      return;
+    }
+    res.json({ success: true, data: result });
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
+
+// ============================================================
 // DELETE /inter-organizations/:id — Delete
 // ============================================================
-router.delete('/inter-organizations/:id', async (req: Request, res: Response) => {
+router.delete('/inter-organizations/:id', requireCatalog, async (req: Request, res: Response) => {
   try {
     const id = Number(req.params.id);
     const result = await interOrganizationRepository.deleteForAdmin(id);
@@ -327,7 +355,7 @@ router.delete('/inter-organizations/:id', async (req: Request, res: Response) =>
 //
 // success luôn = true (request OK), data.ok = true/false tùy LGSP response
 // ------------------------------------------------------------
-router.post('/lgsp-agency-config/:id/test', async (req: Request, res: Response) => {
+router.post('/lgsp-agency-config/:id/test', requireConfig, async (req: Request, res: Response) => {
   try {
     const id = Number(req.params.id);
     const config = await lgspAgencyConfigRepository.getByIdWithDecryptedSecret(id);
@@ -386,7 +414,7 @@ router.post('/lgsp-agency-config/:id/test', async (req: Request, res: Response) 
 // Trả về 6 row (1 per root unit có lgsp_org_code) + tổng quan today.
 // Frontend Plan 37-04 render grid 6 cards + 3 stat cards (gửi/nhận/callback today).
 // ------------------------------------------------------------
-router.get('/lgsp-overview', async (_req: Request, res: Response) => {
+router.get('/lgsp-overview', requireOverview, async (_req: Request, res: Response) => {
   try {
     const rows = await lgspRepository.getOverviewStats();
     const totals = rows.reduce(
@@ -423,7 +451,7 @@ router.get('/lgsp-overview', async (_req: Request, res: Response) => {
 // → gọi LGSP service syncOrganizations() (Phase 18 ILgspService method)
 // → UPSERT vào edoc.inter_organizations qua existing CRUD methods.
 // ------------------------------------------------------------
-router.post('/inter-organizations/sync', async (_req: Request, res: Response) => {
+router.post('/inter-organizations/sync', requireCatalog, async (_req: Request, res: Response) => {
   try {
     // Lookup 1 DN active đầu tiên (any env) — Phase 33 cache hit tốt nếu trùng env đang dùng
     const allConfigs = await lgspAgencyConfigRepository.list();

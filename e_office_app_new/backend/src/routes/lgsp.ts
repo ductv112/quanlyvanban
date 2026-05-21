@@ -1,5 +1,8 @@
 import { Router, type Request, type Response } from 'express';
-import { type AuthRequest, requireRoles } from '../middleware/auth.js';
+import { type AuthRequest, requireRightOrNext } from '../middleware/auth.js';
+
+// Phase 37.1: RIGHT_LGSP_OVERVIEW (id=24) cho /sync-now (dashboard action)
+const requireOverview = requireRightOrNext(24);
 import { lgspRepository } from '../repositories/lgsp.repository.js';
 import { getLgspService } from '../services/lgsp.service.js';
 import { lgspSendQueue } from '../lib/queue/client.js';
@@ -177,7 +180,7 @@ router.post('/organizations/sync', async (req: Request, res: Response) => {
 // ============================================================
 router.post(
   '/sync-now',
-  requireRoles('Quản trị hệ thống'),
+  requireOverview, // Phase 37.1: granular right_id=24 thay vi requireRoles('Quan tri he thong')
   async (req: Request, res: Response) => {
     try {
       const { staffId } = (req as AuthRequest).user;
@@ -206,7 +209,7 @@ router.post(
 // ============================================================
 router.post(
   '/receive-poll',
-  requireRoles('Quản trị hệ thống'),
+  requireOverview, // Phase 37.1: granular right_id=24 thay vi requireRoles
   async (req: Request, res: Response) => {
     try {
       const { staffId } = (req as AuthRequest).user;

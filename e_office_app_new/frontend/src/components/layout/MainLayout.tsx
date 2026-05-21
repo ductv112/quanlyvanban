@@ -169,6 +169,10 @@ const RIGHT_NHOM_QUYEN = 16;
 const RIGHT_CHUC_VU = 17;
 const RIGHT_DANH_MUC = 18;
 const RIGHT_KY_SO_CAU_HINH = 20;
+// Phase 37.1: granular permission cho LGSP — DB seed id 23 parent + 24/25/26 children
+const RIGHT_LGSP_OVERVIEW = 24; // /lgsp dashboard + Dong bo ngay
+const RIGHT_LGSP_CATALOG = 25;  // /lgsp/co-quan inter_organizations CRUD
+const RIGHT_LGSP_CONFIG = 26;   // /lgsp/cau-hinh credential + Test + retry
 
 // Menu builder filtered by user roles + rights (action_of_role)
 function buildMenuItems({ badgeCounts, isAdmin, roles, menuLinks, userRights }: MenuBuildParams): MenuItem[] {
@@ -266,15 +270,16 @@ function buildMenuItems({ badgeCounts, isAdmin, roles, menuLinks, userRights }: 
     );
   }
 
-  // ── TÍCH HỢP ── (Admin only for LGSP/notification config; partner links for everyone)
-  if (isAdmin) {
-    items.push(
-      { key: 'grp-tichhop', type: 'group', label: 'TÍCH HỢP' },
-      { key: '/lgsp', icon: <ApiOutlined />, label: 'Liên thông LGSP' },
-      { key: '/lgsp/co-quan', icon: <BankOutlined />, label: 'Cơ quan liên thông' },
-      { key: '/lgsp/cau-hinh', icon: <SettingOutlined />, label: 'Cấu hình kết nối' },
-      { key: '/thong-bao-kenh', icon: <NotificationOutlined />, label: 'Kênh thông báo' },
-    );
+  // ── TÍCH HỢP ── (Phase 37.1: granular per-right hasRight thay vi isAdmin global)
+  const lgspChildren = [
+    hasRight(RIGHT_LGSP_OVERVIEW) && { key: '/lgsp', icon: <ApiOutlined />, label: 'Liên thông LGSP' },
+    hasRight(RIGHT_LGSP_CATALOG) && { key: '/lgsp/co-quan', icon: <BankOutlined />, label: 'Cơ quan liên thông' },
+    hasRight(RIGHT_LGSP_CONFIG) && { key: '/lgsp/cau-hinh', icon: <SettingOutlined />, label: 'Cấu hình kết nối' },
+    isAdmin && { key: '/thong-bao-kenh', icon: <NotificationOutlined />, label: 'Kênh thông báo' },
+  ].filter(Boolean) as MenuItem[];
+  if (lgspChildren.length > 0) {
+    items.push({ key: 'grp-tichhop', type: 'group', label: 'TÍCH HỢP' });
+    items.push(...lgspChildren);
   }
 
   // ── KÝ SỐ ── (Group hiển thị cho MỌI user; submenu guard theo right granular)

@@ -35,7 +35,7 @@ import {
   CloseCircleOutlined, ReloadOutlined, ThunderboltOutlined, BankOutlined,
 } from '@ant-design/icons';
 import { api } from '@/lib/api';
-import { useAuthStore } from '@/stores/auth.store';
+import { useUserRights } from '@/hooks/use-user-rights';
 import dayjs from 'dayjs';
 
 // ============================================================================
@@ -120,10 +120,10 @@ const STATUS_LABEL: Record<string, string> = {
 
 export default function LgspOverviewPage(): React.ReactElement {
   const { message: msg } = App.useApp();
-  const { user } = useAuthStore();
-  const isAdmin = Boolean(
-    user?.isAdmin || user?.roles?.includes('Quản trị hệ thống'),
-  );
+  const { hasRight } = useUserRights();
+  // Phase 37.1: granular right_id=24 (RIGHT_LGSP_OVERVIEW) thay vi role hardcode.
+  // Variable name "isAdmin" giu nguyen de minimize diff (reuse trong stats panel + sync button).
+  const isAdmin = hasRight(24);
 
   const [units, setUnits] = useState<OverviewUnit[]>([]);
   const [totals, setTotals] = useState<OverviewTotals | null>(null);
@@ -291,7 +291,7 @@ export default function LgspOverviewPage(): React.ReactElement {
           type="info"
           showIcon
           style={{ marginBottom: 16 }}
-          message="Chế độ xem cho người dùng thường"
+          title="Chế độ xem cho người dùng thường"
           description="Một số chức năng (Đồng bộ ngay, Cấu hình kết nối, Trạng thái 6 doanh nghiệp) chỉ dành cho Quản trị hệ thống."
         />
       )}
@@ -301,7 +301,7 @@ export default function LgspOverviewPage(): React.ReactElement {
           type="warning"
           showIcon
           style={{ marginBottom: 16 }}
-          message="Chưa có đơn vị LGSP nào đang bật kết nối"
+          title="Chưa có đơn vị LGSP nào đang bật kết nối"
           description={
             <>
               Truy cập <a href="/lgsp/cau-hinh">Cấu hình kết nối</a> → nhập credential thật →
@@ -354,8 +354,13 @@ export default function LgspOverviewPage(): React.ReactElement {
                 title="Callback lỗi"
                 value={totals?.outbox_error ?? 0}
                 prefix={<ExclamationCircleOutlined style={{ color: '#DC2626' }} />}
-                valueStyle={{
-                  color: totals && totals.outbox_error > 0 ? '#DC2626' : undefined,
+                styles={{
+                  content: {
+                    color:
+                      totals && totals.outbox_error > 0
+                        ? '#DC2626'
+                        : undefined,
+                  },
                 }}
               />
             </Card>
@@ -539,7 +544,7 @@ export default function LgspOverviewPage(): React.ReactElement {
                         <Alert
                           type="error"
                           showIcon
-                          message={`${u.send_today_error} VB gửi lỗi today`}
+                          title={`${u.send_today_error} VB gửi lỗi today`}
                           style={{ padding: '4px 12px' }}
                         />
                       )}

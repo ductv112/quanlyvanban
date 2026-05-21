@@ -37,12 +37,12 @@ import {
   Drawer,
   Form,
   Switch,
-  Popconfirm,
   Select,
   App,
   Tooltip,
   Row,
   Col,
+  Alert,
 } from 'antd';
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
 import {
@@ -56,7 +56,7 @@ import {
   ApiOutlined,
 } from '@ant-design/icons';
 import { api } from '@/lib/api';
-import { useAuthStore } from '@/stores/auth.store';
+import { useUserRights } from '@/hooks/use-user-rights';
 import dayjs from 'dayjs';
 
 // ============================================================================
@@ -109,10 +109,10 @@ const IS_ACTIVE_OPTIONS: { value: IsActiveFilter; label: string }[] = [
 
 export default function LgspCoQuanPage(): React.ReactElement {
   const { message: msg, modal } = App.useApp();
-  const { user } = useAuthStore();
-  const isAdmin =
-    Boolean(user?.isAdmin) ||
-    Boolean(user?.roles?.includes('Quản trị hệ thống'));
+  const { hasRight } = useUserRights();
+  // Phase 37.1: granular right_id=25 (RIGHT_LGSP_CATALOG) thay vi role hardcode.
+  // Variable name "isAdmin" giu nguyen de minimize diff (reuse trong cot Hanh dong + Drawer + Sync button).
+  const isAdmin = hasRight(25);
 
   const [data, setData] = useState<InterOrgRow[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
@@ -331,22 +331,166 @@ export default function LgspCoQuanPage(): React.ReactElement {
     }
   };
 
-  // ── Delete ───────────────────────────────────────────────────────────────
-  const handleDelete = async (row: InterOrgRow) => {
+  // ── Delete: fetch usage truoc, hien Modal voi count + canh bao ───────────
+  const handleDeleteWithCheck = async (row: InterOrgRow) => {
+    let usage: {
+      outgoing_count: number;
+      incoming_count: number;
+    } | null = null;
     try {
-      const { data: res } = await api.delete(
-        `/admin/inter-organizations/${row.id}`,
+      const { data: res } = await api.get(
+        `/admin/inter-organizations/${row.id}/usage`,
       );
-      if (res?.success) {
-        msg.success(res.message || 'Đã xóa cơ quan ngoài');
-        fetchData(pagination.current, pagination.pageSize);
-      } else {
-        msg.error(res?.message || 'Xóa thất bại');
-      }
+      usage = res?.data ?? null;
     } catch (err: unknown) {
       const errAny = err as { response?: { data?: { message?: string } } };
-      msg.error(errAny.response?.data?.message || 'Xóa thất bại');
+      msg.error(
+        errAny.response?.data?.message || 'Không kiểm tra được tham chiếu',
+      );
+      return;
     }
+    if (!usage) {
+      msg.error('Không kiểm tra được tham chiếu');
+      return;
+    }
+
+    const { outgoing_count, incoming_count } = usage;
+    const isBlocked = outgoing_count > 0;
+    const hasIncoming = incoming_count > 0;
+
+    modal.confirm({
+      title: isBlocked
+        ? `Không thể xóa: ${row.name}`
+        : hasIncoming
+          ? `Xác nhận xóa: ${row.name}`
+          : `Xóa cơ quan: ${row.name}`,
+      width: 560,
+      icon: isBlocked ? null : undefined,
+      content: (
+        <div style={{ marginTop: 8 }}>
+          <div style={{ marginBottom: 12 }}>
+            <Tag style={{ fontFamily: 'monospace', fontWeight: 600 }}>
+              {row.code}
+            </Tag>
+            {row.is_active ? (
+              <Tag color="green">Đã xác nhận</Tag>
+            ) : (
+              <Tag color="orange">Tự đăng ký</Tag>
+            )}
+          </div>
+
+          <div
+            style={{
+              border: '1px solid #e5e7eb',
+              borderRadius: 6,
+              padding: '12px 14px',
+              marginBottom: 12,
+              background: '#f9fafb',
+            }}
+          >
+            <div style={{ marginBottom: 6 }}>
+              <strong>Tham chiếu hiện tại:</strong>
+            </div>
+            <div style={{ marginBottom: 4 }}>
+              📤 Văn bản đi tham chiếu:{' '}
+              <strong
+                style={{
+                  color: isBlocked ? '#DC2626' : '#059669',
+                }}
+              >
+                {outgoing_count}
+              </strong>
+            </div>
+            <div>
+              📥 Văn bản đến từ LGSP (sender code này):{' '}
+              <strong
+                style={{
+                  color: hasIncoming ? '#D97706' : '#059669',
+                }}
+              >
+                {incoming_count}
+              </strong>
+            </div>
+          </div>
+
+          {isBlocked && (
+            <Alert
+              type="error"
+              showIcon
+              title="Không thể xóa cơ quan này"
+              description={
+                <>
+                  Còn <strong>{outgoing_count}</strong> văn bản đi đã chọn cơ
+                  quan này làm nơi nhận. Hệ thống sẽ chặn xóa (DB foreign key
+                  constraint).
+                  <br />
+                  <br />
+                  <strong>Cách xử lý:</strong>
+                  <ul style={{ marginTop: 6, marginBottom: 0, paddingLeft: 20 }}>
+                    <li>Bỏ chọn cơ quan này trong các VB đi đó, hoặc</li>
+                    <li>
+                      Bỏ tích &quot;Đã xác nhận&quot; (is_active) để ẩn cơ quan
+                      khỏi dropdown gửi VB mới mà vẫn giữ data lịch sử
+                    </li>
+                  </ul>
+                </>
+              }
+            />
+          )}
+
+          {!isBlocked && hasIncoming && (
+            <Alert
+              type="warning"
+              showIcon
+              title={`${incoming_count} văn bản đến sẽ mất tên hiển thị`}
+              description={
+                <>
+                  Khi xóa cơ quan này, <strong>{incoming_count}</strong> văn
+                  bản đến từ LGSP có mã sender này sẽ KHÔNG còn link tới
+                  catalog. UI sẽ fallback hiển thị tên đơn vị gửi từ bản gốc
+                  edXML (vẫn giữ data, chỉ mất link). Có muốn tiếp tục?
+                </>
+              }
+            />
+          )}
+
+          {!isBlocked && !hasIncoming && (
+            <Alert
+              type="info"
+              showIcon
+              title="Không có văn bản nào tham chiếu cơ quan này"
+              description="Xóa sẽ KHÔNG ảnh hưởng VB nào."
+            />
+          )}
+        </div>
+      ),
+      okText: isBlocked ? 'Đóng' : hasIncoming ? 'Vẫn xóa' : 'Xóa',
+      okType: isBlocked ? 'default' : 'danger',
+      okButtonProps: isBlocked
+        ? { type: 'default' }
+        : { danger: true, type: 'primary' },
+      cancelText: 'Hủy',
+      cancelButtonProps: isBlocked ? { style: { display: 'none' } } : undefined,
+      onOk: async () => {
+        if (isBlocked) return;
+        try {
+          const { data: res } = await api.delete(
+            `/admin/inter-organizations/${row.id}`,
+          );
+          if (res?.success) {
+            msg.success(res.message || 'Đã xóa cơ quan ngoài');
+            fetchData(pagination.current, pagination.pageSize);
+          } else {
+            msg.error(res?.message || 'Xóa thất bại');
+          }
+        } catch (err: unknown) {
+          const errAny = err as {
+            response?: { data?: { message?: string } };
+          };
+          msg.error(errAny.response?.data?.message || 'Xóa thất bại');
+        }
+      },
+    });
   };
 
   // ── Columns ──────────────────────────────────────────────────────────────
@@ -354,7 +498,7 @@ export default function LgspCoQuanPage(): React.ReactElement {
     {
       title: 'Mã cơ quan',
       dataIndex: 'code',
-      width: 160,
+      width: 110,
       render: (val: string) => (
         <span style={{ fontFamily: 'monospace', fontWeight: 600 }}>{val}</span>
       ),
@@ -362,10 +506,11 @@ export default function LgspCoQuanPage(): React.ReactElement {
     {
       title: 'Tên cơ quan',
       dataIndex: 'name',
-      ellipsis: true,
+      width: 280,
+      ellipsis: { showTitle: true },
       render: (val: string, row) => (
         <Space size={6}>
-          <span>{val}</span>
+          <span title={val}>{val}</span>
           {row.lgsp_organ_id && (
             <Tooltip title={`Mã LGSP: ${row.lgsp_organ_id}`}>
               <Tag
@@ -383,7 +528,7 @@ export default function LgspCoQuanPage(): React.ReactElement {
     {
       title: 'Trạng thái',
       dataIndex: 'is_active',
-      width: 140,
+      width: 120,
       align: 'center',
       render: (val: boolean) =>
         val ? (
@@ -397,26 +542,27 @@ export default function LgspCoQuanPage(): React.ReactElement {
     {
       title: 'Địa chỉ',
       dataIndex: 'address',
-      ellipsis: true,
-      render: (v: string | null) => v || '—',
+      width: 220,
+      ellipsis: { showTitle: true },
+      render: (v: string | null) => <span title={v ?? ''}>{v || '—'}</span>,
     },
     {
       title: 'Email',
       dataIndex: 'email',
-      width: 200,
-      ellipsis: true,
-      render: (v: string | null) => v || '—',
+      width: 180,
+      ellipsis: { showTitle: true },
+      render: (v: string | null) => <span title={v ?? ''}>{v || '—'}</span>,
     },
     {
       title: 'Điện thoại',
       dataIndex: 'phone',
-      width: 130,
+      width: 110,
       render: (v: string | null) => v || '—',
     },
     {
       title: 'Ngày tạo',
       dataIndex: 'created_at',
-      width: 150,
+      width: 130,
       render: (val: string) =>
         val ? (
           <span style={{ fontSize: 12 }}>
@@ -431,29 +577,28 @@ export default function LgspCoQuanPage(): React.ReactElement {
           {
             title: 'Hành động',
             key: 'actions',
-            width: 180,
+            width: 140,
             align: 'center' as const,
+            fixed: 'right' as const,
             render: (_: unknown, row: InterOrgRow) => (
               <Space size={4}>
-                <Button
-                  size="small"
-                  icon={<EditOutlined />}
-                  onClick={() => handleOpenEdit(row)}
-                >
-                  Sửa
-                </Button>
-                <Popconfirm
-                  title="Xóa cơ quan ngoài?"
-                  description="Hành động này không thể hoàn tác. Nếu cơ quan đang được tham chiếu bởi văn bản đến/đi, hệ thống sẽ chặn xóa."
-                  okText="Xóa"
-                  okType="danger"
-                  cancelText="Hủy"
-                  onConfirm={() => handleDelete(row)}
-                >
-                  <Button size="small" danger icon={<DeleteOutlined />}>
-                    Xóa
-                  </Button>
-                </Popconfirm>
+                <Tooltip title="Sửa">
+                  <Button
+                    size="small"
+                    type="text"
+                    icon={<EditOutlined />}
+                    onClick={() => handleOpenEdit(row)}
+                  />
+                </Tooltip>
+                <Tooltip title="Xóa">
+                  <Button
+                    size="small"
+                    type="text"
+                    danger
+                    icon={<DeleteOutlined />}
+                    onClick={() => handleDeleteWithCheck(row)}
+                  />
+                </Tooltip>
               </Space>
             ),
           },
@@ -464,16 +609,20 @@ export default function LgspCoQuanPage(): React.ReactElement {
   // ── Render ───────────────────────────────────────────────────────────────
   return (
     <>
-      <div className="page-header">
-        <h2 className="page-title">
-          <BankOutlined style={{ marginRight: 8, color: '#1B3A5C' }} />
+    <Card
+      className="page-card"
+      title={
+        <>
+          <BankOutlined style={{ marginRight: 8 }} />
           Cơ quan liên thông
-        </h2>
-        {isAdmin && (
+        </>
+      }
+      extra={
+        isAdmin && (
           <Space>
             <Button
-              icon={<PlusOutlined />}
               type="primary"
+              icon={<PlusOutlined />}
               onClick={handleOpenAdd}
             >
               Thêm mới
@@ -486,78 +635,79 @@ export default function LgspCoQuanPage(): React.ReactElement {
               Đồng bộ từ trục LGSP
             </Button>
           </Space>
-        )}
+        )
+      }
+    >
+      <div className="list-filter-bar">
+        <Row gutter={[10, 10]} align="middle">
+          <Col xs={24} sm={12} md={9}>
+            <Input.Search
+              placeholder="Tìm theo mã hoặc tên cơ quan..."
+              allowClear
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              onSearch={(val) => setSearch(val)}
+            />
+          </Col>
+          <Col xs={12} sm={6} md={5}>
+            <Select<IsActiveFilter>
+              style={{ width: '100%' }}
+              value={isActiveFilter}
+              onChange={(v) => setIsActiveFilter(v)}
+              options={IS_ACTIVE_OPTIONS}
+              placeholder="Trạng thái"
+            />
+          </Col>
+          <Col xs={12} sm={6} md={2}>
+            <Tooltip title="Làm mới">
+              <Button
+                icon={<ReloadOutlined />}
+                onClick={() =>
+                  fetchData(pagination.current, pagination.pageSize)
+                }
+              />
+            </Tooltip>
+          </Col>
+        </Row>
       </div>
 
-      <Card className="page-card">
-        <div className="filter-row" style={{ marginBottom: 12 }}>
-          <Row gutter={[12, 12]} align="middle">
-            <Col xs={24} sm={12} md={9}>
-              <Input
-                placeholder="Tìm theo mã hoặc tên cơ quan..."
-                prefix={<SearchOutlined />}
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                onPressEnter={() => setSearch(searchInput)}
-                allowClear
-                onClear={() => {
-                  setSearchInput('');
-                  setSearch('');
-                }}
-              />
-            </Col>
-            <Col xs={12} sm={6} md={5}>
-              <Select<IsActiveFilter>
-                style={{ width: '100%' }}
-                value={isActiveFilter}
-                onChange={(v) => setIsActiveFilter(v)}
-                options={IS_ACTIVE_OPTIONS}
-                placeholder="Trạng thái"
-              />
-            </Col>
-            <Col xs={12} sm={6} md={4}>
-              <Space>
-                <Button
-                  type="primary"
-                  icon={<SearchOutlined />}
-                  onClick={() => setSearch(searchInput)}
-                >
-                  Tìm
-                </Button>
-                <Tooltip title="Làm mới">
-                  <Button
-                    icon={<ReloadOutlined />}
-                    onClick={() =>
-                      fetchData(pagination.current, pagination.pageSize)
-                    }
-                  />
-                </Tooltip>
-              </Space>
-            </Col>
-          </Row>
-        </div>
-
-        <Table<InterOrgRow>
-          rowKey="id"
-          columns={columns}
-          dataSource={data}
-          loading={loading}
-          pagination={{
-            current: pagination.current,
-            pageSize: pagination.pageSize,
-            total: pagination.total,
-            showSizeChanger: true,
-            pageSizeOptions: ['20', '50', '100'],
-            showTotal: (total) => `Tổng ${total} cơ quan`,
-          }}
-          onChange={handleTableChange}
-          scroll={{ x: 1200 }}
-          size="small"
+      {/* Empty state banner: hien khi count=0 (sau khi load xong) */}
+      {!loading && data.length === 0 && isActiveFilter === '' && !searchInput && (
+        <Alert
+          type="info"
+          showIcon
+          style={{ marginBottom: 16 }}
+          title="Danh sách cơ quan ngoài hiện rỗng"
+          description={
+            isAdmin
+              ? 'Bấm "Đồng bộ từ LGSP" phía trên để lấy catalog cơ quan từ trục liên thông (cần ít nhất 1 DN đã kích hoạt credential trong "Cấu hình kết nối"). Hoặc bấm "Thêm cơ quan" để thêm thủ công.'
+              : 'Liên hệ Quản trị hệ thống để đồng bộ catalog cơ quan từ trục LGSP.'
+          }
         />
-      </Card>
+      )}
 
-      {/* ── Drawer Add/Edit ── */}
-      <Drawer
+      <Table<InterOrgRow>
+        className="enhanced-table"
+        rowKey="id"
+        columns={columns}
+        dataSource={data}
+        loading={loading}
+        size="small"
+        scroll={{ x: 1290 }}
+        pagination={{
+          current: pagination.current,
+          pageSize: pagination.pageSize,
+          total: pagination.total,
+          showSizeChanger: true,
+          pageSizeOptions: ['20', '50', '100'],
+          showTotal: (total) => `Tổng ${total} cơ quan`,
+        }}
+        onChange={handleTableChange}
+      />
+    </Card>
+
+    {/* ── Drawer Add/Edit ── */}
+    <Drawer
         title={
           editingRow
             ? `Sửa cơ quan — ${editingRow.code}`

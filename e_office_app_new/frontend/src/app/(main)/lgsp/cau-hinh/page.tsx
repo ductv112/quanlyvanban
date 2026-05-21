@@ -60,7 +60,7 @@ import {
   ClockCircleOutlined,
 } from '@ant-design/icons';
 import { api } from '@/lib/api';
-import { useAuthStore } from '@/stores/auth.store';
+import { useUserRights } from '@/hooks/use-user-rights';
 import dayjs from 'dayjs';
 
 // ============================================================================
@@ -102,10 +102,9 @@ interface FormValues {
 
 export default function LgspCauHinhPage(): React.ReactElement {
   const { message: msg } = App.useApp();
-  const { user } = useAuthStore();
-  const isAdmin =
-    Boolean(user?.isAdmin) ||
-    Boolean(user?.roles?.includes('Quản trị hệ thống'));
+  const { hasRight, loaded: rightsLoaded } = useUserRights();
+  // Phase 37.1: granular right_id=26 (RIGHT_LGSP_CONFIG) thay vi role hardcode
+  const canAccess = hasRight(26);
 
   const [data, setData] = useState<LgspConfigRow[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -141,8 +140,8 @@ export default function LgspCauHinhPage(): React.ReactElement {
   }, [msg]);
 
   useEffect(() => {
-    if (isAdmin) fetchData();
-  }, [isAdmin, fetchData]);
+    if (rightsLoaded && canAccess) fetchData();
+  }, [rightsLoaded, canAccess, fetchData]);
 
   // ── Drawer open / close ────────────────────────────────────────────────
   const handleEdit = (row: LgspConfigRow) => {
@@ -393,12 +392,12 @@ export default function LgspCauHinhPage(): React.ReactElement {
   ).length;
 
   // ── Render ─────────────────────────────────────────────────────────────
-  if (!isAdmin) {
+  if (rightsLoaded && !canAccess) {
     return (
       <Alert
         type="warning"
         showIcon
-        message="Không có quyền truy cập"
+        title="Không có quyền truy cập"
         description="Trang Cấu hình kết nối LGSP chỉ dành cho người dùng có vai trò Quản trị hệ thống."
       />
     );
@@ -420,7 +419,7 @@ export default function LgspCauHinhPage(): React.ReactElement {
         type="info"
         showIcon
         style={{ marginBottom: 16 }}
-        message="Cấu hình kết nối tỉnh Lạng Sơn"
+        title="Cấu hình kết nối tỉnh Lạng Sơn"
         description={
           <>
             Mỗi đơn vị có 2 môi trường: <b>Sandbox</b> (kiểm thử) và{' '}
@@ -606,7 +605,7 @@ export default function LgspCauHinhPage(): React.ReactElement {
           <Alert
             type="warning"
             showIcon
-            message="Lưu ý quan trọng"
+            title="Lưu ý quan trọng"
             description={
               <>
                 Sau khi lưu credential mới, bấm <b>Kiểm tra kết nối</b> để xác
@@ -652,7 +651,7 @@ export default function LgspCauHinhPage(): React.ReactElement {
           type="info"
           showIcon
           style={{ marginBottom: 16 }}
-          message="Cách thức kiểm tra"
+          title="Cách thức kiểm tra"
           description={
             <>
               Backend gọi <code>POST /v1/syncReceivedEdocList</code> với
@@ -674,7 +673,7 @@ export default function LgspCauHinhPage(): React.ReactElement {
               type="success"
               icon={<CheckCircleOutlined />}
               showIcon
-              message="Kết nối thành công"
+              title="Kết nối thành công"
               description={
                 <>
                   <div>{testResult.message}</div>
@@ -697,7 +696,7 @@ export default function LgspCauHinhPage(): React.ReactElement {
               type="error"
               icon={<CloseCircleOutlined />}
               showIcon
-              message="Kết nối thất bại"
+              title="Kết nối thất bại"
               description={
                 <>
                   <div>{testResult.message}</div>

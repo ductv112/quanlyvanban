@@ -29051,3 +29051,46 @@ END $$;
 DO $$ BEGIN
   RAISE NOTICE 'Phase 36 schema: uq_lgsp_status_outbox_doc_status (incoming_doc_id, target_status) -- OK';
 END $$;
+
+-- ============================================================
+-- Phase 37.1: Granular permission cho LGSP — 4 right vao public.rights
+-- REQ: LGSP-PERMISSION (refactor tu hardcode requireRoles('Quan tri he thong')
+--      sang requireRight(rightId)/hasRight(rightId) dong pattern Ky so (right 19/20/21/22).
+-- IDs: 23 parent + 24/25/26 child. Auto-assign 4 right cho role admin id=5.
+-- Idempotent: WHERE NOT EXISTS guard (KHONG dung ON CONFLICT id vi co the conflict
+-- voi user manual create).
+-- ============================================================
+
+INSERT INTO public.rights (id, parent_id, name, name_of_menu, action_link, icon, sort_order, show_menu, is_locked)
+SELECT 23, NULL, 'Lien thong LGSP', 'Lien thong LGSP', '/lgsp', 'api', 23, true, false
+WHERE NOT EXISTS (SELECT 1 FROM public.rights WHERE id = 23 OR name_of_menu = 'Lien thong LGSP');
+
+INSERT INTO public.rights (id, parent_id, name, name_of_menu, action_link, icon, sort_order, show_menu, is_locked)
+SELECT 24, 23, 'Tong quan LGSP', 'Tong quan LGSP', '/lgsp', 'dashboard', 24, true, false
+WHERE NOT EXISTS (SELECT 1 FROM public.rights WHERE id = 24 OR action_link = '/lgsp' AND parent_id = 23);
+
+INSERT INTO public.rights (id, parent_id, name, name_of_menu, action_link, icon, sort_order, show_menu, is_locked)
+SELECT 25, 23, 'Co quan ngoai LGSP', 'Co quan lien thong', '/lgsp/co-quan', 'bank', 25, true, false
+WHERE NOT EXISTS (SELECT 1 FROM public.rights WHERE id = 25 OR action_link = '/lgsp/co-quan');
+
+INSERT INTO public.rights (id, parent_id, name, name_of_menu, action_link, icon, sort_order, show_menu, is_locked)
+SELECT 26, 23, 'Cau hinh ket noi LGSP', 'Cau hinh ket noi', '/lgsp/cau-hinh', 'setting', 26, true, false
+WHERE NOT EXISTS (SELECT 1 FROM public.rights WHERE id = 26 OR action_link = '/lgsp/cau-hinh');
+
+-- Auto-assign 4 right cho role "Quan tri he thong" (id=5) — admin co san khi rebuild
+INSERT INTO public.action_of_role (role_id, right_id)
+SELECT 5, rt.id
+FROM public.rights rt
+WHERE rt.id IN (23, 24, 25, 26)
+  AND NOT EXISTS (
+    SELECT 1 FROM public.action_of_role ar
+    WHERE ar.role_id = 5 AND ar.right_id = rt.id
+  );
+
+-- Reset sequence neu max(id) > nextval (vi dung INSERT explicit id)
+SELECT setval(pg_get_serial_sequence('public.rights', 'id'),
+  GREATEST((SELECT COALESCE(MAX(id), 0) FROM public.rights), 1));
+
+DO $$ BEGIN
+  RAISE NOTICE 'Phase 37.1 rights: 4 right LGSP (23/24/25/26) + role admin id=5 assigned -- OK';
+END $$;

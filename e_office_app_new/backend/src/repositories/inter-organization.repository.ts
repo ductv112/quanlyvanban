@@ -257,30 +257,130 @@ export const interOrganizationRepository = {
   },
 
   /**
-   * Phase 37 (Plan 37-01): Delete inter_organization.
-   * Catch SQLSTATE 23503 (FK violation — outgoing_doc_recipients reference) → message rõ ràng.
+   * Phase 37 (Plan 37-01 + 37-02 wording fix):
+   * Delete inter_organization.
+   *
+   * Tham chieu can biet:
+   * - VB di (outgoing_doc_recipients.recipient_org_id) -> FK ON DELETE RESTRICT
+   *   -> DB chan xoa. Pre-check + message kem so luong cu the.
+   * - VB den tu LGSP (incoming_docs.lgsp_sender_org_code) -> string snapshot, KHONG FK
+   *   -> Cho phep xoa, chi mat link display name (fallback publish_unit).
+   *   Pre-check count de canh bao admin biet.
    */
   async deleteForAdmin(
     id: number,
   ): Promise<{ success: boolean; message: string }> {
+    // 1. Lay lgsp_organ_id (full LGSP code) de count VB den
+    // incoming_docs.lgsp_sender_org_code match voi inter_organizations.lgsp_organ_id (NOT code alias)
+    const orgRows = await rawQuery<{ lgsp_organ_id: string | null }>(
+      'SELECT lgsp_organ_id FROM edoc.inter_organizations WHERE id = $1',
+      [id],
+    );
+    if (orgRows.length === 0) {
+      return { success: false, message: 'Không tìm thấy cơ quan ngoài' };
+    }
+    const lgspOrganId = orgRows[0].lgsp_organ_id;
+
+    // 2. Count VB di tham chieu (FK block) + VB den (string snapshot, warn only)
+    const outgoingCountRows = await rawQuery<{ cnt: string }>(
+      'SELECT count(*)::text AS cnt FROM edoc.outgoing_doc_recipients WHERE recipient_org_id = $1',
+      [id],
+    );
+    // Neu lgsp_organ_id NULL (co quan chua co LGSP code) -> count VB den = 0
+    const incomingCountRows = lgspOrganId
+      ? await rawQuery<{ cnt: string }>(
+          "SELECT count(*)::text AS cnt FROM edoc.incoming_docs WHERE source_type = 'external_lgsp' AND lgsp_sender_org_code = $1",
+          [lgspOrganId],
+        )
+      : [{ cnt: '0' }];
+    const outgoingCount = Number(outgoingCountRows[0]?.cnt ?? '0');
+    const incomingCount = Number(incomingCountRows[0]?.cnt ?? '0');
+
+    // 3. Neu co VB di tham chieu -> block voi message cu the
+    if (outgoingCount > 0) {
+      return {
+        success: false,
+        message: `Không thể xóa: còn ${outgoingCount} văn bản đi đang chọn cơ quan này làm nơi nhận. Vui lòng bỏ chọn trong các VB đi đó trước, hoặc bỏ tích "Đã xác nhận" (is_active) để ẩn cơ quan khỏi dropdown gửi VB mới mà vẫn giữ data.`,
+      };
+    }
+
+    // 4. Cho phep xoa, dinh kem warning ve VB den (neu co)
     try {
-      const rows = await rawQuery<{ id: string }>(
+      await rawQuery<{ id: string }>(
         'DELETE FROM edoc.inter_organizations WHERE id = $1 RETURNING id',
         [id],
       );
-      if (rows.length === 0) {
-        return { success: false, message: 'Không tìm thấy cơ quan ngoài' };
-      }
-      return { success: true, message: 'Đã xóa cơ quan ngoài' };
+      const warning =
+        incomingCount > 0
+          ? ` Lưu ý: ${incomingCount} văn bản đến từ LGSP có mã cơ quan này sẽ mất tên hiển thị từ catalog (vẫn giữ tên đơn vị gửi từ bản gốc edXML).`
+          : '';
+      return {
+        success: true,
+        message: `Đã xóa cơ quan ngoài.${warning}`,
+      };
     } catch (err: unknown) {
+      // Fallback race condition: VB di moi insert giua 2 check + delete
       const sqlState = (err as { code?: string }).code;
       if (sqlState === '23503') {
         return {
           success: false,
-          message: 'Không thể xóa: cơ quan đang được tham chiếu (văn bản đến/đi)',
+          message:
+            'Không thể xóa: vừa có văn bản đi mới tham chiếu cơ quan này. Vui lòng thử lại sau.',
         };
       }
       throw err;
     }
+  },
+
+  /**
+   * Phase 37: Count tham chieu cho UI Modal "Xac nhan xoa" hien thi truoc khi delete.
+   * Return { found, code, name, outgoing_count, incoming_count }.
+   * - outgoing_count > 0 => UI disable nut Xoa (vi se bi DB block)
+   * - incoming_count > 0 => UI warn vang (xoa duoc nhung mat display name)
+   */
+  async getUsageCount(id: number): Promise<{
+    found: boolean;
+    code?: string;
+    name?: string;
+    outgoing_count: number;
+    incoming_count: number;
+  }> {
+    // incoming_docs.lgsp_sender_org_code match voi inter_organizations.lgsp_organ_id
+    // (KHONG match voi code alias). Neu lgsp_organ_id NULL -> incoming_count = 0.
+    const orgRows = await rawQuery<{
+      code: string;
+      name: string;
+      lgsp_organ_id: string | null;
+    }>(
+      'SELECT code, name, lgsp_organ_id FROM edoc.inter_organizations WHERE id = $1',
+      [id],
+    );
+    if (orgRows.length === 0) {
+      return { found: false, outgoing_count: 0, incoming_count: 0 };
+    }
+    const code = orgRows[0].code;
+    const name = orgRows[0].name;
+    const lgspOrganId = orgRows[0].lgsp_organ_id;
+
+    const [outRows, inRows] = await Promise.all([
+      rawQuery<{ cnt: string }>(
+        'SELECT count(*)::text AS cnt FROM edoc.outgoing_doc_recipients WHERE recipient_org_id = $1',
+        [id],
+      ),
+      lgspOrganId
+        ? rawQuery<{ cnt: string }>(
+            "SELECT count(*)::text AS cnt FROM edoc.incoming_docs WHERE source_type = 'external_lgsp' AND lgsp_sender_org_code = $1",
+            [lgspOrganId],
+          )
+        : Promise.resolve([{ cnt: '0' }]),
+    ]);
+
+    return {
+      found: true,
+      code,
+      name,
+      outgoing_count: Number(outRows[0]?.cnt ?? '0'),
+      incoming_count: Number(inRows[0]?.cnt ?? '0'),
+    };
   },
 };
