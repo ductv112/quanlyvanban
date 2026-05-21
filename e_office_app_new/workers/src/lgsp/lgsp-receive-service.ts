@@ -8,6 +8,7 @@
 // ============================================================
 import type { Pool } from 'pg';
 import pino from 'pino';
+import { getLgspAdminBearerToken } from './lgsp-auth.js';
 
 const logger = pino({ name: 'lgsp-receive-service' });
 
@@ -15,6 +16,7 @@ export interface WorkerLgspCredentials {
   baseUrl: string;
   systemId: string;
   secretKey: string;
+  environment: 'sandbox' | 'prod';  // Phase 37.3: pick admin Bearer token per env
   lastSyncedAt: string | null;
 }
 
@@ -90,6 +92,7 @@ export async function loadLgspCredentials(
     baseUrl: row.base_url.replace(/\/$/, ''),
     systemId: row.system_id,
     secretKey: row.secret_key,
+    environment,
     lastSyncedAt: row.last_synced_at,
   };
 }
@@ -118,12 +121,15 @@ export async function syncReceivedList(
     `${credentials.baseUrl}/v1/syncReceivedEdocList` +
     `?messageType=edoc&fromDate=${encodeURIComponent(fromDateYmd)}` +
     `&toDate=${encodeURIComponent(toDateYmd)}`;
+  // Phase 37.3: LGSP truc Lang Son yeu cau ca 3 header (Authorization Bearer + X-SystemId + X-SecretKey)
+  const bearerToken = await getLgspAdminBearerToken(credentials.baseUrl, credentials.environment);
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const res = await fetch(url, {
       method: 'GET',
       headers: {
+        Authorization: `Bearer ${bearerToken}`,
         'X-SystemId': credentials.systemId,
         'X-SecretKey': credentials.secretKey,
         Accept: 'application/json',
@@ -175,12 +181,15 @@ export async function getEdocFull(
   timeoutMs = 60_000,
 ): Promise<LgspReceivedFull | null> {
   const url = `${credentials.baseUrl}/v1/getEdoc?docId=${encodeURIComponent(lgspDocId)}`;
+  // Phase 37.3: LGSP truc Lang Son yeu cau ca 3 header (Authorization Bearer + X-SystemId + X-SecretKey)
+  const bearerToken = await getLgspAdminBearerToken(credentials.baseUrl, credentials.environment);
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const res = await fetch(url, {
       method: 'GET',
       headers: {
+        Authorization: `Bearer ${bearerToken}`,
         'X-SystemId': credentials.systemId,
         'X-SecretKey': credentials.secretKey,
         Accept: 'application/json',

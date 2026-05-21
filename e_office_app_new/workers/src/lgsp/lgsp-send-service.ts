@@ -26,6 +26,7 @@ import {
   LgspSendError,
   mapLgspError,
 } from './error-codes.js';
+import { getLgspAdminBearerToken } from './lgsp-auth.js';
 
 const logger = pino({ name: 'lgsp-send-service-worker' });
 
@@ -71,7 +72,7 @@ export async function loadLgspCredentials(
   unitId: number,
   environment: 'sandbox' | 'prod',
   signingSecretKey: string,
-): Promise<{ baseUrl: string; systemId: string; secretKey: string }> {
+): Promise<{ baseUrl: string; systemId: string; secretKey: string; environment: 'sandbox' | 'prod' }> {
   if (!signingSecretKey) {
     throw new Error(
       `SIGNING_SECRET_KEY env var missing — khong the decrypt LGSP credential cho unit_id=${unitId}`,
@@ -118,6 +119,7 @@ export async function loadLgspCredentials(
     baseUrl: row.base_url,
     systemId: row.system_id,
     secretKey: row.secret_key_plain,
+    environment,
   };
 }
 
@@ -135,7 +137,7 @@ export async function loadLgspCredentials(
  * @throws LgspSendError neu network/timeout/non-JSON (worker rethrow -> BullMQ retry)
  */
 export async function sendDocument(
-  credentials: { baseUrl: string; systemId: string; secretKey: string },
+  credentials: { baseUrl: string; systemId: string; secretKey: string; environment: 'sandbox' | 'prod' },
   edxmlBuffer: Buffer,
   destOrgCode: string,
   docCode: string,
@@ -165,12 +167,16 @@ export async function sendDocument(
   const formBuffer = form.getBuffer();
   const formHeaders = form.getHeaders();
 
+  // Phase 37.3: LGSP truc Lang Son yeu cau ca 3 header (Authorization Bearer + X-SystemId + X-SecretKey)
+  const bearerToken = await getLgspAdminBearerToken(endpoint, credentials.environment);
+
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 60_000);
   try {
     const res = await fetch(`${endpoint}/v1/sendEdoc`, {
       method: 'POST',
       headers: {
+        Authorization: `Bearer ${bearerToken}`,
         'X-SystemId': credentials.systemId,
         'X-SecretKey': credentials.secretKey,
         ...formHeaders,
