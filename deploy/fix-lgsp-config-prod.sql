@@ -80,7 +80,14 @@ BEGIN
     RAISE EXCEPTION 'app.signing_secret_key chua set hoac < 16 ky tu. Chay qua wrapper fix-lgsp-config-prod.ps1.';
   END IF;
 
-  -- Lookup KHONG filter parent_id
+  -- Sync lgsp_org_code = code cho 6 DN neu KH set qua UI vao cot 'code' nhung
+  -- 'lgsp_org_code' (cot ALTER them sau, khong hien UI) van NULL. Idempotent.
+  UPDATE public.departments
+     SET lgsp_org_code = code
+   WHERE code IN ('H37.DN.001','H37.DN.002','H37.DN.003','H37.DN.004','H37.DN.005','H37.DN.006')
+     AND (lgsp_org_code IS NULL OR lgsp_org_code = '');
+
+  -- Lookup KHONG filter parent_id (6 DN co the la sub-unit cua UBND tinh)
   SELECT id INTO v_unit_dn_001 FROM public.departments WHERE lgsp_org_code = 'H37.DN.001' LIMIT 1;
   SELECT id INTO v_unit_dn_002 FROM public.departments WHERE lgsp_org_code = 'H37.DN.002' LIMIT 1;
   SELECT id INTO v_unit_dn_003 FROM public.departments WHERE lgsp_org_code = 'H37.DN.003' LIMIT 1;
