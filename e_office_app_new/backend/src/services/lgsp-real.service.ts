@@ -88,16 +88,30 @@ interface GetEdocResponse {
   };
 }
 
+// Phase 37.3 fix (2026-05-22): LGSP truc Lang Son /v1/getAgenciesList AUTHORITATIVE shape
+// (verified by direct PowerShell call):
+//   { code, message, licenseInfo, totalTime,
+//     data: { currentPage, totalPages, pageSize, numberOfRecords, totalRecords,
+//             content: [ { id, code, oldCode, name, centerCode, parentId, level, type, typeInternal } ] } }
+// KHONG co address/email/phone trong list response -- chi co code + name + hierarchy info.
+interface OrgListItem {
+  id: string;
+  code: string;
+  oldCode?: string | null;
+  name: string;
+  centerCode?: string | null;
+  parentId?: string | null;
+  level?: number;
+  type?: string;        // 'NATIONAL' | 'INTERNAL'
+  typeInternal?: boolean;
+}
 interface OrgListResponse {
-  success: boolean;
-  data: Array<{
-    orgCode: string;
-    orgName: string;
-    parentCode?: string | null;
-    address?: string | null;
-    email?: string | null;
-    phone?: string | null;
-  }>;
+  code?: number | string;
+  message?: string;
+  data?: {
+    content?: OrgListItem[];
+    totalRecords?: number;
+  };
 }
 
 const TOKEN_TTL_MS = 29 * 60 * 1000; // 29 phút (LGSP token expire 30')
@@ -534,14 +548,16 @@ export class LGSPRealService implements ILgspService {
     }
   }
 
-  // Phase 37.3 fix (2026-05-22): Doi endpoint tu legacy /api/lgspedoc/organizations sang
-  // /v1/getAgenciesList (Postman authoritative). Authentication = Authorization: Bearer header
-  // (KHONG con query param ?token=). Response shape co the la flat array hoac { success, data }.
+  // Phase 37.3 fix (2026-05-22): Doi endpoint /v1/getAgenciesList. AUTHORITATIVE shape voi
+  // pagination: res.data.content[] -- KHONG phai array truc tiep tai res.data.
+  // Item fields: { id, code, oldCode, name, centerCode, parentId, level, type, typeInternal }
+  // KHONG co address/email/phone trong list response -> set null.
+  // parent_code map sang centerCode (hierarchical code chu khong phai parentId MongoDB ObjectId).
   async syncOrganizations(): Promise<LgspOrganization[]> {
     const token = await this.getToken();
     const url = `${this.endpoint}/v1/getAgenciesList`;
     try {
-      const res = await this.fetchJson<OrgListResponse | { data?: OrgListResponse['data'] } | OrgListResponse['data']>(
+      const res = await this.fetchJson<OrgListResponse>(
         url,
         {
           method: 'GET',
@@ -552,18 +568,15 @@ export class LGSPRealService implements ILgspService {
         },
         30000,
       );
-      // Postman shape: { code:200, data:[...] } | { success, data:[...] } | direct array
-      const list: OrgListResponse['data'] | undefined = Array.isArray(res)
-        ? res
-        : (res as OrgListResponse).data;
-      if (!Array.isArray(list)) return [];
-      return list.map((o) => ({
-        org_code: o.orgCode,
-        org_name: o.orgName,
-        parent_code: o.parentCode || null,
-        address: o.address || null,
-        email: o.email || null,
-        phone: o.phone || null,
+      const content = res?.data?.content;
+      if (!Array.isArray(content)) return [];
+      return content.map((o) => ({
+        org_code: o.code,
+        org_name: o.name,
+        parent_code: o.centerCode || null,
+        address: null,
+        email: null,
+        phone: null,
       }));
     } catch {
       return [];
