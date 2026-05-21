@@ -20,6 +20,7 @@ import { api } from '@/lib/api';
 import { downloadAttachment } from '@/lib/download';
 import { useAuthStore } from '@/stores/auth.store';
 import { LgspSourceBadge, type DocSourceType } from '@/lib/lgsp-source-badge';
+import { LgspStatusTimeline } from '@/components/lgsp-status-timeline';
 import { useParams, useRouter } from 'next/navigation';
 import dayjs from 'dayjs';
 
@@ -584,6 +585,11 @@ export default function IncomingDocDetailPage() {
             </Descriptions.Item>
           </Descriptions>
         </Card>
+      )}
+
+      {/* ====== Phase 36 Plan 36-04: Lịch sử trạng thái LGSP — chỉ hiển thị khi source_type='external_lgsp' ====== */}
+      {doc.source_type === 'external_lgsp' && (
+        <LgspStatusTimeline incomingDocId={Number(doc.id)} />
       )}
 
       <Row gutter={16}>
