@@ -53,15 +53,15 @@ Phân loại tự động theo `outgoing_doc_recipients.recipient_type` — KHÔ
 ### LGSP-STATUS — Status callback chain (9 mã QĐ 28) (10 reqs)
 
 - [x] **LGSP-STATUS-01**: Schema — Bảng `lgsp_status_outbox` (`id, incoming_doc_id, target_status VARCHAR(2), payload JSONB, sent_at, sent_status ENUM('pending','success','error'), retry_count INT DEFAULT 0, error_message TEXT, created_at`) — outbox pattern cho async LGSP callback
-- [ ] **LGSP-STATUS-02**: Backend — Auto fire status `03` "Đã tiếp nhận" khi văn thư bấm "Tiếp nhận" VB đến nguồn LGSP
-- [ ] **LGSP-STATUS-03**: Backend — Auto fire status `04` "Phân công" khi lãnh đạo bấm "Tạo và giao việc" trên VB LGSP
-- [ ] **LGSP-STATUS-04**: Backend — Auto fire status `05` "Đang xử lý" khi chuyên viên có activity đầu tiên trên HSCV (bấm "Bắt đầu xử lý" hoặc upload file/comment đầu tiên)
-- [ ] **LGSP-STATUS-05**: Backend — Auto fire status `06` "Hoàn thành" khi đóng HSCV (đặt status `completed`) hoặc khi ban hành VB trả lời referencing VB LGSP gốc
-- [ ] **LGSP-STATUS-06**: Refactor — Rename SP `edoc.fn_incoming_doc_return` → `edoc.fn_incoming_doc_reject_intake`, set `lgsp_status='02'`, ghi outbox event (= DEFER-07 từ v3.1); rename route `POST /van-ban-den/:id/chuyen-lai` → `/tu-choi-tiep-nhan` (giữ alias 301 redirect 1 sprint)
-- [ ] **LGSP-STATUS-07**: Frontend — Đổi nút "Chuyển lại" → "Từ chối tiếp nhận" (icon RollbackOutlined giữ), Modal title "Lý do chuyển lại" → "Lý do từ chối tiếp nhận", placeholder mới
-- [ ] **LGSP-STATUS-08**: Lấy lại flow — Status `13` (đơn vị gửi lấy lại VB đã gửi) + `15` (recipient đồng ý lấy lại) + `16` (recipient từ chối lấy lại). UI thêm nút "Lấy lại VB" trong VB đi đã gửi LGSP + UI cho recipient quyết định 15/16
-- [ ] **LGSP-STATUS-09**: Worker — `workers/src/lgsp-status-sync.ts` poll `lgsp_status_outbox` mỗi 30s → gọi `POST /v1/updateStatus` với credential đúng → exponential backoff (1m, 5m, 30m, 2h, 6h), max retry 5
-- [ ] **LGSP-STATUS-10**: UI — Hiển thị tag trạng thái LGSP (01/02/03/04/05/06/13/15/16) với màu phân biệt + tooltip Vietnamese name trên chi tiết VB đến + VB đi LGSP
+- [x] **LGSP-STATUS-02**: Backend — Auto fire status `03` "Đã tiếp nhận" khi văn thư bấm "Tiếp nhận" VB đến nguồn LGSP
+- [x] **LGSP-STATUS-03**: Backend — Auto fire status `04` "Phân công" khi lãnh đạo bấm "Tạo và giao việc" trên VB LGSP
+- [x] **LGSP-STATUS-04**: Backend — Auto fire status `05` "Đang xử lý" khi chuyên viên có activity đầu tiên trên HSCV (bấm "Bắt đầu xử lý" hoặc upload file/comment đầu tiên)
+- [x] **LGSP-STATUS-05**: Backend — Auto fire status `06` "Hoàn thành" khi đóng HSCV (đặt status `completed`) hoặc khi ban hành VB trả lời referencing VB LGSP gốc
+- [x] **LGSP-STATUS-06**: Refactor — Rename SP `edoc.fn_incoming_doc_return` → `edoc.fn_incoming_doc_reject_intake`, set `lgsp_status='02'`, ghi outbox event (= DEFER-07 từ v3.1); rename route `POST /van-ban-den/:id/chuyen-lai` → `/tu-choi-tiep-nhan` (giữ alias 301 redirect 1 sprint)
+- [x] **LGSP-STATUS-07**: Frontend — Đổi nút "Chuyển lại" → "Từ chối tiếp nhận" (icon RollbackOutlined giữ), Modal title "Lý do chuyển lại" → "Lý do từ chối tiếp nhận", placeholder mới
+- [x] **LGSP-STATUS-08**: Lấy lại flow — Status `13` (đơn vị gửi lấy lại VB đã gửi) + `15` (recipient đồng ý lấy lại) + `16` (recipient từ chối lấy lại). UI thêm nút "Lấy lại VB" trong VB đi đã gửi LGSP + UI cho recipient quyết định 15/16
+- [x] **LGSP-STATUS-09**: Worker — `workers/src/lgsp-status-sync.ts` poll `lgsp_status_outbox` mỗi 30s → gọi `POST /v1/updateStatus` với credential đúng → exponential backoff (1m, 5m, 30m, 2h, 6h), max retry 5
+- [x] **LGSP-STATUS-10**: UI — Hiển thị tag trạng thái LGSP (01/02/03/04/05/06/13/15/16) với màu phân biệt + tooltip Vietnamese name trên chi tiết VB đến + VB đi LGSP
 
 ### LGSP-UI — Admin UI cấu hình + bật lại menu (8 reqs)
 
