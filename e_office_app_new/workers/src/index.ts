@@ -15,6 +15,14 @@ import {
   startLgspReceiveDnWorker,
   stopLgspReceiveDnWorker,
 } from './jobs/lgsp-receive-dn-worker.js';
+import {
+  startLgspStatusTickWorker,
+  stopLgspStatusTickWorker,
+} from './jobs/lgsp-status-tick-worker.js';
+import {
+  startLgspStatusEventWorker,
+  stopLgspStatusEventWorker,
+} from './jobs/lgsp-status-event-worker.js';
 
 const { Pool } = pg;
 
@@ -124,6 +132,20 @@ const smsWorker = new Worker(
 const lgspReceiveTickWorker = startLgspReceiveTickWorker();
 const lgspReceiveDnWorker = startLgspReceiveDnWorker();
 
+// ============================================================
+// LGSP Status Workers (Phase 36) -- callback chain.
+//
+// 2-worker system on queue 'lgsp-status':
+//   - 'status-tick' (concurrency=1): repeat every 30s OR future admin manual trigger
+//     Handler queries fn_lgsp_status_outbox_get_pending(100) -> enqueues N 'status-event' jobs FIFO.
+//   - 'status-event' (concurrency=5, retry 5x exp 30s): per-outbox-row POST /v1/updateStatus.
+//     4xx no-retry mark error (D-10), network/5xx retry (D-09), exhausted -> on(failed) markError (D-11).
+//
+// Repeat job registered from backend/src/server.ts (Plan 36-03 wires registerStatusTickRepeatJob).
+// ============================================================
+const lgspStatusTickWorker = startLgspStatusTickWorker();
+const lgspStatusEventWorker = startLgspStatusEventWorker();
+
 // --- LGSP Send Worker (Phase 34) ---
 // REPLACED Phase 18 inline worker. New handler in workers/src/jobs/lgsp-send-worker.ts:
 //   - Job data shape: LgspSendJobData { recipient_id, outgoing_doc_id, tracking_id, sender_unit_id, environment }
@@ -196,7 +218,7 @@ const notificationWorker = new Worker(
   { connection },
 );
 
-logger.info('Workers started: email-send, sms-send, lgsp-receive (Phase 35: tick + dn), lgsp-send (Phase 34), fcm-push, zalo-send, notification-send');
+logger.info('Workers started: email-send, sms-send, lgsp-receive (Phase 35: tick + dn), lgsp-send (Phase 34), lgsp-status (Phase 36: tick + event), fcm-push, zalo-send, notification-send');
 
 // Graceful shutdown
 process.on('SIGTERM', async () => {
@@ -205,6 +227,8 @@ process.on('SIGTERM', async () => {
   await smsWorker.close();
   await stopLgspReceiveTickWorker(lgspReceiveTickWorker);
   await stopLgspReceiveDnWorker(lgspReceiveDnWorker);
+  await stopLgspStatusTickWorker(lgspStatusTickWorker);
+  await stopLgspStatusEventWorker(lgspStatusEventWorker);
   await stopLgspSendWorker(lgspSendWorker);
   await fcmWorker.close();
   await zaloWorker.close();
