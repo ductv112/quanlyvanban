@@ -4,8 +4,8 @@ milestone: v3.2
 milestone_name: LGSP Production Go-live cho 6 DN Lạng Sơn
 status: shipped
 stopped_at: v3.2 milestone COMPLETE — archived to .planning/milestones/v3.2-* — ready for /gsd-new-milestone
-last_updated: "2026-05-21T05:25:00.000Z"
-last_activity: 2026-05-21 — v3.2 milestone SHIPPED (5 phase / 27 plans / ~80 commits / 36 REQ / PASS với tech debt v3.3+ tracked)
+last_updated: "2026-05-21T15:45:00.000Z"
+last_activity: 2026-05-21 — Completed quick task 260521-v8t: them tinh nang xem truc tiep file dinh kem (PDF/anh/Office qua LibreOffice) cho 4 module VB + HSCV
 progress:
   total_phases: 5
   completed_phases: 5
@@ -86,6 +86,12 @@ Resume: `/gsd-new-milestone` để start v3.3+ HOẶC `/gsd-cleanup` để archi
 Last session: 2026-05-20T04:49:39.293Z
 Stopped at: Completed 33-04-PLAN.md (service factory + cache + invalidate)
 Resume: `/gsd-execute-phase 33` (continue with Plan 33-02 seed 9 row placeholder) or chain auto-mode
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260521-v8t | Xem trực tiếp file đính kèm (PDF/ảnh/Office qua LibreOffice) cho 4 module VB + HSCV | 2026-05-21 | 84a03a3 | [260521-v8t-them-tinh-nang-xem-truc-tiep-file-dinh-k](./quick/260521-v8t-them-tinh-nang-xem-truc-tiep-file-dinh-k/) |
 
 ### Notes
 
