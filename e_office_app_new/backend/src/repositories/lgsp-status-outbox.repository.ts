@@ -174,4 +174,36 @@ export const lgspStatusOutboxRepository = {
       [incomingDocId],
     );
   },
+
+  /**
+   * Phase 37: Admin "Gửi lại" outbox event lỗi. Reset về sent_status='pending' để worker
+   * tick 30s pick up lại trong vòng tiếp theo.
+   *
+   * Guard: chỉ reset row có sent_status='error' (idempotent — gọi 2 lần liên tiếp lần 2 sẽ no-op).
+   *
+   * @returns DbResult { success, message } — false nếu id không tồn tại hoặc sent_status không phải 'error'.
+   */
+  async resetForRetry(id: number): Promise<DbResult> {
+    const result = await rawQuery<{ id: string }>(
+      `UPDATE edoc.lgsp_status_outbox
+          SET sent_status = 'pending',
+              retry_count = 0,
+              next_retry_at = NOW(),
+              error_message = NULL,
+              sent_at = NULL
+        WHERE id = $1 AND sent_status = 'error'
+        RETURNING id`,
+      [id],
+    );
+    if (result.length === 0) {
+      return {
+        success: false,
+        message: 'Không tìm thấy outbox event đang lỗi với id này (có thể đã được reset hoặc đã thành công)',
+      };
+    }
+    return {
+      success: true,
+      message: 'Đã reset outbox event, worker sẽ gửi lại trong vòng 30 giây',
+    };
+  },
 };

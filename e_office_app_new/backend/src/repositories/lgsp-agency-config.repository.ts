@@ -166,4 +166,39 @@ export const lgspAgencyConfigRepository = {
     );
     return row ?? { success: false, message: 'Không thể cập nhật last_synced' };
   },
+
+  /**
+   * Phase 37: GetByIdWithDecryptedSecret — admin "Test connection" cần plaintext secret.
+   * Decrypt qua services/signing/crypto.decryptSecret. KHÔNG expose qua HTTP response —
+   * chỉ dùng nội bộ trong route handler (admin test connection / re-instantiate LGSP service).
+   *
+   * @returns null nếu không tìm thấy. Throws nếu decrypt fail (SIGNING_SECRET_KEY sai/missing).
+   */
+  async getByIdWithDecryptedSecret(id: number): Promise<{
+    id: number;
+    unit_id: number;
+    environment: 'sandbox' | 'prod';
+    system_id: string;
+    base_url: string;
+    is_active: boolean;
+    secret_key_plaintext: string;
+  } | null> {
+    const row = await callFunctionOne<LgspAgencyConfigFullRow>(
+      'edoc.fn_lgsp_agency_config_get_by_id',
+      [id],
+    );
+    if (!row) return null;
+    // Lazy import tránh circular dep với services/lgsp.service
+    const { decryptSecret } = await import('../services/signing/crypto.js');
+    const plaintext = await decryptSecret(row.secret_key_encrypted);
+    return {
+      id: Number(row.id),
+      unit_id: Number(row.unit_id),
+      environment: row.environment,
+      system_id: row.system_id,
+      base_url: row.base_url,
+      is_active: row.is_active,
+      secret_key_plaintext: plaintext,
+    };
+  },
 };

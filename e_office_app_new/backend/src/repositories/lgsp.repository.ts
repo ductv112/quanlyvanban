@@ -1,4 +1,4 @@
-import { callFunction, callFunctionOne } from '../lib/db/query.js';
+import { callFunction, callFunctionOne, rawQuery } from '../lib/db/query.js';
 
 // ============================================================
 // Row interfaces — match SP RETURNS TABLE columns exactly
@@ -59,6 +59,21 @@ export interface MutationResultRow {
 export interface UpdateResultRow {
   success: boolean;
   message: string;
+}
+
+/**
+ * Phase 37: Row đầy đủ để admin "Gửi lại" send job — cần outgoing_doc_id để re-enqueue.
+ * JOIN outgoing_doc_recipients (qua generated_lgsp_tracking_id) để lấy recipient_id;
+ * JOIN outgoing_docs để lấy sender_unit_id; JOIN lgsp_agency_config để resolve active env.
+ */
+export interface LgspTrackingFullRow {
+  id: number;
+  outgoing_doc_id: number;
+  recipient_id: number;
+  sender_unit_id: number;
+  environment: 'sandbox' | 'prod';
+  status: string;
+  error_message: string | null;
 }
 
 // ============================================================
@@ -166,5 +181,84 @@ export const lgspRepository = {
       'edoc.fn_lgsp_tracking_get_by_doc',
       [outgoingDocId],
     );
+  },
+
+  // ==========================================
+  // Phase 37 — Admin retry methods
+  // ==========================================
+
+  /**
+   * Phase 37: Lấy tracking row + outgoing_doc_id + recipient_id + sender_unit_id + active env.
+   * JOIN outgoing_doc_recipients qua generated_lgsp_tracking_id (Phase 34 wiring) để lấy recipient_id.
+   * JOIN lgsp_agency_config để resolve environment đang active của sender (preferring 'prod').
+   *
+   * Trả null nếu tracking không tồn tại HOẶC không có config LGSP active cho đơn vị gửi.
+   */
+  async getTrackingForRetry(trackingId: number): Promise<LgspTrackingFullRow | null> {
+    const rows = await rawQuery<{
+      id: string;
+      outgoing_doc_id: string;
+      recipient_id: string | null;
+      sender_unit_id: number | null;
+      environment: 'sandbox' | 'prod' | null;
+      status: string;
+      error_message: string | null;
+    }>(
+      `SELECT t.id                          AS id,
+              t.outgoing_doc_id             AS outgoing_doc_id,
+              r.id                          AS recipient_id,
+              od.unit_id                    AS sender_unit_id,
+              ac.environment                AS environment,
+              t.status                      AS status,
+              t.error_message               AS error_message
+         FROM edoc.lgsp_tracking t
+         JOIN edoc.outgoing_docs od ON od.id = t.outgoing_doc_id
+    LEFT JOIN edoc.outgoing_doc_recipients r
+              ON r.generated_lgsp_tracking_id = t.id
+    LEFT JOIN edoc.lgsp_agency_config ac
+              ON ac.unit_id = od.unit_id
+             AND ac.is_active = TRUE
+        WHERE t.id = $1
+        ORDER BY (ac.environment = 'prod') DESC NULLS LAST
+        LIMIT 1`,
+      [trackingId],
+    );
+    if (rows.length === 0) return null;
+    const r = rows[0];
+    if (r.recipient_id == null || r.sender_unit_id == null || r.environment == null) {
+      return null;
+    }
+    return {
+      id: Number(r.id),
+      outgoing_doc_id: Number(r.outgoing_doc_id),
+      recipient_id: Number(r.recipient_id),
+      sender_unit_id: Number(r.sender_unit_id),
+      environment: r.environment,
+      status: r.status,
+      error_message: r.error_message,
+    };
+  },
+
+  /**
+   * Phase 37: Reset tracking về 'pending' + clear error_message để worker xử lý lại.
+   *
+   * Guard: chỉ reset row có status='error' (idempotent).
+   */
+  async resetTrackingForRetry(trackingId: number): Promise<UpdateResultRow> {
+    const rows = await rawQuery<{ id: string }>(
+      `UPDATE edoc.lgsp_tracking
+          SET status = 'pending',
+              error_message = NULL
+        WHERE id = $1 AND status = 'error'
+        RETURNING id`,
+      [trackingId],
+    );
+    if (rows.length === 0) {
+      return {
+        success: false,
+        message: 'Không tìm thấy tracking đang lỗi với id này',
+      };
+    }
+    return { success: true, message: 'Đã reset tracking, worker sẽ gửi lại' };
   },
 };
