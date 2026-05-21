@@ -14,7 +14,7 @@
 # set qua psql session var, chay fix-lgsp-config-prod.sql.
 #
 # An toan:
-#   - Idempotent: ON CONFLICT DO NOTHING — chay lai nhieu lan OK.
+#   - Idempotent: ON CONFLICT DO NOTHING -- chay lai nhieu lan OK.
 #   - Khong DROP table, khong DELETE row, khong DROP user.
 #   - Chi UPDATE 1 trigger function + INSERT max 9 row vao lgsp_agency_config.
 # ============================================================================
@@ -54,7 +54,7 @@ if ($hit) {
     if ($val.Length -ge 16) { $SIGNING_KEY = $val }
 }
 if (-not $SIGNING_KEY) {
-    Warn 'Khong co SIGNING_SECRET_KEY hop le trong .env — fallback JWT_SECRET'
+    Warn 'Khong co SIGNING_SECRET_KEY hop le trong .env -- fallback JWT_SECRET'
     $hit2 = Select-String -Path $ENV_FILE -Pattern '^JWT_SECRET=(.+)$' -Encoding utf8 | Select-Object -First 1
     if ($hit2) {
         $val2 = $hit2.Matches[0].Groups[1].Value.Trim()
@@ -95,7 +95,7 @@ $exit = $LASTEXITCODE
 Remove-Item Env:PGPASSWORD -ErrorAction SilentlyContinue
 
 if ($exit -ne 0) {
-    Err "psql exit $exit — xem log: $LOG_FILE"
+    Err "psql exit $exit -- xem log: $LOG_FILE"
 }
 
 Log ''
