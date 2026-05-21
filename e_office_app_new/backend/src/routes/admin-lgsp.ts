@@ -25,9 +25,21 @@ import { lgspStatusOutboxRepository } from '../repositories/lgsp-status-outbox.r
 import { lgspRepository } from '../repositories/lgsp.repository.js';
 import { interOrganizationRepository } from '../repositories/inter-organization.repository.js';
 import { encryptSecret } from '../services/signing/crypto.js';
-import { invalidateLgspServiceCache } from '../services/lgsp.service.js';
+import { invalidateLgspServiceCache, getLgspService } from '../services/lgsp.service.js';
+import { createLgspRealService } from '../services/lgsp-real.service.js';
 import { enqueueLgspSendJob } from '../lib/queue/lgsp-send-queue.js';
 import { handleDbError } from '../lib/error-handler.js';
+
+/**
+ * Phase 37 Plan 37-02 helper: format Date sang LGSP API spec YYYY/MM/DD.
+ * Spec yêu cầu slash separator (KHÔNG dash) per LTVB_API_TRUC_PROD Postman /v1/syncReceivedEdocList.
+ */
+function formatLgspDate(d: Date): string {
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}/${mm}/${dd}`;
+}
 
 const router = Router();
 
@@ -294,6 +306,175 @@ router.delete('/inter-organizations/:id', async (req: Request, res: Response) =>
       return;
     }
     res.json({ success: true, message: result.message });
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
+
+// ============================================================
+// Phase 37 Plan 37-02 — 3 endpoint mới
+// ============================================================
+
+// ------------------------------------------------------------
+// POST /lgsp-agency-config/:id/test — Test connection sandbox/prod thật
+//
+// Lookup credential decrypted → instantiate LGSPRealService riêng (KHÔNG cache)
+// → call receiveDocuments(now-1d, now) lightweight read-only → trả về kết quả
+// KHÔNG có side effect (KHÔNG INSERT incoming_docs, KHÔNG update last_synced_at)
+//
+// Response shape (CONTEXT D-02):
+//   { success: true, data: { ok, message, http_status, response_summary: { count } | null } }
+//
+// success luôn = true (request OK), data.ok = true/false tùy LGSP response
+// ------------------------------------------------------------
+router.post('/lgsp-agency-config/:id/test', async (req: Request, res: Response) => {
+  try {
+    const id = Number(req.params.id);
+    const config = await lgspAgencyConfigRepository.getByIdWithDecryptedSecret(id);
+    if (!config) {
+      res.status(404).json({ success: false, message: 'Không tìm thấy cấu hình LGSP' });
+      return;
+    }
+
+    // Tạo instance riêng (KHÔNG cache singleton) — admin có thể edit credential rồi test ngay
+    // Cache invalidate đã handle ở PUT /lgsp-agency-config/:id (Plan 37-01)
+    const svc = createLgspRealService({
+      baseUrl: config.base_url,
+      systemId: config.system_id,
+      secretKey: config.secret_key_plaintext,
+    });
+
+    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const today = new Date();
+
+    try {
+      const result = await svc.receiveDocuments(formatLgspDate(yesterday), formatLgspDate(today));
+      res.json({
+        success: true,
+        data: {
+          ok: true,
+          message: 'Kết nối LGSP thành công',
+          http_status: 200,
+          response_summary: { count: Array.isArray(result) ? result.length : 0 },
+        },
+      });
+    } catch (err) {
+      // LGSP gọi được nhưng credential sai / endpoint down — request OK, test fail
+      const errAny = err as { code?: string; message?: string; status?: number };
+      const vnMessage =
+        errAny.code
+          ? `${errAny.message ?? 'Lỗi LGSP'} (Mã ${errAny.code})`
+          : errAny.message ?? 'Không thể kết nối LGSP';
+      res.json({
+        success: true,
+        data: {
+          ok: false,
+          message: vnMessage,
+          http_status: errAny.status ?? 0,
+          response_summary: null,
+        },
+      });
+    }
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
+
+// ------------------------------------------------------------
+// GET /lgsp-overview — Dashboard summary aggregated per DN
+//
+// Trả về 6 row (1 per root unit có lgsp_org_code) + tổng quan today.
+// Frontend Plan 37-04 render grid 6 cards + 3 stat cards (gửi/nhận/callback today).
+// ------------------------------------------------------------
+router.get('/lgsp-overview', async (_req: Request, res: Response) => {
+  try {
+    const rows = await lgspRepository.getOverviewStats();
+    const totals = rows.reduce(
+      (acc, r) => ({
+        send_today: acc.send_today + Number(r.send_today_total ?? 0),
+        send_success: acc.send_success + Number(r.send_today_success ?? 0),
+        send_error: acc.send_error + Number(r.send_today_error ?? 0),
+        receive_today: acc.receive_today + Number(r.receive_today_total ?? 0),
+        outbox_pending: acc.outbox_pending + Number(r.outbox_today_pending ?? 0),
+        outbox_error: acc.outbox_error + Number(r.outbox_today_error ?? 0),
+        active_count:
+          acc.active_count + (r.prod_is_active ? 1 : 0) + (r.sandbox_is_active ? 1 : 0),
+      }),
+      {
+        send_today: 0,
+        send_success: 0,
+        send_error: 0,
+        receive_today: 0,
+        outbox_pending: 0,
+        outbox_error: 0,
+        active_count: 0,
+      },
+    );
+    res.json({ success: true, data: { units: rows, totals } });
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
+
+// ------------------------------------------------------------
+// POST /inter-organizations/sync — Batch sync danh sách từ LGSP
+//
+// Lookup 1 DN có lgsp_agency_config.is_active=TRUE đầu tiên để dùng credential
+// → gọi LGSP service syncOrganizations() (Phase 18 ILgspService method)
+// → UPSERT vào edoc.inter_organizations qua existing CRUD methods.
+// ------------------------------------------------------------
+router.post('/inter-organizations/sync', async (_req: Request, res: Response) => {
+  try {
+    // Lookup 1 DN active đầu tiên (any env) — Phase 33 cache hit tốt nếu trùng env đang dùng
+    const allConfigs = await lgspAgencyConfigRepository.list();
+    const activeConfig = allConfigs.find((c) => c.is_active);
+    if (!activeConfig) {
+      res.status(400).json({
+        success: false,
+        message:
+          'Cần ít nhất 1 cấu hình LGSP đang bật (is_active=TRUE) để gọi sync danh sách cơ quan ngoài',
+      });
+      return;
+    }
+
+    const svc = await getLgspService(Number(activeConfig.unit_id), activeConfig.environment);
+    const orgs = await svc.syncOrganizations();
+
+    let created = 0;
+    let updated = 0;
+    let failed = 0;
+    for (const org of orgs) {
+      const existing = await interOrganizationRepository.findByCode(org.org_code);
+      if (existing) {
+        const r = await interOrganizationRepository.updateForAdmin(existing.id, {
+          name: org.org_name,
+          address: org.address,
+          email: org.email,
+          phone: org.phone,
+          isActive: true,
+        });
+        if (r.success) updated++;
+        else failed++;
+      } else {
+        const r = await interOrganizationRepository.createForAdmin({
+          code: org.org_code,
+          name: org.org_name,
+          lgspOrganId: org.org_code,
+          address: org.address,
+          email: org.email,
+          phone: org.phone,
+          isActive: true,
+        });
+        if (r.success) created++;
+        else failed++;
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Đồng bộ thành công: thêm mới ${created}, cập nhật ${updated}${failed > 0 ? `, lỗi ${failed}` : ''}`,
+      data: { total: orgs.length, created, updated, failed },
+    });
   } catch (error) {
     handleDbError(error, res);
   }
