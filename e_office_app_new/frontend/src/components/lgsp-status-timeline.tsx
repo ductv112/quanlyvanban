@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { Timeline, Tag, Tooltip, Card, Empty, Skeleton, Space, Typography, Spin } from 'antd';
-import { ApiOutlined, ClockCircleOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
+import { Timeline, Tag, Tooltip, Card, Empty, Skeleton, Space, Typography, Spin, Button, App, Popconfirm } from 'antd';
+import { ApiOutlined, ClockCircleOutlined, CheckCircleOutlined, CloseCircleOutlined, ReloadOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { api } from '@/lib/api';
+import { useAuthStore } from '@/stores/auth.store';
 import {
   LGSP_STATUS_LABELS,
   LGSP_STATUS_COLORS,
@@ -50,6 +51,13 @@ export function LgspStatusTimeline({ incomingDocId }: Props): React.ReactElement
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Phase 37 Plan 37-06: admin role gate + retry handler cho entry sent_status='error'
+  const { message: msg } = App.useApp();
+  const isAdmin = useAuthStore((s) =>
+    (s.user?.isAdmin ?? false) || (s.user?.roles?.includes('Quản trị hệ thống') ?? false),
+  );
+  const [retryingId, setRetryingId] = useState<number | null>(null);
+
   const fetchHistory = useCallback(async () => {
     try {
       const res = await api.get<{ success: boolean; data: LgspStatusHistoryRow[] }>(
@@ -69,6 +77,27 @@ export function LgspStatusTimeline({ incomingDocId }: Props): React.ReactElement
       setLoading(false);
     }
   }, [incomingDocId]);
+
+  // Phase 37 Plan 37-06: retry handler cho outbox event sent_status='error'
+  const handleRetry = useCallback(async (outboxId: number) => {
+    setRetryingId(outboxId);
+    try {
+      const { data: res } = await api.post(`/admin/lgsp-status-outbox/${outboxId}/retry`);
+      if (res?.success) {
+        msg.success(res.message || 'Đã reset outbox event, worker sẽ gửi lại trong vòng 30 giây');
+        // Refetch ngay + sau 5s cho worker pick up + cap nhat status
+        fetchHistory();
+        setTimeout(() => { fetchHistory(); }, 5000);
+      } else {
+        msg.error(res?.message || 'Không thể gửi lại sự kiện này');
+      }
+    } catch (err: unknown) {
+      const errAny = err as { response?: { data?: { message?: string } } };
+      msg.error(errAny.response?.data?.message || 'Không thể gửi lại sự kiện này');
+    } finally {
+      setRetryingId(null);
+    }
+  }, [fetchHistory, msg]);
 
   // Initial fetch
   useEffect(() => {
@@ -146,7 +175,7 @@ export function LgspStatusTimeline({ incomingDocId }: Props): React.ReactElement
 
     const children = (
       <Space direction="vertical" size={4} style={{ width: '100%' }}>
-        <Space size={8}>
+        <Space size={8} wrap>
           <Tooltip title={targetTooltip}>
             <Tag color={targetColor}>{r.target_status} — {targetLabel}</Tag>
           </Tooltip>
@@ -155,6 +184,25 @@ export function LgspStatusTimeline({ incomingDocId }: Props): React.ReactElement
             <Tooltip title={`Đã retry ${r.retry_count} lần`}>
               <Tag icon={<ClockCircleOutlined />}>{r.retry_count}/5</Tag>
             </Tooltip>
+          )}
+          {/* Phase 37 Plan 37-06: button "Gửi lại" admin only cho entry error */}
+          {r.sent_status === 'error' && isAdmin && (
+            <Popconfirm
+              title="Gửi lại sự kiện này?"
+              description="Worker sẽ retry đẩy trạng thái lên LGSP trong vòng 30 giây."
+              okText="Gửi lại"
+              cancelText="Hủy"
+              onConfirm={() => handleRetry(r.id)}
+            >
+              <Button
+                size="small"
+                type="link"
+                icon={<ReloadOutlined />}
+                loading={retryingId === r.id}
+              >
+                Gửi lại
+              </Button>
+            </Popconfirm>
           )}
         </Space>
         {r.sent_status === 'success' && r.sent_at && (
