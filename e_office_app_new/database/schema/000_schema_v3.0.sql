@@ -29020,3 +29020,34 @@ $function$;
 DO $$ BEGIN
   RAISE NOTICE 'Phase 35-04 schema: fn_incoming_doc_get_list + fn_incoming_doc_get_by_id extended with lgsp_sender_org_code -- OK';
 END $$;
+
+-- ============================================================
+-- Phase 36 Plan 36-01: APPEND UNIQUE (incoming_doc_id, target_status) on lgsp_status_outbox
+-- REQ: LGSP-STATUS-09 (foundation cho worker dedup)
+-- CONTEXT D-04: idempotency via UNIQUE constraint thay vi SELECT-then-INSERT (race-safe)
+--
+-- Wrap DO block catch 4 SQLSTATE (CLAUDE.md DB Migration pattern):
+--   42710 duplicate_object, 42P07 duplicate_table,
+--   42P16 invalid_table_definition, 42701 duplicate_column
+-- Apply lan 2 phai zero error.
+-- ============================================================
+
+DO $$
+BEGIN
+  BEGIN
+    ALTER TABLE edoc.lgsp_status_outbox
+      ADD CONSTRAINT uq_lgsp_status_outbox_doc_status
+      UNIQUE (incoming_doc_id, target_status);
+  EXCEPTION
+    WHEN duplicate_object THEN NULL;
+    WHEN duplicate_table THEN NULL;
+    WHEN invalid_table_definition THEN NULL;
+    WHEN duplicate_column THEN NULL;
+    -- 23505 unique_violation khong xay ra o ADD CONSTRAINT (chi xay ra khi INSERT)
+    -- 42P10 invalid_column_reference -- khong xay ra vi columns ton tai
+  END;
+END $$;
+
+DO $$ BEGIN
+  RAISE NOTICE 'Phase 36 schema: uq_lgsp_status_outbox_doc_status (incoming_doc_id, target_status) -- OK';
+END $$;
