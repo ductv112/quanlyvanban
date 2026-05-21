@@ -29061,21 +29061,30 @@ END $$;
 -- voi user manual create).
 -- ============================================================
 
+-- NOTE: SQL apply qua psql native UTF-8 OK voi tieng Viet co dau.
+-- Rule "khong dau" chi ap dung cho .ps1 files (PS 5.1 encoding bug), KHONG cho DB seed.
 INSERT INTO public.rights (id, parent_id, name, name_of_menu, action_link, icon, sort_order, show_menu, is_locked)
-SELECT 23, NULL, 'Lien thong LGSP', 'Lien thong LGSP', '/lgsp', 'api', 23, true, false
-WHERE NOT EXISTS (SELECT 1 FROM public.rights WHERE id = 23 OR name_of_menu = 'Lien thong LGSP');
+SELECT 23, NULL, 'Liên thông LGSP', 'Liên thông LGSP', '/lgsp', 'api', 23, true, false
+WHERE NOT EXISTS (SELECT 1 FROM public.rights WHERE id = 23 OR name_of_menu = 'Liên thông LGSP');
 
 INSERT INTO public.rights (id, parent_id, name, name_of_menu, action_link, icon, sort_order, show_menu, is_locked)
-SELECT 24, 23, 'Tong quan LGSP', 'Tong quan LGSP', '/lgsp', 'dashboard', 24, true, false
+SELECT 24, 23, 'Tổng quan LGSP', 'Tổng quan LGSP', '/lgsp', 'dashboard', 24, true, false
 WHERE NOT EXISTS (SELECT 1 FROM public.rights WHERE id = 24 OR action_link = '/lgsp' AND parent_id = 23);
 
 INSERT INTO public.rights (id, parent_id, name, name_of_menu, action_link, icon, sort_order, show_menu, is_locked)
-SELECT 25, 23, 'Co quan ngoai LGSP', 'Co quan lien thong', '/lgsp/co-quan', 'bank', 25, true, false
+SELECT 25, 23, 'Cơ quan ngoài LGSP', 'Cơ quan liên thông', '/lgsp/co-quan', 'bank', 25, true, false
 WHERE NOT EXISTS (SELECT 1 FROM public.rights WHERE id = 25 OR action_link = '/lgsp/co-quan');
 
 INSERT INTO public.rights (id, parent_id, name, name_of_menu, action_link, icon, sort_order, show_menu, is_locked)
-SELECT 26, 23, 'Cau hinh ket noi LGSP', 'Cau hinh ket noi', '/lgsp/cau-hinh', 'setting', 26, true, false
+SELECT 26, 23, 'Cấu hình kết nối LGSP', 'Cấu hình kết nối', '/lgsp/cau-hinh', 'setting', 26, true, false
 WHERE NOT EXISTS (SELECT 1 FROM public.rights WHERE id = 26 OR action_link = '/lgsp/cau-hinh');
+
+-- UPDATE: nếu DB cũ đã có 4 row KHÔNG dấu (Phase 37.1 initial bug) -> rewrite có dấu.
+-- Idempotent: chỉ UPDATE nếu name khớp version không dấu (nhận diện bug cũ).
+UPDATE public.rights SET name='Liên thông LGSP', name_of_menu='Liên thông LGSP' WHERE id=23 AND name='Lien thong LGSP';
+UPDATE public.rights SET name='Tổng quan LGSP', name_of_menu='Tổng quan LGSP' WHERE id=24 AND name='Tong quan LGSP';
+UPDATE public.rights SET name='Cơ quan ngoài LGSP', name_of_menu='Cơ quan liên thông' WHERE id=25 AND name='Co quan ngoai LGSP';
+UPDATE public.rights SET name='Cấu hình kết nối LGSP', name_of_menu='Cấu hình kết nối' WHERE id=26 AND name='Cau hinh ket noi LGSP';
 
 -- Auto-assign 4 right cho role "Quan tri he thong" (id=5) — admin co san khi rebuild
 INSERT INTO public.action_of_role (role_id, right_id)
