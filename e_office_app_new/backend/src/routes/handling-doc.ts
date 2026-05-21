@@ -3,6 +3,7 @@ import type { AuthRequest } from '../middleware/auth.js';
 import { upload } from '../middleware/upload.js';
 import { handlingDocRepository } from '../repositories/handling-doc.repository.js';
 import { signerRepository } from '../repositories/signer.repository.js';
+import { lgspStatusOutboxRepository } from '../repositories/lgsp-status-outbox.repository.js';
 import { uploadFile, deleteFile, getFileUrl } from '../lib/minio/client.js';
 import { rawQuery } from '../lib/db/query.js';
 import { v4 as uuidv4 } from 'uuid';
@@ -11,6 +12,80 @@ import { resolveDeptSubtree, resolveAncestorUnit } from '../lib/department-subtr
 import { notifyBell } from '../lib/notifications/bell-emit.js';
 
 const router = Router();
+
+/**
+ * Phase 36 Plan 36-03: helper fire outbox 06 cho TAT CA incoming docs nguon LGSP gan voi HSCV.
+ *
+ * Schema thuc te: edoc.handling_doc_links (handling_doc_id, doc_type, doc_id) -- KHONG phai
+ * handling_doc_documents nhu plan goc. doc_type='incoming' link toi edoc.incoming_docs.
+ *
+ * 1 HSCV co the gan nhieu VB den nguon LGSP -- fire outbox 06 cho moi VB.
+ * UNIQUE constraint (incoming_doc_id, target_status) Phase 36-01 chan duplicate.
+ *
+ * Best-effort: hook failure log warn nhung KHONG fail user action (D-03).
+ */
+async function fireHscvCompleteOutbox(
+  handlingDocId: number,
+  req: Request,
+): Promise<void> {
+  try {
+    const rows = await rawQuery<{
+      incoming_doc_id: number;
+      external_doc_id: string | null;
+      lgsp_sender_org_code: string | null;
+    }>(
+      `SELECT d.id AS incoming_doc_id,
+              d.external_doc_id,
+              d.lgsp_sender_org_code
+         FROM edoc.handling_doc_links hdl
+         JOIN edoc.incoming_docs d ON d.id = hdl.doc_id
+        WHERE hdl.handling_doc_id = $1
+          AND hdl.doc_type = 'incoming'
+          AND d.source_type = 'external_lgsp'`,
+      [handlingDocId],
+    );
+    for (const r of rows) {
+      try {
+        const result = await lgspStatusOutboxRepository.insertEvent({
+          incoming_doc_id: Number(r.incoming_doc_id),
+          target_status: '06',
+          payload: {
+            lgsp_doc_id: r.external_doc_id ?? null,
+            sender_org_code: r.lgsp_sender_org_code ?? null,
+            handling_doc_id: handlingDocId,
+            trigger: 'hscv_complete',
+          },
+        });
+        if (result === null) {
+          req.log?.info(
+            { handlingDocId, incomingDocId: r.incoming_doc_id },
+            'HSCV complete LGSP outbox 06: dedup skip',
+          );
+        } else if (result.success) {
+          req.log?.info(
+            { handlingDocId, incomingDocId: r.incoming_doc_id, outboxId: result.id },
+            'HSCV complete: LGSP outbox 06 enqueued',
+          );
+        } else {
+          req.log?.warn(
+            { handlingDocId, incomingDocId: r.incoming_doc_id, message: result.message },
+            'HSCV complete LGSP outbox 06: SP returned success=false',
+          );
+        }
+      } catch (err) {
+        req.log?.warn(
+          { err, handlingDocId, incomingDocId: r.incoming_doc_id },
+          'HSCV complete LGSP outbox hook failed for one doc -- continuing',
+        );
+      }
+    }
+  } catch (err) {
+    req.log?.warn(
+      { err, handlingDocId },
+      'HSCV complete LGSP outbox hook query failed -- HSCV complete still succeeded',
+    );
+  }
+}
 
 // ============================================================
 // Gap F (HDSD III.2.7) — Staff picker cùng đơn vị (Chuyển tiếp HSCV)
@@ -678,6 +753,14 @@ router.patch('/:id/trang-thai', async (req: Request, res: Response) => {
       res.status(400).json({ success: false, message: result.message });
       return;
     }
+
+    // Phase 36 Plan 36-03: neu action=complete -> fire LGSP outbox 06 cho VB cha nguon LGSP.
+    // Best-effort: query handling_doc_links + JOIN incoming_docs filter source_type='external_lgsp',
+    // INSERT outbox row cho moi VB. UNIQUE constraint Phase 36-01 chan duplicate.
+    if (action === 'complete') {
+      await fireHscvCompleteOutbox(id, req);
+    }
+
     res.json({ success: true, data: { message: result.message } });
   } catch (error) {
     handleDbError(error, res);
