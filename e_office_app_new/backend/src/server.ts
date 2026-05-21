@@ -49,6 +49,10 @@ import {
   registerReceiveTickRepeatJob,
   closeLgspReceiveQueue,
 } from './lib/queue/lgsp-receive-queue.js';
+import {
+  registerStatusTickRepeatJob,
+  closeLgspStatusQueue,
+} from './lib/queue/lgsp-status-queue.js';
 import { closeRedisConnection } from './lib/queue/redis-connection.js';
 
 const app = express();
@@ -201,6 +205,21 @@ httpServer.listen(port, async () => {
         'Failed to register LGSP receive tick repeat job (cron will NOT fire — manual /sync-now still works)',
       );
     });
+
+  // Phase 36 Plan 03: Register the 30s LGSP status callback tick repeat scheduler.
+  // Idempotent (removes pre-existing repeat first) — safe to call on every restart.
+  // Non-blocking: failure here does NOT crash server (Redis may not yet be ready);
+  // outbox events accumulate until worker can consume them.
+  registerStatusTickRepeatJob()
+    .then(() => {
+      // Success log emitted inside registerStatusTickRepeatJob — no duplicate here.
+    })
+    .catch((err) => {
+      logger.error(
+        { err: err?.message ?? err },
+        'Failed to register LGSP status tick repeat job (worker cron will NOT fire — outbox events accumulate)',
+      );
+    });
 });
 
 // --- Graceful shutdown (Phase 11 — ensure in-flight sign jobs finish before exit) ---
@@ -214,6 +233,7 @@ async function shutdown(signal: string): Promise<void> {
   try { await closeSigningQueue(); } catch (err) { logger.warn({ err }, 'closeSigningQueue error'); }
   try { await closeLgspSendQueue(); } catch (err) { logger.warn({ err }, 'closeLgspSendQueue error'); }
   try { await closeLgspReceiveQueue(); } catch (err) { logger.warn({ err }, 'closeLgspReceiveQueue error'); }
+  try { await closeLgspStatusQueue(); } catch (err) { logger.warn({ err }, 'closeLgspStatusQueue error'); }  // Phase 36
   try { await closeRedisConnection(); } catch (err) { logger.warn({ err }, 'closeRedisConnection error'); }
 
   httpServer.close(() => {
