@@ -25,6 +25,9 @@ export interface RecipientStatus {
   sent_status: string;
   error_message: string | null;
   generated_incoming_doc_id: number | null;
+  // Phase 37 Plan 37-06: expose tracking id cho retry button (admin only).
+  // Backend route GET /van-ban-di/:id/noi-nhan da tra ve cot nay (Phase 19+).
+  generated_lgsp_tracking_id: number | null;
   lgsp_doc_id: string | null;
   lgsp_status: string | null;
   lgsp_error_message: string | null;

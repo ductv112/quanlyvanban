@@ -15,7 +15,7 @@ import {
   FileImageOutlined, FileWordOutlined, FileExcelOutlined, FileOutlined,
   EditOutlined, SafetyCertificateOutlined, StopOutlined, RollbackOutlined,
   ThunderboltOutlined, InboxOutlined, CommentOutlined, SafetyOutlined,
-  CloudUploadOutlined,
+  CloudUploadOutlined, ReloadOutlined,
 } from '@ant-design/icons';
 import { api } from '@/lib/api';
 import { downloadAttachment } from '@/lib/download';
@@ -219,6 +219,28 @@ export default function OutgoingDocDetailPage() {
     hasPending: noiNhanHasPending,
     refetch: refetchNoiNhan,
   } = useRecipientsPolling(docId, docId > 0, 10_000);
+
+  // Phase 37 Plan 37-06: admin role gate + retry handler cho recipient external_org error
+  const isAdmin = (user?.isAdmin ?? false) || (user?.roles?.includes('Quản trị hệ thống') ?? false);
+  const [retryingTrackingId, setRetryingTrackingId] = useState<number | null>(null);
+  const handleRetryTracking = async (trackingId: number) => {
+    setRetryingTrackingId(trackingId);
+    try {
+      const { data: res } = await api.post(`/admin/lgsp-tracking/${trackingId}/retry`);
+      if (res?.success) {
+        message.success(res.message || 'Đã reset tracking, worker sẽ gửi lại trong vài giây');
+        refetchNoiNhan();
+        setTimeout(() => { refetchNoiNhan(); }, 5000);
+      } else {
+        message.error(res?.message || 'Không thể gửi lại văn bản này');
+      }
+    } catch (err: unknown) {
+      const errAny = err as { response?: { data?: { message?: string } } };
+      message.error(errAny.response?.data?.message || 'Không thể gửi lại văn bản này');
+    } finally {
+      setRetryingTrackingId(null);
+    }
+  };
   const fetchHistory = useCallback(async () => { try { const { data: res } = await api.get(`/van-ban-di/${docId}/lich-su`); setHistory(res.data || []); } catch {} }, [docId]);
   const fetchLeaderNotes = useCallback(async () => { try { const { data: res } = await api.get(`/van-ban-di/${docId}/y-kien`); setLeaderNotes(res.data || []); } catch {} }, [docId]);
 
@@ -795,6 +817,29 @@ export default function OutgoingDocDetailPage() {
                             </Tooltip>
                           ) : (
                             <Tag color={badge.color} style={{ margin: 0, maxWidth: '100%' }}>{badge.label}</Tag>
+                          )}
+                          {/* Phase 37 Plan 37-06: button "Gửi lại" admin only cho external_org lgsp_status='error' */}
+                          {r.recipient_type === 'external_org'
+                            && r.lgsp_status === 'error'
+                            && r.generated_lgsp_tracking_id
+                            && isAdmin && (
+                            <Popconfirm
+                              title="Gửi lại văn bản này qua LGSP?"
+                              description="Worker sẽ enqueue lại job gửi LGSP trong vài giây."
+                              okText="Gửi lại"
+                              cancelText="Hủy"
+                              onConfirm={() => handleRetryTracking(r.generated_lgsp_tracking_id as number)}
+                            >
+                              <Button
+                                size="small"
+                                type="link"
+                                icon={<ReloadOutlined />}
+                                loading={retryingTrackingId === r.generated_lgsp_tracking_id}
+                                style={{ marginLeft: 8, padding: 0, height: 'auto', fontSize: 12 }}
+                              >
+                                Gửi lại
+                              </Button>
+                            </Popconfirm>
                           )}
                         </div>
                       </div>
