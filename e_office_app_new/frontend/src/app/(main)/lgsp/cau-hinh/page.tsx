@@ -424,9 +424,8 @@ export default function LgspCauHinhPage(): React.ReactElement {
           <>
             Mỗi đơn vị có 2 môi trường: <b>Sandbox</b> (kiểm thử) và{' '}
             <b>Production</b> (vận hành thật). Nhập <code>SystemId</code> +{' '}
-            <code>SecretKey</code> từ tài liệu LGSP (file{' '}
-            <code>QLVBDNAgencies.xlsx</code> hoặc <code>List.txt</code>), bấm{' '}
-            <b>Kiểm tra kết nối</b> đạt → bật <b>Trạng thái</b> để cron tự
+            <code>SecretKey</code> từ tài liệu LGSP do Sở TT&amp;TT cung cấp,
+            bấm <b>Kiểm tra kết nối</b> đạt → bật <b>Trạng thái</b> để cron tự
             động đồng bộ mỗi 5 phút.
           </>
         }
@@ -710,9 +709,8 @@ export default function LgspCauHinhPage(): React.ReactElement {
                     <b>Gợi ý kiểm tra:</b>
                     <ul style={{ marginTop: 4, paddingLeft: 24 }}>
                       <li>
-                        SystemId + SecretKey có khớp với{' '}
-                        <code>QLVBDNAgencies.xlsx</code> hoặc{' '}
-                        <code>List.txt</code> chưa?
+                        SystemId + SecretKey có khớp với tài liệu LGSP do Sở
+                        TT&amp;TT cung cấp chưa?
                       </li>
                       <li>
                         Base URL có truy cập được từ server không (firewall /
