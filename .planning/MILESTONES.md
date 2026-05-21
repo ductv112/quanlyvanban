@@ -1,5 +1,41 @@
 # Milestones
 
+## v3.2 LGSP Production Go-live cho 6 DN Lang Son (Shipped: 2026-05-21)
+
+**Phases completed:** 5 phases, 27 plans, 79 tasks
+
+**Key accomplishments:**
+
+- Per-unit LGSP credential table (`edoc.lgsp_agency_config`) + outbox queue (`edoc.lgsp_status_outbox`) + 2 triggers (validate root unit + auto updated_at) append vào master schema — toàn bộ idempotent
+- Append 172 dong seed Phase 33 vao `seed/001_required_data.sql`: UPDATE 6 root unit set `lgsp_org_code` H37.DN.001..006 (portable name-keyword match) + INSERT 9 placeholder row `lgsp_agency_config` (6 prod + 3 sandbox, all `is_active=FALSE`, secret encrypted thanh 'placeholder_not_configured')
+- 11 SPs CRUD (7 cho `lgsp_agency_config` + 4 cho `lgsp_status_outbox`) append vào master schema + 2 file repository TypeScript (`lgsp-agency-config.repository.ts` + `lgsp-status-outbox.repository.ts`) mirror EXACT pattern `signing-provider-config.repository.ts` — TypeScript strict zero error + deep smoke test E2E pass (encrypt/decrypt round-trip + outbox lifecycle)
+- LGSPRealService refactor từ singleton env-based sang class với constructor injection + backward compat. Factory `getLgspService()` extended với per-unit lookup (qua repo Phase 33-03) + cache Map 5 phút TTL + invalidate-on-write. Smoke test 17/17 PASS bao trùm backward compat + 4 throw path + cache hit/invalidate/clear lifecycle.
+- Final verification toàn Phase 33: TypeScript strict (backend PASS, frontend 4 pre-existing errors deferred), idempotent schema/seed apply lần 3 ZERO ERROR, SP count 361 (baseline 350 + 11 Phase 33 SPs + 1 trigger fn), zero overload, E2E factory smoke test 6/6 PASS (backward compat + disabled + placeholder + invalidate + clear), trigger validate_root_unit 2/2 REJECT — VERIFICATION-REPORT.md 185 dòng + auto-approved per delegation mode.
+- Plan 34-01:
+- Plan 34-02:
+- Plan 34-03:
+- Real-time recipient tracking on VB đi detail page: 10s polling hook + 7-case badge state machine (Đã gửi nội bộ / Đang chờ LGSP / Đã gửi LGSP / Lỗi LGSP / Đang xử lý LGSP / Chờ gửi nội bộ / Chờ enqueue) with hover tooltips for timestamp + LGSP docId + full error message.
+- Plan 34-05:
+- Plan 35-01:
+- Plan 35-02:
+- Plan 35-03:
+- Render Tag "LGSP" inline cot So ky hieu cho row source_type='external_lgsp' + filter dropdown "Nguon" 3 lua chon + section "Nguon LGSP" tren detail page voi external_doc_id / publish_unit / lgsp_sender_org_code / received_date — backend list/detail SP extended de lo cac field LGSP + accept source_type query filter (whitelist validated).
+- Comprehensive Phase 35 verification (TS strict + production build + schema idempotency + Approach B audit + edXML parser smoke + worker boot + cron auto-register + auth gates + E2E sandbox real HTTP roundtrip + cleanup) — Phase 35 ready to mark COMPLETE with credential-rotation caveat identical to Phase 34-05.
+- One-liner:
+- One-liner:
+- One-liner:
+- One-liner:
+- One-liner:
+- Files created/modified verified:
+- 3 endpoint mới (test connection + overview + inter-org sync) extend admin-lgsp.ts → tổng 12 endpoints admin LGSP — Wave 2 backend ready cho Plan 37-03/04/05 frontend pages
+- NEW page /lgsp/cau-hinh (735 lines) — Admin LGSP credential management: Table 12 row + Drawer edit + Test Connection Modal + Switch toggle inline — wire vào 4 endpoint admin từ Plan 37-01/02
+- REWRITE page /lgsp/co-quan (184 -> 689 lines) — Phase 18 read-only stub -> full CRUD admin: Table + filter 3-state (Tat ca / Da xac nhan / Tu dang ky) + search + Drawer Add/Edit + Popconfirm Delete + button "Dong bo tu truc LGSP" voi Modal confirm/result — wire 5 endpoint admin namespace tu Plan 37-01/02
+- REWRITE page /lgsp (206 -> 577 lines) — Phase 18 tracking list stub -> full Dashboard overview LGSP: 4 stat cards tổng quan today + 6 DN cards với env badges + last_synced_at + count today + button "Đồng bộ ngay" admin only + tracking history Table giữ Phase 18 — wire 3 endpoint (1 admin overview + 1 sync-now + 1 tracking).
+- hidden-routes.ts:
+- None
+
+---
+
 ## v3.1 — Manual Test Execution + Bug Fix + Setup KH Lạng Sơn (2026-05-05 → 2026-05-19)
 
 **Status:** ✓ Shipped

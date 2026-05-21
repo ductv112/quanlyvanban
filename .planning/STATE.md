@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v3.2
 milestone_name: LGSP Production Go-live cho 6 DN Lạng Sơn
-status: executing
-stopped_at: Completed 33-04-PLAN.md (service factory + cache + invalidate)
-last_updated: "2026-05-21T05:19:01.349Z"
-last_activity: 2026-05-21
+status: shipped
+stopped_at: v3.2 milestone COMPLETE — archived to .planning/milestones/v3.2-* — ready for /gsd-new-milestone
+last_updated: "2026-05-21T05:25:00.000Z"
+last_activity: 2026-05-21 — v3.2 milestone SHIPPED (5 phase / 27 plans / ~80 commits / 36 REQ / PASS với tech debt v3.3+ tracked)
 progress:
   total_phases: 5
   completed_phases: 5
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-19)
 
 **Core value:** Luồng văn bản đến → xử lý → văn bản đi phải hoạt động đúng nghiệp vụ cơ quan nhà nước (6 DN Lạng Sơn dùng prod thật trên `doanhnghiep.vatk.org`, là 6 đơn vị cấp cao trong cây tổ chức `departments`)
-**Current focus:** Phase 37 — Admin UI + Catalog + Go-live
+**Current focus:** Milestone v3.2 SHIPPED — chờ `/gsd-new-milestone` start v3.3+ (backlog: mã 13/15/16, worker queue split, DLQ, MongoDB audit, HDSD refresh round 2)
 
 ## Current Position
 
-Phase: 37
-Plan: Not started
-Status: Executing Phase 37
-Last activity: 2026-05-21
+Milestone: v3.2 ✅ SHIPPED (5/5 phase, 27/27 plan, 36/36 REQ)
+Status: SHIPPED — archived
+Last activity: 2026-05-21 — milestone v3.2 closed, ROADMAP collapsed, REQUIREMENTS archived to milestones/, MILESTONES.md updated
+Resume: `/gsd-new-milestone` để start v3.3+ HOẶC `/gsd-cleanup` để archive phase directories Phase 33-37
 
 ## Decisions
 
