@@ -5,6 +5,7 @@ import { loadDocAndCanEdit } from '../middleware/doc-edit-guard.js';
 import { outgoingDocRepository } from '../repositories/outgoing-doc.repository.js';
 import { incomingDocRepository } from '../repositories/incoming-doc.repository.js';
 import { uploadFile, deleteFile, getFileUrl, streamFileToResponse } from '../lib/minio/client.js';
+import { handleAttachmentPreview } from '../lib/attachment-preview.js';
 import { v4 as uuidv4 } from 'uuid';
 import { handleDbError } from '../lib/error-handler.js';
 import { exportExcel } from '../lib/excel.js';
@@ -623,7 +624,32 @@ router.get('/:id/dinh-kem/:attachmentId/download', async (req: Request, res: Res
     // file đã ký vẫn là bản chính thức của VB, panel Signature trong Adobe Reader
     // đã đủ truyền tải trạng thái ký. file_path gốc giữ trong DB cho audit trail.
     const path = (att.is_ca && att.signed_file_path) ? att.signed_file_path : att.file_path;
-    await streamFileToResponse(res, path, att.file_name, (att as any).mime_type);
+    await streamFileToResponse(res, path, att.file_name, att.content_type);
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
+
+// GET /:id/dinh-kem/:attachmentId/preview — Xem truc tiep file dinh kem (inline)
+// PDF/anh/text -> stream inline; Office -> convert qua LibreOffice -> stream PDF
+// Uu tien signed_file_path khi is_ca=true (dong nhat voi /download)
+router.get('/:id/dinh-kem/:attachmentId/preview', async (req: Request, res: Response) => {
+  try {
+    const attachments = await outgoingDocRepository.getAttachments(Number(req.params.id));
+    const att = attachments.find(a => Number(a.id) === Number(req.params.attachmentId));
+    if (!att) {
+      res.status(404).json({ success: false, message: 'Không tìm thấy file' });
+      return;
+    }
+    const filePath = (att.is_ca && att.signed_file_path) ? att.signed_file_path : att.file_path;
+    // Neu file da ky so (signed_file_path) → MIME se la application/pdf bat ke content_type goc
+    const contentType = (att.is_ca && att.signed_file_path) ? 'application/pdf' : att.content_type ?? null;
+    await handleAttachmentPreview(res, {
+      filePath,
+      contentType,
+      attachmentId: Number(att.id),
+      fileName: att.file_name,
+    });
   } catch (error) {
     handleDbError(error, res);
   }

@@ -4,6 +4,7 @@ import { upload } from '../middleware/upload.js';
 import { incomingDocRepository } from '../repositories/incoming-doc.repository.js';
 import { lgspStatusOutboxRepository, type LgspTargetStatus } from '../repositories/lgsp-status-outbox.repository.js';
 import { uploadFile, deleteFile, getFileUrl, streamFileToResponse } from '../lib/minio/client.js';
+import { handleAttachmentPreview } from '../lib/attachment-preview.js';
 import { v4 as uuidv4 } from 'uuid';
 import { handleDbError } from '../lib/error-handler.js';
 import { exportExcel } from '../lib/excel.js';
@@ -778,7 +779,28 @@ router.get('/:id/dinh-kem/:attachmentId/download', async (req: Request, res: Res
       res.status(404).json({ success: false, message: 'Không tìm thấy file' });
       return;
     }
-    await streamFileToResponse(res, att.file_path, att.file_name, (att as any).mime_type);
+    await streamFileToResponse(res, att.file_path, att.file_name, att.content_type);
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
+
+// GET /:id/dinh-kem/:attachmentId/preview — Xem truc tiep file dinh kem (inline)
+// PDF/anh/text -> stream inline; Office (doc/docx/xls/...) -> convert qua LibreOffice -> stream PDF
+router.get('/:id/dinh-kem/:attachmentId/preview', async (req: Request, res: Response) => {
+  try {
+    const attachments = await incomingDocRepository.getAttachments(Number(req.params.id));
+    const att = attachments.find(a => Number(a.id) === Number(req.params.attachmentId));
+    if (!att) {
+      res.status(404).json({ success: false, message: 'Không tìm thấy file' });
+      return;
+    }
+    await handleAttachmentPreview(res, {
+      filePath: att.file_path,
+      contentType: att.content_type ?? null,
+      attachmentId: Number(att.id),
+      fileName: att.file_name,
+    });
   } catch (error) {
     handleDbError(error, res);
   }
