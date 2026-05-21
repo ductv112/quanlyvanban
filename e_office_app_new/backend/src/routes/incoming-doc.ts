@@ -2,6 +2,7 @@ import { Router, type Request, type Response } from 'express';
 import type { AuthRequest } from '../middleware/auth.js';
 import { upload } from '../middleware/upload.js';
 import { incomingDocRepository } from '../repositories/incoming-doc.repository.js';
+import { lgspStatusOutboxRepository, type LgspTargetStatus } from '../repositories/lgsp-status-outbox.repository.js';
 import { uploadFile, deleteFile, getFileUrl, streamFileToResponse } from '../lib/minio/client.js';
 import { v4 as uuidv4 } from 'uuid';
 import { handleDbError } from '../lib/error-handler.js';
@@ -45,10 +46,23 @@ async function getBellContext(senderStaffId: number, docId: number): Promise<{
 
 const router = Router();
 
-/** Load doc ownership + compute perms. Dùng rawQuery lean — không cần full getById. */
+/** Load doc ownership + compute perms. Dùng rawQuery lean — không cần full getById.
+ *
+ * Phase 36 Plan 36-03: mo rong SELECT them source_type + external_doc_id + lgsp_sender_org_code
+ * de helper `fireLgspStatusOutbox` co the build payload ngay tu `loaded.doc` ma KHONG can
+ * goi them getById (tiet kiem 1 round-trip DB per hook).
+ */
 async function loadDocAndPerms(docId: number, userCtx: DocPermissionContext) {
-  const rows = await rawQuery<{ id: number; unit_id: number; created_by: number | null }>(
-    `SELECT id, unit_id, created_by FROM edoc.incoming_docs WHERE id = $1`, [docId],
+  const rows = await rawQuery<{
+    id: number;
+    unit_id: number;
+    created_by: number | null;
+    source_type: 'manual' | 'internal' | 'external_lgsp' | null;
+    external_doc_id: string | null;
+    lgsp_sender_org_code: string | null;
+  }>(
+    `SELECT id, unit_id, created_by, source_type, external_doc_id, lgsp_sender_org_code
+       FROM edoc.incoming_docs WHERE id = $1`, [docId],
   );
   if (rows.length === 0) return null;
   const doc = rows[0];
@@ -80,6 +94,66 @@ async function loadDocAndPerms(docId: number, userCtx: DocPermissionContext) {
     }
   }
   return { doc, perms };
+}
+
+/**
+ * Phase 36 Plan 36-03: helper fire LGSP status outbox event for an incoming doc.
+ *
+ * Guard: chi INSERT khi doc.source_type='external_lgsp' (D-02).
+ * Failure handling: log warn but DO NOT throw -- user action must still succeed (D-03 best-effort).
+ *
+ * Idempotency: UNIQUE constraint (incoming_doc_id, target_status) chan dedup.
+ * Repo insertEvent swallow SQLSTATE 23505 -> null silent. UI users see no error.
+ *
+ * @param doc Loaded doc record (must have source_type, external_doc_id, lgsp_sender_org_code).
+ * @param targetStatus QD 28 code: '02' | '03' | '04' | '05' | '06'.
+ * @param req Express request for req.log access.
+ * @param extra Optional payload extension (e.g. {reason}).
+ */
+async function fireLgspStatusOutbox(
+  doc: {
+    id: number;
+    source_type?: string | null;
+    external_doc_id?: string | null;
+    lgsp_sender_org_code?: string | null;
+  },
+  targetStatus: LgspTargetStatus,
+  req: Request,
+  extra?: Record<string, unknown>,
+): Promise<void> {
+  if (doc.source_type !== 'external_lgsp') return;
+  try {
+    const result = await lgspStatusOutboxRepository.insertEvent({
+      incoming_doc_id: Number(doc.id),
+      target_status: targetStatus,
+      payload: {
+        lgsp_doc_id: doc.external_doc_id ?? null,
+        sender_org_code: doc.lgsp_sender_org_code ?? null,
+        ...(extra ?? {}),
+      },
+    });
+    if (result === null) {
+      req.log?.info(
+        { docId: doc.id, targetStatus },
+        'LGSP status outbox: dedup skip (UNIQUE chan -- da co row trang thai nay)',
+      );
+    } else if (!result.success) {
+      req.log?.warn(
+        { docId: doc.id, targetStatus, message: result.message },
+        'LGSP status outbox: SP returned success=false (user action still succeeds)',
+      );
+    } else {
+      req.log?.info(
+        { docId: doc.id, targetStatus, outboxId: result.id },
+        'LGSP status outbox enqueued',
+      );
+    }
+  } catch (err) {
+    req.log?.warn(
+      { err, docId: doc.id, targetStatus },
+      'Failed to enqueue LGSP status outbox -- user action still succeeded',
+    );
+  }
 }
 
 // ============================================================
@@ -187,7 +261,32 @@ router.patch('/danh-dau-da-doc', async (req: Request, res: Response) => {
       res.status(400).json({ success: false, message: 'Danh sách văn bản không hợp lệ' });
       return;
     }
-    const result = await incomingDocRepository.markReadBulk(doc_ids.map(Number), staffId);
+    const docIdsNum = doc_ids.map(Number);
+    const result = await incomingDocRepository.markReadBulk(docIdsNum, staffId);
+
+    // Phase 36 Plan 36-03: fire outbox 03 (Tiep nhan) cho moi LGSP doc trong batch.
+    // UNIQUE constraint (incoming_doc_id, target_status) chan duplicate -> chi fire 1 lan dau tien.
+    // Best-effort per-doc: 1 doc fail KHONG dragon batch + KHONG fail user action.
+    try {
+      const lgspRows = await rawQuery<{
+        id: number;
+        source_type: string;
+        external_doc_id: string | null;
+        lgsp_sender_org_code: string | null;
+      }>(
+        `SELECT id, source_type, external_doc_id, lgsp_sender_org_code
+           FROM edoc.incoming_docs
+          WHERE id = ANY($1::bigint[])
+            AND source_type = 'external_lgsp'`,
+        [docIdsNum],
+      );
+      for (const r of lgspRows) {
+        await fireLgspStatusOutbox(r, '03', req);
+      }
+    } catch (err) {
+      req.log?.warn({ err, docIds: docIdsNum }, 'Phase 36 mark-read outbox batch hook failed -- bulk mark-read still succeeded');
+    }
+
     res.json({ success: true, data: result });
   } catch (error) {
     handleDbError(error, res);
@@ -799,6 +898,25 @@ router.post('/:id/but-phe', async (req: Request, res: Response) => {
         req.log?.warn({ err, docId }, 'Bell notification (leader_note_received) failed');
       }
 
+      // Phase 36 Plan 36-03: fire outbox 05 (Dang xu ly) -- but-phe lan dau (UNIQUE chan duplicate)
+      try {
+        const lgspRows = await rawQuery<{
+          id: number;
+          source_type: string;
+          external_doc_id: string | null;
+          lgsp_sender_org_code: string | null;
+        }>(
+          `SELECT id, source_type, external_doc_id, lgsp_sender_org_code
+             FROM edoc.incoming_docs WHERE id = $1`,
+          [docId],
+        );
+        if (lgspRows[0]) {
+          await fireLgspStatusOutbox(lgspRows[0], '05', req, { leader_note_id: result.id });
+        }
+      } catch (err) {
+        req.log?.warn({ err, docId }, 'Phase 36 but-phe (combo) outbox hook failed');
+      }
+
       res.status(201).json({ success: true, data: { id: result.id, message: result.message } });
     } else {
       const result = await incomingDocRepository.createLeaderNote(docId, staffId, content.trim());
@@ -806,6 +924,26 @@ router.post('/:id/but-phe', async (req: Request, res: Response) => {
         res.status(400).json({ success: false, message: result.message });
         return;
       }
+
+      // Phase 36 Plan 36-03: fire outbox 05 (Dang xu ly) -- but-phe standalone path
+      try {
+        const lgspRows = await rawQuery<{
+          id: number;
+          source_type: string;
+          external_doc_id: string | null;
+          lgsp_sender_org_code: string | null;
+        }>(
+          `SELECT id, source_type, external_doc_id, lgsp_sender_org_code
+             FROM edoc.incoming_docs WHERE id = $1`,
+          [docId],
+        );
+        if (lgspRows[0]) {
+          await fireLgspStatusOutbox(lgspRows[0], '05', req, { leader_note_id: result.id });
+        }
+      } catch (err) {
+        req.log?.warn({ err, docId }, 'Phase 36 but-phe (standalone) outbox hook failed');
+      }
+
       res.status(201).json({ success: true, data: { id: result.id } });
     }
   } catch (error) {
@@ -1012,6 +1150,12 @@ router.post('/:id/giao-viec', async (req: Request, res: Response) => {
       req.log?.warn({ err, hscvId: result.id }, 'Bell notification (task_assigned) failed');
     }
 
+    // Phase 36 Plan 36-03: fire outbox 04 (Phan cong) -- guard external_lgsp via fireLgspStatusOutbox
+    await fireLgspStatusOutbox(loaded.doc, '04', req, {
+      hscv_id: result.id,
+      curator_ids: curator_ids.map(Number),
+    });
+
     res.status(201).json({ success: true, data: result, message: 'Giao việc thành công' });
   } catch (error) {
     handleDbError(error, res);
@@ -1059,6 +1203,12 @@ router.post('/:id/chuyen-lai', async (req: Request, res: Response) => {
       res.status(400).json({ success: false, message: result.message });
       return;
     }
+
+    // Phase 36 Plan 36-03: fire outbox 02 (Tu choi tiep nhan) -- chi khi doc external_lgsp.
+    // LGSP-STATUS-06: SP rename (fn_incoming_doc_return -> fn_incoming_doc_reject_intake) + UI label refactor
+    // ("Chuyen lai" -> "Tu choi tiep nhan") defer Phase 37. Backend hook prepare ngay san hoat dong.
+    await fireLgspStatusOutbox(loaded.doc, '02', req, { reason: reason.trim() });
+
     res.json({ success: true, message: 'Chuyển lại văn bản thành công' });
   } catch (error) {
     handleDbError(error, res);
@@ -1100,6 +1250,11 @@ router.post('/:id/them-vao-hscv', async (req: Request, res: Response) => {
       res.status(400).json({ success: false, message: result.message });
       return;
     }
+
+    // Phase 36 Plan 36-03: fire outbox 05 (Dang xu ly) -- them-vao-hscv counted = first activity if 05 chua co.
+    // UNIQUE constraint NOOP if 05 da insert tu but-phe truoc do.
+    await fireLgspStatusOutbox(loaded.doc, '05', req, { handling_doc_id: Number(handling_doc_id) });
+
     res.json({ success: true, data: { id: result.id, message: result.message } });
   } catch (error) {
     handleDbError(error, res);
@@ -1194,8 +1349,34 @@ router.post('/:id/chuyen-luu-tru', async (req: Request, res: Response) => {
     if (!loaded.perms.canApprove) { res.status(403).json({ success: false, message: 'Không có quyền chuyển lưu trữ văn bản này' }); return; }
     const result = await incomingDocRepository.createArchive('incoming', docId, { ...req.body, archived_by: staffId });
     if (!result.success) { res.status(400).json({ success: false, message: result.message }); return; }
+
+    // Phase 36 Plan 36-03: fire outbox 06 (Hoan thanh) -- chuyen luu tru = ket thuc vong doi VB
+    await fireLgspStatusOutbox(loaded.doc, '06', req, { archive_id: result.id });
+
     res.json({ success: true, data: { id: result.id, message: result.message } });
   } catch (error) { handleDbError(error, res); }
+});
+
+// ============================================================
+// PHASE 36 PLAN 36-03: LGSP Status History (cho UI Timeline Plan 36-04)
+// ============================================================
+
+// GET /:id/lgsp-status-history -- chronological list outbox events cho 1 VB den
+router.get('/:id/lgsp-status-history', async (req: Request, res: Response) => {
+  try {
+    const { staffId, departmentId, isAdmin } = (req as AuthRequest).user;
+    const docId = Number(req.params.id);
+    // Permission reuse loadDocAndPerms (giong detail endpoint Phase 35-04) -- 404 neu khong xem duoc.
+    const loaded = await loadDocAndPerms(docId, { staffId, departmentId, isAdmin });
+    if (!loaded) {
+      res.status(404).json({ success: false, message: 'Không tìm thấy văn bản đến' });
+      return;
+    }
+    const history = await lgspStatusOutboxRepository.getDocStatusHistory(docId);
+    res.json({ success: true, data: history });
+  } catch (error) {
+    handleDbError(error, res);
+  }
 });
 
 export default router;
