@@ -30,6 +30,7 @@ import documentRoutes from './routes/document.js';
 import contractRoutes from './routes/contract.js';
 import meetingRoutes from './routes/meeting.js';
 import lgspRoutes from './routes/lgsp.js';
+import adminLgspRoutes from './routes/admin-lgsp.js';
 import digitalSignatureRoutes from './routes/digital-signature.js';
 import kySoCauHinhRoutes from './routes/ky-so-cau-hinh.js';
 import kySoTaiKhoanRoutes from './routes/ky-so-tai-khoan.js';
@@ -39,7 +40,7 @@ import notificationRoutes from './routes/notification.js';
 import bellNotificationsRoutes from './routes/notifications.js';  // Phase 13 — personal bell
 import sendConfigRoutes from './routes/send-config.js';
 import profileRoutes from './routes/profile.js';
-import { authenticate, requireRightByPathOrNext, requireRightOrNext } from './middleware/auth.js';
+import { authenticate, requireRightByPathOrNext, requireRightOrNext, requireRoles } from './middleware/auth.js';
 import { initSocket } from './lib/socket.js';
 import { ensureBucket } from './lib/minio/client.js';
 import { startSigningWorker, stopSigningWorker } from './workers/signing-poll.worker.js';
@@ -130,6 +131,9 @@ app.use('/api/cuoc-hop', authenticate, meetingRoutes);
 
 // --- Phase 6: Tich hop he thong ngoai ---
 app.use('/api/lgsp', authenticate, lgspRoutes);
+// Phase 37: Admin LGSP namespace — wrap với authenticate + requireRoles('Quản trị hệ thống')
+// 9 endpoints: config CRUD (list/update/active), outbox/tracking retry, inter-organizations CRUD
+app.use('/api/admin', authenticate, requireRoles('Quản trị hệ thống'), adminLgspRoutes);
 // Phase 9: Admin config cho ký số — MUST mount BEFORE /api/ky-so generic (longer prefix wins)
 // Fix 2026-05-11: dùng requireRightOrNext(20) — check right "Cấu hình ký số hệ
 // thống" qua action_of_role table thay vì hardcode role name "Quản trị hệ thống"
