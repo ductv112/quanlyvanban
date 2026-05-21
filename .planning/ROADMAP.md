@@ -140,7 +140,12 @@ Detail: `.planning/milestones/v3.1-phases/`, archive: `.planning/milestones/v3.1
   3. E2E Lấy lại flow: DN.001 sandbox gửi VB đến DN ngoài → bấm "Lấy lại VB" → outbox INSERT status `13`; recipient sandbox đồng ý (UI quyết định 15/16) → trục push status `15` về → backend update `lgsp_tracking`. Test cả 16 (từ chối lấy lại).
   4. Worker `lgsp-status-sync.ts` exponential backoff verified: kill trục giả lập lỗi → worker retry 1m → 5m → 30m → 2h → 6h (timestamp log); sau 5 lần max → `sent_status='error'`, không loop infinit. Restart trục → manual re-trigger thành công.
   5. UI VB đến + VB đi nguồn LGSP hiển thị tag trạng thái cuối cùng (01/02/03/04/05/06/13/15/16) với màu phân biệt (xanh lá `06`, đỏ `02/16`, vàng `03/04/05`, xám `13`, xanh `15`) + tooltip Vietnamese name đầy đủ ("Đã tiếp nhận", "Từ chối tiếp nhận", ...) — hover ra tooltip + tap ra full label
-**Plans:** TBD
+**Plans:** 5 plans
+  - [ ] 36-01-PLAN.md — Schema UNIQUE + LGSPRealService.updateStatus fix + repo extensions
+  - [ ] 36-02-PLAN.md — BullMQ workers (status-tick + status-event) + backend producer queue
+  - [ ] 36-03-PLAN.md — Wire 6 route hooks + handling-doc complete + server.ts startup + history endpoint
+  - [ ] 36-04-PLAN.md — Frontend Timeline 'Lịch sử trạng thái LGSP' + helper labels
+  - [ ] 36-05-PLAN.md — Final verification (TS + build + schema idempotent + E2E sandbox + VERIFICATION-REPORT)
 **UI hint**: yes
 
 ### Phase 37: Admin UI + Catalog + Go-live
