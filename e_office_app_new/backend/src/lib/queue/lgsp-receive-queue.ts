@@ -18,7 +18,11 @@ import { getRedisConnection } from './redis-connection.js';
 const logger = pino({ name: 'lgsp-receive-queue' });
 
 // Constants — duplicated from workers/src/queues/lgsp-receive-queue.ts (separate module per Approach B)
-export const LGSP_RECEIVE_QUEUE_NAME = 'lgsp-receive';
+// Phase 37.4 fix #5: backend producer chi can TICK queue (manual sync-now enqueue tick job).
+// DN queue cua worker, backend KHONG enqueue truc tiep child job.
+export const LGSP_RECEIVE_TICK_QUEUE_NAME = 'lgsp-receive-tick';
+/** @deprecated Phase 37.4: backward compat alias */
+export const LGSP_RECEIVE_QUEUE_NAME = LGSP_RECEIVE_TICK_QUEUE_NAME;
 export const LGSP_RECEIVE_TICK_JOB_NAME = 'receive-tick';
 export const LGSP_RECEIVE_DN_JOB_NAME = 'receive-dn';
 export const LGSP_RECEIVE_TICK_MAX_ATTEMPTS = 1;
@@ -36,28 +40,27 @@ export interface LgspReceiveDnJobData {
   environment: 'sandbox' | 'prod';
 }
 
-let queue: Queue<LgspReceiveTickJobData | LgspReceiveDnJobData> | null = null;
+let queue: Queue<LgspReceiveTickJobData> | null = null;
 
-export function getLgspReceiveQueue(): Queue<LgspReceiveTickJobData | LgspReceiveDnJobData> {
+// Phase 37.4 fix #5: backend producer only manages TICK queue (manual sync-now route).
+// DN queue belongs to worker module (tick worker enqueues child DN job sang DN queue).
+export function getLgspReceiveQueue(): Queue<LgspReceiveTickJobData> {
   if (!queue) {
-    queue = new Queue<LgspReceiveTickJobData | LgspReceiveDnJobData>(
-      LGSP_RECEIVE_QUEUE_NAME,
-      {
-        connection: getRedisConnection(),
-        defaultJobOptions: {
-          removeOnComplete: { count: 500 },
-          removeOnFail: { count: 2000 },
-        },
+    queue = new Queue<LgspReceiveTickJobData>(LGSP_RECEIVE_TICK_QUEUE_NAME, {
+      connection: getRedisConnection(),
+      defaultJobOptions: {
+        removeOnComplete: { count: 500 },
+        removeOnFail: { count: 2000 },
       },
-    );
+    });
     logger.info(
       {
-        queue: LGSP_RECEIVE_QUEUE_NAME,
+        queue: LGSP_RECEIVE_TICK_QUEUE_NAME,
         dnMaxAttempts: LGSP_RECEIVE_DN_MAX_ATTEMPTS,
         dnBackoffDelayMs: LGSP_RECEIVE_DN_BACKOFF_DELAY,
         tickIntervalMs: LGSP_RECEIVE_TICK_INTERVAL_MS,
       },
-      'LGSP receive queue initialized',
+      'LGSP receive tick queue initialized',
     );
   }
   return queue;

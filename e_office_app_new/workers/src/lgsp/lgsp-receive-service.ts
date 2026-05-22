@@ -8,7 +8,7 @@
 // ============================================================
 import type { Pool } from 'pg';
 import pino from 'pino';
-import { getLgspAdminBearerToken } from './lgsp-auth.js';
+import { getLgspAdminBearerToken, clearLgspTokenForKey } from './lgsp-auth.js';
 
 const logger = pino({ name: 'lgsp-receive-service' });
 
@@ -121,53 +121,66 @@ export async function syncReceivedList(
     `${credentials.baseUrl}/v1/syncReceivedEdocList` +
     `?messageType=edoc&fromDate=${encodeURIComponent(fromDateYmd)}` +
     `&toDate=${encodeURIComponent(toDateYmd)}`;
-  // Phase 37.3: LGSP truc Lang Son yeu cau ca 3 header (Authorization Bearer + X-SystemId + X-SecretKey)
-  const bearerToken = await getLgspAdminBearerToken(credentials.baseUrl, credentials.environment);
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const res = await fetch(url, {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${bearerToken}`,
-        'X-SystemId': credentials.systemId,
-        'X-SecretKey': credentials.secretKey,
-        Accept: 'application/json',
-      },
-      signal: controller.signal,
-    });
-    const text = await res.text();
-    if (!res.ok) {
-      throw new Error(
-        `LGSP /v1/syncReceivedEdocList HTTP ${res.status}: ${text.slice(0, 300)}`,
-      );
-    }
-    let json: { success: boolean; count?: number; data?: any[]; message?: string };
+  // Phase 37.4 fix: retry-on-401 (token rotation reactive)
+  let attempt = 0;
+  const maxAttempts = 2;
+  while (true) {
+    attempt++;
+    const bearerToken = await getLgspAdminBearerToken(credentials.baseUrl, credentials.environment);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
-      json = JSON.parse(text);
-    } catch {
-      throw new Error(
-        `LGSP /v1/syncReceivedEdocList non-JSON response: ${text.slice(0, 200)}`,
-      );
+      const res = await fetch(url, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${bearerToken}`,
+          'X-SystemId': credentials.systemId,
+          'X-SecretKey': credentials.secretKey,
+          Accept: 'application/json',
+        },
+        signal: controller.signal,
+      });
+      if (res.status === 401 && attempt < maxAttempts) {
+        clearLgspTokenForKey(credentials.baseUrl, credentials.environment);
+        logger.warn(
+          { url, env: credentials.environment, attempt },
+          'LGSP /v1/syncReceivedEdocList HTTP 401 - clear cache + retry',
+        );
+        continue;
+      }
+      const text = await res.text();
+      if (!res.ok) {
+        throw new Error(
+          `LGSP /v1/syncReceivedEdocList HTTP ${res.status}: ${text.slice(0, 300)}`,
+        );
+      }
+      let json: { success: boolean; count?: number; data?: any[]; message?: string };
+      try {
+        json = JSON.parse(text);
+      } catch {
+        throw new Error(
+          `LGSP /v1/syncReceivedEdocList non-JSON response: ${text.slice(0, 200)}`,
+        );
+      }
+      if (!json.success || !Array.isArray(json.data)) {
+        logger.warn(
+          { from: fromDateYmd, to: toDateYmd, message: json.message },
+          'LGSP returned success=false or empty data',
+        );
+        return [];
+      }
+      return json.data.map((d: any) => ({
+        lgsp_doc_id: String(d.docId ?? ''),
+        from_org_code: String(d.from ?? ''),
+        to_org_code: String(d.to ?? ''),
+        status: String(d.status ?? ''),
+        status_desc: String(d.statusDesc ?? ''),
+        created_time: String(d.createdTime ?? ''),
+        updated_time: String(d.updatedTime ?? ''),
+      }));
+    } finally {
+      clearTimeout(timer);
     }
-    if (!json.success || !Array.isArray(json.data)) {
-      logger.warn(
-        { from: fromDateYmd, to: toDateYmd, message: json.message },
-        'LGSP returned success=false or empty data',
-      );
-      return [];
-    }
-    return json.data.map((d: any) => ({
-      lgsp_doc_id: String(d.docId ?? ''),
-      from_org_code: String(d.from ?? ''),
-      to_org_code: String(d.to ?? ''),
-      status: String(d.status ?? ''),
-      status_desc: String(d.statusDesc ?? ''),
-      created_time: String(d.createdTime ?? ''),
-      updated_time: String(d.updatedTime ?? ''),
-    }));
-  } finally {
-    clearTimeout(timer);
   }
 }
 
@@ -181,58 +194,71 @@ export async function getEdocFull(
   timeoutMs = 60_000,
 ): Promise<LgspReceivedFull | null> {
   const url = `${credentials.baseUrl}/v1/getEdoc?docId=${encodeURIComponent(lgspDocId)}`;
-  // Phase 37.3: LGSP truc Lang Son yeu cau ca 3 header (Authorization Bearer + X-SystemId + X-SecretKey)
-  const bearerToken = await getLgspAdminBearerToken(credentials.baseUrl, credentials.environment);
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const res = await fetch(url, {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${bearerToken}`,
-        'X-SystemId': credentials.systemId,
-        'X-SecretKey': credentials.secretKey,
-        Accept: 'application/json',
-      },
-      signal: controller.signal,
-    });
-    const text = await res.text();
-    if (!res.ok) {
-      throw new Error(
-        `LGSP /v1/getEdoc HTTP ${res.status} for docId=${lgspDocId}: ${text.slice(0, 300)}`,
-      );
-    }
-    let json: { success: boolean; data?: any; message?: string };
+  // Phase 37.4 fix: retry-on-401 (token rotation reactive)
+  let attempt = 0;
+  const maxAttempts = 2;
+  while (true) {
+    attempt++;
+    const bearerToken = await getLgspAdminBearerToken(credentials.baseUrl, credentials.environment);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
-      json = JSON.parse(text);
-    } catch {
-      throw new Error(
-        `LGSP /v1/getEdoc non-JSON response for docId=${lgspDocId}: ${text.slice(0, 200)}`,
-      );
+      const res = await fetch(url, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${bearerToken}`,
+          'X-SystemId': credentials.systemId,
+          'X-SecretKey': credentials.secretKey,
+          Accept: 'application/json',
+        },
+        signal: controller.signal,
+      });
+      if (res.status === 401 && attempt < maxAttempts) {
+        clearLgspTokenForKey(credentials.baseUrl, credentials.environment);
+        logger.warn(
+          { lgspDocId, env: credentials.environment, attempt },
+          'LGSP /v1/getEdoc HTTP 401 - clear cache + retry',
+        );
+        continue;
+      }
+      const text = await res.text();
+      if (!res.ok) {
+        throw new Error(
+          `LGSP /v1/getEdoc HTTP ${res.status} for docId=${lgspDocId}: ${text.slice(0, 300)}`,
+        );
+      }
+      let json: { success: boolean; data?: any; message?: string };
+      try {
+        json = JSON.parse(text);
+      } catch {
+        throw new Error(
+          `LGSP /v1/getEdoc non-JSON response for docId=${lgspDocId}: ${text.slice(0, 200)}`,
+        );
+      }
+      if (!json.success || !json.data) {
+        logger.warn(
+          { lgspDocId, message: json.message },
+          'LGSP /v1/getEdoc returned success=false or missing data',
+        );
+        return null;
+      }
+      const d = json.data;
+      return {
+        lgsp_doc_id: String(d.docId ?? lgspDocId),
+        sender_org_code: String(d.from ?? ''),
+        sender_org_name: String(d.fromName ?? ''),
+        edoc_code: String(d.edocCode ?? ''),
+        edoc_abstract: String(d.edocAbstract ?? ''),
+        edxml: String(d.edxml ?? ''),
+        attachments: Array.isArray(d.attachments)
+          ? d.attachments.map((a: any) => ({
+              file_name: String(a.fileName ?? ''),
+              file_content_base64: String(a.fileContent ?? ''),
+            }))
+          : [],
+      };
+    } finally {
+      clearTimeout(timer);
     }
-    if (!json.success || !json.data) {
-      logger.warn(
-        { lgspDocId, message: json.message },
-        'LGSP /v1/getEdoc returned success=false or missing data',
-      );
-      return null;
-    }
-    const d = json.data;
-    return {
-      lgsp_doc_id: String(d.docId ?? lgspDocId),
-      sender_org_code: String(d.from ?? ''),
-      sender_org_name: String(d.fromName ?? ''),
-      edoc_code: String(d.edocCode ?? ''),
-      edoc_abstract: String(d.edocAbstract ?? ''),
-      edxml: String(d.edxml ?? ''),
-      attachments: Array.isArray(d.attachments)
-        ? d.attachments.map((a: any) => ({
-            file_name: String(a.fileName ?? ''),
-            file_content_base64: String(a.fileContent ?? ''),
-          }))
-        : [],
-    };
-  } finally {
-    clearTimeout(timer);
   }
 }

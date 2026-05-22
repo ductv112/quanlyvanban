@@ -26,7 +26,7 @@ import {
   LgspSendError,
   mapLgspError,
 } from './error-codes.js';
-import { getLgspAdminBearerToken } from './lgsp-auth.js';
+import { getLgspAdminBearerToken, clearLgspTokenForKey } from './lgsp-auth.js';
 
 const logger = pino({ name: 'lgsp-send-service-worker' });
 
@@ -153,78 +153,89 @@ export async function sendDocument(
   const safeFilename =
     (docCode || 'edoc').replace(/[\\/:*?"<>|]/g, '_').slice(0, 100) + '.edxml';
 
-  const form = new FormData();
-  form.append('edocFile', edxmlBuffer, {
-    filename: safeFilename,
-    contentType: 'application/xml',
-    knownLength: edxmlBuffer.length,
-  });
-  form.append('messageType', 'edoc');
-
-  // form-data lib KHONG stream qua Node native fetch dung cach (sandbox tra ve
-  // "Unexpected end of Stream"). Convert sang Buffer + set Content-Length header
-  // de fetch send body fully.
-  const formBuffer = form.getBuffer();
-  const formHeaders = form.getHeaders();
-
-  // Phase 37.3: LGSP truc Lang Son yeu cau ca 3 header (Authorization Bearer + X-SystemId + X-SecretKey)
-  const bearerToken = await getLgspAdminBearerToken(endpoint, credentials.environment);
-
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 60_000);
-  try {
-    const res = await fetch(`${endpoint}/v1/sendEdoc`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${bearerToken}`,
-        'X-SystemId': credentials.systemId,
-        'X-SecretKey': credentials.secretKey,
-        ...formHeaders,
-        'Content-Length': String(formBuffer.length),
-      },
-      // Buffer = Uint8Array — fetch BodyInit accept BufferSource, cast de TS happy.
-      body: formBuffer as unknown as BodyInit,
-      signal: controller.signal,
+  // Phase 37.4 fix: wrap fetch trong retry-on-401 (LGSP token co the rotate som
+  // ngoai TTL 29 phut — clear cache + retry 1 lan voi token moi truoc khi throw)
+  let attempt = 0;
+  const maxAttempts = 2;
+  while (true) {
+    attempt++;
+    const form = new FormData();
+    form.append('edocFile', edxmlBuffer, {
+      filename: safeFilename,
+      contentType: 'application/xml',
+      knownLength: edxmlBuffer.length,
     });
+    form.append('messageType', 'edoc');
+    const formBuffer = form.getBuffer();
+    const formHeaders = form.getHeaders();
 
-    const text = await res.text();
-    let json: SendEdocResponse;
+    const bearerToken = await getLgspAdminBearerToken(endpoint, credentials.environment);
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 60_000);
     try {
-      json = JSON.parse(text) as SendEdocResponse;
-    } catch {
-      throw new LgspSendError(
-        `LGSP /v1/sendEdoc HTTP ${res.status} non-JSON response: ${text.slice(0, 200)}`,
+      const res = await fetch(`${endpoint}/v1/sendEdoc`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${bearerToken}`,
+          'X-SystemId': credentials.systemId,
+          'X-SecretKey': credentials.secretKey,
+          ...formHeaders,
+          'Content-Length': String(formBuffer.length),
+        },
+        body: formBuffer as unknown as BodyInit,
+        signal: controller.signal,
+      });
+
+      // Phase 37.4: HTTP 401 -> clear token cache + retry 1 lan voi token moi
+      if (res.status === 401 && attempt < maxAttempts) {
+        clearLgspTokenForKey(endpoint, credentials.environment);
+        logger.warn(
+          { endpoint, env: credentials.environment, attempt },
+          'LGSP /v1/sendEdoc HTTP 401 - clear cache + retry voi token moi',
+        );
+        continue;
+      }
+
+      const text = await res.text();
+      let json: SendEdocResponse;
+      try {
+        json = JSON.parse(text) as SendEdocResponse;
+      } catch {
+        throw new LgspSendError(
+          `LGSP /v1/sendEdoc HTTP ${res.status} non-JSON response: ${text.slice(0, 200)}`,
+        );
+      }
+
+      const docId = json.docId || json.data?.docId || '';
+      const errorCode = json.data?.errorCode;
+      const rawMessage = json.message || json.data?.errorDesc || 'unknown';
+
+      if (!json.success) {
+        return {
+          success: false,
+          lgsp_doc_id: docId || '',
+          message: mapLgspError(errorCode, rawMessage),
+          errorCode: errorCode || undefined,
+        };
+      }
+
+      logger.info(
+        { docCode, destOrgCode, lgspDocId: docId, bytes: edxmlBuffer.length },
+        'LGSP /v1/sendEdoc success',
       );
-    }
-
-    const docId = json.docId || json.data?.docId || '';
-    const errorCode = json.data?.errorCode;
-    const rawMessage = json.message || json.data?.errorDesc || 'unknown';
-
-    if (!json.success) {
       return {
-        success: false,
+        success: true,
         lgsp_doc_id: docId || '',
-        message: mapLgspError(errorCode, rawMessage),
-        errorCode: errorCode || undefined,
+        message: rawMessage,
+        errorCode: errorCode || '0',
       };
+    } catch (err: unknown) {
+      if (err instanceof LgspSendError) throw err;
+      const msg = err instanceof Error ? err.message : String(err);
+      throw new LgspSendError(`LGSP /v1/sendEdoc network/timeout: ${msg}`);
+    } finally {
+      clearTimeout(timer);
     }
-
-    logger.info(
-      { docCode, destOrgCode, lgspDocId: docId, bytes: edxmlBuffer.length },
-      'LGSP /v1/sendEdoc success',
-    );
-    return {
-      success: true,
-      lgsp_doc_id: docId || '',
-      message: rawMessage,
-      errorCode: errorCode || '0',
-    };
-  } catch (err: unknown) {
-    if (err instanceof LgspSendError) throw err;
-    const msg = err instanceof Error ? err.message : String(err);
-    throw new LgspSendError(`LGSP /v1/sendEdoc network/timeout: ${msg}`);
-  } finally {
-    clearTimeout(timer);
   }
 }

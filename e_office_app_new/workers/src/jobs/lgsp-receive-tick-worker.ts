@@ -12,7 +12,9 @@ import IORedis from 'ioredis';
 import pg from 'pg';
 import pino from 'pino';
 import {
-  LGSP_RECEIVE_QUEUE_NAME,
+  // Phase 37.4 fix #5: tach 2 queue rieng - tick listen TICK queue, enqueue child sang DN queue
+  LGSP_RECEIVE_TICK_QUEUE_NAME,
+  LGSP_RECEIVE_DN_QUEUE_NAME,
   LGSP_RECEIVE_TICK_JOB_NAME,
   LGSP_RECEIVE_DN_JOB_NAME,
   LGSP_RECEIVE_TICK_CONCURRENCY,
@@ -60,7 +62,8 @@ function getPool(): pg.Pool {
 
 function getDnQueue(): Queue<LgspReceiveDnJobData> {
   if (!dnQueue) {
-    dnQueue = new Queue<LgspReceiveDnJobData>(LGSP_RECEIVE_QUEUE_NAME, {
+    // Phase 37.4 fix #5: enqueue child sang DN queue rieng (truoc dung chung tick queue)
+    dnQueue = new Queue<LgspReceiveDnJobData>(LGSP_RECEIVE_DN_QUEUE_NAME, {
       connection: getConnection(),
       defaultJobOptions: {
         attempts: LGSP_RECEIVE_DN_MAX_ATTEMPTS,
@@ -128,8 +131,9 @@ async function handleTick(
 }
 
 export function startLgspReceiveTickWorker(): Worker<LgspReceiveTickJobData> {
+  // Phase 37.4 fix #5: listen TICK queue rieng (truoc share chung 'lgsp-receive' -> race)
   const worker = new Worker<LgspReceiveTickJobData>(
-    LGSP_RECEIVE_QUEUE_NAME,
+    LGSP_RECEIVE_TICK_QUEUE_NAME,
     async (job) => handleTick(job),
     {
       connection: getConnection(),
@@ -154,7 +158,7 @@ export function startLgspReceiveTickWorker(): Worker<LgspReceiveTickJobData> {
 
   logger.info(
     {
-      queue: LGSP_RECEIVE_QUEUE_NAME,
+      queue: LGSP_RECEIVE_TICK_QUEUE_NAME,
       concurrency: LGSP_RECEIVE_TICK_CONCURRENCY,
       maxAttempts: LGSP_RECEIVE_TICK_MAX_ATTEMPTS,
     },

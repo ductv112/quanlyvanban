@@ -6,7 +6,20 @@
 // Mirror pattern: workers/src/queues/lgsp-send-queue.ts (Phase 34)
 // ============================================================
 
-export const LGSP_RECEIVE_QUEUE_NAME = 'lgsp-receive';
+// Phase 37.4 fix #5: TACH 2 queue rieng (truoc do dung chung 'lgsp-receive')
+// LY DO: 2 Worker instance listen cung queue + filter by job.name -> race
+// (tick worker pick nham receive-dn job -> mark completed -> dn worker khong bao gio
+// pickup job do nua -> 1 DN sync silent skip).
+//
+// MIGRATION NOTE: Khi deploy v3.2.2 prod, queue cu 'lgsp-receive' co the con pending job
+// (vd: 1 tick job dang xep hang). BullMQ KHONG auto-migrate -- nhung tick interval 5 phut
+// se tu fire job moi vao 2 queue moi sau khi backend restart va registerReceiveTickRepeatJob()
+// chay. Job cu trong queue cu chi waste storage Redis, harmless.
+export const LGSP_RECEIVE_TICK_QUEUE_NAME = 'lgsp-receive-tick';
+export const LGSP_RECEIVE_DN_QUEUE_NAME = 'lgsp-receive-dn';
+
+/** @deprecated Phase 37.4: backward compat alias, prefer 2 queue split */
+export const LGSP_RECEIVE_QUEUE_NAME = LGSP_RECEIVE_TICK_QUEUE_NAME;
 
 /** Parent tick job — fires every 5 min OR manual via /api/lgsp/sync-now. Spawns N child receive-dn jobs. */
 export const LGSP_RECEIVE_TICK_JOB_NAME = 'receive-tick';

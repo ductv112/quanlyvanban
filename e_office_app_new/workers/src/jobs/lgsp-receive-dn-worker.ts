@@ -29,7 +29,8 @@ import pg from 'pg';
 import { Client as MinioClient } from 'minio';
 import pino from 'pino';
 import {
-  LGSP_RECEIVE_QUEUE_NAME,
+  // Phase 37.4 fix #5: dn worker listen DN queue rieng
+  LGSP_RECEIVE_DN_QUEUE_NAME,
   LGSP_RECEIVE_DN_JOB_NAME,
   LGSP_RECEIVE_DN_CONCURRENCY,
   LGSP_RECEIVE_DN_MAX_ATTEMPTS,
@@ -360,10 +361,20 @@ async function handleDnSync(job: Job<LgspReceiveDnJobData>): Promise<DnSyncResul
     return result;
   }
 
-  // Compute date window: fromDate = last_synced_at OR NOW-7d. toDate = NOW.
+  // Compute date window: fromDate = last_synced_at - 10 phut OVERLAP, OR NOW-7d. toDate = NOW.
+  //
+  // Phase 37.4 fix #4: Overlap 10 phut de catch late-arriving doc tu LGSP truc
+  // (truc co the push doc tre vai phut sau khi createdTime). Dedup chong duplicate
+  // INSERT bang UNIQUE (external_doc_id) WHERE source_type='external_lgsp'.
+  //
+  // Truoc fix: fromDate = exactly last_synced_at -> neu doc co createdTime nam giua
+  // 2 lan sync (5 phut) ma LGSP push tre -> bo lo vinh vien khi nho dan ra ngoai 7d.
   const now = new Date();
   const fallbackFrom = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-  const fromDate = creds.lastSyncedAt ? new Date(creds.lastSyncedAt) : fallbackFrom;
+  const overlapMs = 10 * 60 * 1000; // 10 phut overlap
+  const fromDate = creds.lastSyncedAt
+    ? new Date(new Date(creds.lastSyncedAt).getTime() - overlapMs)
+    : fallbackFrom;
   // Guard: if last_synced_at is older than 7 days, still use NOW-7d (LGSP rejects wide windows)
   const effectiveFrom = fromDate < fallbackFrom ? fallbackFrom : fromDate;
   const fromYmd = formatLgspDate(effectiveFrom);
@@ -511,8 +522,9 @@ async function handleDnSync(job: Job<LgspReceiveDnJobData>): Promise<DnSyncResul
 }
 
 export function startLgspReceiveDnWorker(): Worker<LgspReceiveDnJobData> {
+  // Phase 37.4 fix #5: listen DN queue rieng (truoc share chung 'lgsp-receive' -> race tick worker)
   const worker = new Worker<LgspReceiveDnJobData>(
-    LGSP_RECEIVE_QUEUE_NAME,
+    LGSP_RECEIVE_DN_QUEUE_NAME,
     async (job) => handleDnSync(job),
     {
       connection: getConnection(),
@@ -556,7 +568,7 @@ export function startLgspReceiveDnWorker(): Worker<LgspReceiveDnJobData> {
 
   logger.info(
     {
-      queue: LGSP_RECEIVE_QUEUE_NAME,
+      queue: LGSP_RECEIVE_DN_QUEUE_NAME,
       concurrency: LGSP_RECEIVE_DN_CONCURRENCY,
       maxAttempts: LGSP_RECEIVE_DN_MAX_ATTEMPTS,
     },

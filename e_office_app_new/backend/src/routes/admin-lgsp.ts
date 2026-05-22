@@ -41,6 +41,29 @@ function formatLgspDate(d: Date): string {
   return `${yyyy}/${mm}/${dd}`;
 }
 
+/**
+ * Phase 37.4 fix #6: sanitize error message from LGSP để tránh leak credential.
+ *
+ * LGSP có thể trả debug response chứa snippet credential (systemId, secretKey, Bearer token).
+ * Admin UI hiển thị qua Modal "Kiểm tra kết nối" -> rò rỉ thông tin nhạy cảm.
+ *
+ * Strip pattern: Bearer eyJ..., X-SystemId: ..., X-SecretKey: ..., password=...,
+ * secret_key=..., token=...
+ *
+ * Cũng cap message length max 300 chars để KHÔNG dump full response body.
+ */
+function sanitizeLgspErrorMessage(raw: string): string {
+  if (!raw) return 'Không thể kết nối LGSP';
+  return raw
+    .replace(/Bearer\s+[A-Za-z0-9._-]+/gi, 'Bearer [REDACTED]')
+    .replace(/X-?SystemId\s*[:=]\s*[^\s,;}"]+/gi, 'X-SystemId: [REDACTED]')
+    .replace(/X-?SecretKey\s*[:=]\s*[^\s,;}"]+/gi, 'X-SecretKey: [REDACTED]')
+    .replace(/password\s*[:=]\s*['"]?[^\s'",;}]+['"]?/gi, 'password: [REDACTED]')
+    .replace(/secret_?key\s*[:=]\s*['"]?[^\s'",;}]+['"]?/gi, 'secret_key: [REDACTED]')
+    .replace(/token\s*[:=]\s*['"]?[A-Za-z0-9._-]{10,}['"]?/gi, 'token: [REDACTED]')
+    .slice(0, 300);
+}
+
 // Phase 37.1: granular permission — 3 right tuong ung 3 nhom endpoint
 // (DB seed: public.rights id 23 parent + 24/25/26 children, auto-assigned cho role admin id=5)
 const RIGHT_LGSP_OVERVIEW = 24; // /lgsp dashboard + sync-now
@@ -391,10 +414,13 @@ router.post('/lgsp-agency-config/:id/test', requireConfig, async (req: Request, 
     } catch (err) {
       // LGSP gọi được nhưng credential sai / endpoint down — request OK, test fail
       const errAny = err as { code?: string; message?: string; status?: number };
-      const vnMessage =
-        errAny.code
-          ? `${errAny.message ?? 'Lỗi LGSP'} (Mã ${errAny.code})`
-          : errAny.message ?? 'Không thể kết nối LGSP';
+      // Phase 37.4 fix #6: sanitize error message tránh leak credential nếu LGSP
+      // debug-mode trả response body chứa systemId/secretKey/Bearer pattern.
+      const rawMessage = errAny.message ?? 'Không thể kết nối LGSP';
+      const sanitized = sanitizeLgspErrorMessage(rawMessage);
+      const vnMessage = errAny.code
+        ? `${sanitized} (Mã ${errAny.code})`
+        : sanitized;
       res.json({
         success: true,
         data: {

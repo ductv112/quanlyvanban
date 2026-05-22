@@ -10,7 +10,7 @@
 import type { Pool } from 'pg';
 import pino from 'pino';
 import { LgspSendError, mapLgspError } from './error-codes.js';
-import { getLgspAdminBearerToken } from './lgsp-auth.js';
+import { getLgspAdminBearerToken, clearLgspTokenForKey } from './lgsp-auth.js';
 
 const logger = pino({ name: 'lgsp-status-service' });
 
@@ -131,52 +131,62 @@ export async function updateStatus(
   const url = `${credentials.baseUrl}/v1/updateStatus`;
   const bodyJson = JSON.stringify({ docId, status });
 
-  // Phase 37.3: LGSP truc Lang Son yeu cau ca 3 header (Authorization Bearer + X-SystemId + X-SecretKey)
-  const bearerToken = await getLgspAdminBearerToken(credentials.baseUrl, credentials.environment);
-
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${bearerToken}`,
-        'X-SystemId': credentials.systemId,
-        'X-SecretKey': credentials.secretKey,
-        Accept: 'application/json',
-      },
-      body: bodyJson,
-      signal: controller.signal,
-    });
-    const text = await res.text();
-    let json: { success: boolean; message?: string; data?: { errorCode?: string; errorDesc?: string } };
+  // Phase 37.4 fix: retry-on-401 (token rotation reactive)
+  let attempt = 0;
+  const maxAttempts = 2;
+  while (true) {
+    attempt++;
+    const bearerToken = await getLgspAdminBearerToken(credentials.baseUrl, credentials.environment);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
-      json = JSON.parse(text);
-    } catch {
-      throw new LgspSendError(
-        `LGSP /v1/updateStatus HTTP ${res.status} non-JSON: ${text.slice(0, 200)}`,
-      );
-    }
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${bearerToken}`,
+          'X-SystemId': credentials.systemId,
+          'X-SecretKey': credentials.secretKey,
+          Accept: 'application/json',
+        },
+        body: bodyJson,
+        signal: controller.signal,
+      });
+      if (res.status === 401 && attempt < maxAttempts) {
+        clearLgspTokenForKey(credentials.baseUrl, credentials.environment);
+        logger.warn(
+          { docId, status, env: credentials.environment, attempt },
+          'LGSP /v1/updateStatus HTTP 401 - clear cache + retry',
+        );
+        continue;
+      }
+      const text = await res.text();
+      let json: { success: boolean; message?: string; data?: { errorCode?: string; errorDesc?: string } };
+      try {
+        json = JSON.parse(text);
+      } catch {
+        throw new LgspSendError(
+          `LGSP /v1/updateStatus HTTP ${res.status} non-JSON: ${text.slice(0, 200)}`,
+        );
+      }
 
-    const errorCode = json.data?.errorCode;
-    const rawMessage = json.message || json.data?.errorDesc || 'unknown';
+      const errorCode = json.data?.errorCode;
+      const rawMessage = json.message || json.data?.errorDesc || 'unknown';
 
-    if (!json.success) {
-      return {
-        success: false,
-        message: mapLgspError(errorCode, rawMessage),
-        errorCode: errorCode || undefined,
-      };
+      if (!json.success) {
+        return {
+          success: false,
+          message: mapLgspError(errorCode, rawMessage),
+          errorCode: errorCode || undefined,
+        };
+      }
+      return { success: true, message: rawMessage, errorCode: '0' };
+    } catch (err: unknown) {
+      if (err instanceof LgspSendError) throw err;
+      const msg = err instanceof Error ? err.message : String(err);
+      throw new LgspSendError(`LGSP /v1/updateStatus network/timeout: ${msg}`);
+    } finally {
+      clearTimeout(timer);
     }
-    return { success: true, message: rawMessage, errorCode: '0' };
-  } catch (err: unknown) {
-    if (err instanceof LgspSendError) throw err;
-    const msg = err instanceof Error ? err.message : String(err);
-    throw new LgspSendError(`LGSP /v1/updateStatus network/timeout: ${msg}`);
-  } finally {
-    clearTimeout(timer);
-    // Defensive: prevent unused variable warning if logger needed later
-    void logger;
   }
 }

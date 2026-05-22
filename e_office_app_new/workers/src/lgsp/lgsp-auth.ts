@@ -24,6 +24,11 @@ interface CacheEntry {
 // Cache keyed by `${baseUrl}::${environment}` so sandbox + prod hold separate tokens.
 const tokenCache = new Map<string, CacheEntry>();
 
+// In-flight login promise dedup (Phase 37.4 fix): khi nhieu worker concurrent
+// can token cung cacheKey, chi 1 login HTTP duoc fire, cac call khac await chung Promise.
+// Tranh LGSP IdP rate-limit khi 5 worker fire login dong thoi luc token expire.
+const inflightLogins = new Map<string, Promise<string>>();
+
 interface LoginResponse {
   code?: number | string;
   success?: boolean;
@@ -53,6 +58,30 @@ export async function getLgspAdminBearerToken(
     return cached.token;
   }
 
+  // Dedup in-flight login: neu da co request login same cacheKey dang chay -> await chung Promise
+  // Tranh thrashing LGSP IdP khi multiple worker concurrent expire cung luc
+  const existing = inflightLogins.get(cacheKey);
+  if (existing) {
+    return existing;
+  }
+
+  const loginPromise = doLogin(cacheKey, normalizedBaseUrl, environment);
+  inflightLogins.set(cacheKey, loginPromise);
+  try {
+    return await loginPromise;
+  } finally {
+    inflightLogins.delete(cacheKey);
+  }
+}
+
+/**
+ * Internal: thuc su goi LGSP /v1/auth/login + cache token. Tach ra de dedup wrapper goi.
+ */
+async function doLogin(
+  cacheKey: string,
+  normalizedBaseUrl: string,
+  environment: 'sandbox' | 'prod',
+): Promise<string> {
   // Read per-env admin credentials (fallback legacy)
   const envPrefix = environment === 'prod' ? 'LGSP_PROD' : 'LGSP_SANDBOX';
   const username = process.env[`${envPrefix}_USERNAME`] || process.env.LGSP_USERNAME;
@@ -119,4 +148,18 @@ export async function getLgspAdminBearerToken(
 /** Clear cache (test only, or khi admin reset credential trong env). */
 export function clearLgspTokenCache(): void {
   tokenCache.clear();
+}
+
+/**
+ * Phase 37.4 fix: clear cache cho 1 cacheKey cu the (khi HTTP 401 detected).
+ * Service goi function nay roi retry 1 lan voi token moi truoc khi throw lon hon.
+ */
+export function clearLgspTokenForKey(
+  baseUrl: string,
+  environment: 'sandbox' | 'prod',
+): void {
+  const normalizedBaseUrl = baseUrl.replace(/\/$/, '');
+  const cacheKey = `${normalizedBaseUrl}::${environment}`;
+  tokenCache.delete(cacheKey);
+  inflightLogins.delete(cacheKey);
 }
