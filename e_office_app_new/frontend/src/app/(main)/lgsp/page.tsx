@@ -469,8 +469,25 @@ export default function LgspOverviewPage(): React.ReactElement {
                       <div style={{ fontSize: 12, color: '#8c8c8c' }}>
                         Đồng bộ cuối:{' '}
                         {(() => {
-                          const lastSynced =
-                            u.prod_last_synced_at || u.sandbox_last_synced_at;
+                          // v3.2.3 fix: uu tien env DANG ACTIVE (vi env tat co the
+                          // giu ts cu tu lan admin bat truoc do - khong phai data hien tai).
+                          // Neu ca 2 active -> pick MAX. Neu khong env nao active -> pick MAX
+                          // ts co san (lich su). Truoc day pick `prod || sandbox` => sai khi
+                          // prod tat nhung con ts cu < sandbox active ts moi.
+                          const candidates: string[] = [];
+                          if (u.prod_is_active && u.prod_last_synced_at) {
+                            candidates.push(u.prod_last_synced_at);
+                          }
+                          if (u.sandbox_is_active && u.sandbox_last_synced_at) {
+                            candidates.push(u.sandbox_last_synced_at);
+                          }
+                          if (candidates.length === 0) {
+                            if (u.prod_last_synced_at) candidates.push(u.prod_last_synced_at);
+                            if (u.sandbox_last_synced_at) candidates.push(u.sandbox_last_synced_at);
+                          }
+                          const lastSynced = candidates.length
+                            ? candidates.reduce((a, b) => (a > b ? a : b))
+                            : null;
                           return lastSynced ? (
                             <strong>
                               {dayjs(lastSynced).format('DD/MM HH:mm')}
