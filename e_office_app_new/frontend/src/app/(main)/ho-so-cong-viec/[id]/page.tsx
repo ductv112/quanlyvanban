@@ -386,9 +386,9 @@ export default function HscvDetailPage() {
   // Staff picker dùng cho Gap F — Chuyển tiếp HSCV
   const [forwardStaffOptions, setForwardStaffOptions] = useState<{ value: number; label: string }[]>([]);
 
-  // Gap F (HDSD III.2.7) — Chuyển tiếp HSCV (reuse forwardStaffOptions)
+  // Gap F (HDSD III.2.7) — Chuyển tiếp HSCV (FW email-style, multi-recipient)
   const [transferOpen, setTransferOpen] = useState(false);
-  const [transferToStaffId, setTransferToStaffId] = useState<number | null>(null);
+  const [transferToStaffIds, setTransferToStaffIds] = useState<number[]>([]);
   const [transferNote, setTransferNote] = useState('');
   const [transferring, setTransferring] = useState(false);
 
@@ -696,27 +696,50 @@ export default function HscvDetailPage() {
     }
   };
 
-  // Gap F (HDSD III.2.7) — Chuyển tiếp HSCV
+  // Gap F (HDSD III.2.7) — Chuyển tiếp HSCV (multi-recipient FW)
   const openTransfer = () => {
-    setTransferToStaffId(null);
+    setTransferToStaffIds([]);
     setTransferNote('');
     fetchStaffForForward();
+    fetchHistory(); // Load history de filter nguoi da tung duoc FW
     setTransferOpen(true);
   };
   const handleTransfer = async () => {
-    if (!transferToStaffId) {
-      message.warning('Vui lòng chọn người nhận');
+    if (transferToStaffIds.length === 0) {
+      message.warning('Vui lòng chọn ít nhất một người nhận');
       return;
     }
     setTransferring(true);
     try {
       const { data: res } = await api.post(`/ho-so-cong-viec/${id}/chuyen-tiep`, {
-        to_staff_id: transferToStaffId,
+        to_staff_ids: transferToStaffIds,
         note: transferNote.trim(),
       });
       message.success(res?.message || 'Đã chuyển tiếp HSCV');
       setTransferOpen(false);
-      await fetchDetail();
+      // Refresh detail + staff list (FW thêm người vào staff_handling_docs role=2)
+      await Promise.all([
+        fetchDetail(),
+        (async () => {
+          try {
+            const { data: staffRes } = await api.get(`/ho-so-cong-viec/${id}/can-bo`);
+            const list: StaffItem[] = staffRes?.data || [];
+            setStaffList(list);
+            setAssignedStaff(
+              list.map((s) => ({
+                staff_id: s.staff_id,
+                staff_name: s.staff_name,
+                position_name: s.position_name,
+                department_name: s.department_name,
+                role: s.role,
+                deadline: s.deadline ? dayjs(s.deadline) : null,
+              }))
+            );
+          } catch {
+            // Bỏ qua — user co the bam refresh thu cong neu can
+          }
+        })(),
+      ]);
     } catch (err: any) {
       message.error(err?.response?.data?.message || 'Chuyển tiếp thất bại');
     } finally {
@@ -1449,8 +1472,17 @@ export default function HscvDetailPage() {
                       </div>
                       {availableStaffLoading ? (
                         <Skeleton active paragraph={{ rows: 3 }} />
-                      ) : (
-                        availableStaff.map((s) => (
+                      ) : (() => {
+                        const assignedIds = new Set(assignedStaff.map((a) => a.staff_id));
+                        const unassigned = availableStaff.filter((s) => !assignedIds.has(s.staff_id));
+                        if (unassigned.length === 0) {
+                          return (
+                            <div className="empty-center" style={{ padding: '12px 0', fontSize: 12 }}>
+                              Tất cả cán bộ của đơn vị đã được phân công
+                            </div>
+                          );
+                        }
+                        return unassigned.map((s) => (
                           <div key={s.staff_id} className="staff-assign-row">
                             <Checkbox
                               checked={s.checked}
@@ -1469,8 +1501,8 @@ export default function HscvDetailPage() {
                               </div>
                             </div>
                           </div>
-                        ))
-                      )}
+                        ));
+                      })()}
                     </>
                   )}
                 </div>
@@ -1956,17 +1988,44 @@ export default function HscvDetailPage() {
         confirmLoading={transferring}
         width={500} mask={{ closable: false }}>
         <div style={{ marginBottom: 12, padding: 10, background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: 6, fontSize: 12, color: '#1E40AF' }}>
-          <ExclamationCircleOutlined /> Chỉ có thể chuyển HSCV cho người cùng đơn vị
+          <ExclamationCircleOutlined /> Chia sẻ HSCV cho cán bộ cùng đơn vị để cùng cộng tác. Người nhận sẽ trở thành <b>Phối hợp</b> trong tab Cán bộ xử lý. Đổi người phụ trách chính dùng tab Cán bộ xử lý.
         </div>
         <Form layout="vertical">
-          <Form.Item label="Người nhận" required>
+          <Form.Item
+            label="Người nhận"
+            required
+            extra="Có thể chọn nhiều người. Người đã được chuyển tiếp hoặc đã có trong tab Cán bộ xử lý sẽ bị mờ đi."
+          >
             <Select
+              mode="multiple"
               showSearch
               optionFilterProp="label"
-              placeholder="Chọn người nhận (cùng đơn vị)"
-              options={forwardStaffOptions.filter(s => s.value !== user?.staffId)}
-              value={transferToStaffId ?? undefined}
-              onChange={setTransferToStaffId}
+              placeholder="Chọn một hoặc nhiều người nhận (cùng đơn vị)"
+              options={(() => {
+                const previouslyForwarded = new Set<number>();
+                historyList
+                  .filter((h) => h.action_type === 'transfer')
+                  .forEach((h) => {
+                    if (h.to_staff_id) previouslyForwarded.add(h.to_staff_id);
+                  });
+                const alreadyAssigned = new Set<number>(assignedStaff.map((a) => a.staff_id));
+                return forwardStaffOptions
+                  .filter((s) => s.value !== user?.staffId)
+                  .map((s) => {
+                    let suffix = '';
+                    if (alreadyAssigned.has(s.value)) suffix = ' (đã phân công)';
+                    else if (previouslyForwarded.has(s.value)) suffix = ' (đã chuyển tiếp)';
+                    return {
+                      value: s.value,
+                      label: suffix ? `${s.label}${suffix}` : s.label,
+                      disabled: Boolean(suffix),
+                    };
+                  });
+              })()}
+              value={transferToStaffIds}
+              onChange={(vals: number[]) => setTransferToStaffIds(vals)}
+              notFoundContent="Không còn ai trong đơn vị để chuyển tiếp"
+              maxTagCount="responsive"
             />
           </Form.Item>
           <Form.Item label="Ghi chú">

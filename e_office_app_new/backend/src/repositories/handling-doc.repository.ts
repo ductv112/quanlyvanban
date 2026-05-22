@@ -401,17 +401,20 @@ export const handlingDocRepository = {
     );
   },
 
-  // --- Gap F (HDSD III.2.7) — Chuyển tiếp HSCV (transfer ownership) ---
+  // --- Gap F (HDSD III.2.7) — Chuyển tiếp HSCV (FW email-style, multi-recipient) ---
+  // 2026-05-22: refactor multi. SP nhận INT[], thêm người nhận vào staff_handling_docs
+  // role=2, KHÔNG đổi handling_docs.curator. Trả về số người đã chuyển tiếp.
   async transfer(
     id: number,
     fromStaffId: number,
-    toStaffId: number,
+    toStaffIds: number[],
     note: string,
     byStaffId: number,
-  ): Promise<DbResult> {
-    const row = await callFunctionOne<DbResult>('edoc.fn_handling_doc_transfer', [
-      id, fromStaffId, toStaffId, note, byStaffId,
-    ]);
+  ): Promise<DbResult & { forwarded_count?: number }> {
+    const row = await callFunctionOne<DbResult & { forwarded_count: number }>(
+      'edoc.fn_handling_doc_transfer',
+      [id, fromStaffId, toStaffIds, note, byStaffId],
+    );
     return row ?? { success: false, message: 'Không tìm thấy hồ sơ công việc' };
   },
 

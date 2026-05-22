@@ -4366,77 +4366,100 @@ $$;
 
 
 --
--- Name: fn_handling_doc_transfer(bigint, integer, integer, text, integer); Type: FUNCTION; Schema: edoc; Owner: -
--- Chuyển tiếp HSCV (transfer ownership) — Gap F / TC-068.
+-- Name: fn_handling_doc_transfer(bigint, integer, integer[], text, integer); Type: FUNCTION; Schema: edoc; Owner: -
+-- Chuyển tiếp HSCV (FW email-style) — Gap F / TC-068.
+-- 2026-05-22: refactor multi-recipient. Thêm người nhận vào staff_handling_docs
+-- role=2 (Phối hợp), KHÔNG đổi handling_docs.curator. Đổi quyền chủ HSCV dùng
+-- nút "Sửa" (status=0) hoặc tab "Cán bộ xử lý".
 --
 
 DROP FUNCTION IF EXISTS edoc.fn_handling_doc_transfer(bigint, integer, integer, text, integer) CASCADE;
+DROP FUNCTION IF EXISTS edoc.fn_handling_doc_transfer(bigint, integer, integer[], text, integer) CASCADE;
 
 CREATE OR REPLACE FUNCTION edoc.fn_handling_doc_transfer(
     p_id bigint,
     p_from_staff_id integer,
-    p_to_staff_id integer,
+    p_to_staff_ids integer[],
     p_note text,
     p_by integer
 )
-RETURNS TABLE(success boolean, message text)
+RETURNS TABLE(success boolean, message text, forwarded_count integer)
 LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 DECLARE
     v_current_curator INT;
     v_doc_unit INT;
+    v_to_id INT;
     v_to_unit INT;
     v_to_locked BOOLEAN;
     v_to_deleted BOOLEAN;
+    v_count INT := 0;
 BEGIN
-    IF p_to_staff_id IS NULL OR p_to_staff_id <= 0 THEN
-        RETURN QUERY SELECT FALSE, 'Vui lòng chọn người nhận'::TEXT;
-        RETURN;
-    END IF;
-    IF p_from_staff_id = p_to_staff_id THEN
-        RETURN QUERY SELECT FALSE, 'Không thể chuyển cho chính mình'::TEXT;
+    IF p_to_staff_ids IS NULL OR ARRAY_LENGTH(p_to_staff_ids, 1) IS NULL THEN
+        RETURN QUERY SELECT FALSE, 'Vui lòng chọn ít nhất một người nhận'::TEXT, 0;
         RETURN;
     END IF;
 
     SELECT h.curator, h.unit_id INTO v_current_curator, v_doc_unit
       FROM edoc.handling_docs h WHERE h.id = p_id;
     IF NOT FOUND THEN
-        RETURN QUERY SELECT FALSE, 'Không tìm thấy hồ sơ công việc'::TEXT;
+        RETURN QUERY SELECT FALSE, 'Không tìm thấy hồ sơ công việc'::TEXT, 0;
         RETURN;
     END IF;
 
-    SELECT s.unit_id, COALESCE(s.is_locked, FALSE), COALESCE(s.is_deleted, FALSE)
-      INTO v_to_unit, v_to_locked, v_to_deleted
-      FROM public.staff s WHERE s.id = p_to_staff_id;
-    IF NOT FOUND THEN
-        RETURN QUERY SELECT FALSE, 'Không tìm thấy người nhận'::TEXT;
-        RETURN;
-    END IF;
-    IF v_to_locked THEN
-        RETURN QUERY SELECT FALSE, 'Người nhận đã khóa tài khoản'::TEXT;
-        RETURN;
-    END IF;
-    IF v_to_deleted THEN
-        RETURN QUERY SELECT FALSE, 'Người nhận đã bị xoá'::TEXT;
-        RETURN;
-    END IF;
-    IF v_to_unit <> v_doc_unit THEN
-        RETURN QUERY SELECT FALSE, 'Chỉ có thể chuyển HSCV cho người cùng đơn vị'::TEXT;
-        RETURN;
-    END IF;
+    -- Validate từng người nhận trước khi insert (atomic: fail toàn bộ nếu 1 người sai)
+    FOREACH v_to_id IN ARRAY p_to_staff_ids LOOP
+        IF v_to_id IS NULL OR v_to_id <= 0 THEN
+            RETURN QUERY SELECT FALSE, 'Người nhận không hợp lệ'::TEXT, 0;
+            RETURN;
+        END IF;
+        IF v_to_id = p_from_staff_id THEN
+            RETURN QUERY SELECT FALSE, 'Không thể chuyển cho chính mình'::TEXT, 0;
+            RETURN;
+        END IF;
 
-    UPDATE edoc.handling_docs
-    SET curator = p_to_staff_id,
-        updated_at = NOW()
-    WHERE id = p_id;
+        SELECT s.unit_id, COALESCE(s.is_locked, FALSE), COALESCE(s.is_deleted, FALSE)
+          INTO v_to_unit, v_to_locked, v_to_deleted
+          FROM public.staff s WHERE s.id = v_to_id;
+        IF NOT FOUND THEN
+            RETURN QUERY SELECT FALSE, 'Không tìm thấy người nhận'::TEXT, 0;
+            RETURN;
+        END IF;
+        IF v_to_locked THEN
+            RETURN QUERY SELECT FALSE, 'Có người nhận đã khóa tài khoản'::TEXT, 0;
+            RETURN;
+        END IF;
+        IF v_to_deleted THEN
+            RETURN QUERY SELECT FALSE, 'Có người nhận đã bị xoá'::TEXT, 0;
+            RETURN;
+        END IF;
+        IF v_to_unit <> v_doc_unit THEN
+            RETURN QUERY SELECT FALSE, 'Chỉ có thể chuyển HSCV cho người cùng đơn vị'::TEXT, 0;
+            RETURN;
+        END IF;
+    END LOOP;
 
-    INSERT INTO edoc.handling_doc_history(
-        handling_doc_id, action_type, from_staff_id, to_staff_id, note, created_by, created_at
-    )
-    VALUES (p_id, 'transfer', v_current_curator, p_to_staff_id, p_note, p_by, NOW());
+    -- Insert vào staff_handling_docs role=2 (Phối hợp) — nếu đã có thì giữ vai trò cũ
+    -- + log history 1 entry / 1 người nhận để filter UX "đã chuyển tiếp" dùng được.
+    FOREACH v_to_id IN ARRAY p_to_staff_ids LOOP
+        INSERT INTO edoc.staff_handling_docs (handling_doc_id, staff_id, role, assigned_at)
+        VALUES (p_id, v_to_id, 2, NOW())
+        ON CONFLICT DO NOTHING;
 
-    RETURN QUERY SELECT TRUE, 'Đã chuyển tiếp hồ sơ công việc'::TEXT;
+        INSERT INTO edoc.handling_doc_history(
+            handling_doc_id, action_type, from_staff_id, to_staff_id, note, created_by, created_at
+        )
+        VALUES (p_id, 'transfer', p_from_staff_id, v_to_id, p_note, p_by, NOW());
+
+        v_count := v_count + 1;
+    END LOOP;
+
+    UPDATE edoc.handling_docs SET updated_at = NOW() WHERE id = p_id;
+
+    RETURN QUERY SELECT TRUE,
+                        ('Đã chuyển tiếp HSCV cho ' || v_count || ' cán bộ')::TEXT,
+                        v_count;
 END;
 $$;
 
