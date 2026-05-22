@@ -71,19 +71,27 @@ INSERT INTO public.staff (id, department_id, unit_id, position_id, code, usernam
    'admin@laocai.gov.vn', '02093801001', '0912000001')
 ON CONFLICT (id) DO NOTHING;
 
--- ─── 3b. LGSP system staff (v3.2.2 fix #M4) ─────────────────────────────────
+-- ─── 3b. LGSP system staff (v3.2.2 fix #M4 — patched) ──────────────────────
 -- Dedicated created_by tracking cho LGSP receive worker (thay vi gan ID admin).
 -- password_hash = chuoi placeholder khong match bcrypt format -> login luon fail.
 -- is_locked = TRUE: them lop bao ve. Khong show trong UI cau hinh nguoi dung.
-INSERT INTO public.staff (id, department_id, unit_id, position_id, code, username, password_hash, is_admin, is_locked,
-                          first_name, last_name, gender, email, phone, mobile) VALUES
-  (2, 1, 1, 1, 'SYS-LGSP', 'lgsp-system',
-   'DISABLED_NO_LOGIN_LGSP_SYSTEM_ACCOUNT',
-   false, true, 'He thong', 'LGSP', 1,
-   'lgsp-system@noreply.local', '', '')
-ON CONFLICT (id) DO NOTHING;
+--
+-- LUU Y: KHONG hardcode id (truoc dung id=2, gay collision tren prod KH da co
+-- user thuc id=2). Dung SELECT NOT EXISTS WHERE username de idempotent + an toan
+-- voi prod data co san. Worker resolveSystemStaffId() lookup theo username,
+-- nen id thuc te do sequence cap khong quan trong.
+INSERT INTO public.staff (department_id, unit_id, position_id, code, username, password_hash, is_admin, is_locked,
+                          first_name, last_name, gender, email, phone, mobile)
+SELECT 1, 1, 1, 'SYS-LGSP', 'lgsp-system',
+       'DISABLED_NO_LOGIN_LGSP_SYSTEM_ACCOUNT',
+       false, true, 'He thong', 'LGSP', 1,
+       'lgsp-system@noreply.local', '', ''
+WHERE NOT EXISTS (SELECT 1 FROM public.staff WHERE username = 'lgsp-system');
 
-SELECT setval('public.staff_id_seq', 100, true);
+-- Reset sequence ve MAX(id) hien tai de tranh duplicate key khi insert tiep theo
+-- (pitfall #12: explicit id INSERT khong update sequence -> nextval cap id da ton tai).
+SELECT setval(pg_get_serial_sequence('public.staff', 'id'),
+              GREATEST((SELECT MAX(id) FROM public.staff), 100));
 
 -- ─── 4. Roles (6 vai trò default) ────────────────────────────────────────────
 INSERT INTO public.roles (id, unit_id, name, description) VALUES
