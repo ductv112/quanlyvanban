@@ -28,6 +28,7 @@ import { encryptSecret } from '../services/signing/crypto.js';
 import { invalidateLgspServiceCache, getLgspService } from '../services/lgsp.service.js';
 import { createLgspRealService } from '../services/lgsp-real.service.js';
 import { enqueueLgspSendJob } from '../lib/queue/lgsp-send-queue.js';
+import { parseIdParam } from '../lib/param-validation.js';
 import { handleDbError } from '../lib/error-handler.js';
 
 /**
@@ -97,7 +98,8 @@ router.get('/lgsp-agency-config', requireConfig, async (_req: Request, res: Resp
 // ============================================================
 router.put('/lgsp-agency-config/:id', requireConfig, async (req: Request, res: Response) => {
   try {
-    const id = Number(req.params.id);
+    const id = parseIdParam(req, res);
+    if (id === null) return;
     const { staffId } = (req as AuthRequest).user;
     const { systemId, secretKey, baseUrl, environment } = req.body as {
       systemId?: string;
@@ -149,7 +151,8 @@ router.put('/lgsp-agency-config/:id', requireConfig, async (req: Request, res: R
 // ============================================================
 router.patch('/lgsp-agency-config/:id/active', requireConfig, async (req: Request, res: Response) => {
   try {
-    const id = Number(req.params.id);
+    const id = parseIdParam(req, res);
+    if (id === null) return;
     const { staffId } = (req as AuthRequest).user;
     const isActive = req.body?.is_active === true;
 
@@ -181,7 +184,8 @@ router.patch('/lgsp-agency-config/:id/active', requireConfig, async (req: Reques
 // ============================================================
 router.post('/lgsp-status-outbox/:id/retry', requireConfig, async (req: Request, res: Response) => {
   try {
-    const id = Number(req.params.id);
+    const id = parseIdParam(req, res);
+    if (id === null) return;
     const result = await lgspStatusOutboxRepository.resetForRetry(id);
     if (!result.success) {
       res.status(400).json({ success: false, message: result.message });
@@ -198,7 +202,8 @@ router.post('/lgsp-status-outbox/:id/retry', requireConfig, async (req: Request,
 // ============================================================
 router.post('/lgsp-tracking/:id/retry', requireConfig, async (req: Request, res: Response) => {
   try {
-    const trackingId = Number(req.params.id);
+    const trackingId = parseIdParam(req, res);
+    if (trackingId === null) return;
     const tracking = await lgspRepository.getTrackingForRetry(trackingId);
     if (!tracking) {
       res.status(404).json({
@@ -304,7 +309,8 @@ router.post('/inter-organizations', requireCatalog, async (req: Request, res: Re
 // ============================================================
 router.put('/inter-organizations/:id', requireCatalog, async (req: Request, res: Response) => {
   try {
-    const id = Number(req.params.id);
+    const id = parseIdParam(req, res);
+    if (id === null) return;
     const b = req.body as Record<string, unknown>;
     const result = await interOrganizationRepository.updateForAdmin(id, {
       code: b.code as string | undefined,
@@ -333,7 +339,8 @@ router.put('/inter-organizations/:id', requireCatalog, async (req: Request, res:
 // ============================================================
 router.get('/inter-organizations/:id/usage', requireCatalog, async (req: Request, res: Response) => {
   try {
-    const id = Number(req.params.id);
+    const id = parseIdParam(req, res);
+    if (id === null) return;
     const result = await interOrganizationRepository.getUsageCount(id);
     if (!result.found) {
       res.status(404).json({ success: false, message: 'Không tìm thấy cơ quan ngoài' });
@@ -350,7 +357,8 @@ router.get('/inter-organizations/:id/usage', requireCatalog, async (req: Request
 // ============================================================
 router.delete('/inter-organizations/:id', requireCatalog, async (req: Request, res: Response) => {
   try {
-    const id = Number(req.params.id);
+    const id = parseIdParam(req, res);
+    if (id === null) return;
     const result = await interOrganizationRepository.deleteForAdmin(id);
     if (!result.success) {
       res.status(400).json({ success: false, message: result.message });
@@ -380,7 +388,8 @@ router.delete('/inter-organizations/:id', requireCatalog, async (req: Request, r
 // ------------------------------------------------------------
 router.post('/lgsp-agency-config/:id/test', requireConfig, async (req: Request, res: Response) => {
   try {
-    const id = Number(req.params.id);
+    const id = parseIdParam(req, res);
+    if (id === null) return;
     const config = await lgspAgencyConfigRepository.getByIdWithDecryptedSecret(id);
     if (!config) {
       res.status(404).json({ success: false, message: 'Không tìm thấy cấu hình LGSP' });
@@ -442,9 +451,15 @@ router.post('/lgsp-agency-config/:id/test', requireConfig, async (req: Request, 
 // Trả về 6 row (1 per root unit có lgsp_org_code) + tổng quan today.
 // Frontend Plan 37-04 render grid 6 cards + 3 stat cards (gửi/nhận/callback today).
 // ------------------------------------------------------------
-router.get('/lgsp-overview', requireOverview, async (_req: Request, res: Response) => {
+router.get('/lgsp-overview', requireOverview, async (req: Request, res: Response) => {
   try {
-    const rows = await lgspRepository.getOverviewStats();
+    // Phase 37.5 fix HIGH #3: cross-DN data isolation
+    // Admin role "Quản trị hệ thống" -> global view (undefined filter = all units).
+    // Non-admin với right 24 -> scoped to their own unit (prevents cross-DN data leak).
+    const authUser = (req as AuthRequest).user;
+    const isAdminRole = Boolean(authUser?.isAdmin || authUser?.roles?.includes('Quản trị hệ thống'));
+    const unitIds = isAdminRole ? undefined : [Number(authUser?.unitId)];
+    const rows = await lgspRepository.getOverviewStats(unitIds);
     const totals = rows.reduce(
       (acc, r) => ({
         send_today: acc.send_today + Number(r.send_today_total ?? 0),

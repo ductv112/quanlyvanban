@@ -98,7 +98,10 @@ interface SyncNowResponse {
 // Constants
 // ============================================================================
 
-const POLL_INTERVAL_MS = 30_000;
+// v3.2.2 fix #M14: tang tu 30s -> 60s + skip khi tab an (visibility API)
+// LGSP tick chay moi 5 phut, polling 30s qua aggressive -> 10 lan/phut x 6 DN
+// pin hoa session DB. 60s + visibility skip = giam ~80% load khi user roi tab.
+const POLL_INTERVAL_MS = 60_000;
 
 const STATUS_COLOR: Record<string, string> = {
   pending: 'orange',
@@ -170,13 +173,28 @@ export default function LgspOverviewPage(): React.ReactElement {
     fetchTracking();
   }, [fetchOverview, fetchTracking]);
 
-  // ── Polling 30s tự refresh background ────────────────────────────────
+  // ── Polling 60s tu refresh background — skip khi tab an (v3.2.2 fix #M14) ──
+  // Khi user chuyen sang tab khac -> setInterval VAN chay nhung skip API call.
+  // Khi tab quay lai active -> trigger 1 fetch ngay (catch-up data cu).
   useEffect(() => {
-    const id = setInterval(() => {
-      fetchOverview();
-      fetchTracking();
-    }, POLL_INTERVAL_MS);
-    return () => clearInterval(id);
+    const tickIfVisible = () => {
+      if (typeof document === 'undefined' || document.visibilityState === 'visible') {
+        fetchOverview();
+        fetchTracking();
+      }
+    };
+    const id = setInterval(tickIfVisible, POLL_INTERVAL_MS);
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        fetchOverview();
+        fetchTracking();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
   }, [fetchOverview, fetchTracking]);
 
   // ── Sync now (admin only) ────────────────────────────────────────────

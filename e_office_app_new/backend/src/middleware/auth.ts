@@ -119,7 +119,16 @@ async function userHasRight(staffId: number, rightId: number): Promise<boolean> 
 
 /**
  * Middleware single-right: check user có right_id cụ thể (vd: cấu hình ký số).
- * Pass → next(). Fail → next('router') để fall through mount khác.
+ * Pass → next(). Fail → 403 Forbidden.
+ *
+ * v3.2.2 fix #M9: TRUOC tra next('router') -> fall through -> Express khong tim
+ * route match -> 404 Not Found. Sai semantic — user co quyen XEM endpoint nhung
+ * thieu RIGHT cu the. 404 lam user nghi route khong ton tai (huong loi sai).
+ * Sau: 403 Forbidden voi message tieng Viet -> client biet ro la auth issue,
+ * khong rebreak path tim kiem route.
+ *
+ * Ten ham "OrNext" giu nguyen de tranh churn import — semantic now la "OrForbidden"
+ * (chi LGSP routes su dung, khong co fall-through router phia sau).
  */
 export function requireRightOrNext(rightId: number) {
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -132,7 +141,10 @@ export function requireRightOrNext(rightId: number) {
       next();
       return;
     }
-    next('router');
+    res.status(403).json({
+      success: false,
+      message: 'Khong co quyen truy cap chuc nang nay',
+    });
   };
 }
 

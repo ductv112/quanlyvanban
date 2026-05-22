@@ -3,6 +3,7 @@ import { type AuthRequest, requireRightOrNext } from '../middleware/auth.js';
 import { lgspRepository } from '../repositories/lgsp.repository.js';
 import { enqueueReceiveTick } from '../lib/queue/lgsp-receive-queue.js';
 import { handleDbError } from '../lib/error-handler.js';
+import { parseIdParam } from '../lib/param-validation.js';
 
 // Phase 37.1 + Phase 37.4 fix: granular permission per route
 // RIGHT_LGSP_OVERVIEW (id=24) = /lgsp dashboard + sync-now + tracking read
@@ -66,7 +67,8 @@ router.get('/tracking', requireOverview, async (req: Request, res: Response) => 
 // ============================================================
 router.get('/tracking/doc/:outgoingDocId', requireOverview, async (req: Request, res: Response) => {
   try {
-    const outgoingDocId = Number(req.params.outgoingDocId);
+    const outgoingDocId = parseIdParam(req, res, 'outgoingDocId');
+    if (outgoingDocId === null) return;
     const rows = await lgspRepository.getTrackingByDoc(outgoingDocId);
     res.json({ success: true, data: rows });
   } catch (error) {

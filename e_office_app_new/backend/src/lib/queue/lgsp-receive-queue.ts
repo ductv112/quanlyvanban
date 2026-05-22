@@ -69,9 +69,39 @@ export function getLgspReceiveQueue(): Queue<LgspReceiveTickJobData> {
 /**
  * Manual enqueue (Plan 35-03 `POST /api/lgsp/sync-now` calls this).
  * Default trigger_source='manual'. Job runs as soon as a tick worker is free.
+ *
+ * v3.2.2 fix #M8: dedup manual+cron overlap.
+ * - Truoc: moi click "Sync ngay" -> 1 tick job moi -> spawn N DN job per click.
+ *   Neu user spam click HOAC trung thoi diem cron fire -> DN queue flood, DB hammered.
+ * - Sau: kiem tra waiting+active tick job. Neu da co -> return existing jobId voi flag.
+ *   Cho phep cron repeat job thuc thi parallel voi manual chi khi can thiet.
  */
 export async function enqueueReceiveTick(data?: LgspReceiveTickJobData): Promise<string> {
   const q = getLgspReceiveQueue();
+
+  // Dedup: neu tick job dang waiting/active -> reuse
+  try {
+    const waiting = await q.getWaiting(0, 5);
+    const active = await q.getActive(0, 5);
+    const existing = [...waiting, ...active].find((j) => j.name === LGSP_RECEIVE_TICK_JOB_NAME);
+    if (existing) {
+      logger.info(
+        {
+          existingJobId: existing.id,
+          existingTrigger: (existing.data as LgspReceiveTickJobData)?.trigger_source,
+          newTrigger: data?.trigger_source ?? 'manual',
+        },
+        'LGSP receive tick already pending/active — dedup, returning existing job id',
+      );
+      return String(existing.id);
+    }
+  } catch (err) {
+    logger.warn(
+      { err: (err as Error).message },
+      'Tick dedup pre-check failed (continuing to add new job)',
+    );
+  }
+
   const j = await q.add(
     LGSP_RECEIVE_TICK_JOB_NAME,
     {

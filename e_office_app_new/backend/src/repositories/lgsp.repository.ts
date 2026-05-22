@@ -317,8 +317,19 @@ export const lgspRepository = {
    *   - departments.lgsp_org_code VARCHAR(13) NULL — root unit Lạng Sơn DN
    *
    * Used by GET /api/admin/lgsp-overview (Plan 37-02 route, Plan 37-04 frontend UI).
+   *
+   * Phase 37.5 fix HIGH #3:
+   * - Optional unitIds filter (caller passes user's accessible units) — admin global = NULL/empty,
+   *   non-admin scoped = [unitId list]. Prevents cross-DN data leak khi multi-tenant.
+   * - Replace `created_at::date = CURRENT_DATE` (functional cast, KHÔNG dùng index) bằng
+   *   `created_at >= date_trunc('day', NOW())` (range query, dùng index trên created_at).
    */
-  async getOverviewStats(): Promise<LgspOverviewRow[]> {
+  async getOverviewStats(unitIds?: number[]): Promise<LgspOverviewRow[]> {
+    const useFilter = Array.isArray(unitIds) && unitIds.length > 0;
+    const unitFilter = useFilter
+      ? 'WHERE ru.unit_id = ANY($1::bigint[])'
+      : '';
+    const params = useFilter ? [unitIds] : [];
     return rawQuery<LgspOverviewRow>(
       `WITH root_units AS (
           SELECT id::bigint AS unit_id, name AS unit_name, lgsp_org_code
@@ -334,7 +345,7 @@ export const lgspRepository = {
             FROM edoc.lgsp_tracking t
             JOIN edoc.outgoing_docs od ON od.id = t.outgoing_doc_id
            WHERE t.direction = 'send'
-             AND t.created_at::date = CURRENT_DATE
+             AND t.created_at >= date_trunc('day', NOW())
            GROUP BY od.unit_id
         ),
         receive_today AS (
@@ -342,7 +353,7 @@ export const lgspRepository = {
                  COUNT(*)::bigint AS total
             FROM edoc.incoming_docs ind
            WHERE ind.source_type = 'external_lgsp'
-             AND ind.created_at::date = CURRENT_DATE
+             AND ind.created_at >= date_trunc('day', NOW())
            GROUP BY ind.unit_id
         ),
         outbox_today AS (
@@ -351,7 +362,7 @@ export const lgspRepository = {
                  COUNT(*) FILTER (WHERE o.sent_status = 'error')::bigint   AS error
             FROM edoc.lgsp_status_outbox o
             JOIN edoc.incoming_docs ind ON ind.id = o.incoming_doc_id
-           WHERE o.created_at::date = CURRENT_DATE
+           WHERE o.created_at >= date_trunc('day', NOW())
            GROUP BY ind.unit_id
         )
         SELECT ru.unit_id,
@@ -380,8 +391,9 @@ export const lgspRepository = {
           LEFT JOIN send_today    st ON st.unit_id = ru.unit_id
           LEFT JOIN receive_today rt ON rt.unit_id = ru.unit_id
           LEFT JOIN outbox_today  ot ON ot.unit_id = ru.unit_id
+         ${unitFilter}
          ORDER BY ru.lgsp_org_code`,
-      [],
+      params,
     );
   },
 };

@@ -44,16 +44,19 @@ import {
   type LgspReceivedFull,
 } from '../lgsp/lgsp-receive-service.js';
 import { parseEdxml, type ParsedEdxml } from '../lgsp/edxml-parser.js';
+import { getSharedPgPool } from '../lib/pg-pool.js';
 
-const { Pool } = pg;
 const logger = pino({ name: 'lgsp-receive-dn-worker' });
 
 const MAX_ATTACHMENT_BYTES = 50 * 1024 * 1024; // 50MB cap (CONTEXT D-07 + LGSP spec)
 const MINIO_BUCKET = process.env.MINIO_BUCKET || 'documents';
-const SYSTEM_STAFF_ID = 1; // TODO Phase 37: dedicated lgsp-system staff user
+const LGSP_SYSTEM_USERNAME = process.env.LGSP_SYSTEM_USERNAME || 'lgsp-system';
+const FALLBACK_SYSTEM_STAFF_ID = 1; // v3.2.2 fix #M4: fallback neu lookup fail (admin id=1)
+
+// Cached resolved id (lazy lookup, refreshed on worker restart).
+let cachedSystemStaffId: number | null = null;
 
 let connection: IORedis | null = null;
-let pool: pg.Pool | null = null;
 let minioClient: MinioClient | null = null;
 
 function getConnection(): IORedis {
@@ -68,20 +71,8 @@ function getConnection(): IORedis {
   return connection;
 }
 
-function getPool(): pg.Pool {
-  if (!pool) {
-    pool = new Pool({
-      host: process.env.PG_HOST || 'localhost',
-      port: Number(process.env.PG_PORT) || 5432,
-      database: process.env.PG_DATABASE || 'qlvb_dev',
-      user: process.env.PG_USER || 'qlvb_admin',
-      password: process.env.PG_PASSWORD,
-      max: 5,
-      idleTimeoutMillis: 30000,
-    });
-  }
-  return pool;
-}
+// v3.2.2 fix #M10: dung shared pg pool thay vi tao pool rieng per-worker
+const getPool = getSharedPgPool;
 
 function getMinio(): MinioClient {
   if (!minioClient) {
@@ -99,6 +90,34 @@ function getMinio(): MinioClient {
 // ============================================================
 // SQL helpers
 // ============================================================
+
+/**
+ * v3.2.2 fix #M4: Lookup id cua user `lgsp-system` (created by seed/001).
+ * Cached per worker process. Fallback ve admin id=1 neu khong tim thay
+ * (DB chua re-seed sau upgrade) — log WARN de SRE biet seed con thieu.
+ */
+async function resolveSystemStaffId(p: pg.Pool): Promise<number> {
+  if (cachedSystemStaffId !== null) return cachedSystemStaffId;
+  try {
+    const rs = await p.query<{ id: string }>(
+      `SELECT id FROM public.staff WHERE username = $1 LIMIT 1`,
+      [LGSP_SYSTEM_USERNAME],
+    );
+    if (rs.rowCount && rs.rows[0]?.id) {
+      cachedSystemStaffId = Number(rs.rows[0].id);
+      logger.info({ username: LGSP_SYSTEM_USERNAME, staffId: cachedSystemStaffId }, 'Resolved LGSP system staff id');
+      return cachedSystemStaffId;
+    }
+  } catch (err) {
+    logger.warn({ err: (err as Error).message }, 'resolveSystemStaffId query failed, using fallback');
+  }
+  logger.warn(
+    { username: LGSP_SYSTEM_USERNAME, fallback: FALLBACK_SYSTEM_STAFF_ID },
+    'LGSP system staff not found in DB — please re-apply seed/001_required_data.sql',
+  );
+  cachedSystemStaffId = FALLBACK_SYSTEM_STAFF_ID;
+  return cachedSystemStaffId;
+}
 
 async function findExistingByLgspDocId(p: pg.Pool, lgspDocId: string): Promise<number | null> {
   const rs = await p.query<{ id: string }>(
@@ -152,7 +171,11 @@ interface IncomingDocInsertResult {
   message: string;
 }
 
-async function insertIncomingDoc(p: pg.Pool, x: IncomingDocInsertInput): Promise<IncomingDocInsertResult> {
+async function insertIncomingDoc(
+  p: pg.Pool,
+  x: IncomingDocInsertInput,
+  systemStaffId: number,
+): Promise<IncomingDocInsertResult> {
   try {
     const rs = await p.query<{ success: boolean; message: string; id: string | null }>(
       `SELECT * FROM edoc.fn_incoming_doc_create(
@@ -176,7 +199,7 @@ async function insertIncomingDoc(p: pg.Pool, x: IncomingDocInsertInput): Promise
         x.sign_date,                            // $9
         x.number_paper,                         // $10
         x.recipients_text.slice(0, 1000),       // $11
-        SYSTEM_STAFF_ID,                        // $12 created_by
+        systemStaffId,                          // $12 created_by (v3.2.2 #M4: dedicated lgsp-system)
         x.external_doc_id.slice(0, 200),        // $13
       ],
     );
@@ -212,6 +235,7 @@ async function insertIncomingDoc(p: pg.Pool, x: IncomingDocInsertInput): Promise
 async function insertAttachmentRow(
   p: pg.Pool,
   params: { incoming_doc_id: number; file_name: string; file_path: string; file_size: number; content_type: string },
+  systemStaffId: number,
 ): Promise<number> {
   const rs = await p.query<{ id: string }>(
     `INSERT INTO edoc.attachments
@@ -224,7 +248,7 @@ async function insertAttachmentRow(
       params.file_path.slice(0, 1000),
       params.file_size,
       (params.content_type || 'application/octet-stream').slice(0, 200),
-      SYSTEM_STAFF_ID,
+      systemStaffId,
     ],
   );
   return Number(rs.rows[0].id);
@@ -350,6 +374,9 @@ async function handleDnSync(job: Job<LgspReceiveDnJobData>): Promise<DnSyncResul
   const p = getPool();
   const result: DnSyncResult = { ...emptyResult };
 
+  // v3.2.2 fix #M4: resolve dedicated lgsp-system staff id (cached, fallback admin)
+  const systemStaffId = await resolveSystemStaffId(p);
+
   let creds;
   try {
     creds = await loadLgspCredentials(p, unit_id, environment, signingSecretKey);
@@ -432,7 +459,7 @@ async function handleDnSync(job: Job<LgspReceiveDnJobData>): Promise<DnSyncResul
 
       // INSERT incoming_docs
       const insertInput = mapEdxmlToInsertInput(parsed, full, unit_id);
-      const ins = await insertIncomingDoc(p, insertInput);
+      const ins = await insertIncomingDoc(p, insertInput, systemStaffId);
       if (ins.skipped) {
         result.docs_skipped += 1;
         logger.info({ unit_id, lgspDocId: sum.lgsp_doc_id }, ins.message);
@@ -467,7 +494,7 @@ async function handleDnSync(job: Job<LgspReceiveDnJobData>): Promise<DnSyncResul
             file_path: objectKey,
             file_size: att.content.length,
             content_type: att.mimeType ?? 'application/octet-stream',
-          });
+          }, systemStaffId);
           result.attachments_uploaded += 1;
         } catch (err) {
           logger.warn(
@@ -479,6 +506,9 @@ async function handleDnSync(job: Job<LgspReceiveDnJobData>): Promise<DnSyncResul
       }
 
       // Outbox status '01' (Phase 36 worker consumes)
+      // Phase 37.5 fix M2: neu outbox INSERT fail -> rollback DELETE incoming_doc
+      // (FK CASCADE auto xoa attachment_incoming_docs). Force retry next tick.
+      // MinIO file orphan se cleanup boi job riêng v3.3+ (acceptable storage waste).
       try {
         await insertOutboxStatus01(p, newDocId, {
           lgsp_doc_id: sum.lgsp_doc_id,
@@ -486,10 +516,20 @@ async function handleDnSync(job: Job<LgspReceiveDnJobData>): Promise<DnSyncResul
           ack_received_at: new Date().toISOString(),
         });
       } catch (err) {
-        logger.warn(
-          { unit_id, lgspDocId: sum.lgsp_doc_id, err: (err as Error).message },
-          'Outbox INSERT failed (status 01) — Phase 36 may not fire callback',
+        logger.error(
+          { unit_id, lgspDocId: sum.lgsp_doc_id, newDocId, err: (err as Error).message },
+          'Outbox INSERT fail -> rollback DELETE incoming_doc + CASCADE attachments (retry next tick)',
         );
+        try {
+          await p.query('DELETE FROM edoc.incoming_docs WHERE id = $1', [newDocId]);
+        } catch (rbErr) {
+          logger.error(
+            { newDocId, err: (rbErr as Error).message },
+            'CRITICAL: rollback DELETE failed - doc orphan, callback se KHONG fire',
+          );
+        }
+        result.docs_failed += 1;
+        continue;
       }
 
       result.docs_inserted += 1;
@@ -505,6 +545,27 @@ async function handleDnSync(job: Job<LgspReceiveDnJobData>): Promise<DnSyncResul
       );
       result.docs_failed += 1;
     }
+  }
+
+  // Phase 37.5 fix M1: KHONG advance last_synced_at neu co docs_failed > 0
+  // (force next tick retry same window de catch transient error: LGSP timeout,
+  // network blip, parseEdxml fail). Doc bi mat truoc -> dedup boi UNIQUE chong duplicate.
+  if (result.docs_failed > 0) {
+    try {
+      await updateLastSyncError(
+        p,
+        unit_id,
+        environment,
+        `Partial sync: ${result.docs_failed} doc fail / ${result.docs_seen} seen (KHONG advance last_synced_at - next tick retry)`,
+      );
+    } catch (err) {
+      logger.warn({ unit_id, err: (err as Error).message }, 'Failed to update last_sync_error');
+    }
+    logger.warn(
+      { unit_id, environment, ...result },
+      'LGSP DN sync PARTIAL — keep last_synced_at for retry',
+    );
+    return result;
   }
 
   // SUCCESS path: update last_synced_at + clear error (D-10 + D-11)
@@ -583,14 +644,7 @@ export async function stopLgspReceiveDnWorker(worker: Worker<LgspReceiveDnJobDat
   } catch (err) {
     logger.warn({ err: (err as Error).message }, 'Error closing DN worker');
   }
-  try {
-    if (pool) {
-      await pool.end();
-      pool = null;
-    }
-  } catch (err) {
-    logger.warn({ err: (err as Error).message }, 'Error closing DN pool');
-  }
+  // v3.2.2 fix #M10: shared pool close handled in index.ts SIGTERM (closeSharedPgPool)
   try {
     if (connection) {
       connection.disconnect();

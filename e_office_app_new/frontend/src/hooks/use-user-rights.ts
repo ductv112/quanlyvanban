@@ -28,6 +28,18 @@ async function fetchRights(): Promise<ReadonlySet<number>> {
   return new Set<number>(ids);
 }
 
+/**
+ * v3.2.2 fix #M11: Clear module-level rights cache.
+ * Call tu auth.store.logout() de tranh leak quyen cua user truoc.
+ * Hook se tu re-fetch khi staffId thay doi, nhung clear explicit
+ * dam bao cache sach giua 2 phien dang nhap.
+ */
+export function clearUserRightsCache(): void {
+  cachedStaffId = null;
+  cachedRights = null;
+  cachedFetchPromise = null;
+}
+
 export function useUserRights() {
   const { user } = useAuthStore();
   const isAdmin = Boolean(

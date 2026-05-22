@@ -9,7 +9,6 @@
 // ============================================================
 import { Queue, Worker, Job } from 'bullmq';
 import IORedis from 'ioredis';
-import pg from 'pg';
 import pino from 'pino';
 import {
   // Phase 37.4 fix #5: tach 2 queue rieng - tick listen TICK queue, enqueue child sang DN queue
@@ -24,13 +23,11 @@ import {
   type LgspReceiveTickJobData,
   type LgspReceiveDnJobData,
 } from '../queues/lgsp-receive-queue.js';
-
-const { Pool } = pg;
+import { getSharedPgPool } from '../lib/pg-pool.js';
 
 const logger = pino({ name: 'lgsp-receive-tick-worker' });
 
 let connection: IORedis | null = null;
-let pool: pg.Pool | null = null;
 let dnQueue: Queue<LgspReceiveDnJobData> | null = null;
 
 function getConnection(): IORedis {
@@ -45,20 +42,8 @@ function getConnection(): IORedis {
   return connection;
 }
 
-function getPool(): pg.Pool {
-  if (!pool) {
-    pool = new Pool({
-      host: process.env.PG_HOST || 'localhost',
-      port: Number(process.env.PG_PORT) || 5432,
-      database: process.env.PG_DATABASE || 'qlvb_dev',
-      user: process.env.PG_USER || 'qlvb_admin',
-      password: process.env.PG_PASSWORD,
-      max: 2,
-      idleTimeoutMillis: 30000,
-    });
-  }
-  return pool;
-}
+// v3.2.2 fix #M10: dung shared pg pool
+const getPool = getSharedPgPool;
 
 function getDnQueue(): Queue<LgspReceiveDnJobData> {
   if (!dnQueue) {
@@ -183,14 +168,7 @@ export async function stopLgspReceiveTickWorker(
   } catch (err) {
     logger.warn({ err: (err as Error).message }, 'Error closing dn queue (from tick worker)');
   }
-  try {
-    if (pool) {
-      await pool.end();
-      pool = null;
-    }
-  } catch (err) {
-    logger.warn({ err: (err as Error).message }, 'Error ending tick pool');
-  }
+  // v3.2.2 fix #M10: shared pool close handled in index.ts SIGTERM
   try {
     if (connection) {
       connection.disconnect();

@@ -13,7 +13,6 @@
 // ============================================================
 import { Worker, Job } from 'bullmq';
 import IORedis from 'ioredis';
-import pg from 'pg';
 import pino from 'pino';
 import {
   LGSP_STATUS_QUEUE_NAME,
@@ -28,13 +27,11 @@ import {
   updateStatus,
 } from '../lgsp/lgsp-status-service.js';
 import { LgspSendError, isLgspNonRetryableError } from '../lgsp/error-codes.js';
-
-const { Pool } = pg;
+import { getSharedPgPool } from '../lib/pg-pool.js';
 
 const logger = pino({ name: 'lgsp-status-event-worker' });
 
 let connection: IORedis | null = null;
-let pool: pg.Pool | null = null;
 
 function getConnection(): IORedis {
   if (!connection) {
@@ -48,20 +45,8 @@ function getConnection(): IORedis {
   return connection;
 }
 
-function getPool(): pg.Pool {
-  if (!pool) {
-    pool = new Pool({
-      host: process.env.PG_HOST || 'localhost',
-      port: Number(process.env.PG_PORT) || 5432,
-      database: process.env.PG_DATABASE || 'qlvb_dev',
-      user: process.env.PG_USER || 'qlvb_admin',
-      password: process.env.PG_PASSWORD,
-      max: 5,
-      idleTimeoutMillis: 30000,
-    });
-  }
-  return pool;
-}
+// v3.2.2 fix #M10: dung shared pg pool
+const getPool = getSharedPgPool;
 
 async function markOutboxSuccess(outboxId: number): Promise<void> {
   try {
@@ -271,6 +256,6 @@ export async function stopLgspStatusEventWorker(
   worker: Worker<LgspStatusEventJobData>,
 ): Promise<void> {
   try { await worker.close(); } catch (err) { logger.warn({ err: (err as Error).message }, 'Error closing event worker'); }
-  try { if (pool) { await pool.end(); pool = null; } } catch (err) { logger.warn({ err: (err as Error).message }, 'Error ending event pool'); }
+  // v3.2.2 fix #M10: shared pool close handled in index.ts SIGTERM
   try { if (connection) { connection.disconnect(); connection = null; } } catch (err) { logger.warn({ err: (err as Error).message }, 'Error disconnecting event connection'); }
 }

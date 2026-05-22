@@ -70,6 +70,19 @@ INSERT INTO public.staff (id, department_id, unit_id, position_id, code, usernam
    true, 'Quản trị', 'Hệ thống', 1,
    'admin@laocai.gov.vn', '02093801001', '0912000001')
 ON CONFLICT (id) DO NOTHING;
+
+-- ─── 3b. LGSP system staff (v3.2.2 fix #M4) ─────────────────────────────────
+-- Dedicated created_by tracking cho LGSP receive worker (thay vi gan ID admin).
+-- password_hash = chuoi placeholder khong match bcrypt format -> login luon fail.
+-- is_locked = TRUE: them lop bao ve. Khong show trong UI cau hinh nguoi dung.
+INSERT INTO public.staff (id, department_id, unit_id, position_id, code, username, password_hash, is_admin, is_locked,
+                          first_name, last_name, gender, email, phone, mobile) VALUES
+  (2, 1, 1, 1, 'SYS-LGSP', 'lgsp-system',
+   'DISABLED_NO_LOGIN_LGSP_SYSTEM_ACCOUNT',
+   false, true, 'He thong', 'LGSP', 1,
+   'lgsp-system@noreply.local', '', '')
+ON CONFLICT (id) DO NOTHING;
+
 SELECT setval('public.staff_id_seq', 100, true);
 
 -- ─── 4. Roles (6 vai trò default) ────────────────────────────────────────────

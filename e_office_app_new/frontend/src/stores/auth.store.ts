@@ -2,6 +2,7 @@
 
 import { create } from 'zustand';
 import { api } from '@/lib/api';
+import { clearUserRightsCache } from '@/hooks/use-user-rights';
 
 export interface UserInfo {
   staffId: number;
@@ -71,6 +72,9 @@ export const useAuthStore = create<AuthState>((set) => ({
       // ignore
     } finally {
       localStorage.removeItem('accessToken');
+      // v3.2.2 fix #M11: clear cached rights set de tranh leak quyen
+      // cua user truoc khi user khac login trong cung tab.
+      clearUserRightsCache();
       set({ user: null, isAuthenticated: false });
       window.location.href = '/login';
     }

@@ -8,7 +8,6 @@
 // ============================================================
 import { Queue, Worker, Job } from 'bullmq';
 import IORedis from 'ioredis';
-import pg from 'pg';
 import pino from 'pino';
 import {
   LGSP_STATUS_QUEUE_NAME,
@@ -22,13 +21,11 @@ import {
   type LgspStatusTickJobData,
   type LgspStatusEventJobData,
 } from '../queues/lgsp-status-queue.js';
-
-const { Pool } = pg;
+import { getSharedPgPool } from '../lib/pg-pool.js';
 
 const logger = pino({ name: 'lgsp-status-tick-worker' });
 
 let connection: IORedis | null = null;
-let pool: pg.Pool | null = null;
 let eventQueue: Queue<LgspStatusEventJobData> | null = null;
 
 function getConnection(): IORedis {
@@ -43,20 +40,8 @@ function getConnection(): IORedis {
   return connection;
 }
 
-function getPool(): pg.Pool {
-  if (!pool) {
-    pool = new Pool({
-      host: process.env.PG_HOST || 'localhost',
-      port: Number(process.env.PG_PORT) || 5432,
-      database: process.env.PG_DATABASE || 'qlvb_dev',
-      user: process.env.PG_USER || 'qlvb_admin',
-      password: process.env.PG_PASSWORD,
-      max: 2,
-      idleTimeoutMillis: 30000,
-    });
-  }
-  return pool;
-}
+// v3.2.2 fix #M10: dung shared pg pool
+const getPool = getSharedPgPool;
 
 function getEventQueue(): Queue<LgspStatusEventJobData> {
   if (!eventQueue) {
@@ -206,6 +191,6 @@ export async function stopLgspStatusTickWorker(
 ): Promise<void> {
   try { await worker.close(); } catch (err) { logger.warn({ err: (err as Error).message }, 'Error closing tick worker'); }
   try { if (eventQueue) { await eventQueue.close(); eventQueue = null; } } catch (err) { logger.warn({ err: (err as Error).message }, 'Error closing event queue (from tick worker)'); }
-  try { if (pool) { await pool.end(); pool = null; } } catch (err) { logger.warn({ err: (err as Error).message }, 'Error ending tick pool'); }
+  // v3.2.2 fix #M10: shared pool close handled in index.ts SIGTERM
   try { if (connection) { connection.disconnect(); connection = null; } } catch (err) { logger.warn({ err: (err as Error).message }, 'Error disconnecting tick connection'); }
 }

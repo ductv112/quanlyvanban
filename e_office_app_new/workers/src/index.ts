@@ -1,7 +1,6 @@
 import 'dotenv/config';
 import { Worker } from 'bullmq';
 import IORedis from 'ioredis';
-import pg from 'pg';
 import pino from 'pino';
 import {
   startLgspSendWorker,
@@ -23,8 +22,7 @@ import {
   startLgspStatusEventWorker,
   stopLgspStatusEventWorker,
 } from './jobs/lgsp-status-event-worker.js';
-
-const { Pool } = pg;
+import { getSharedPgPool, closeSharedPgPool } from './lib/pg-pool.js';
 
 const logger = pino({
   level: 'info',
@@ -38,15 +36,8 @@ const connection = new IORedis({
   maxRetriesPerRequest: null,
 });
 
-const pool = new Pool({
-  host: process.env.PG_HOST || 'localhost',
-  port: Number(process.env.PG_PORT) || 5432,
-  database: process.env.PG_DATABASE || 'qlvb_dev',
-  user: process.env.PG_USER || 'qlvb_admin',
-  password: process.env.PG_PASSWORD,
-  max: 5,
-  idleTimeoutMillis: 30000,
-});
+// v3.2.2 fix #M10: dung shared pg pool thay vi tao pool rieng cho moi worker file
+const pool = getSharedPgPool();
 
 // ============================================================
 // Helper: update notification_log status after mock send
@@ -233,6 +224,7 @@ process.on('SIGTERM', async () => {
   await fcmWorker.close();
   await zaloWorker.close();
   await notificationWorker.close();
-  await pool.end();
+  // v3.2.2 fix #M10: close shared pool (replaces individual pool.end calls)
+  await closeSharedPgPool();
   process.exit(0);
 });

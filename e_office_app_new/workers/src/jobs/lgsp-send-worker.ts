@@ -24,7 +24,6 @@
 
 import { Worker } from 'bullmq';
 import IORedis from 'ioredis';
-import pg from 'pg';
 import pino from 'pino';
 import { Client as MinioClient } from 'minio';
 
@@ -52,8 +51,7 @@ import {
   loadLgspCredentials,
   sendDocument as lgspSend,
 } from '../lgsp/lgsp-send-service.js';
-
-const { Pool } = pg;
+import { getSharedPgPool } from '../lib/pg-pool.js';
 
 // ============================================================
 // Module-level singletons (1 instance per worker process)
@@ -80,15 +78,8 @@ connection.on('error', (err) => {
   logger.error({ err: err.message }, 'Redis connection error (lgsp-send-worker)');
 });
 
-const pool = new Pool({
-  host: process.env.PG_HOST || 'localhost',
-  port: Number(process.env.PG_PORT) || 5432,
-  database: process.env.PG_DATABASE || 'qlvb_dev',
-  user: process.env.PG_USER || 'qlvb_admin',
-  password: process.env.PG_PASSWORD,
-  max: 5,
-  idleTimeoutMillis: 30_000,
-});
+// v3.2.2 fix #M10: dung shared pg pool thay vi tao pool rieng
+const pool = getSharedPgPool();
 
 const minioClient = new MinioClient({
   endPoint: process.env.MINIO_ENDPOINT || 'localhost',
