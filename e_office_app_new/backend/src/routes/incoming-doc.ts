@@ -1,5 +1,5 @@
 import { Router, type Request, type Response } from 'express';
-import type { AuthRequest } from '../middleware/auth.js';
+import { type AuthRequest, requireRightOrNext } from '../middleware/auth.js';
 import { upload } from '../middleware/upload.js';
 import { incomingDocRepository } from '../repositories/incoming-doc.repository.js';
 import { lgspStatusOutboxRepository, type LgspTargetStatus } from '../repositories/lgsp-status-outbox.repository.js';
@@ -413,14 +413,12 @@ router.get('/so-den-tiep-theo', async (req: Request, res: Response) => {
 // ============================================================
 
 // POST / — Tạo VB đến
-router.post('/', async (req: Request, res: Response) => {
+// 2026-05-24: doi role-name check (Van thu/Quan tri) -> requireRightOrNext(2)
+// dong nhat voi VB di (3) + VB du thao (4). Admin gan quyen "Van ban den" qua
+// UI Nhom quyen -> role do tao duoc VB den. Bo hardcode role name.
+router.post('/', requireRightOrNext(2), async (req: Request, res: Response) => {
   try {
-    const { staffId, departmentId, isAdmin, roles } = (req as AuthRequest).user;
-    // BUG-PERM-003: Chỉ Văn thư hoặc Quản trị hệ thống được tạo VB đến
-    if (!isAdmin && !roles?.some((r: string) => r === 'Văn thư' || r === 'Quản trị hệ thống')) {
-      res.status(403).json({ success: false, message: 'Không có quyền tạo văn bản đến (yêu cầu vai trò Văn thư hoặc Quản trị hệ thống)' });
-      return;
-    }
+    const { staffId, departmentId, isAdmin } = (req as AuthRequest).user;
     const ancestorUnitId = await resolveAncestorUnit(departmentId);
     const body = req.body;
 
@@ -664,14 +662,10 @@ router.put('/:id', async (req: Request, res: Response) => {
 });
 
 // DELETE /:id — Xóa VB đến
-router.delete('/:id', async (req: Request, res: Response) => {
+// 2026-05-24: doi role-name check -> requireRightOrNext(2), dong nhat voi POST.
+router.delete('/:id', requireRightOrNext(2), async (req: Request, res: Response) => {
   try {
-    const { staffId, departmentId, isAdmin, roles } = (req as AuthRequest).user;
-    // BUG-PERM-004: Chỉ Văn thư hoặc Quản trị hệ thống được xóa VB đến
-    if (!isAdmin && !roles?.some((r: string) => r === 'Văn thư' || r === 'Quản trị hệ thống')) {
-      res.status(403).json({ success: false, message: 'Không có quyền xóa văn bản đến (yêu cầu vai trò Văn thư hoặc Quản trị hệ thống)' });
-      return;
-    }
+    const { staffId, departmentId, isAdmin } = (req as AuthRequest).user;
     const id = Number(req.params.id);
     const loaded = await loadDocAndPerms(id, { staffId, departmentId, isAdmin });
     if (!loaded) { res.status(404).json({ success: false, message: 'Không tìm thấy văn bản đến' }); return; }

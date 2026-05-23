@@ -1,5 +1,5 @@
 import { Router, type Request, type Response } from 'express';
-import type { AuthRequest } from '../middleware/auth.js';
+import { type AuthRequest, requireRightOrNext } from '../middleware/auth.js';
 import { noticeRepository } from '../repositories/notice.repository.js';
 import { handleDbError } from '../lib/error-handler.js';
 import { resolveAncestorUnit } from '../lib/department-subtree.js';
@@ -58,15 +58,13 @@ router.get('/unread-count', async (req: Request, res: Response) => {
 
 // ============================================================
 // POST / — Tạo thông báo mới
+// 2026-05-24: doi role-name check (Lanh dao/Quan tri) -> requireRightOrNext(8)
+// dong nhat voi pattern VB den/di/du-thao. Admin gan quyen "Thong bao" qua UI
+// Nhom quyen -> role do tao duoc thong bao. Bo hardcode role name.
 // ============================================================
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', requireRightOrNext(8), async (req: Request, res: Response) => {
   try {
-    const { staffId, departmentId, isAdmin, roles } = (req as AuthRequest).user;
-    // BUG-004: Chỉ Quản trị hệ thống hoặc Lãnh đạo được tạo thông báo
-    if (!isAdmin && !roles?.some((r: string) => r === 'Quản trị hệ thống' || r === 'Ban Lãnh đạo')) {
-      res.status(403).json({ success: false, message: 'Không có quyền tạo thông báo (yêu cầu vai trò Quản trị hệ thống hoặc Ban Lãnh đạo)' });
-      return;
-    }
+    const { staffId, departmentId } = (req as AuthRequest).user;
     const ancestorUnitId = await resolveAncestorUnit(departmentId);
     const { title, content, notice_type } = req.body;
 
