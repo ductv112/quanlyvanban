@@ -183,48 +183,55 @@ app.use((err: Error, _req: express.Request, res: express.Response, _next: expres
 // --- Start ---
 const httpServer = createServer(app);
 initSocket(httpServer);
+// Helper: env flag parser (default = enabled trừ khi user explicit set 'false'/'0')
+const envEnabled = (key: string): boolean => {
+  const v = (process.env[key] ?? '').toLowerCase().trim();
+  return v !== 'false' && v !== '0' && v !== 'no' && v !== 'off';
+};
+
 httpServer.listen(port, async () => {
   logger.info(`QLVB Backend running at http://localhost:${port}`);
   logger.info(`Health check: http://localhost:${port}/api/health`);
-  try { await ensureBucket(); logger.info('MinIO bucket ready'); } catch (e) { logger.warn('MinIO bucket init failed — file upload sẽ tự tạo khi cần'); }
 
-  // Phase 11: Start BullMQ signing worker (poll-sign-status consumer)
-  // WORKER_ENABLED=false env → skip (useful for CI / sync-only debug)
-  try {
-    startSigningWorker();
-  } catch (err) {
-    logger.error({ err }, 'Failed to start signing worker — async sign flow will not work');
+  // MinIO init — gated by MINIO_ENABLED env (default true).
+  // Local dev khong test upload/preview file -> set MINIO_ENABLED=false de skip,
+  // dung container minio luon.
+  if (envEnabled('MINIO_ENABLED')) {
+    try { await ensureBucket(); logger.info('MinIO bucket ready'); }
+    catch (e) { logger.warn('MinIO bucket init failed — file upload sẽ tự tạo khi cần'); }
+  } else {
+    logger.info('MinIO init skipped (MINIO_ENABLED=false)');
   }
 
-  // Phase 35 Plan 03: Register the 5-min LGSP receive cron repeat scheduler.
-  // Idempotent (removes pre-existing repeat first) — safe to call on every restart.
-  // Non-blocking: failure here does NOT crash server (Redis may not yet be ready);
-  // manual /api/lgsp/sync-now still works because it uses the same queue.
-  registerReceiveTickRepeatJob()
-    .then(() => {
-      // Success log emitted inside registerReceiveTickRepeatJob — no duplicate here.
-    })
-    .catch((err) => {
+  // Phase 11: Start BullMQ signing worker (poll-sign-status consumer)
+  // Gated by SIGNING_ENABLED env (default true).
+  if (envEnabled('SIGNING_ENABLED')) {
+    try { startSigningWorker(); }
+    catch (err) { logger.error({ err }, 'Failed to start signing worker — async sign flow will not work'); }
+  } else {
+    logger.info('Signing worker skipped (SIGNING_ENABLED=false)');
+  }
+
+  // Phase 35/36: LGSP queue tick schedulers (receive + status).
+  // Gated by LGSP_ENABLED env (default true).
+  // Idempotent + non-blocking: failure here does NOT crash server.
+  if (envEnabled('LGSP_ENABLED')) {
+    registerReceiveTickRepeatJob().catch((err) => {
       logger.error(
         { err: err?.message ?? err },
         'Failed to register LGSP receive tick repeat job (cron will NOT fire — manual /sync-now still works)',
       );
     });
 
-  // Phase 36 Plan 03: Register the 30s LGSP status callback tick repeat scheduler.
-  // Idempotent (removes pre-existing repeat first) — safe to call on every restart.
-  // Non-blocking: failure here does NOT crash server (Redis may not yet be ready);
-  // outbox events accumulate until worker can consume them.
-  registerStatusTickRepeatJob()
-    .then(() => {
-      // Success log emitted inside registerStatusTickRepeatJob — no duplicate here.
-    })
-    .catch((err) => {
+    registerStatusTickRepeatJob().catch((err) => {
       logger.error(
         { err: err?.message ?? err },
         'Failed to register LGSP status tick repeat job (worker cron will NOT fire — outbox events accumulate)',
       );
     });
+  } else {
+    logger.info('LGSP queues skipped (LGSP_ENABLED=false)');
+  }
 });
 
 // --- Graceful shutdown (Phase 11 — ensure in-flight sign jobs finish before exit) ---

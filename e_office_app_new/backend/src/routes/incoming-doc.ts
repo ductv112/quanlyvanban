@@ -437,6 +437,11 @@ router.post('/', async (req: Request, res: Response) => {
       res.status(400).json({ success: false, message: 'Sổ văn bản là bắt buộc' });
       return;
     }
+    // Bug #95: Ky hieu (notation) bat buoc
+    if (!body.notation?.toString().trim()) {
+      res.status(400).json({ success: false, message: 'Ký hiệu là bắt buộc' });
+      return;
+    }
     // BUG-F-VB-001: validate number_paper > 0
     if (body.number_paper !== undefined && body.number_paper !== null) {
       const np = Number(body.number_paper);

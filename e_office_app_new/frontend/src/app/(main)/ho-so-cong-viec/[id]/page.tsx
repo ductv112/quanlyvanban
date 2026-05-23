@@ -990,15 +990,19 @@ export default function HscvDetailPage() {
     try {
       const { data: res } = await api.get(`/quan-tri/don-vi/${deptId}/nhan-vien`);
       const assigned = new Set(assignedStaff.map((s) => s.staff_id));
+      // Bug #91: loai bo chinh user dang dang nhap khoi danh sach
+      // (khong duoc tu phan cong VB cho chinh minh trong tab Can bo xu ly).
       setAvailableStaff(
-        (res.data || []).map((s: any) => ({
-          staff_id: s.id || s.staff_id,
-          staff_name: s.staff_name || s.full_name,
-          position_name: s.position_name || '',
-          department_name: s.department_name || '',  // BUG #77
-          checked: false,
-          alreadyAdded: assigned.has(s.id || s.staff_id),
-        }))
+        (res.data || [])
+          .filter((s: any) => Number(s.id || s.staff_id) !== Number(user?.staffId))
+          .map((s: any) => ({
+            staff_id: s.id || s.staff_id,
+            staff_name: s.staff_name || s.full_name,
+            position_name: s.position_name || '',
+            department_name: s.department_name || '',  // BUG #77
+            checked: false,
+            alreadyAdded: assigned.has(s.id || s.staff_id),
+          }))
       );
     } catch {
       message.error('Lỗi tải danh sách nhân viên');
@@ -1032,6 +1036,12 @@ export default function HscvDetailPage() {
 
   const handleSaveAssignment = async () => {
     if (!assignedStaff.length) { message.warning('Chưa có cán bộ nào được phân công'); return; }
+    // Bug #92: chan client-side khi co > 1 phu trach (role=1).
+    const primaries = assignedStaff.filter((s) => s.role === 1);
+    if (primaries.length > 1) {
+      message.error('Mỗi hồ sơ công việc chỉ được 1 cán bộ phụ trách. Vui lòng chuyển bớt các cán bộ khác sang "Phối hợp".');
+      return;
+    }
     setSavingAssignment(true);
     try {
       await api.post(`/ho-so-cong-viec/${id}/phan-cong`, {
@@ -1042,6 +1052,22 @@ export default function HscvDetailPage() {
         })),
       });
       message.success('Phân công cán bộ thành công');
+      // Bug #94: refetch staff sau khi luu de sync voi backend (tranh hien thi cu).
+      try {
+        const { data: staffRes } = await api.get(`/ho-so-cong-viec/${id}/can-bo`);
+        const list: StaffItem[] = staffRes?.data || [];
+        setStaffList(list);
+        setAssignedStaff(
+          list.map((s) => ({
+            staff_id: s.staff_id,
+            staff_name: s.staff_name,
+            position_name: s.position_name,
+            department_name: s.department_name,
+            role: s.role,
+            deadline: s.deadline ? dayjs(s.deadline) : null,
+          }))
+        );
+      } catch { /* best-effort */ }
     } catch (err: any) {
       message.error(err?.response?.data?.message || 'Lỗi phân công cán bộ');
     } finally {
@@ -1551,13 +1577,18 @@ export default function HscvDetailPage() {
                           <Radio.Group
                             size="small"
                             value={s.role}
-                            onChange={(e) =>
+                            onChange={(e) => {
+                              const newRole = e.target.value;
+                              // Bug #92: HSCV chi cho 1 CB lam phu trach (role=1).
+                              // Khi chon role=1 cho CB nay -> tu dong dat tat ca CB khac sang role=2.
                               setAssignedStaff((prev) =>
-                                prev.map((x) =>
-                                  x.staff_id === s.staff_id ? { ...x, role: e.target.value } : x
-                                )
-                              )
-                            }
+                                prev.map((x) => {
+                                  if (x.staff_id === s.staff_id) return { ...x, role: newRole };
+                                  if (newRole === 1 && x.role === 1) return { ...x, role: 2 };
+                                  return x;
+                                })
+                              );
+                            }}
                           >
                             <Radio value={1}>
                               <span style={{ color: '#059669', fontWeight: 500 }}>Phụ trách</span>

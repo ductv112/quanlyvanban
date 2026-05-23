@@ -515,7 +515,7 @@ export default function OutgoingDocPage() {
               </Form.Item>
             </Col>
             <Col span={8}>
-              <Form.Item name="notation" label="Ký hiệu">
+              <Form.Item name="notation" label="Ký hiệu" rules={[{ required: true, message: 'Ký hiệu là bắt buộc' }]}>
                 <Input placeholder="VD: 123/UBND-VP" maxLength={100} />
               </Form.Item>
             </Col>

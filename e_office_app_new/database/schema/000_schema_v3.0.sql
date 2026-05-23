@@ -29130,3 +29130,575 @@ SELECT setval(pg_get_serial_sequence('public.rights', 'id'),
 DO $$ BEGIN
   RAISE NOTICE 'Phase 37.1 rights: 4 right LGSP (23/24/25/26) + role admin id=5 assigned -- OK';
 END $$;
+
+-- ============================================================================
+-- 2026-05-23: Tester bug 92/93/94 — HSCV staff_handling_docs
+-- ----------------------------------------------------------------------------
+-- Bug 92: Cho phép 2 CB cùng đơn vị đều là "Phụ trách" → enforce 1/HSCV
+-- Bug 93: Chuyển tiếp nhiều người chỉ gán 1 người → root cause là ON CONFLICT
+--         DO NOTHING không có UNIQUE → đôi khi trigger order/INSERT lệch giữa
+--         các deployment. Fix: thêm UNIQUE (handling_doc_id, staff_id) + UPSERT.
+-- Bug 94: Click "Lưu phân công" nhiều lần → duplicate hiển thị
+--         → cùng root cause Bug 93. UPSERT thay vì INSERT.
+-- ============================================================================
+
+-- Step 1: dedupe data cu (giu min(id) cho moi pair handling_doc_id, staff_id)
+DELETE FROM edoc.staff_handling_docs a
+USING edoc.staff_handling_docs b
+WHERE a.handling_doc_id = b.handling_doc_id
+  AND a.staff_id = b.staff_id
+  AND a.id > b.id;
+
+-- Step 2: ADD UNIQUE (idempotent)
+DO $$ BEGIN
+  ALTER TABLE edoc.staff_handling_docs
+    ADD CONSTRAINT staff_handling_docs_doc_staff_uniq
+    UNIQUE (handling_doc_id, staff_id);
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN duplicate_table THEN NULL;
+END $$;
+
+-- Step 3: fn_handling_doc_assign_staff — UPSERT + enforce 1 phu trach
+DROP FUNCTION IF EXISTS edoc.fn_handling_doc_assign_staff(bigint, integer[], smallint, timestamp with time zone, integer);
+
+CREATE OR REPLACE FUNCTION edoc.fn_handling_doc_assign_staff(
+  p_doc_id bigint,
+  p_staff_ids integer[],
+  p_role_type smallint,
+  p_deadline timestamp with time zone,
+  p_assigned_by integer
+) RETURNS TABLE(success boolean, message text)
+LANGUAGE plpgsql AS $$
+DECLARE
+  v_staff_id INT;
+BEGIN
+  IF p_staff_ids IS NULL OR ARRAY_LENGTH(p_staff_ids, 1) = 0 THEN
+    RETURN QUERY SELECT FALSE, 'Danh sách cán bộ không được để trống'::TEXT;
+    RETURN;
+  END IF;
+
+  IF NOT EXISTS (SELECT 1 FROM edoc.handling_docs WHERE id = p_doc_id) THEN
+    RETURN QUERY SELECT FALSE, 'Hồ sơ công việc không tồn tại'::TEXT;
+    RETURN;
+  END IF;
+
+  -- Bug #92: neu batch nay phan cong role=1 (Phu trach), demote moi CB khac dang
+  -- giu role=1 trong HSCV (khong nam trong batch nay) sang role=2 (Phoi hop).
+  IF COALESCE(p_role_type, 1) = 1 THEN
+    UPDATE edoc.staff_handling_docs
+       SET role = 2
+     WHERE handling_doc_id = p_doc_id
+       AND role = 1
+       AND staff_id <> ALL(p_staff_ids);
+  END IF;
+
+  -- Bug #93/#94: UPSERT thay vi INSERT...DO NOTHING ->
+  -- (a) khong tao duplicate row khi user click "Luu phan cong" nhieu lan
+  -- (b) cap nhat role neu user doi vai tro CB tu Phu trach -> Phoi hop hoac nguoc lai
+  FOREACH v_staff_id IN ARRAY p_staff_ids LOOP
+    INSERT INTO edoc.staff_handling_docs (handling_doc_id, staff_id, role, assigned_at)
+    VALUES (p_doc_id, v_staff_id, COALESCE(p_role_type, 1), NOW())
+    ON CONFLICT (handling_doc_id, staff_id)
+    DO UPDATE SET role = EXCLUDED.role, assigned_at = NOW();
+  END LOOP;
+
+  RETURN QUERY SELECT TRUE, 'Phân công cán bộ thành công'::TEXT;
+END;
+$$;
+
+-- Step 4: fn_handling_doc_transfer — UPSERT (Bug #93)
+DROP FUNCTION IF EXISTS edoc.fn_handling_doc_transfer(bigint, integer, integer[], text, integer) CASCADE;
+
+CREATE OR REPLACE FUNCTION edoc.fn_handling_doc_transfer(
+    p_id bigint,
+    p_from_staff_id integer,
+    p_to_staff_ids integer[],
+    p_note text,
+    p_by integer
+)
+RETURNS TABLE(success boolean, message text, forwarded_count integer)
+LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+    v_current_curator INT;
+    v_doc_unit INT;
+    v_to_id INT;
+    v_to_unit INT;
+    v_to_locked BOOLEAN;
+    v_to_deleted BOOLEAN;
+    v_count INT := 0;
+BEGIN
+    IF p_to_staff_ids IS NULL OR ARRAY_LENGTH(p_to_staff_ids, 1) IS NULL THEN
+        RETURN QUERY SELECT FALSE, 'Vui lòng chọn ít nhất một người nhận'::TEXT, 0;
+        RETURN;
+    END IF;
+
+    SELECT h.curator, h.unit_id INTO v_current_curator, v_doc_unit
+      FROM edoc.handling_docs h WHERE h.id = p_id;
+    IF NOT FOUND THEN
+        RETURN QUERY SELECT FALSE, 'Không tìm thấy hồ sơ công việc'::TEXT, 0;
+        RETURN;
+    END IF;
+
+    -- Validate all recipients (atomic: fail toan bo neu 1 nguoi sai)
+    FOREACH v_to_id IN ARRAY p_to_staff_ids LOOP
+        IF v_to_id IS NULL OR v_to_id <= 0 THEN
+            RETURN QUERY SELECT FALSE, 'Người nhận không hợp lệ'::TEXT, 0;
+            RETURN;
+        END IF;
+        IF v_to_id = p_from_staff_id THEN
+            RETURN QUERY SELECT FALSE, 'Không thể chuyển cho chính mình'::TEXT, 0;
+            RETURN;
+        END IF;
+        SELECT s.unit_id, COALESCE(s.is_locked, FALSE), COALESCE(s.is_deleted, FALSE)
+          INTO v_to_unit, v_to_locked, v_to_deleted
+          FROM public.staff s WHERE s.id = v_to_id;
+        IF NOT FOUND THEN
+            RETURN QUERY SELECT FALSE, 'Không tìm thấy người nhận'::TEXT, 0;
+            RETURN;
+        END IF;
+        IF v_to_locked THEN
+            RETURN QUERY SELECT FALSE, 'Có người nhận đã khóa tài khoản'::TEXT, 0;
+            RETURN;
+        END IF;
+        IF v_to_deleted THEN
+            RETURN QUERY SELECT FALSE, 'Có người nhận đã bị xoá'::TEXT, 0;
+            RETURN;
+        END IF;
+        IF v_to_unit <> v_doc_unit THEN
+            RETURN QUERY SELECT FALSE, 'Chỉ có thể chuyển HSCV cho người cùng đơn vị'::TEXT, 0;
+            RETURN;
+        END IF;
+    END LOOP;
+
+    -- Bug #93: UPSERT thay vi INSERT...DO NOTHING.
+    -- Neu CB chua co trong staff_handling_docs -> insert role=2 (Phoi hop).
+    -- Neu CB da la role=1 (Phu trach) -> giu role=1 (chuyen tiep khong demote phu trach).
+    -- Neu CB da la role=2 -> giu role=2.
+    FOREACH v_to_id IN ARRAY p_to_staff_ids LOOP
+        INSERT INTO edoc.staff_handling_docs (handling_doc_id, staff_id, role, assigned_at)
+        VALUES (p_id, v_to_id, 2, NOW())
+        ON CONFLICT (handling_doc_id, staff_id)
+        DO UPDATE SET
+            role = CASE WHEN edoc.staff_handling_docs.role = 1 THEN 1 ELSE 2 END,
+            assigned_at = NOW();
+
+        INSERT INTO edoc.handling_doc_history(
+            handling_doc_id, action_type, from_staff_id, to_staff_id, note, created_by, created_at
+        )
+        VALUES (p_id, 'transfer', p_from_staff_id, v_to_id, p_note, p_by, NOW());
+
+        v_count := v_count + 1;
+    END LOOP;
+
+    UPDATE edoc.handling_docs SET updated_at = NOW() WHERE id = p_id;
+
+    RETURN QUERY SELECT TRUE,
+                        ('Đã chuyển tiếp HSCV cho ' || v_count || ' cán bộ')::TEXT,
+                        v_count;
+END;
+$$;
+
+DO $$ BEGIN
+  RAISE NOTICE '2026-05-23 Bug 92/93/94: UNIQUE + UPSERT staff_handling_docs applied OK';
+END $$;
+
+-- ============================================================================
+-- 2026-05-23: Tester bug 97/98 — Logic huy duyet VB den/di/du-thao
+-- ----------------------------------------------------------------------------
+-- Bug 97: VB den huy duyet bi chan SAI khi chua gui cho ai.
+--   Root cause: SP check EXISTS user_incoming_docs WHERE doc_id=p_id,
+--   nhung table nay cung populate boi mark_read (sent_by IS NULL). Khi van thu
+--   mo VB de check thi auto mark_read -> row ton tai -> SP say "da gui".
+--   Fix: chi block khi co row voi sent_by IS NOT NULL.
+--
+-- Bug 98 (a): VB di huy duyet khi da gui noi bo (gui-noi-bo) van thanh cong.
+--   Root cause: SP chi check user_outgoing_docs, nhung gui-noi-bo populate
+--   outgoing_doc_recipients (tao VB den noi bo) + set is_released, KHONG cham
+--   user_outgoing_docs. Sai logic.
+--   Fix: them check (is_released OR co outgoing_doc_recipients with sent_status='sent').
+--
+-- Bug 98 (b): VB du thao huy duyet khi da gui cho CB van thanh cong.
+--   Root cause: SP chi check is_released, khong check user_drafting_docs (table
+--   sinh ra khi gui VB du thao cho CB qua fn_drafting_doc_send).
+--   Fix: them check user_drafting_docs co row sent_by IS NOT NULL.
+-- ============================================================================
+
+-- Bug 97 — fn_incoming_doc_unapprove
+DROP FUNCTION IF EXISTS edoc.fn_incoming_doc_unapprove(bigint, integer);
+
+CREATE OR REPLACE FUNCTION edoc.fn_incoming_doc_unapprove(p_id bigint, p_staff_id integer)
+RETURNS TABLE(success boolean, message text)
+LANGUAGE plpgsql AS $$
+DECLARE v_has_sent BOOLEAN;
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM edoc.incoming_docs WHERE id = p_id) THEN
+    RETURN QUERY SELECT FALSE, 'Không tìm thấy văn bản đến'::TEXT;
+    RETURN;
+  END IF;
+
+  -- Bug #97: chi block neu DA THUC SU gui cho CB (sent_by IS NOT NULL).
+  -- Row voi sent_by IS NULL chi la mark-read, khong tinh la "da gui".
+  SELECT EXISTS(
+    SELECT 1 FROM edoc.user_incoming_docs
+    WHERE incoming_doc_id = p_id AND sent_by IS NOT NULL
+  ) INTO v_has_sent;
+
+  IF v_has_sent THEN
+    RETURN QUERY SELECT FALSE, 'Không thể hủy duyệt: văn bản đã được gửi cho cán bộ'::TEXT;
+    RETURN;
+  END IF;
+
+  UPDATE edoc.incoming_docs SET
+    approved = FALSE,
+    approver = NULL,
+    updated_by = p_staff_id,
+    updated_at = NOW()
+  WHERE id = p_id;
+
+  RETURN QUERY SELECT TRUE, 'Hủy duyệt thành công'::TEXT;
+END;
+$$;
+
+-- Bug 98 (a) — fn_outgoing_doc_unapprove
+DROP FUNCTION IF EXISTS edoc.fn_outgoing_doc_unapprove(bigint, integer);
+
+CREATE OR REPLACE FUNCTION edoc.fn_outgoing_doc_unapprove(p_id bigint, p_staff_id integer)
+RETURNS TABLE(success boolean, message text)
+LANGUAGE plpgsql AS $$
+DECLARE
+  v_has_sent BOOLEAN;
+  v_released BOOLEAN;
+  v_has_recipient_sent BOOLEAN;
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM edoc.outgoing_docs WHERE id = p_id) THEN
+    RETURN QUERY SELECT FALSE, 'Không tìm thấy văn bản đi'::TEXT;
+    RETURN;
+  END IF;
+
+  SELECT COALESCE(is_released, FALSE) INTO v_released
+  FROM edoc.outgoing_docs WHERE id = p_id;
+
+  -- Bug #98(a): neu da ban hanh roi thi tuyet doi khong cho huy duyet.
+  IF v_released THEN
+    RETURN QUERY SELECT FALSE, 'Không thể hủy duyệt: văn bản đã ban hành'::TEXT;
+    RETURN;
+  END IF;
+
+  -- Check gui cho CB qua fn_outgoing_doc_send (chi tinh row co sent_by IS NOT NULL).
+  SELECT EXISTS(
+    SELECT 1 FROM edoc.user_outgoing_docs
+    WHERE outgoing_doc_id = p_id AND sent_by IS NOT NULL
+  ) INTO v_has_sent;
+
+  IF v_has_sent THEN
+    RETURN QUERY SELECT FALSE, 'Không thể hủy duyệt: văn bản đã được gửi cho cán bộ'::TEXT;
+    RETURN;
+  END IF;
+
+  -- Bug #98(a): check da gui noi bo qua gui-noi-bo
+  -- (outgoing_doc_recipients.sent_status='sent' nghia la da tao VB den noi bo / da gui LGSP).
+  SELECT EXISTS(
+    SELECT 1 FROM edoc.outgoing_doc_recipients
+    WHERE outgoing_doc_id = p_id AND sent_status = 'sent'
+  ) INTO v_has_recipient_sent;
+
+  IF v_has_recipient_sent THEN
+    RETURN QUERY SELECT FALSE, 'Không thể hủy duyệt: văn bản đã được gửi tới đơn vị nhận'::TEXT;
+    RETURN;
+  END IF;
+
+  UPDATE edoc.outgoing_docs SET
+    approved = FALSE,
+    approver = NULL,
+    updated_by = p_staff_id,
+    updated_at = NOW()
+  WHERE id = p_id;
+
+  RETURN QUERY SELECT TRUE, 'Hủy duyệt thành công'::TEXT;
+END;
+$$;
+
+-- Bug 98 (b) — fn_drafting_doc_unapprove
+DROP FUNCTION IF EXISTS edoc.fn_drafting_doc_unapprove(bigint, integer);
+
+CREATE OR REPLACE FUNCTION edoc.fn_drafting_doc_unapprove(
+  p_id      bigint,
+  p_user_id integer
+) RETURNS TABLE(success boolean, message text)
+LANGUAGE plpgsql AS $$
+DECLARE
+  v_released boolean;
+  v_has_sent boolean;
+BEGIN
+  SELECT COALESCE(is_released, false) INTO v_released
+  FROM edoc.drafting_docs WHERE id = p_id;
+
+  IF NOT FOUND THEN
+    RETURN QUERY SELECT FALSE, 'Khong tim thay van ban du thao'::text;
+    RETURN;
+  END IF;
+
+  IF v_released THEN
+    RETURN QUERY SELECT FALSE, 'Van ban da ban hanh, khong the bo duyet'::text;
+    RETURN;
+  END IF;
+
+  -- Bug #98(b): chan huy duyet khi du thao da duoc gui cho CB
+  -- (qua fn_drafting_doc_send -> user_drafting_docs row co sent_by IS NOT NULL).
+  SELECT EXISTS(
+    SELECT 1 FROM edoc.user_drafting_docs
+    WHERE drafting_doc_id = p_id AND sent_by IS NOT NULL
+  ) INTO v_has_sent;
+
+  IF v_has_sent THEN
+    RETURN QUERY SELECT FALSE, 'Không thể hủy duyệt: văn bản đã được gửi cho cán bộ'::TEXT;
+    RETURN;
+  END IF;
+
+  UPDATE edoc.drafting_docs
+  SET approved = FALSE,
+      approver = NULL,
+      approved_at = NULL,
+      status = 'draft',
+      updated_by = p_user_id,
+      updated_at = NOW()
+  WHERE id = p_id;
+
+  RETURN QUERY SELECT TRUE, 'Bo duyet thanh cong'::text;
+EXCEPTION WHEN others THEN
+  RETURN QUERY SELECT FALSE, SQLERRM::text;
+END;
+$$;
+
+DO $$ BEGIN
+  RAISE NOTICE '2026-05-23 Bug 97/98: fn_{incoming,outgoing,drafting}_doc_unapprove fixed';
+END $$;
+
+-- ============================================================================
+-- 2026-05-23: Tester bug 99 — Visibility VB di
+-- ----------------------------------------------------------------------------
+-- Root cause: fn_outgoing_doc_get_list dung filter
+--   (p_dept_ids IS NULL OR f.department_id = ANY(p_dept_ids) OR EXISTS user_outgoing_docs)
+-- Khong co check is_leader => nhan vien thuong cung don vi xem duoc VB ko phai cua minh.
+-- Yc nghiep vu (giong fn_handling_doc_get_list):
+--   - Admin: thay het
+--   - Lanh dao (positions.is_leader=TRUE): thay het VB trong dept subtree
+--   - Chuyen vien / van thu: chi thay VB minh tao, minh la drafting_user, hoac duoc gui (user_outgoing_docs)
+-- ============================================================================
+
+DROP FUNCTION IF EXISTS edoc.fn_outgoing_doc_get_list(integer, integer, integer, integer, integer, smallint, boolean, timestamptz, timestamptz, text, integer, integer, integer[]);
+
+CREATE OR REPLACE FUNCTION edoc.fn_outgoing_doc_get_list(
+  p_unit_id integer, p_staff_id integer,
+  p_doc_book_id integer DEFAULT NULL, p_doc_type_id integer DEFAULT NULL, p_doc_field_id integer DEFAULT NULL,
+  p_urgent_id smallint DEFAULT NULL, p_approved boolean DEFAULT NULL,
+  p_from_date timestamptz DEFAULT NULL, p_to_date timestamptz DEFAULT NULL,
+  p_keyword text DEFAULT NULL, p_page integer DEFAULT 1, p_page_size integer DEFAULT 20,
+  p_dept_ids integer[] DEFAULT NULL
+) RETURNS TABLE(
+  id bigint, unit_id integer, received_date timestamptz, "number" integer,
+  sub_number varchar, notation varchar, document_code varchar, abstract text,
+  drafting_unit_id integer, drafting_user_id integer, publish_unit_id integer, publish_date timestamptz,
+  signer varchar, sign_date timestamptz, expired_date timestamptz,
+  doc_book_id integer, doc_type_id integer, doc_field_id integer,
+  secret_id smallint, urgent_id smallint, number_paper integer, number_copies integer,
+  recipients text, approver varchar, approved boolean,
+  status varchar, is_released boolean, released_date timestamptz,
+  archive_status boolean,
+  created_by integer, created_at timestamptz,
+  doc_book_name varchar, doc_type_name varchar, doc_type_code varchar, doc_field_name varchar,
+  drafting_unit_name varchar, drafting_user_name varchar,
+  created_by_name varchar,
+  is_read boolean, read_at timestamptz, attachment_count bigint, total_count bigint,
+  i_am_recipient boolean, sent_by_name varchar, received_at timestamptz
+)
+LANGUAGE plpgsql AS $$
+DECLARE
+  v_offset INTEGER := (p_page - 1) * p_page_size;
+  v_total  BIGINT;
+  v_is_leader BOOLEAN := FALSE;
+BEGIN
+  -- Bug #99: phan quyen visibility theo positions.is_leader (copy pattern handling_doc).
+  IF p_staff_id IS NOT NULL THEN
+    SELECT COALESCE(p.is_leader, FALSE)
+      INTO v_is_leader
+      FROM public.staff s
+      LEFT JOIN public.positions p ON p.id = s.position_id
+     WHERE s.id = p_staff_id;
+    v_is_leader := COALESCE(v_is_leader, FALSE);
+  END IF;
+
+  SELECT count(*) INTO v_total FROM edoc.outgoing_docs f
+  WHERE (p_unit_id <= 0 OR f.unit_id = p_unit_id)
+    AND (p_doc_book_id IS NULL OR f.doc_book_id = p_doc_book_id)
+    AND (p_doc_type_id IS NULL OR f.doc_type_id = p_doc_type_id)
+    AND (p_doc_field_id IS NULL OR f.doc_field_id = p_doc_field_id)
+    AND (p_urgent_id IS NULL OR f.urgent_id = p_urgent_id)
+    AND (p_approved IS NULL OR f.approved = p_approved)
+    AND (p_from_date IS NULL OR f.received_date >= p_from_date)
+    AND (p_to_date IS NULL OR f.received_date <= p_to_date)
+    AND (p_keyword IS NULL OR f.abstract ILIKE '%' || p_keyword || '%' OR f.notation ILIKE '%' || p_keyword || '%' OR f.document_code ILIKE '%' || p_keyword || '%')
+    AND (
+      -- Bug #99 visibility:
+      p_dept_ids IS NULL                                                                       -- admin
+      OR (v_is_leader AND f.department_id = ANY(p_dept_ids))                                   -- lanh dao thay het subtree
+      OR (p_staff_id IS NOT NULL AND f.created_by = p_staff_id)                                -- minh tao
+      OR (p_staff_id IS NOT NULL AND f.drafting_user_id = p_staff_id)                          -- minh la drafting_user
+      OR EXISTS (SELECT 1 FROM edoc.user_outgoing_docs uod WHERE uod.outgoing_doc_id = f.id AND uod.staff_id = p_staff_id)  -- minh duoc gui
+    );
+
+  RETURN QUERY
+  SELECT
+    f.id, f.unit_id, f.received_date, f.number, f.sub_number, f.notation, f.document_code, f.abstract,
+    f.drafting_unit_id, f.drafting_user_id, f.publish_unit_id, f.publish_date,
+    f.signer, f.sign_date, f.expired_date,
+    f.doc_book_id, f.doc_type_id, f.doc_field_id, f.secret_id, f.urgent_id,
+    f.number_paper, f.number_copies, f.recipients, f.approver, f.approved,
+    f.status, f.is_released, f.released_date,
+    f.archive_status,
+    f.created_by, f.created_at,
+    db.name::varchar AS doc_book_name,
+    dt.name::varchar AS doc_type_name,
+    dt.code::varchar AS doc_type_code,
+    df.name::varchar AS doc_field_name,
+    du.name::varchar AS drafting_unit_name,
+    duser.full_name::varchar AS drafting_user_name,
+    s.full_name::varchar AS created_by_name,
+    COALESCE(uodr.is_read, FALSE) AS is_read,
+    uodr.read_at AS read_at,
+    (SELECT count(*) FROM edoc.attachment_outgoing_docs a WHERE a.outgoing_doc_id = f.id) AS attachment_count,
+    v_total AS total_count,
+    (uodr.outgoing_doc_id IS NOT NULL AND uodr.sent_by IS NOT NULL) AS i_am_recipient,
+    sender.full_name::varchar AS sent_by_name,
+    uodr.created_at AS received_at
+  FROM edoc.outgoing_docs f
+  LEFT JOIN edoc.doc_books db ON f.doc_book_id = db.id
+  LEFT JOIN edoc.doc_types dt ON f.doc_type_id = dt.id
+  LEFT JOIN edoc.doc_fields df ON f.doc_field_id = df.id
+  LEFT JOIN public.departments du ON f.drafting_unit_id = du.id
+  LEFT JOIN public.staff duser ON f.drafting_user_id = duser.id
+  LEFT JOIN public.staff s ON f.created_by = s.id
+  LEFT JOIN edoc.user_outgoing_docs uodr ON uodr.outgoing_doc_id = f.id AND uodr.staff_id = p_staff_id
+  LEFT JOIN public.staff sender ON sender.id = uodr.sent_by
+  WHERE (p_unit_id <= 0 OR f.unit_id = p_unit_id)
+    AND (p_doc_book_id IS NULL OR f.doc_book_id = p_doc_book_id)
+    AND (p_doc_type_id IS NULL OR f.doc_type_id = p_doc_type_id)
+    AND (p_doc_field_id IS NULL OR f.doc_field_id = p_doc_field_id)
+    AND (p_urgent_id IS NULL OR f.urgent_id = p_urgent_id)
+    AND (p_approved IS NULL OR f.approved = p_approved)
+    AND (p_from_date IS NULL OR f.received_date >= p_from_date)
+    AND (p_to_date IS NULL OR f.received_date <= p_to_date)
+    AND (p_keyword IS NULL OR f.abstract ILIKE '%' || p_keyword || '%' OR f.notation ILIKE '%' || p_keyword || '%' OR f.document_code ILIKE '%' || p_keyword || '%')
+    AND (
+      p_dept_ids IS NULL
+      OR (v_is_leader AND f.department_id = ANY(p_dept_ids))
+      OR (p_staff_id IS NOT NULL AND f.created_by = p_staff_id)
+      OR (p_staff_id IS NOT NULL AND f.drafting_user_id = p_staff_id)
+      OR EXISTS (SELECT 1 FROM edoc.user_outgoing_docs uod WHERE uod.outgoing_doc_id = f.id AND uod.staff_id = p_staff_id)
+    )
+  ORDER BY f.received_date DESC NULLS LAST, f.id DESC
+  LIMIT p_page_size OFFSET v_offset;
+END;
+$$;
+
+DO $$ BEGIN
+  RAISE NOTICE '2026-05-23 Bug 99: fn_outgoing_doc_get_list visibility refined (is_leader-based)';
+END $$;
+
+-- ============================================================================
+-- 2026-05-23: PRE-EXISTING BUG fix (phat hien khi test E2E)
+-- ----------------------------------------------------------------------------
+-- fn_drafting_doc_release co OUT param ten "outgoing_doc_id" -> conflict voi
+-- column cung ten trong attachment_outgoing_docs. PostgreSQL bao "ambiguous".
+-- Khong release duoc draft -> khong tao duoc VB di tu draft.
+-- Fix: qualify column voi alias 'a.' trong subquery EXISTS.
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION edoc.fn_drafting_doc_release(p_id bigint, p_released_by integer)
+ RETURNS TABLE(success boolean, message text, outgoing_doc_id bigint)
+ LANGUAGE plpgsql
+AS $function$
+DECLARE
+  v_draft   edoc.drafting_docs%ROWTYPE;
+  v_out_id  BIGINT;
+BEGIN
+  SELECT * INTO v_draft FROM edoc.drafting_docs WHERE edoc.drafting_docs.id = p_id;
+
+  IF NOT FOUND THEN
+    RETURN QUERY SELECT FALSE, 'Không tìm thấy văn bản dự thảo'::TEXT, 0::BIGINT;
+    RETURN;
+  END IF;
+
+  IF v_draft.approved IS NULL OR v_draft.approved = FALSE THEN
+    RETURN QUERY SELECT FALSE, 'Văn bản chưa được duyệt, không thể phát hành'::TEXT, 0::BIGINT;
+    RETURN;
+  END IF;
+
+  IF v_draft.is_released = TRUE THEN
+    RETURN QUERY SELECT FALSE, 'Văn bản đã được phát hành trước đó'::TEXT, 0::BIGINT;
+    RETURN;
+  END IF;
+
+  INSERT INTO edoc.outgoing_docs (
+    unit_id, received_date, number, sub_number, notation, document_code,
+    abstract, drafting_unit_id, drafting_user_id, publish_unit_id, publish_date,
+    signer, sign_date, expired_date,
+    number_paper, number_copies, secret_id, urgent_id,
+    recipients, doc_book_id, doc_type_id, doc_field_id,
+    approved, approver, created_by, updated_by
+  ) VALUES (
+    v_draft.unit_id, v_draft.received_date, v_draft.number, v_draft.sub_number,
+    v_draft.notation, v_draft.document_code, v_draft.abstract,
+    v_draft.drafting_unit_id, v_draft.drafting_user_id, v_draft.publish_unit_id, v_draft.publish_date,
+    v_draft.signer, v_draft.sign_date, v_draft.expired_date,
+    v_draft.number_paper, v_draft.number_copies, v_draft.secret_id, v_draft.urgent_id,
+    v_draft.recipients, v_draft.doc_book_id, v_draft.doc_type_id, v_draft.doc_field_id,
+    TRUE, v_draft.approver, p_released_by, p_released_by
+  )
+  RETURNING edoc.outgoing_docs.id INTO v_out_id;
+
+  INSERT INTO edoc.attachment_outgoing_docs (
+    outgoing_doc_id, file_name, file_path, file_size, content_type, sort_order, created_by,
+    is_ca, ca_date, signed_file_path, sign_provider_code, sign_transaction_id
+  )
+  SELECT v_out_id, file_name, file_path, file_size, content_type, sort_order, created_by,
+         is_ca, ca_date, signed_file_path, sign_provider_code, sign_transaction_id
+  FROM edoc.attachment_drafting_docs
+  WHERE drafting_doc_id = p_id;
+
+  -- Fix: qualify alias 'a' de tranh ambiguity voi OUT param ten outgoing_doc_id
+  UPDATE edoc.outgoing_docs
+     SET is_digital_signed = 1
+   WHERE edoc.outgoing_docs.id = v_out_id
+     AND EXISTS (
+       SELECT 1 FROM edoc.attachment_outgoing_docs a
+        WHERE a.outgoing_doc_id = v_out_id AND a.is_ca = TRUE
+     );
+
+  UPDATE edoc.drafting_docs SET
+    is_released = TRUE,
+    released_date = NOW(),
+    updated_by = p_released_by,
+    updated_at = NOW()
+  WHERE edoc.drafting_docs.id = p_id;
+
+  RETURN QUERY SELECT TRUE, 'Phát hành thành công, đã tạo văn bản đi'::TEXT, v_out_id;
+END;
+$function$;
+
+DO $$ BEGIN RAISE NOTICE '2026-05-23 pre-existing fix: fn_drafting_doc_release ambiguous outgoing_doc_id resolved'; END $$;
+
+-- ============================================================================
+-- 2026-05-24: Data fix — public.rights id=4 action_link sai
+-- ----------------------------------------------------------------------------
+-- Phat hien khi test menu: right_id=4 (Du thao) co action_link='/du-thao'
+-- nhung URL thuc te frontend la '/van-ban-du-thao'. Frontend filter menu boi
+-- action_link -> menu "Van ban du thao" bi an cho moi user khong phai admin.
+-- Idempotent: chi UPDATE neu dang sai.
+-- ============================================================================
+UPDATE public.rights
+   SET action_link = '/van-ban-du-thao'
+ WHERE id = 4 AND action_link = '/du-thao';
+
+DO $$ BEGIN RAISE NOTICE '2026-05-24 data fix: rights id=4 action_link -> /van-ban-du-thao'; END $$;

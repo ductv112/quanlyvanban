@@ -486,7 +486,7 @@ export default function IncomingDocPage() {
             <Col span={6}><Form.Item name="received_date" label="Ngày đến" rules={[{ required: true, message: 'Ngày đến là bắt buộc' }]}><DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" /></Form.Item></Col>
           </Row>
           <Row gutter={16}>
-            <Col span={12}><Form.Item name="notation" label="Ký hiệu"><Input placeholder="VD: 123/UBND-VP" maxLength={100} /></Form.Item></Col>
+            <Col span={12}><Form.Item name="notation" label="Ký hiệu" rules={[{ required: true, message: 'Ký hiệu là bắt buộc' }]}><Input placeholder="VD: 123/UBND-VP" maxLength={100} /></Form.Item></Col>
             <Col span={12}><Form.Item name="publish_unit" label="Cơ quan ban hành"><Select
               mode="tags"
               maxCount={1}

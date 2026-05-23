@@ -1,5 +1,5 @@
 import { Router, type Request, type Response } from 'express';
-import type { AuthRequest } from '../middleware/auth.js';
+import { type AuthRequest, requireRightOrNext } from '../middleware/auth.js';
 import { upload } from '../middleware/upload.js';
 import { loadDocAndCanEdit } from '../middleware/doc-edit-guard.js';
 import { draftingDocRepository } from '../repositories/drafting-doc.repository.js';
@@ -239,7 +239,8 @@ router.get('/so-tiep-theo', async (req: Request, res: Response) => {
 // ============================================================
 
 // POST / — Tạo VB dự thảo
-router.post('/', async (req: Request, res: Response) => {
+// Bug #100: require right_id=4 (Van ban du thao) de tao moi
+router.post('/', requireRightOrNext(4), async (req: Request, res: Response) => {
   try {
     const { staffId, departmentId } = (req as AuthRequest).user;
     const ancestorUnitId = await resolveAncestorUnit(departmentId);
@@ -256,6 +257,11 @@ router.post('/', async (req: Request, res: Response) => {
     }
     if (!body.doc_book_id) {
       res.status(400).json({ success: false, message: 'Sổ văn bản là bắt buộc' });
+      return;
+    }
+    // Bug #95: Ky hieu (notation) bat buoc (dong nhat voi VB den/di)
+    if (!body.notation?.toString().trim()) {
+      res.status(400).json({ success: false, message: 'Ký hiệu là bắt buộc' });
       return;
     }
     // BUG-DT-001: drafting_unit_id required

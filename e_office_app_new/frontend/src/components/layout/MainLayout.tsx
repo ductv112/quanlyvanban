@@ -382,6 +382,14 @@ function buildMenuItems({ badgeCounts, isAdmin, roles, menuLinks, userRights }: 
         '/quan-tri/thuoc-tinh-van-ban',
       ].forEach((p) => allowed.add(p));
     }
+    // Fix 2026-05-24: 2 menu tien ich ca nhan luon hien cho moi user authenticated.
+    // 'Danh dau ca nhan' va 'Cau hinh gui nhanh' la setting/tien ich rieng cua tung
+    // user (khong phai chuc nang quan ly), khong can right rieng trong public.rights.
+    // Truoc do bi drop khoi menu non-admin vi filter exact-match action_link.
+    allowed.add('/van-ban-danh-dau');
+    allowed.add('/cau-hinh-gui-nhanh');
+    // Profile ca nhan (truy cap qua avatar header — phong khi co link tu menu)
+    allowed.add('/thong-tin-ca-nhan');
     filtered = filterMenuItemsByPermissions(filtered, allowed);
   }
   return filtered;

@@ -169,7 +169,31 @@ export default function IncomingDocDetailPage() {
   // Action loading
   const [actionLoading, setActionLoading] = useState(false);
 
-  const fetchDoc = useCallback(async () => { try { const { data: res } = await api.get(`/van-ban-den/${docId}`); setDoc(res.data); } catch { message.error('Không tìm thấy văn bản'); router.push('/van-ban-den'); } }, [docId, message, router]);
+  const fetchDoc = useCallback(async () => {
+    // Bug #87: Khi VB đến vừa auto-sinh tu outgoing /gui-noi-bo, race notification fire
+    // truoc commit visible -> click lan 1 = 403 -> click lan 2 OK. Retry 1 lan voi delay
+    // 600ms khi gap 403/404 de mask race condition. Best-effort.
+    const attempt = async (): Promise<unknown> => {
+      const { data: res } = await api.get(`/van-ban-den/${docId}`);
+      return res.data;
+    };
+    try {
+      const data = await attempt();
+      setDoc(data as DocDetail);
+    } catch (err: any) {
+      const code = err?.response?.status;
+      if (code === 403 || code === 404) {
+        await new Promise((r) => setTimeout(r, 600));
+        try {
+          const data = await attempt();
+          setDoc(data as DocDetail);
+          return;
+        } catch { /* fall through */ }
+      }
+      message.error('Không tìm thấy văn bản');
+      router.push('/van-ban-den');
+    }
+  }, [docId, message, router]);
   const fetchBookmarkStatus = useCallback(async () => { try { const { data: res } = await api.get('/van-ban-den/danh-dau-ca-nhan'); const bookmarks: { doc_id: number | string }[] = res.data || []; setIsBookmarked(bookmarks.some((b) => Number(b.doc_id) === Number(docId))); } catch {} }, [docId]);
 
   const fetchStaffOptions = useCallback(async () => {

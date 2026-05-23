@@ -1,5 +1,5 @@
 import { Router, type Request, type Response } from 'express';
-import type { AuthRequest } from '../middleware/auth.js';
+import { type AuthRequest, requireRightOrNext } from '../middleware/auth.js';
 import { upload } from '../middleware/upload.js';
 import { loadDocAndCanEdit } from '../middleware/doc-edit-guard.js';
 import { outgoingDocRepository } from '../repositories/outgoing-doc.repository.js';
@@ -293,7 +293,8 @@ router.get('/so-chua-phat-hanh', async (req: Request, res: Response) => {
 // CRUD
 // ============================================================
 
-router.post('/', async (req: Request, res: Response) => {
+// Bug #100: require right_id=3 (Van ban di) de tao moi
+router.post('/', requireRightOrNext(3), async (req: Request, res: Response) => {
   try {
     const { staffId, departmentId } = (req as AuthRequest).user;
     const ancestorUnitId = await resolveAncestorUnit(departmentId);
@@ -310,6 +311,11 @@ router.post('/', async (req: Request, res: Response) => {
     }
     if (!body.doc_book_id) {
       res.status(400).json({ success: false, message: 'Sổ văn bản là bắt buộc' });
+      return;
+    }
+    // Bug #95: Ky hieu (notation) bat buoc
+    if (!body.notation?.toString().trim()) {
+      res.status(400).json({ success: false, message: 'Ký hiệu là bắt buộc' });
       return;
     }
 

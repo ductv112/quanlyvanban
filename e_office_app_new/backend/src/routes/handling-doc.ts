@@ -396,6 +396,17 @@ router.post('/:id/phan-cong', async (req: Request, res: Response) => {
       res.status(400).json({ success: false, message: 'Danh sách cán bộ phân công có giá trị trùng — vui lòng kiểm tra lại' });
       return;
     }
+    // Bug #91: chan tu phan cong VB cho chinh minh.
+    if (assignments.some((a) => Number(a.staff_id) === Number(staffId))) {
+      res.status(400).json({ success: false, message: 'Không thể phân công văn bản cho chính mình' });
+      return;
+    }
+    // Bug #92: HSCV chi cho 1 CB phu trach (role=1) — nhung CB khac auto la phoi hop (role=2).
+    const primaryCount = assignments.filter((a) => a.role === 1).length;
+    if (primaryCount > 1) {
+      res.status(400).json({ success: false, message: 'Mỗi hồ sơ công việc chỉ được 1 cán bộ phụ trách' });
+      return;
+    }
 
     // Nhóm theo (role, deadline) để gọi SP assignStaff cho từng nhóm (SP nhận
     // array staff_ids chung 1 role/1 deadline). Per-staff customization giữ
@@ -425,11 +436,10 @@ router.post('/:id/phan-cong', async (req: Request, res: Response) => {
       res.status(400).json({ success: false, message: result.message });
       return;
     }
-    // Mảng dùng tiếp ở notification block bên dưới
-    const allStaffIds = assignments.map((a) => a.staff_id);
-
-    // Bell notification — best-effort. Cán bộ được phân công vào HSCV (phụ trách
-    // hoặc phối hợp tuỳ role_type) đều nhận thông báo.
+    // Bell notification — Bug #96: gui notification rieng cho moi nhom role
+    // (Phu trach vs Phoi hop) de tieu de + noi dung khop voi nhiem vu thuc te
+    // cua tung CB. Truoc day gui chung 1 message cho ca batch -> "phu trach" va
+    // "phoi hop" cung thay text "duoc giao xu ly", gay hieu lam.
     try {
       const senderRows = await rawQuery<{ full_name: string }>(
         'SELECT full_name FROM public.staff WHERE id = $1', [staffId],
@@ -439,19 +449,30 @@ router.post('/:id/phan-cong', async (req: Request, res: Response) => {
       );
       const senderName = senderRows[0]?.full_name?.trim() || 'Cán bộ';
       const hscvName = docRows[0]?.name?.trim() || `HSCV #${docId}`;
-      // BUG #77 follow-up: assignments có thể mixed role → notification dùng
-      // role của staff đầu tiên làm label chung (giữ message tóm tắt).
-      const firstRole = assignments[0]?.role ?? 1;
-      const roleLabel = firstRole === 2 ? 'phối hợp' : 'xử lý';
-      await notifyBell({
-        targetStaffIds: allStaffIds,
-        senderStaffId: staffId,
-        type: 'task_assigned',
-        title: 'Bạn được giao xử lý hồ sơ công việc',
-        message: `${senderName} đã giao bạn ${roleLabel} "${hscvName}"`,
-        link: `/ho-so-cong-viec/${docId}`,
-        metadata: { hscv_id: docId, role_type: firstRole, sender_id: staffId },
-      });
+
+      // Group staff theo role -> moi role gui 1 batch notification voi title/message rieng
+      const byRole = new Map<number, number[]>();
+      for (const a of assignments) {
+        const list = byRole.get(a.role) ?? [];
+        list.push(a.staff_id);
+        byRole.set(a.role, list);
+      }
+      for (const [role, ids] of byRole) {
+        const isPrimary = role === 1;
+        const title = isPrimary
+          ? 'Bạn được giao phụ trách hồ sơ công việc'
+          : 'Bạn được giao phối hợp xử lý hồ sơ công việc';
+        const verb = isPrimary ? 'phụ trách' : 'phối hợp xử lý';
+        await notifyBell({
+          targetStaffIds: ids,
+          senderStaffId: staffId,
+          type: 'task_assigned',
+          title,
+          message: `${senderName} đã giao bạn ${verb} "${hscvName}"`,
+          link: `/ho-so-cong-viec/${docId}`,
+          metadata: { hscv_id: docId, role_type: role, sender_id: staffId },
+        });
+      }
     } catch (err) {
       req.log?.warn({ err, hscvId: docId }, 'Bell notification (task_assigned/assign) failed');
     }
