@@ -29723,6 +29723,19 @@ DO $$ BEGIN RAISE NOTICE '2026-05-24 data fix: rights id=4 action_link -> /van-b
 -- ============================================================================
 
 -- fn_incoming_doc_get_list — them is_leader visibility
+-- DEFENSIVE: DROP truoc CREATE OR REPLACE de tranh tao overload duplicate khi
+-- signature mismatch giua prod cu va code moi (root cause #1 CLAUDE.md memory).
+DROP FUNCTION IF EXISTS edoc.fn_incoming_doc_get_list(
+  p_unit_id integer, p_staff_id integer,
+  p_doc_book_id integer, p_doc_type_id integer, p_doc_field_id integer,
+  p_urgent_id smallint, p_is_read boolean, p_approved boolean,
+  p_from_date timestamp with time zone, p_to_date timestamp with time zone,
+  p_keyword text, p_signer text,
+  p_from_number integer, p_to_number integer,
+  p_page integer, p_page_size integer,
+  p_dept_ids integer[], p_source_type edoc.doc_source_type
+) CASCADE;
+
 CREATE OR REPLACE FUNCTION edoc.fn_incoming_doc_get_list(
   p_unit_id integer, p_staff_id integer,
   p_doc_book_id integer DEFAULT NULL::integer,
@@ -29832,6 +29845,16 @@ END;
 $$;
 
 -- fn_drafting_doc_get_list — them is_leader visibility
+-- DEFENSIVE: DROP truoc CREATE OR REPLACE (giong fn_incoming_doc_get_list o tren).
+DROP FUNCTION IF EXISTS edoc.fn_drafting_doc_get_list(
+  p_unit_id integer, p_staff_id integer,
+  p_doc_book_id integer, p_doc_type_id integer, p_doc_field_id integer,
+  p_urgent_id smallint, p_is_released boolean, p_approved boolean,
+  p_from_date timestamp with time zone, p_to_date timestamp with time zone,
+  p_keyword text, p_page integer, p_page_size integer,
+  p_dept_ids integer[]
+) CASCADE;
+
 CREATE OR REPLACE FUNCTION edoc.fn_drafting_doc_get_list(
   p_unit_id integer, p_staff_id integer,
   p_doc_book_id integer DEFAULT NULL::integer,
