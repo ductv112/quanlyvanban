@@ -1328,12 +1328,12 @@ export default function HscvDetailPage() {
 
   // Phase 11 — Ký số gate (Plan 11-08).
   // UX gating only — backend fn_attachment_can_sign (Plan 11-01) is authoritative ACL.
-  // Shown ONLY khi: current user là signer được chỉ định + HSCV đang "Chờ trình ký" (2) hoặc "Đã trình ký" (3).
+  // v3.2.14: bo check status [2, 3] de dong nhat voi /ky-so/danh-sach (chi check signer).
+  // Theo y user: ky bat cu luc nao, ko can cho trinh ky (file ky roi moi trinh).
   const canSignHandling = Boolean(
     detail &&
     user?.staffId &&
-    detail.signer_id === user.staffId &&
-    [2, 3].includes(detail.status)
+    detail.signer_id === user.staffId
   );
 
   const tabItems = [
