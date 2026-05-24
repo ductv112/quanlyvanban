@@ -30083,3 +30083,233 @@ END;
 $$;
 
 DO $$ BEGIN RAISE NOTICE '2026-05-24 hotfix: fn_incoming_doc_get_list loai bo false positive cross-unit (created_by check skip internal docs)'; END $$;
+
+-- ============================================================================
+-- 2026-05-24: Strict permission ky so — bo `is_admin` + `created_by` check
+-- ----------------------------------------------------------------------------
+-- User bao: nguyenvana (chuyen vien, khong la signer) van bam duoc nut Ky so
+-- cho VB minh tao. Chi vi co dieu kien `created_by = p_staff_id` trong SP.
+--
+-- Nghiep vu chuan NN:
+--   - Chi NGUOI DUOC CHI DINH (signer/approver) duoc ky so VB di/du thao
+--   - Nguoi tao (chuyen vien/van thu) KHONG duoc tu ky -> tach trach nhiem
+--   - Admin he thong KHONG duoc ky (admin la role ky thuat, khong phai dai dien phap ly)
+--
+-- Fix 2 SP cung pattern (need-list + can-sign):
+--   - BO `v_is_admin` check (admin khong duoc ky)
+--   - BO `od.created_by = p_staff_id` / `dd.created_by` check (nguoi tao khong duoc ky)
+--   - BO `hd.created_by = p_staff_id` check (HSCV cung)
+--   - GIU `signer/approver name match` (VARCHAR LOWER UNACCENT) cho outgoing/drafting
+--   - GIU `hd.signer = p_staff_id` (INT match) cho HSCV
+--
+-- DEFENSIVE: DROP truoc CREATE OR REPLACE (CLAUDE.md root cause #1).
+-- ============================================================================
+
+DROP FUNCTION IF EXISTS edoc.fn_sign_need_list_by_staff(integer, integer, integer) CASCADE;
+
+CREATE OR REPLACE FUNCTION edoc.fn_sign_need_list_by_staff(p_staff_id integer, p_page integer, p_page_size integer)
+ RETURNS TABLE(attachment_id bigint, attachment_type character varying, file_name character varying, doc_id bigint, doc_type character varying, doc_label text, doc_number integer, doc_notation character varying, created_at timestamp with time zone, total_count bigint)
+ LANGUAGE plpgsql
+ STABLE
+AS $function$
+DECLARE
+  v_staff_name VARCHAR;
+  v_offset     INT;
+  v_limit      INT;
+BEGIN
+  -- Khong can resolve admin flag nua (admin khong duoc ky).
+  -- Chi can full_name de match signer/approver VARCHAR.
+  SELECT s.full_name INTO v_staff_name
+    FROM public.staff s WHERE s.id = p_staff_id;
+
+  v_offset := GREATEST(0, (COALESCE(p_page, 1) - 1) * COALESCE(p_page_size, 20));
+  v_limit  := GREATEST(1, LEAST(COALESCE(p_page_size, 20), 100));
+
+  RETURN QUERY
+  WITH combined AS (
+    -- (1) Outgoing docs — chi signer/approver name match
+    SELECT aod.id AS attachment_id,
+           'outgoing'::VARCHAR(20) AS attachment_type,
+           aod.file_name,
+           od.id AS doc_id,
+           'outgoing_doc'::VARCHAR(20) AS doc_type,
+           ('VB đi số ' || COALESCE(od.number::TEXT, '?') || ' — ' || COALESCE(od.notation, '?'))::TEXT AS doc_label,
+           od.number AS doc_number,
+           od.notation AS doc_notation,
+           aod.created_at
+      FROM edoc.attachment_outgoing_docs aod
+      JOIN edoc.outgoing_docs od ON od.id = aod.outgoing_doc_id
+     WHERE COALESCE(aod.is_ca, FALSE) = FALSE
+       AND LOWER(aod.file_name) LIKE '%.pdf'
+       AND NOT EXISTS (
+         SELECT 1 FROM edoc.sign_transactions st
+          WHERE st.attachment_id = aod.id AND st.attachment_type = 'outgoing' AND st.status = 'pending'
+       )
+       AND v_staff_name IS NOT NULL
+       AND (
+         (od.signer   IS NOT NULL AND LOWER(UNACCENT(od.signer))   = LOWER(UNACCENT(v_staff_name)))
+         OR (od.approver IS NOT NULL AND LOWER(UNACCENT(od.approver)) = LOWER(UNACCENT(v_staff_name)))
+       )
+
+    UNION ALL
+
+    -- (2) Drafting docs — chi signer/approver name match
+    SELECT add2.id, 'drafting'::VARCHAR(20), add2.file_name, dd.id, 'drafting_doc'::VARCHAR(20),
+           ('VB dự thảo số ' || COALESCE(dd.number::TEXT, '?') || ' — ' || COALESCE(dd.notation, '?'))::TEXT,
+           dd.number, dd.notation, add2.created_at
+      FROM edoc.attachment_drafting_docs add2
+      JOIN edoc.drafting_docs dd ON dd.id = add2.drafting_doc_id
+     WHERE COALESCE(add2.is_ca, FALSE) = FALSE
+       AND LOWER(add2.file_name) LIKE '%.pdf'
+       AND NOT EXISTS (
+         SELECT 1 FROM edoc.sign_transactions st
+          WHERE st.attachment_id = add2.id AND st.attachment_type = 'drafting' AND st.status = 'pending'
+       )
+       AND v_staff_name IS NOT NULL
+       AND (
+         (dd.signer   IS NOT NULL AND LOWER(UNACCENT(dd.signer))   = LOWER(UNACCENT(v_staff_name)))
+         OR (dd.approver IS NOT NULL AND LOWER(UNACCENT(dd.approver)) = LOWER(UNACCENT(v_staff_name)))
+       )
+
+    UNION ALL
+
+    -- (3) HSCV — chi signer INT match (BO created_by check)
+    SELECT ahd.id, 'handling'::VARCHAR(20), ahd.file_name, hd.id, 'handling_doc'::VARCHAR(20),
+           ('HSCV: ' || COALESCE(hd.name, 'không tên'))::TEXT,
+           NULL::INT, NULL::VARCHAR(100), ahd.created_at
+      FROM edoc.attachment_handling_docs ahd
+      JOIN edoc.handling_docs hd ON hd.id = ahd.handling_doc_id
+     WHERE COALESCE(ahd.is_ca, FALSE) = FALSE
+       AND LOWER(ahd.file_name) LIKE '%.pdf'
+       AND NOT EXISTS (
+         SELECT 1 FROM edoc.sign_transactions st
+          WHERE st.attachment_id = ahd.id AND st.attachment_type = 'handling' AND st.status = 'pending'
+       )
+       AND hd.signer = p_staff_id
+  )
+  SELECT c.attachment_id, c.attachment_type, c.file_name, c.doc_id, c.doc_type,
+         c.doc_label, c.doc_number, c.doc_notation, c.created_at,
+         COUNT(*) OVER ()::BIGINT AS total_count
+    FROM combined c
+   ORDER BY c.created_at DESC
+   LIMIT v_limit OFFSET v_offset;
+END;
+$function$;
+
+DROP FUNCTION IF EXISTS edoc.fn_attachment_can_sign(bigint, character varying, integer) CASCADE;
+
+CREATE OR REPLACE FUNCTION edoc.fn_attachment_can_sign(p_attachment_id bigint, p_attachment_type character varying, p_staff_id integer)
+ RETURNS TABLE(can_sign boolean, reason text, file_path character varying, file_name character varying)
+ LANGUAGE plpgsql
+ STABLE
+AS $function$
+DECLARE
+  v_is_ca         BOOLEAN;
+  v_file_path     VARCHAR(1000);
+  v_file_name     VARCHAR(500);
+  v_doc_id        BIGINT;
+  v_signer_name   VARCHAR(200);
+  v_signer_int    INT;
+  v_approver_name VARCHAR(200);
+  v_staff_name    VARCHAR(100);
+BEGIN
+  SELECT s.full_name INTO v_staff_name FROM public.staff s WHERE s.id = p_staff_id;
+
+  IF v_staff_name IS NULL THEN
+    RETURN QUERY SELECT FALSE, 'Không tìm thấy người dùng'::TEXT, NULL::VARCHAR(1000), NULL::VARCHAR(500);
+    RETURN;
+  END IF;
+
+  IF p_attachment_type = 'incoming' THEN
+    RETURN QUERY SELECT FALSE, 'Không được ký số văn bản đến'::TEXT, NULL::VARCHAR(1000), NULL::VARCHAR(500);
+    RETURN;
+  END IF;
+
+  IF p_attachment_type = 'outgoing' THEN
+    SELECT att.is_ca, att.file_path, att.file_name, att.outgoing_doc_id
+      INTO v_is_ca, v_file_path, v_file_name, v_doc_id
+      FROM edoc.attachment_outgoing_docs att WHERE att.id = p_attachment_id;
+
+    IF v_file_path IS NULL THEN
+      RETURN QUERY SELECT FALSE, 'Không tìm thấy file đính kèm'::TEXT, NULL::VARCHAR(1000), NULL::VARCHAR(500);
+      RETURN;
+    END IF;
+    IF COALESCE(v_is_ca, FALSE) THEN
+      RETURN QUERY SELECT FALSE, 'File đã được ký số'::TEXT, v_file_path, v_file_name;
+      RETURN;
+    END IF;
+
+    SELECT od.signer, od.approver INTO v_signer_name, v_approver_name
+      FROM edoc.outgoing_docs od WHERE od.id = v_doc_id;
+
+    IF (v_signer_name IS NOT NULL AND LOWER(unaccent(v_signer_name)) = LOWER(unaccent(v_staff_name)))
+       OR (v_approver_name IS NOT NULL AND LOWER(unaccent(v_approver_name)) = LOWER(unaccent(v_staff_name))) THEN
+      RETURN QUERY SELECT TRUE, NULL::TEXT, v_file_path, v_file_name;
+    ELSE
+      RETURN QUERY SELECT FALSE,
+                         'Bạn không có quyền ký văn bản này (không phải người ký được chỉ định)'::TEXT,
+                         v_file_path, v_file_name;
+    END IF;
+    RETURN;
+  END IF;
+
+  IF p_attachment_type = 'drafting' THEN
+    SELECT att.is_ca, att.file_path, att.file_name, att.drafting_doc_id
+      INTO v_is_ca, v_file_path, v_file_name, v_doc_id
+      FROM edoc.attachment_drafting_docs att WHERE att.id = p_attachment_id;
+
+    IF v_file_path IS NULL THEN
+      RETURN QUERY SELECT FALSE, 'Không tìm thấy file đính kèm'::TEXT, NULL::VARCHAR(1000), NULL::VARCHAR(500);
+      RETURN;
+    END IF;
+    IF COALESCE(v_is_ca, FALSE) THEN
+      RETURN QUERY SELECT FALSE, 'File đã được ký số'::TEXT, v_file_path, v_file_name;
+      RETURN;
+    END IF;
+
+    SELECT dd.signer, dd.approver INTO v_signer_name, v_approver_name
+      FROM edoc.drafting_docs dd WHERE dd.id = v_doc_id;
+
+    IF (v_signer_name IS NOT NULL AND LOWER(unaccent(v_signer_name)) = LOWER(unaccent(v_staff_name)))
+       OR (v_approver_name IS NOT NULL AND LOWER(unaccent(v_approver_name)) = LOWER(unaccent(v_staff_name))) THEN
+      RETURN QUERY SELECT TRUE, NULL::TEXT, v_file_path, v_file_name;
+    ELSE
+      RETURN QUERY SELECT FALSE,
+                         'Bạn không có quyền ký văn bản này (không phải người ký được chỉ định)'::TEXT,
+                         v_file_path, v_file_name;
+    END IF;
+    RETURN;
+  END IF;
+
+  IF p_attachment_type = 'handling' THEN
+    SELECT att.is_ca, att.file_path, att.file_name, att.handling_doc_id
+      INTO v_is_ca, v_file_path, v_file_name, v_doc_id
+      FROM edoc.attachment_handling_docs att WHERE att.id = p_attachment_id;
+
+    IF v_file_path IS NULL THEN
+      RETURN QUERY SELECT FALSE, 'Không tìm thấy file đính kèm'::TEXT, NULL::VARCHAR(1000), NULL::VARCHAR(500);
+      RETURN;
+    END IF;
+    IF COALESCE(v_is_ca, FALSE) THEN
+      RETURN QUERY SELECT FALSE, 'File đã được ký số'::TEXT, v_file_path, v_file_name;
+      RETURN;
+    END IF;
+
+    SELECT hd.signer INTO v_signer_int FROM edoc.handling_docs hd WHERE hd.id = v_doc_id;
+
+    IF v_signer_int = p_staff_id THEN
+      RETURN QUERY SELECT TRUE, NULL::TEXT, v_file_path, v_file_name;
+    ELSE
+      RETURN QUERY SELECT FALSE,
+                         'Bạn không có quyền ký HSCV này (không phải người ký được chỉ định)'::TEXT,
+                         v_file_path, v_file_name;
+    END IF;
+    RETURN;
+  END IF;
+
+  -- Unknown attachment_type
+  RETURN QUERY SELECT FALSE, 'Loại đính kèm không hợp lệ'::TEXT, NULL::VARCHAR(1000), NULL::VARCHAR(500);
+END;
+$function$;
+
+DO $$ BEGIN RAISE NOTICE '2026-05-24 strict ky so: bo is_admin + created_by check trong fn_sign_need_list_by_staff + fn_attachment_can_sign'; END $$;

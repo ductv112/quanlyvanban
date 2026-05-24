@@ -13,6 +13,7 @@ import {
   ClockCircleOutlined, UserOutlined, FilePdfOutlined,
   FileImageOutlined, FileWordOutlined, FileExcelOutlined, FileOutlined,
   EditOutlined, SafetyCertificateOutlined, RocketOutlined, StopOutlined, RollbackOutlined, CommentOutlined, SafetyOutlined,
+  ExclamationCircleOutlined,
 } from '@ant-design/icons';
 import { api } from '@/lib/api';
 import { downloadAttachment } from '@/lib/download';
@@ -78,6 +79,17 @@ function formatSize(bytes: number) {
 }
 function fmtDate(d: string | null) { return d ? dayjs(d).format('DD/MM/YYYY') : '—'; }
 function fmtDateTime(d: string | null) { return d ? dayjs(d).format('DD/MM/YYYY HH:mm') : '—'; }
+// Normalize ten staff de match (dong nhat voi backend SP fn_attachment_can_sign:
+// LOWER + UNACCENT). Chi user co ten = signer/approver moi duoc ky so.
+function normalizeName(s: string | null | undefined): string {
+  if (!s) return '';
+  return s.trim().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase();
+}
+function canSignDoc(fullName: string | undefined, signer: string | null | undefined, approver: string | null | undefined): boolean {
+  const myName = normalizeName(fullName);
+  if (!myName) return false;
+  return normalizeName(signer) === myName || normalizeName(approver) === myName;
+}
 function maskPhone(phone: string): string {
   if (!phone || phone.length < 8) return phone || '';
   return phone.substring(0, 4) + '***' + phone.substring(phone.length - 3);
@@ -367,7 +379,18 @@ export default function DraftingDocDetailPage() {
                 <div><div className="info-label">Ngày ban hành</div><div className="info-value">{fmtDate(doc.publish_date)}</div></div>
               </div>
               <div className="info-grid">
-                <div><div className="info-label">Người ký</div><div className="info-value">{doc.signer || '—'}</div></div>
+                <div>
+                  <div className="info-label">Người ký</div>
+                  <div className="info-value">
+                    {doc.signer || '—'}
+                    {/* Warning: VB co PDF chua ky nhung chua chi dinh nguoi ky */}
+                    {!doc.signer && attachments.some((a) => !a.is_ca && a.file_name.toLowerCase().endsWith('.pdf')) && (
+                      <Tag color="warning" style={{ marginLeft: 8 }} icon={<ExclamationCircleOutlined />}>
+                        Chưa chỉ định người ký
+                      </Tag>
+                    )}
+                  </div>
+                </div>
                 <div><div className="info-label">Ngày ký</div><div className="info-value">{fmtDate(doc.sign_date)}</div></div>
               </div>
               <div className="info-grid">
@@ -441,7 +464,9 @@ export default function DraftingDocDetailPage() {
                     <Space size={4}>
                       {att.is_ca ? (
                         <Tag color="success" icon={<CheckCircleOutlined />}>Đã ký số</Tag>
-                      ) : (
+                      ) : canSignDoc(user?.fullName, doc.signer, doc.approver) && att.file_name.toLowerCase().endsWith('.pdf') ? (
+                        // Chi hien nut Ky so khi user la signer hoac approver duoc chi dinh
+                        // (dong nhat voi backend SP fn_attachment_can_sign sau v3.2.11 strict).
                         <Button size="small" type="primary" ghost icon={<SafetyOutlined />} disabled={isSigningOpen} onClick={() => openSign({
                           attachment: { id: att.id, file_name: att.file_name },
                           attachmentType: 'drafting',
@@ -452,7 +477,7 @@ export default function DraftingDocDetailPage() {
                         })}>
                           Ký số
                         </Button>
-                      )}
+                      ) : null}
                       {isPreviewable(att.content_type ?? null, att.file_name) && (
                         <Tooltip title="Xem trực tiếp">
                           <Button size="small" type="link" icon={<EyeOutlined />} onClick={() => openPreview(att)} />
