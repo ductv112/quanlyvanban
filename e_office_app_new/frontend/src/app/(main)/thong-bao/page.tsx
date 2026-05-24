@@ -7,7 +7,11 @@ import {
 import { BellOutlined } from '@ant-design/icons';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth.store';
+import { useUserRights } from '@/hooks/use-user-rights';
 import dayjs from 'dayjs';
+
+// right_id=8 trong public.rights = "Thong bao" (dong nhat voi backend requireRightOrNext(8))
+const RIGHT_THONG_BAO = 8;
 
 const { TextArea } = Input;
 
@@ -28,6 +32,10 @@ type ActiveTab = 'all' | 'unread' | 'read';
 export default function ThongBaoPage() {
   const { message } = App.useApp();
   const { user } = useAuthStore();
+  const { hasRight } = useUserRights();
+  // Bat ky user co right_id=8 (Thong bao) HOAC admin -> tao duoc thong bao
+  // (dong nhat voi backend requireRightOrNext(8) cua POST /api/thong-bao).
+  const canCreateNotice = user?.isAdmin || hasRight(RIGHT_THONG_BAO);
 
   // List state
   const [notices, setNotices] = useState<NoticeItem[]>([]);
@@ -142,7 +150,7 @@ export default function ThongBaoPage() {
             >
               Đánh dấu đã đọc tất cả
             </Button>
-            {user?.isAdmin && (
+            {canCreateNotice && (
               <Button
                 type="primary"
                 onClick={() => {
