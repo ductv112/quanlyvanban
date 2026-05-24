@@ -17,6 +17,7 @@ import {
 } from '../lib/permissions/outgoing-doc.js';
 import { getUserPermissionContext, type DocPermissionContext } from '../lib/permissions/_shared.js';
 import { enqueueLgspSendJob } from '../lib/queue/lgsp-send-queue.js';
+import { notifySignRequired } from '../lib/notifications/sign-required.js';
 import pino from 'pino';
 import dayjs from 'dayjs';
 
@@ -351,6 +352,20 @@ router.post('/', requireRightOrNext(3), async (req: Request, res: Response) => {
       res.status(400).json({ success: false, message: result.message });
       return;
     }
+
+    // v3.2.12: bell notify signer/approver duoc chi dinh khi tao VB di
+    if (result.id && (body.signer || body.approver)) {
+      notifySignRequired({
+        docType: 'outgoing',
+        docId: result.id,
+        docLabel: `VB đi: ${body.notation || ''} — ${(body.abstract || '').slice(0, 80)}`,
+        link: `/van-ban-di/${result.id}`,
+        senderStaffId: staffId,
+        signerName: body.signer || null,
+        approverName: body.approver || null,
+      }).catch(() => { /* best-effort */ });
+    }
+
     res.status(201).json({ success: true, data: { id: result.id } });
   } catch (error) {
     handleDbError(error, res);
@@ -409,6 +424,13 @@ router.put('/:id', async (req: Request, res: Response) => {
     if (!loaded.perms.canEdit) { res.status(403).json({ success: false, message: 'Không có quyền sửa văn bản đi này' }); return; }
     const body = req.body;
 
+    // v3.2.12: load signer/approver cu de dedup notify (chi bell khi field thay doi)
+    const oldRows = await rawQuery<{ signer: string | null; approver: string | null }>(
+      'SELECT signer, approver FROM edoc.outgoing_docs WHERE id = $1', [id],
+    );
+    const oldSigner = oldRows[0]?.signer ?? null;
+    const oldApprover = oldRows[0]?.approver ?? null;
+
     if (!body.abstract?.trim()) {
       res.status(400).json({ success: false, message: 'Trích yếu nội dung là bắt buộc' });
       return;
@@ -454,6 +476,24 @@ router.put('/:id', async (req: Request, res: Response) => {
       res.status(400).json({ success: false, message: result.message });
       return;
     }
+
+    // v3.2.12: bell notify neu signer/approver THAY DOI (notify cho ten moi)
+    const newSigner = body.signer ? String(body.signer).trim() : null;
+    const newApprover = body.approver ? String(body.approver).trim() : null;
+    const signerChanged = newSigner && newSigner !== (oldSigner ?? null);
+    const approverChanged = newApprover && newApprover !== (oldApprover ?? null);
+    if (signerChanged || approverChanged) {
+      notifySignRequired({
+        docType: 'outgoing',
+        docId: id,
+        docLabel: `VB đi: ${body.notation || ''} — ${(body.abstract || '').slice(0, 80)}`,
+        link: `/van-ban-di/${id}`,
+        senderStaffId: staffId,
+        signerName: signerChanged ? newSigner : null,
+        approverName: approverChanged ? newApprover : null,
+      }).catch(() => { /* best-effort */ });
+    }
+
     res.json({ success: true, data: { updated: true } });
   } catch (error) {
     handleDbError(error, res);

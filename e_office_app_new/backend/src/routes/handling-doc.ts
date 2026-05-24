@@ -11,6 +11,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { handleDbError } from '../lib/error-handler.js';
 import { resolveDeptSubtree, resolveAncestorUnit } from '../lib/department-subtree.js';
 import { notifyBell } from '../lib/notifications/bell-emit.js';
+import { notifySignRequired } from '../lib/notifications/sign-required.js';
 
 const router = Router();
 
@@ -301,6 +302,12 @@ router.put('/:id', async (req: Request, res: Response) => {
       return;
     }
 
+    // v3.2.12: load signer cu de dedup notify (chi bell khi field thay doi)
+    const oldRows = await rawQuery<{ signer: number | null }>(
+      'SELECT signer FROM edoc.handling_docs WHERE id = $1', [id],
+    );
+    const oldSignerId = oldRows[0]?.signer ?? null;
+
     const result = await handlingDocRepository.update(id, {
       docTypeId: body.doc_type_id ? Number(body.doc_type_id) : undefined,
       docFieldId: body.doc_field_id ? Number(body.doc_field_id) : undefined,
@@ -318,6 +325,20 @@ router.put('/:id', async (req: Request, res: Response) => {
       res.status(400).json({ success: false, message: result.message });
       return;
     }
+
+    // v3.2.12: bell notify HSCV.signer neu THAY DOI
+    const newSignerId = body.signer_id ? Number(body.signer_id) : null;
+    if (newSignerId && newSignerId !== oldSignerId) {
+      notifySignRequired({
+        docType: 'handling',
+        docId: id,
+        docLabel: `HSCV: ${body.name.trim()}`,
+        link: `/ho-so-cong-viec/${id}`,
+        senderStaffId: staffId,
+        signerStaffId: newSignerId,
+      }).catch(() => { /* best-effort */ });
+    }
+
     res.json({ success: true, data: { message: result.message } });
   } catch (error) {
     handleDbError(error, res);
@@ -818,6 +839,26 @@ router.patch('/:id/trang-thai', async (req: Request, res: Response) => {
     // INSERT outbox row cho moi VB. UNIQUE constraint Phase 36-01 chan duplicate.
     if (action === 'complete') {
       await fireHscvCompleteOutbox(id, req);
+    }
+
+    // v3.2.12: bell notify "VB can ban ky" cho HSCV.signer khi trinh ky (submit / change -> status 3)
+    // Lay HSCV.signer + name sau status change de notify.
+    if (action === 'submit' || (action === 'change' && Number(new_status) === 3)) {
+      try {
+        const hscv = await rawQuery<{ signer: number | null; name: string | null }>(
+          'SELECT signer, name FROM edoc.handling_docs WHERE id = $1', [id],
+        );
+        if (hscv[0]?.signer) {
+          notifySignRequired({
+            docType: 'handling',
+            docId: id,
+            docLabel: `HSCV: ${hscv[0].name || 'không tên'}`,
+            link: `/ho-so-cong-viec/${id}`,
+            senderStaffId: staffId,
+            signerStaffId: hscv[0].signer,
+          }).catch(() => { /* best-effort */ });
+        }
+      } catch { /* best-effort */ }
     }
 
     res.json({ success: true, data: { message: result.message } });

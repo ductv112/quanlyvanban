@@ -34,7 +34,8 @@ export type BellNotificationType =
   | 'task_assigned'
   | 'leader_note_received'
   | 'sign_completed'
-  | 'sign_failed';
+  | 'sign_failed'
+  | 'sign_required';   // v3.2.12: VB/HSCV chi dinh user lam signer/approver -> notify
 
 export interface BellNotifyParams {
   /** Danh sách staff nhận — sẽ tự động loại sender + dedup */

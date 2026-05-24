@@ -12,6 +12,7 @@ import { exportExcel } from '../lib/excel.js';
 import { callFunction, rawQuery } from '../lib/db/query.js';
 import { resolveDeptSubtree, resolveAncestorUnit } from '../lib/department-subtree.js';
 import { computeDraftingPermissions, computePermsWithContext, getUserPermissionContext, type DocPermissionContext } from '../lib/permissions/drafting-doc.js';
+import { notifySignRequired } from '../lib/notifications/sign-required.js';
 import dayjs from 'dayjs';
 
 /**
@@ -308,6 +309,20 @@ router.post('/', requireRightOrNext(4), async (req: Request, res: Response) => {
       res.status(400).json({ success: false, message: result.message });
       return;
     }
+
+    // v3.2.12: bell notify signer/approver duoc chi dinh khi tao VB du thao
+    if (result.id && (body.signer || body.approver)) {
+      notifySignRequired({
+        docType: 'drafting',
+        docId: result.id,
+        docLabel: `VB dự thảo: ${body.notation || ''} — ${(body.abstract || '').slice(0, 80)}`,
+        link: `/van-ban-du-thao/${result.id}`,
+        senderStaffId: staffId,
+        signerName: body.signer || null,
+        approverName: body.approver || null,
+      }).catch(() => { /* best-effort */ });
+    }
+
     res.status(201).json({ success: true, data: { id: result.id } });
   } catch (error) {
     handleDbError(error, res);
@@ -360,6 +375,13 @@ router.put('/:id', async (req: Request, res: Response) => {
       return;
     }
 
+    // v3.2.12: load signer/approver cu de dedup notify (chi bell khi field thay doi)
+    const oldRows = await rawQuery<{ signer: string | null; approver: string | null }>(
+      'SELECT signer, approver FROM edoc.drafting_docs WHERE id = $1', [id],
+    );
+    const oldSigner = oldRows[0]?.signer ?? null;
+    const oldApprover = oldRows[0]?.approver ?? null;
+
     if (!body.abstract?.trim()) {
       res.status(400).json({ success: false, message: 'Trích yếu nội dung là bắt buộc' });
       return;
@@ -409,6 +431,24 @@ router.put('/:id', async (req: Request, res: Response) => {
       res.status(400).json({ success: false, message: result.message });
       return;
     }
+
+    // v3.2.12: bell notify neu signer/approver THAY DOI
+    const newSigner = body.signer ? String(body.signer).trim() : null;
+    const newApprover = body.approver ? String(body.approver).trim() : null;
+    const signerChanged = newSigner && newSigner !== (oldSigner ?? null);
+    const approverChanged = newApprover && newApprover !== (oldApprover ?? null);
+    if (signerChanged || approverChanged) {
+      notifySignRequired({
+        docType: 'drafting',
+        docId: id,
+        docLabel: `VB dự thảo: ${body.notation || ''} — ${(body.abstract || '').slice(0, 80)}`,
+        link: `/van-ban-du-thao/${id}`,
+        senderStaffId: staffId,
+        signerName: signerChanged ? newSigner : null,
+        approverName: approverChanged ? newApprover : null,
+      }).catch(() => { /* best-effort */ });
+    }
+
     res.json({ success: true, data: { updated: true } });
   } catch (error) {
     handleDbError(error, res);
