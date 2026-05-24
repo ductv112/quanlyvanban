@@ -105,6 +105,8 @@ export default function OutgoingDocPage() {
   const [docFields, setDocFields] = useState<SelectOption[]>([]);
   const [departments, setDepartments] = useState<SelectOption[]>([]);
   const [staffList, setStaffList] = useState<SelectOption[]>([]);
+  // v3.2.13: dropdown nguoi ky (lay tu edoc.signers cua don vi)
+  const [signerOptions, setSignerOptions] = useState<SelectOption[]>([]);
   // Phase 18 v3.0: cơ quan ngoài LGSP cho recipient picker
   const [interOrgs, setInterOrgs] = useState<SelectOption[]>([]);
   const [extraColumns, setExtraColumns] = useState<{ column_name: string; label: string; data_type: string; max_length: number | null; is_mandatory: boolean }[]>([]);
@@ -136,12 +138,14 @@ export default function OutgoingDocPage() {
 
   const fetchDropdowns = useCallback(async () => {
     try {
-      const [bookRes, typeRes, fieldRes, deptRes, orgRes] = await Promise.all([
+      const [bookRes, typeRes, fieldRes, deptRes, orgRes, signerRes] = await Promise.all([
         api.get('/quan-tri/so-van-ban', { params: { type_id: 2 } }),
         api.get('/quan-tri/loai-van-ban/tree'),
         api.get('/quan-tri/linh-vuc'),
         api.get('/quan-tri/don-vi/tree'),
         api.get('/quan-tri/co-quan-lien-thong').catch(() => ({ data: { data: [] } })),
+        // v3.2.13: load danh sach Nguoi ky cua don vi user (giong pattern HSCV)
+        api.get('/ho-so-cong-viec/lanh-dao-cung-don-vi').catch(() => ({ data: { data: [] } })),
       ]);
       setDocBooks((bookRes.data.data || []).map((b: { id: number; name: string }) => ({ value: b.id, label: b.name })));
       setDocTypes((typeRes.data.data || []).map((t: { id: number; name: string }) => ({ value: t.id, label: t.name })));
@@ -150,6 +154,11 @@ export default function OutgoingDocPage() {
       setDepartments(flattenDepartments(deptTree));
       // Phase 20 fix: Number(o.id) — pg driver trả BIGINT dạng string, setFieldsValue dùng number → cần convert để Select match đúng option
       setInterOrgs((orgRes.data.data || []).map((o: { id: number | string; name: string; code: string }) => ({ value: Number(o.id), label: `${o.name} (${o.code})` })));
+      // v3.2.13: signer options - value = staff_id (INT), label = full_name (+ position neu co)
+      setSignerOptions((signerRes.data.data || []).map((s: { staff_id: number; staff_name: string; position_name?: string }) => ({
+        value: Number(s.staff_id),
+        label: s.staff_name + (s.position_name ? ` (${s.position_name})` : ''),
+      })));
       // Build tree data for admin filter
       if (user?.isAdmin) {
         const tree = buildTree(deptTree.map((d: any) => ({ id: d.id, parent_id: d.parent_id, name: d.name })));
@@ -216,6 +225,13 @@ export default function OutgoingDocPage() {
         loadedOrgIds = noiNhan.filter((r) => r.recipient_type === 'external_org' && r.recipient_org_id != null).map((r) => Number(r.recipient_org_id));
       } catch { /* ignore */ }
 
+      // v3.2.13: fetch detail de lay signer_id/approver_id (list endpoint chua tra cac field nay)
+      let signerIdLoaded: number | null = null;
+      try {
+        const { data: detailRes } = await api.get(`/van-ban-di/${record.id}`);
+        signerIdLoaded = detailRes?.data?.signer_id ?? null;
+      } catch { /* ignore */ }
+
       form.setFieldsValue({
         ...record,
         received_date: record.received_date ? dayjs(record.received_date) : dayjs(),
@@ -224,6 +240,7 @@ export default function OutgoingDocPage() {
         expired_date: record.expired_date ? dayjs(record.expired_date) : null,
         recipient_unit_ids: loadedUnitIds,
         recipient_org_ids: loadedOrgIds,
+        signer_id: signerIdLoaded,
       });
       if (record.drafting_unit_id) {
         fetchStaff(record.drafting_unit_id);
@@ -570,8 +587,15 @@ export default function OutgoingDocPage() {
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item name="signer" label="Người ký">
-                <Input placeholder="Họ tên người ký" maxLength={200} />
+              <Form.Item name="signer_id" label="Người ký">
+                <Select
+                  placeholder="Chọn người ký"
+                  allowClear
+                  showSearch
+                  optionFilterProp="label"
+                  options={signerOptions}
+                  notFoundContent={signerOptions.length === 0 ? 'Đơn vị chưa có người ký được đăng ký' : 'Không tìm thấy'}
+                />
               </Form.Item>
             </Col>
           </Row>

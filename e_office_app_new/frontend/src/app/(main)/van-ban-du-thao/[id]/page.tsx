@@ -85,10 +85,23 @@ function normalizeName(s: string | null | undefined): string {
   if (!s) return '';
   return s.trim().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase();
 }
-function canSignDoc(fullName: string | undefined, signer: string | null | undefined, approver: string | null | undefined): boolean {
-  const myName = normalizeName(fullName);
-  if (!myName) return false;
-  return normalizeName(signer) === myName || normalizeName(approver) === myName;
+// v3.2.13: ID priority + name fallback (cho legacy data signer text khong co ID)
+function canSignDoc(
+  staffId: number | undefined,
+  fullName: string | undefined,
+  signerId: number | null | undefined,
+  approverId: number | null | undefined,
+  signerName: string | null | undefined,
+  approverName: string | null | undefined,
+): boolean {
+  if (!staffId) return false;
+  if (signerId === staffId || approverId === staffId) return true;
+  if (!signerId && !approverId) {
+    const myName = normalizeName(fullName);
+    if (!myName) return false;
+    return normalizeName(signerName) === myName || normalizeName(approverName) === myName;
+  }
+  return false;
 }
 function maskPhone(phone: string): string {
   if (!phone || phone.length < 8) return phone || '';
@@ -464,7 +477,7 @@ export default function DraftingDocDetailPage() {
                     <Space size={4}>
                       {att.is_ca ? (
                         <Tag color="success" icon={<CheckCircleOutlined />}>Đã ký số</Tag>
-                      ) : canSignDoc(user?.fullName, doc.signer, doc.approver) && att.file_name.toLowerCase().endsWith('.pdf') ? (
+                      ) : canSignDoc(user?.staffId, user?.fullName, (doc as any).signer_id, (doc as any).approver_id, doc.signer, doc.approver) && att.file_name.toLowerCase().endsWith('.pdf') ? (
                         // Chi hien nut Ky so khi user la signer hoac approver duoc chi dinh
                         // (dong nhat voi backend SP fn_attachment_can_sign sau v3.2.11 strict).
                         <Button size="small" type="primary" ghost icon={<SafetyOutlined />} disabled={isSigningOpen} onClick={() => openSign({

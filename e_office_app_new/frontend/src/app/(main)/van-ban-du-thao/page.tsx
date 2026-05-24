@@ -133,6 +133,8 @@ export default function DraftingDocPage() {
   const [extraColumns, setExtraColumns] = useState<{ column_name: string; label: string; data_type: string; max_length: number | null; is_mandatory: boolean }[]>([]);
   const [departments, setDepartments] = useState<SelectOption[]>([]);
   const [staffList, setStaffList] = useState<SelectOption[]>([]);
+  // v3.2.13: dropdown nguoi ky (lay tu edoc.signers cua don vi)
+  const [signerOptions, setSignerOptions] = useState<SelectOption[]>([]);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<DraftingDoc | null>(null);
   const [saving, setSaving] = useState(false);
@@ -162,17 +164,23 @@ export default function DraftingDocPage() {
 
   const fetchDropdowns = useCallback(async () => {
     try {
-      const [bookRes, typeRes, fieldRes, deptRes] = await Promise.all([
+      const [bookRes, typeRes, fieldRes, deptRes, signerRes] = await Promise.all([
         api.get('/quan-tri/so-van-ban', { params: { type_id: 3 } }),
         api.get('/quan-tri/loai-van-ban/tree'),
         api.get('/quan-tri/linh-vuc'),
         api.get('/quan-tri/don-vi/tree'),
+        // v3.2.13: load Nguoi ky cua don vi user
+        api.get('/ho-so-cong-viec/lanh-dao-cung-don-vi').catch(() => ({ data: { data: [] } })),
       ]);
       setDocBooks((bookRes.data.data || []).map((b: { id: number; name: string }) => ({ value: b.id, label: b.name })));
       setDocTypes((typeRes.data.data || []).map((t: { id: number; name: string }) => ({ value: t.id, label: t.name })));
       setDocFields((fieldRes.data.data || []).map((f: { id: number; name: string }) => ({ value: f.id, label: f.name })));
       const deptTree: DepartmentNode[] = deptRes.data.data || [];
       setDepartments(flattenDepartments(deptTree));
+      setSignerOptions((signerRes.data.data || []).map((s: { staff_id: number; staff_name: string; position_name?: string }) => ({
+        value: Number(s.staff_id),
+        label: s.staff_name + (s.position_name ? ` (${s.position_name})` : ''),
+      })));
       if (user?.isAdmin) {
         const tree = buildTree(deptTree.map((d: any) => ({ id: d.id, parent_id: d.parent_id, name: d.name })));
         setDeptTreeData(flattenTreeForSelect(tree));
@@ -229,12 +237,20 @@ export default function DraftingDocPage() {
   const openDrawer = async (record?: DraftingDoc) => {
     if (record) {
       setEditingRecord(record);
+      // v3.2.13: fetch detail de lay signer_id (list endpoint chua tra field nay)
+      let signerIdLoaded: number | null = null;
+      try {
+        const { data: detailRes } = await api.get(`/van-ban-du-thao/${record.id}`);
+        signerIdLoaded = detailRes?.data?.signer_id ?? null;
+      } catch { /* ignore */ }
+
       form.setFieldsValue({
         ...record,
         publish_date: record.publish_date ? dayjs(record.publish_date) : null,
         sign_date: record.sign_date ? dayjs(record.sign_date) : null,
         expired_date: record.expired_date ? dayjs(record.expired_date) : null,
         received_date: record.received_date ? dayjs(record.received_date) : null,
+        signer_id: signerIdLoaded,
       });
       if (record.drafting_unit_id) {
         fetchStaffByUnit(record.drafting_unit_id);
@@ -789,8 +805,15 @@ export default function DraftingDocPage() {
               </Form.Item>
             </Col>
             <Col span={8}>
-              <Form.Item name="signer" label="Người ký">
-                <Input placeholder="Họ tên người ký" maxLength={200} />
+              <Form.Item name="signer_id" label="Người ký">
+                <Select
+                  placeholder="Chọn người ký"
+                  allowClear
+                  showSearch
+                  optionFilterProp="label"
+                  options={signerOptions}
+                  notFoundContent={signerOptions.length === 0 ? 'Đơn vị chưa có người ký được đăng ký' : 'Không tìm thấy'}
+                />
               </Form.Item>
             </Col>
           </Row>

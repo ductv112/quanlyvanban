@@ -320,6 +320,24 @@ router.post('/', requireRightOrNext(3), async (req: Request, res: Response) => {
       return;
     }
 
+    // v3.2.13: signer_id/approver_id INT FK - lookup full_name de fill VARCHAR backward compat.
+    // Priority body.signer_id > body.signer (text legacy).
+    const signerIdNum = body.signer_id ? Number(body.signer_id) : null;
+    const approverIdNum = body.approver_id ? Number(body.approver_id) : null;
+    let signerNameResolved: string | null = body.signer || null;
+    let approverNameResolved: string | null = body.approver || null;
+    if (signerIdNum || approverIdNum) {
+      const ids = [signerIdNum, approverIdNum].filter((x): x is number => typeof x === 'number' && x > 0);
+      if (ids.length > 0) {
+        const nameRows = await rawQuery<{ id: number; full_name: string }>(
+          'SELECT id, full_name FROM public.staff WHERE id = ANY($1::integer[])', [ids],
+        );
+        const nameMap = new Map(nameRows.map((r) => [Number(r.id), r.full_name]));
+        if (signerIdNum) signerNameResolved = nameMap.get(signerIdNum) ?? null;
+        if (approverIdNum) approverNameResolved = nameMap.get(approverIdNum) ?? null;
+      }
+    }
+
     const result = await outgoingDocRepository.create({
       unitId: ancestorUnitId,
       receivedDate: body.received_date || null,
@@ -332,7 +350,7 @@ router.post('/', requireRightOrNext(3), async (req: Request, res: Response) => {
       draftingUserId: body.drafting_user_id ? Number(body.drafting_user_id) : undefined,
       publishUnitId: body.publish_unit_id ? Number(body.publish_unit_id) : undefined,
       publishDate: body.publish_date || null,
-      signer: body.signer || null,
+      signer: signerNameResolved ?? undefined,
       signDate: body.sign_date || null,
       docBookId: Number(body.doc_book_id),
       docTypeId: body.doc_type_id ? Number(body.doc_type_id) : undefined,
@@ -344,8 +362,7 @@ router.post('/', requireRightOrNext(3), async (req: Request, res: Response) => {
       expiredDate: body.expired_date || null,
       recipients: body.recipients || null,
       createdBy: staffId,
-      // BUG-F-VB-004: tránh silent drop approver
-      approver: body.approver ? String(body.approver).slice(0, 255) : undefined,
+      approver: approverNameResolved ? String(approverNameResolved).slice(0, 255) : undefined,
     });
 
     if (!result.success) {
@@ -353,16 +370,25 @@ router.post('/', requireRightOrNext(3), async (req: Request, res: Response) => {
       return;
     }
 
-    // v3.2.12: bell notify signer/approver duoc chi dinh khi tao VB di
-    if (result.id && (body.signer || body.approver)) {
+    // v3.2.13: persist signer_id, approver_id sau khi tao thanh cong
+    if (result.id && (signerIdNum || approverIdNum)) {
+      await rawQuery(
+        'UPDATE edoc.outgoing_docs SET signer_id = $1, approver_id = $2 WHERE id = $3',
+        [signerIdNum, approverIdNum, result.id],
+      );
+    }
+
+    // v3.2.12 + v3.2.13: bell notify signer/approver duoc chi dinh khi tao VB di.
+    // Pass ten da resolved tu ID (dam bao match LOWER+UNACCENT chinh xac).
+    if (result.id && (signerNameResolved || approverNameResolved)) {
       notifySignRequired({
         docType: 'outgoing',
         docId: result.id,
         docLabel: `VB đi: ${body.notation || ''} — ${(body.abstract || '').slice(0, 80)}`,
         link: `/van-ban-di/${result.id}`,
         senderStaffId: staffId,
-        signerName: body.signer || null,
-        approverName: body.approver || null,
+        signerName: signerNameResolved,
+        approverName: approverNameResolved,
       }).catch(() => { /* best-effort */ });
     }
 
@@ -381,11 +407,30 @@ router.get('/:id', async (req: Request, res: Response) => {
       res.status(404).json({ success: false, message: 'Không tìm thấy văn bản đi' });
       return;
     }
-    // Enrich rejection info
-    const rej = await rawQuery<{ rejected_by: number | null; rejection_reason: string | null; unit_id: number; drafting_user_id: number | null; created_by: number | null }>(
-      `SELECT rejected_by, rejection_reason, unit_id, drafting_user_id, created_by FROM edoc.outgoing_docs WHERE id = $1`, [id]
+    // Enrich rejection info + v3.2.13: signer_id/approver_id + JOIN staff name
+    const rej = await rawQuery<{
+      rejected_by: number | null; rejection_reason: string | null;
+      unit_id: number; drafting_user_id: number | null; created_by: number | null;
+      signer_id: number | null; approver_id: number | null;
+      signer_staff_name: string | null; approver_staff_name: string | null;
+    }>(
+      `SELECT o.rejected_by, o.rejection_reason, o.unit_id, o.drafting_user_id, o.created_by,
+              o.signer_id, o.approver_id,
+              ss.full_name AS signer_staff_name, sa.full_name AS approver_staff_name
+         FROM edoc.outgoing_docs o
+         LEFT JOIN public.staff ss ON ss.id = o.signer_id
+         LEFT JOIN public.staff sa ON sa.id = o.approver_id
+        WHERE o.id = $1`, [id]
     );
-    if (rej[0]) { (doc as any).rejected_by = rej[0].rejected_by; (doc as any).rejection_reason = rej[0].rejection_reason; }
+    if (rej[0]) {
+      (doc as any).rejected_by = rej[0].rejected_by;
+      (doc as any).rejection_reason = rej[0].rejection_reason;
+      (doc as any).signer_id = rej[0].signer_id;
+      (doc as any).approver_id = rej[0].approver_id;
+      // signer_staff_name = ten tu JOIN (FK), de phan biet voi signer VARCHAR legacy
+      (doc as any).signer_staff_name = rej[0].signer_staff_name;
+      (doc as any).approver_staff_name = rej[0].approver_staff_name;
+    }
     // Phase 19 v3.0: enrich recipients summary từ outgoing_doc_recipients
     const recipNames = await rawQuery<{ name: string }>(
       `SELECT COALESCE(d.name, o.name) AS name
@@ -424,18 +469,17 @@ router.put('/:id', async (req: Request, res: Response) => {
     if (!loaded.perms.canEdit) { res.status(403).json({ success: false, message: 'Không có quyền sửa văn bản đi này' }); return; }
     const body = req.body;
 
-    // v3.2.12: load signer/approver cu de dedup notify (chi bell khi field thay doi)
-    const oldRows = await rawQuery<{ signer: string | null; approver: string | null }>(
-      'SELECT signer, approver FROM edoc.outgoing_docs WHERE id = $1', [id],
+    // v3.2.12 + v3.2.13: load signer_id/approver_id cu de dedup notify
+    const oldRows = await rawQuery<{ signer_id: number | null; approver_id: number | null }>(
+      'SELECT signer_id, approver_id FROM edoc.outgoing_docs WHERE id = $1', [id],
     );
-    const oldSigner = oldRows[0]?.signer ?? null;
-    const oldApprover = oldRows[0]?.approver ?? null;
+    const oldSignerId = oldRows[0]?.signer_id ?? null;
+    const oldApproverId = oldRows[0]?.approver_id ?? null;
 
     if (!body.abstract?.trim()) {
       res.status(400).json({ success: false, message: 'Trích yếu nội dung là bắt buộc' });
       return;
     }
-    // BUG-VB-DI-003: validate abstract length ≤ 2000
     if (body.abstract.trim().length > 2000) {
       res.status(400).json({ success: false, message: 'Trích yếu nội dung không được vượt quá 2000 ký tự' });
       return;
@@ -443,6 +487,23 @@ router.put('/:id', async (req: Request, res: Response) => {
     if (!body.doc_book_id) {
       res.status(400).json({ success: false, message: 'Sổ văn bản là bắt buộc' });
       return;
+    }
+
+    // v3.2.13: signer_id/approver_id INT FK - lookup full_name de fill VARCHAR backward compat
+    const signerIdNum = body.signer_id ? Number(body.signer_id) : null;
+    const approverIdNum = body.approver_id ? Number(body.approver_id) : null;
+    let signerNameResolved: string | null = body.signer ?? null;
+    let approverNameResolved: string | null = body.approver ?? null;
+    if (signerIdNum || approverIdNum) {
+      const ids = [signerIdNum, approverIdNum].filter((x): x is number => typeof x === 'number' && x > 0);
+      if (ids.length > 0) {
+        const nameRows = await rawQuery<{ id: number; full_name: string }>(
+          'SELECT id, full_name FROM public.staff WHERE id = ANY($1::integer[])', [ids],
+        );
+        const nameMap = new Map(nameRows.map((r) => [Number(r.id), r.full_name]));
+        if (signerIdNum) signerNameResolved = nameMap.get(signerIdNum) ?? null;
+        if (approverIdNum) approverNameResolved = nameMap.get(approverIdNum) ?? null;
+      }
     }
 
     const result = await outgoingDocRepository.update(id, {
@@ -456,7 +517,7 @@ router.put('/:id', async (req: Request, res: Response) => {
       draftingUserId: body.drafting_user_id ? Number(body.drafting_user_id) : undefined,
       publishUnitId: body.publish_unit_id ? Number(body.publish_unit_id) : undefined,
       publishDate: body.publish_date || null,
-      signer: body.signer || null,
+      signer: signerNameResolved ?? undefined,
       signDate: body.sign_date || null,
       docBookId: Number(body.doc_book_id),
       docTypeId: body.doc_type_id ? Number(body.doc_type_id) : undefined,
@@ -468,8 +529,7 @@ router.put('/:id', async (req: Request, res: Response) => {
       expiredDate: body.expired_date || null,
       recipients: body.recipients || null,
       updatedBy: staffId,
-      // BUG-F-VB-004: tránh silent drop approver
-      approver: body.approver !== undefined ? String(body.approver).slice(0, 255) : undefined,
+      approver: approverNameResolved !== null ? String(approverNameResolved).slice(0, 255) : undefined,
     });
 
     if (!result.success) {
@@ -477,11 +537,15 @@ router.put('/:id', async (req: Request, res: Response) => {
       return;
     }
 
-    // v3.2.12: bell notify neu signer/approver THAY DOI (notify cho ten moi)
-    const newSigner = body.signer ? String(body.signer).trim() : null;
-    const newApprover = body.approver ? String(body.approver).trim() : null;
-    const signerChanged = newSigner && newSigner !== (oldSigner ?? null);
-    const approverChanged = newApprover && newApprover !== (oldApprover ?? null);
+    // v3.2.13: persist signer_id, approver_id (luon UPDATE de support set NULL)
+    await rawQuery(
+      'UPDATE edoc.outgoing_docs SET signer_id = $1, approver_id = $2 WHERE id = $3',
+      [signerIdNum, approverIdNum, id],
+    );
+
+    // v3.2.12 + v3.2.13: bell notify neu signer_id/approver_id THAY DOI (INT compare)
+    const signerChanged = signerIdNum && signerIdNum !== oldSignerId;
+    const approverChanged = approverIdNum && approverIdNum !== oldApproverId;
     if (signerChanged || approverChanged) {
       notifySignRequired({
         docType: 'outgoing',
@@ -489,8 +553,8 @@ router.put('/:id', async (req: Request, res: Response) => {
         docLabel: `VB đi: ${body.notation || ''} — ${(body.abstract || '').slice(0, 80)}`,
         link: `/van-ban-di/${id}`,
         senderStaffId: staffId,
-        signerName: signerChanged ? newSigner : null,
-        approverName: approverChanged ? newApprover : null,
+        signerName: signerChanged ? signerNameResolved : null,
+        approverName: approverChanged ? approverNameResolved : null,
       }).catch(() => { /* best-effort */ });
     }
 
