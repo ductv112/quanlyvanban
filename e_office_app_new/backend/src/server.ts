@@ -66,7 +66,15 @@ const logger = pino({
 
 // --- Middleware ---
 app.use(helmet());
-app.use(cors({ origin: process.env.CORS_ORIGIN || 'http://localhost:3000', credentials: true }));
+// CORS_ORIGIN co the la 1 origin hoac comma-separated list nhieu origin.
+// Phai split + pass array de cors package echo dung 1 origin matching request.origin
+// (neu pass nguyen string co dau phay -> browser reject vi Access-Control-Allow-Origin
+// chi cho phep 1 value).
+const corsOrigins = (process.env.CORS_ORIGIN || 'http://localhost:3000')
+  .split(',')
+  .map(o => o.trim())
+  .filter(o => o.length > 0);
+app.use(cors({ origin: corsOrigins, credentials: true }));
 app.use(compression());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true }));

@@ -30,9 +30,15 @@ let io: SocketIOServer | null = null;
 // ============================================================
 
 export function initSocket(httpServer: HTTPServer): SocketIOServer {
+  // CORS_ORIGIN: comma-separated multiple origins -> Array de Socket.IO match dung
+  const corsOrigins = (process.env.CORS_ORIGIN || 'http://localhost:3000')
+    .split(',')
+    .map(o => o.trim())
+    .filter(o => o.length > 0);
+
   io = new SocketIOServer(httpServer, {
     cors: {
-      origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+      origin: corsOrigins,
       credentials: true,
     },
   });
