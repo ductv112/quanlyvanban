@@ -432,6 +432,26 @@ if (-not (Test-Path "$WORK_DIR\frontend\.next\BUILD_ID")) {
 }
 Log 'Frontend build xong'
 
+# Build workers (BullMQ consumer cho LGSP send/receive/status + email/SMS)
+# Workers la process RIENG, KHONG chay chung backend. Khong co workers thi LGSP
+# queue produced nhung khong consume -> VB khong gui/nhan duoc qua truc.
+Log 'Tao workers .env (copy tu backend/.env - dung chung Redis/PG/MinIO/LGSP creds)...'
+Copy-Item (Join-Path $WORK_DIR 'backend\.env') (Join-Path $WORK_DIR 'workers\.env') -Force
+
+Log 'npm install workers (full deps for tsc)...'
+Set-Location (Join-Path $WORK_DIR 'workers')
+$env:NODE_ENV = 'development'
+npm install 2>$null | Out-Null
+if (-not (Test-Path "$WORK_DIR\workers\node_modules\typescript\bin\tsc")) {
+    Write-Host '[XX] typescript khong co trong workers/node_modules' -ForegroundColor Red; exit 1
+}
+Log 'Build workers (tsc -> dist/)...'
+npm run build 2>$null | Out-Null
+if (-not (Test-Path "$WORK_DIR\workers\dist\index.js")) {
+    Write-Host '[XX] Workers dist/index.js khong ton tai sau build' -ForegroundColor Red; exit 1
+}
+Log 'Workers build xong'
+
 # ============================================================
 # BUOC 8: Khoi dong PM2 + Firewall
 # ============================================================
@@ -464,6 +484,19 @@ module.exports = {
       exec_mode: 'fork',
       instances: 1,
       env: { NODE_ENV: 'production', PORT: 3000 },
+      max_memory_restart: '400M',
+    },
+    {
+      // BullMQ consumer: LGSP send/receive/status workers + email/SMS workers.
+      // Backend chi PRODUCE jobs vao Redis queue, workers consume va execute.
+      // KHONG co process nay -> queue tich luy, VB khong gui/nhan duoc qua truc.
+      name: 'eoffice-workers',
+      cwd: './workers',
+      script: 'dist/index.js',
+      node_args: '--env-file=.env',
+      exec_mode: 'fork',
+      instances: 1,
+      env: { NODE_ENV: 'production' },
       max_memory_restart: '400M',
     },
   ],
