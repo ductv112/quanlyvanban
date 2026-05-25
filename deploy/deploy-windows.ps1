@@ -23,6 +23,12 @@ param(
 # Continue thay vì Stop — PS 5.1 bug: 'Stop' trip khi native command (psql) output NOTICE ra stderr
 $ErrorActionPreference = 'Continue'
 
+# QUAN TRONG: PS 5.1 default client encoding = WIN1252 -> psql doc file UTF-8 co tieng
+# Viet se conversion fail ("character with byte sequence 0xXX in encoding WIN1252 has no
+# equivalent in UTF8"). Set PGCLIENTENCODING=UTF8 de psql doc file UTF-8 truc tiep.
+# Reference: memory reference_prod_server_setup.md (encoding trap)
+$env:PGCLIENTENCODING = 'UTF8'
+
 # ---- CAU HINH ----
 $SERVER_IP     = $ServerIP
 $DOMAIN        = $Domain
@@ -194,16 +200,20 @@ if (-not (Test-Path $minioExe)) {
     Log 'MinIO da tai xong'
 }
 
-# NSSM (service manager)
-if (-not (Test-Path $nssmExe)) {
-    Log 'Tai NSSM...'
+# NSSM (service manager) — skip toan bo block neu MinIO service da chay (cai thu cong qua choco/winget)
+$minioSvc = Get-Service -Name 'minio' -ErrorAction SilentlyContinue
+if (-not $minioSvc -and (-not (Test-Path $nssmExe))) {
+    Log 'Tai NSSM (nssm.cc thuong sap, neu fail anh dung: choco install nssm hoac winget install NSSM.NSSM)...'
     $nssmZip = Join-Path $DOWNLOADS 'nssm.zip'
-    Invoke-WebRequest -Uri 'https://nssm.cc/release/nssm-2.24.zip' -OutFile $nssmZip -UseBasicParsing
-    Expand-Archive -Path $nssmZip -DestinationPath (Join-Path $DOWNLOADS 'nssm-extract') -Force
-    Copy-Item (Join-Path $DOWNLOADS 'nssm-extract\nssm-2.24\win64\nssm.exe') $nssmExe
+    try {
+        Invoke-WebRequest -Uri 'https://nssm.cc/release/nssm-2.24.zip' -OutFile $nssmZip -UseBasicParsing -ErrorAction Stop
+        Expand-Archive -Path $nssmZip -DestinationPath (Join-Path $DOWNLOADS 'nssm-extract') -Force
+        Copy-Item (Join-Path $DOWNLOADS 'nssm-extract\nssm-2.24\win64\nssm.exe') $nssmExe
+    } catch {
+        Warn 'NSSM download fail (nssm.cc 503/down). Dung choco install nssm hoac winget install NSSM.NSSM roi re-run.'
+    }
 }
 
-$minioSvc = Get-Service -Name 'minio' -ErrorAction SilentlyContinue
 if (-not $minioSvc) {
     Log 'Dang ky MinIO service...'
     $minioArgs = 'server C:\minio\data --console-address :9001'
