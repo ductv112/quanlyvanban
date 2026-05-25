@@ -29129,11 +29129,15 @@ UPDATE public.rights SET name='Tổng quan LGSP', name_of_menu='Tổng quan LGSP
 UPDATE public.rights SET name='Cơ quan ngoài LGSP', name_of_menu='Cơ quan liên thông' WHERE id=25 AND name='Co quan ngoai LGSP';
 UPDATE public.rights SET name='Cấu hình kết nối LGSP', name_of_menu='Cấu hình kết nối' WHERE id=26 AND name='Cau hinh ket noi LGSP';
 
--- Auto-assign 4 right cho role "Quan tri he thong" (id=5) — admin co san khi rebuild
+-- Auto-assign 4 right cho role "Quan tri he thong" (id=5) — admin co san khi rebuild.
+-- FRESH install: schema apply truoc seed/001 -> role id=5 chua ton tai -> skip INSERT
+-- (FK violation neu khong skip). Seed/001 sau do se INSERT role 5 voi TAT CA rights
+-- (line 142-144), bao gom 23-26. Update deploy: role 5 da ton tai -> INSERT chay.
 INSERT INTO public.action_of_role (role_id, right_id)
 SELECT 5, rt.id
 FROM public.rights rt
 WHERE rt.id IN (23, 24, 25, 26)
+  AND EXISTS (SELECT 1 FROM public.roles WHERE id = 5)
   AND NOT EXISTS (
     SELECT 1 FROM public.action_of_role ar
     WHERE ar.role_id = 5 AND ar.right_id = rt.id
