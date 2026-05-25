@@ -2,14 +2,30 @@
 # e-Office - Deploy Production tren Windows Server 2022
 # Chay: PowerShell (Run as Administrator)
 #   Set-ExecutionPolicy Bypass -Scope Process -Force
+#
+# Mac dinh deploy server Lang Son (qlvbdn.lstt.vn / 113.160.156.10):
 #   .\deploy-windows.ps1
+#
+# Override IP/Domain neu deploy server khac:
+#   .\deploy-windows.ps1 -ServerIP 1.2.3.4 -Domain my.domain.vn
+#   .\deploy-windows.ps1 -ServerIP 103.97.134.87 -Domain doanhnghiep.vatk.org
+#
+# Sau khi seed 001 xong, neu file seed 003_lang_son_init.sql ton tai trong repo
+# (default: co), script tu dong apply -> rename UBND -> Lang Son + tao 6 DN +
+# 9 row lgsp_agency_config. Skip neu ko muon: them flag -SkipLangSonSeed.
 # ============================================================
+param(
+    [string]$ServerIP = '113.160.156.10',
+    [string]$Domain = 'qlvbdn.lstt.vn',
+    [switch]$SkipLangSonSeed
+)
 
 # Continue thay vì Stop — PS 5.1 bug: 'Stop' trip khi native command (psql) output NOTICE ra stderr
 $ErrorActionPreference = 'Continue'
 
 # ---- CAU HINH ----
-$SERVER_IP     = '103.97.134.87'
+$SERVER_IP     = $ServerIP
+$DOMAIN        = $Domain
 $APP_DIR       = 'C:\qlvb'
 $REPO_URL      = 'https://github.com/ductv112/quanlyvanban.git'
 
@@ -261,6 +277,19 @@ if ([string]::IsNullOrEmpty($staffCount) -or $staffCount -eq '0') {
     if ($LASTEXITCODE -ne 0) { Write-Host '[XX] Seed 001 that bai - kiem tra JWT_SECRET >= 16 ky tu' -ForegroundColor Red; exit 1 }
 
     Log '  -> Fresh install hoan thanh (admin/Admin@123 san sang)'
+
+    # 4. Apply seed 003 - init cay to chuc Lang Son (UBND + 6 DN + 9 lgsp_agency_config)
+    $seed3File = Join-Path $WORK_DIR 'database\seed\003_lang_son_init.sql'
+    if ((-not $SkipLangSonSeed) -and (Test-Path $seed3File)) {
+        Log "  -> seed/003_lang_son_init.sql (UBND tinh Lang Son + 6 DN + 9 lgsp_agency_config)"
+        & $psqlExe -U $PG_USER -d $PG_DB -p 5432 -h 127.0.0.1 -v ON_ERROR_STOP=1 `
+          -c "SET app.signing_secret_key = '$JWT_SECRET';" `
+          -f $seed3File 2>$null
+        if ($LASTEXITCODE -ne 0) { Write-Host '[XX] Seed 003 Lang Son that bai - kiem tra log psql' -ForegroundColor Red; exit 1 }
+        Log '  -> Lang Son init done: 6 DN H37.DN.001..006 + 9 lgsp_agency_config (placeholder)'
+    } else {
+        Log '  -> Skip seed 003 Lang Son (SkipLangSonSeed=true hoac file khong ton tai)'
+    }
 } else {
     # Update deploy - re-apply master schema de dong bo SP moi, KHONG seed
     Log '  -> Update deploy - re-apply master schema (idempotent)...'
@@ -283,7 +312,9 @@ Log 'Tao backend .env...'
 $backendEnv = @"
 PORT=4000
 NODE_ENV=production
-CORS_ORIGIN=http://$SERVER_IP
+# CORS_ORIGIN: whitelist domain + IP (HTTP only - chua co SSL).
+# Khi co cert: them https://$DOMAIN vao truoc HTTP version, pm2 restart all --update-env.
+CORS_ORIGIN=http://$DOMAIN,http://$SERVER_IP,http://localhost:3000
 
 PG_HOST=127.0.0.1
 PG_PORT=5432
@@ -311,29 +342,61 @@ JWT_REFRESH_EXPIRES=7d
 
 # PHAI match key da dung khi seed 001 encrypt provider client_secret
 SIGNING_SECRET_KEY=$JWT_SECRET
+
+# LibreOffice cho preview file Word/Excel/PowerPoint
+LIBREOFFICE_PATH=C:\Program Files\LibreOffice\program\soffice.com
+
+# LGSP mock (chua go-live LGSP that, admin nhap credential qua UI sau)
+MOCK_EXTERNAL=true
 "@
 $backendEnvPath = Join-Path $WORK_DIR 'backend\.env'
 [System.IO.File]::WriteAllText($backendEnvPath, $backendEnv)
 
 # Build backend
-Log 'npm install backend...'
+# IMPORTANT (CLAUDE.md pitfall #2): npm install KHONG --omit=dev vi can typescript
+# (devDep) de compile tsc -> dist/. NODE_ENV=development truoc npm install, sau do
+# pm2 chay app voi NODE_ENV=production trong ecosystem config.
+Log 'npm install backend (full deps including devDeps for tsc)...'
 Set-Location (Join-Path $WORK_DIR 'backend')
-npm install --omit=dev 2>$null | Out-Null
-Log 'Build backend...'
+$env:NODE_ENV = 'development'
+npm install 2>$null | Out-Null
+if (-not (Test-Path "$WORK_DIR\backend\node_modules\.bin\tsc.cmd") -and -not (Test-Path "$WORK_DIR\backend\node_modules\typescript\bin\tsc")) {
+    Write-Host '[XX] typescript khong co trong node_modules - check .npmrc' -ForegroundColor Red; exit 1
+}
+Log 'Build backend (tsc -> dist/)...'
 npm run build 2>$null | Out-Null
+if (-not (Test-Path "$WORK_DIR\backend\dist\server.js")) {
+    Write-Host '[XX] Backend dist/server.js khong ton tai sau build' -ForegroundColor Red; exit 1
+}
 Log 'Backend build xong'
 
 # Frontend .env
+# NEXT_PUBLIC_API_URL = /api (RELATIVE - khuyen nghi):
+#   - Browser tu dung host hien tai (https://$DOMAIN hoac http://$SERVER_IP)
+#   - Tranh hard-code IP vao bundle -> tuong thich ca domain HTTPS sau nay
+#   - Tham khao .env.example line 13-31
 Log 'Tao frontend .env.local...'
 $feEnvPath = Join-Path $WORK_DIR 'frontend\.env.local'
-[System.IO.File]::WriteAllText($feEnvPath, "NEXT_PUBLIC_API_URL=http://${SERVER_IP}/api")
+$feEnv = @"
+NEXT_PUBLIC_API_URL=/api
+NEXT_PUBLIC_SOCKET_URL=/
+"@
+[System.IO.File]::WriteAllText($feEnvPath, $feEnv)
 
 # Build frontend
-Log 'npm install frontend...'
+Log 'npm install frontend (full deps for next CLI)...'
 Set-Location (Join-Path $WORK_DIR 'frontend')
+$env:NODE_ENV = 'development'
 npm install 2>$null | Out-Null
-Log 'Build frontend (mat 3-5 phut)...'
+if (-not (Test-Path "$WORK_DIR\frontend\node_modules\.bin\next.cmd") -and -not (Test-Path "$WORK_DIR\frontend\node_modules\next\dist\bin\next")) {
+    Write-Host '[XX] next CLI khong co trong node_modules' -ForegroundColor Red; exit 1
+}
+$env:NODE_ENV = 'production'
+Log 'Build frontend (Next.js production, 3-5 phut)...'
 npm run build 2>$null | Out-Null
+if (-not (Test-Path "$WORK_DIR\frontend\.next\BUILD_ID")) {
+    Write-Host '[XX] Frontend .next/BUILD_ID khong ton tai sau build' -ForegroundColor Red; exit 1
+}
 Log 'Frontend build xong'
 
 # ============================================================
@@ -398,7 +461,7 @@ Write-Host '    Username: admin'
 Write-Host '    Password: Admin@123'
 Write-Host ''
 Write-Host '  Tiep theo: chay setup-iis.ps1 de cau hinh reverse proxy'
-Write-Host "  Sau do truy cap: http://$SERVER_IP"
+Write-Host "  Sau do truy cap: http://$DOMAIN  (hoac http://$SERVER_IP)"
 Write-Host ''
 Write-Host '  Quan ly:'
 Write-Host '    pm2 status         - xem trang thai'
