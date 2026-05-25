@@ -71,6 +71,13 @@ INSERT INTO public.staff (id, department_id, unit_id, position_id, code, usernam
    'admin@laocai.gov.vn', '02093801001', '0912000001')
 ON CONFLICT (id) DO NOTHING;
 
+-- ─── Advance sequence sau INSERT explicit id=1 (CLAUDE.md pitfall #12) ──────
+-- INSERT VALUES (1, ...) KHONG advance sequence -> nextval() van tra 1 -> next INSERT
+-- (lgsp-system o block 3b dung sequence default) se conflict id=1 voi admin.
+-- Phai setval truoc khi INSERT lgsp-system.
+SELECT setval(pg_get_serial_sequence('public.staff', 'id'),
+              GREATEST((SELECT MAX(id) FROM public.staff), 1));
+
 -- ─── 3b. LGSP system staff (v3.2.2 fix #M4 — patched) ──────────────────────
 -- Dedicated created_by tracking cho LGSP receive worker (thay vi gan ID admin).
 -- password_hash = chuoi placeholder khong match bcrypt format -> login luon fail.
