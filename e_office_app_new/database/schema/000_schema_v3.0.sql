@@ -5201,15 +5201,31 @@ $$;
 CREATE OR REPLACE FUNCTION edoc.fn_incoming_doc_update(p_id bigint, p_received_date timestamp with time zone, p_number integer, p_notation character varying, p_document_code character varying, p_abstract text, p_publish_unit character varying, p_publish_date timestamp with time zone, p_signer character varying, p_sign_date timestamp with time zone, p_doc_book_id integer, p_doc_type_id integer, p_doc_field_id integer, p_secret_id smallint DEFAULT 1, p_urgent_id smallint DEFAULT 1, p_number_paper integer DEFAULT 1, p_number_copies integer DEFAULT 1, p_expired_date timestamp with time zone DEFAULT NULL::timestamp with time zone, p_recipients text DEFAULT NULL::text, p_sents text DEFAULT NULL::text, p_is_received_paper boolean DEFAULT false, p_updated_by integer DEFAULT NULL::integer) RETURNS TABLE(success boolean, message text)
     LANGUAGE plpgsql
     AS $$
-DECLARE v_approved BOOLEAN;
+DECLARE
+  v_approved BOOLEAN;
+  v_source_type edoc.doc_source_type;
 BEGIN
-  SELECT approved INTO v_approved FROM edoc.incoming_docs WHERE edoc.incoming_docs.id = p_id;
+  SELECT approved, source_type INTO v_approved, v_source_type
+    FROM edoc.incoming_docs WHERE edoc.incoming_docs.id = p_id;
   IF NOT FOUND THEN
     RETURN QUERY SELECT FALSE, 'Không tìm thấy văn bản đến'::TEXT;
     RETURN;
   END IF;
   IF v_approved = TRUE THEN
     RETURN QUERY SELECT FALSE, 'Không thể sửa văn bản đã được duyệt'::TEXT;
+    RETURN;
+  END IF;
+  -- v3.2.5: Chỉ VB đến source_type='manual' (do văn thư tự nhập) mới được sửa metadata.
+  -- VB internal (auto-sinh từ VB đi đơn vị khác) hoặc external_lgsp là bản copy → không sửa nội dung gốc.
+  IF v_source_type IS NOT NULL AND v_source_type <> 'manual' THEN
+    RETURN QUERY SELECT FALSE,
+      ('Văn bản đến từ ' ||
+        CASE v_source_type
+          WHEN 'internal' THEN 'đơn vị nội bộ'
+          WHEN 'external_lgsp' THEN 'LGSP'
+          ELSE v_source_type::TEXT
+        END ||
+        ' không được sửa nội dung gốc. Chỉ có thể tiếp nhận / phân công xử lý / từ chối.')::TEXT;
     RETURN;
   END IF;
 

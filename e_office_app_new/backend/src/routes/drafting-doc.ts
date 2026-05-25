@@ -50,7 +50,8 @@ router.get('/', async (req: Request, res: Response) => {
     } = req.query;
 
     const filterDeptId = department_id ? Number(department_id) : undefined;
-    const deptIds = await resolveDeptSubtree(departmentId, isAdmin, filterDeptId);
+    // v3.2.5: leader xem toan bo VB don vi (pass staffId)
+    const deptIds = await resolveDeptSubtree(departmentId, isAdmin, filterDeptId, staffId);
 
     const rows = await draftingDocRepository.getList(0, staffId, {
       docBookId: doc_book_id ? Number(doc_book_id) : undefined,
@@ -108,7 +109,7 @@ router.get('/', async (req: Request, res: Response) => {
 router.get('/chua-doc/count', async (req: Request, res: Response) => {
   try {
     const { staffId, departmentId, isAdmin } = (req as AuthRequest).user;
-    const deptIds = await resolveDeptSubtree(departmentId, isAdmin);
+    const deptIds = await resolveDeptSubtree(departmentId, isAdmin, undefined, staffId);
     const count = await draftingDocRepository.countUnread(0, staffId, deptIds);
     res.json({ success: true, data: { count } });
   } catch (error) {
@@ -148,7 +149,7 @@ router.get('/xuat-excel', async (req: Request, res: Response) => {
   try {
     const { staffId, departmentId, isAdmin } = (req as AuthRequest).user;
     const { doc_book_id, doc_type_id, from_date, to_date, keyword, ids } = req.query;
-    const deptIds = await resolveDeptSubtree(departmentId, isAdmin);
+    const deptIds = await resolveDeptSubtree(departmentId, isAdmin, undefined, staffId);
 
     // BUG #9/#10: nếu FE gửi `ids` (đã tick checkbox) → chỉ xuất các bản ghi đó.
     const idList = (() => {

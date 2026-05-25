@@ -49,6 +49,7 @@ interface OutgoingDoc {
     canApprove: boolean;
     canRelease: boolean;
     canSend: boolean;
+    canAssign: boolean;
     canRetract: boolean;
   };
 }

@@ -40,22 +40,33 @@ export function filterTree(nodes: TreeNode[], keyword: string): TreeNode[] {
     .filter(Boolean) as TreeNode[];
 }
 
+/** Input shape chấp nhận được cho flattenTreeForSelect: hoặc TreeNode (key/title) hoặc raw (id/name).
+ * children dùng any[] vì buildTree generic resolve constraint thành unknown[] khi input type là any. */
+export type FlattenableNode = {
+  key?: number;
+  id?: number;
+  title?: string;
+  name?: string;
+  children?: any[];
+};
+
 /**
- * Chuyển đổi TreeNode[] thành định dạng treeData cho Ant Design TreeSelect.
- * Mỗi node: { value: key, title, children }
+ * Chuyển đổi tree thành định dạng treeData cho Ant Design TreeSelect.
+ * Mỗi node: { value, title, children }
  *
+ * Hỗ trợ 2 shape input: { key, title } (TreeNode chuẩn) hoặc { id, name } (raw từ buildTree).
  * excludeId: nếu truyền, sẽ loại node có id này VÀ toàn bộ con cháu của nó.
  * Dùng khi sửa đơn vị → tránh chọn chính nó hoặc con của nó làm parent → cycle.
  */
 export function flattenTreeForSelect(
-  nodes: TreeNode[],
+  nodes: FlattenableNode[],
   excludeId?: number | null,
 ): { value: number; title: string; children?: any[] }[] {
   return nodes
     .filter((n) => (n.key ?? n.id) != null)
     .filter((n) => excludeId == null || (n.key ?? n.id) !== excludeId)
     .map((n) => ({
-      value: n.key ?? n.id,
+      value: (n.key ?? n.id) as number,
       title: n.title ?? n.name ?? '',
       children: n.children?.length ? flattenTreeForSelect(n.children, excludeId) : undefined,
     }));

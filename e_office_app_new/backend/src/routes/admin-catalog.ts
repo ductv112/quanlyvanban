@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import type { Request, Response } from 'express';
-import { callFunction, callFunctionOne } from '../lib/db/query.js';
+import { callFunction, callFunctionOne, rawQuery } from '../lib/db/query.js';
 import type { AuthRequest } from '../middleware/auth.js';
 import { docBookRepository } from '../repositories/doc-book.repository.js';
 import { docTypeRepository } from '../repositories/doc-type.repository.js';
@@ -600,7 +600,7 @@ router.put('/co-quan', async (req: Request, res: Response) => {
 // GET /nguoi-ky
 router.get('/nguoi-ky', async (req: Request, res: Response) => {
   try {
-    const { departmentId } = (req as AuthRequest).user;
+    const { departmentId, isAdmin } = (req as AuthRequest).user;
     const callerUnitId = await resolveAncestorUnit(departmentId);
     const deptIdFilter = req.query.department_id ? Number(req.query.department_id) : null;
     // Resolve unit_id theo dept duoc click (admin co the quan ly signers cua moi don vi).
@@ -614,6 +614,12 @@ router.get('/nguoi-ky', async (req: Request, res: Response) => {
     } else {
       uId = callerUnitId;
     }
+    // v3.2.5 security: non-admin chi xem signer cua unit minh.
+    // Truoc fix: client co the gui department_id/unit_id cua unit khac -> backend resolve va tra signer unit do -> data leak.
+    if (!isAdmin && uId !== callerUnitId) {
+      res.status(403).json({ success: false, message: 'Không có quyền xem danh sách người ký của đơn vị khác' });
+      return;
+    }
     const data = await signerRepository.getList(uId, deptIdFilter);
     res.json({ success: true, data });
   } catch (error) {
@@ -624,7 +630,7 @@ router.get('/nguoi-ky', async (req: Request, res: Response) => {
 // POST /nguoi-ky
 router.post('/nguoi-ky', async (req: Request, res: Response) => {
   try {
-    const { departmentId: callerDeptId } = (req as AuthRequest).user;
+    const { departmentId: callerDeptId, isAdmin } = (req as AuthRequest).user;
     const callerUnitId = await resolveAncestorUnit(callerDeptId);
     const { unit_id, department_id, staff_id } = req.body;
 
@@ -650,6 +656,12 @@ router.post('/nguoi-ky', async (req: Request, res: Response) => {
       res.status(400).json({ success: false, message: 'Đơn vị là bắt buộc' });
       return;
     }
+    // v3.2.5 security: non-admin chi them signer vao unit minh.
+    // Truoc fix: client co the gui department_id cua unit khac -> backend resolve va tao signer unit do -> data tampering.
+    if (!isAdmin && resolvedUnitId !== callerUnitId) {
+      res.status(403).json({ success: false, message: 'Không có quyền thêm người ký cho đơn vị khác' });
+      return;
+    }
 
     const result = await signerRepository.create(
       resolvedUnitId,
@@ -670,7 +682,24 @@ router.post('/nguoi-ky', async (req: Request, res: Response) => {
 // DELETE /nguoi-ky/:id
 router.delete('/nguoi-ky/:id', async (req: Request, res: Response) => {
   try {
+    const { departmentId, isAdmin } = (req as AuthRequest).user;
     const id = Number(req.params.id);
+    // v3.2.5 security: non-admin chi xoa signer cua unit minh.
+    // Truoc fix: KHONG check gi -> bat ki user nao biet id signer -> xoa duoc signer cua unit khac.
+    const ownerRows = await rawQuery<{ unit_id: number }>(
+      'SELECT unit_id FROM edoc.signers WHERE id = $1', [id],
+    );
+    if (ownerRows.length === 0) {
+      res.status(404).json({ success: false, message: 'Không tìm thấy người ký' });
+      return;
+    }
+    if (!isAdmin) {
+      const callerUnitId = await resolveAncestorUnit(departmentId);
+      if (Number(ownerRows[0].unit_id) !== callerUnitId) {
+        res.status(403).json({ success: false, message: 'Không có quyền xóa người ký của đơn vị khác' });
+        return;
+      }
+    }
     const result = await signerRepository.delete(id);
     if (!result.success) {
       res.status(400).json({ success: false, message: result.message });

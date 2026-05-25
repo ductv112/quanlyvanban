@@ -68,11 +68,11 @@ async function loadDocAndPerms(docId: number, userCtx: DocPermissionContext) {
   if (rows.length === 0) return null;
   const doc = rows[0];
   const perms = await computeIncomingPermissions(userCtx, doc);
-  // VB đến có thể được REGISTER bởi unit A nhưng SEND tới recipient ở unit B.
-  // Recipient leader (trong user_incoming_docs) phải có quyền giao việc / nhận
-  // bản giấy / chuyển lại trong don vi mình. Mở rộng canApprove + canSend +
-  // canRetract nếu user là recipient + is_leader, regardless doc.unit_id.
-  if (!perms.canApprove && !userCtx.isAdmin) {
+  // VB đến có thể được REGISTER bởi unit A nhưng SEND tới recipient ở unit B (forward).
+  // v3.2.5: mo rong perm cho recipient theo dung loai action:
+  //   - recipient + is_leader      → canApprove + canRetract (duyet/but phe/thu hoi trong phong nhan)
+  //   - recipient + is_handle_doc  → canAssign + canSend + canRelease (giao viec/gui noi bo cho can bo phong nhan)
+  if (!perms.canApprove && !perms.canAssign && !userCtx.isAdmin) {
     const recipientRows = await rawQuery<{ exists: boolean }>(
       `SELECT EXISTS(
          SELECT 1 FROM edoc.user_incoming_docs
@@ -81,16 +81,22 @@ async function loadDocAndPerms(docId: number, userCtx: DocPermissionContext) {
       [docId, userCtx.staffId],
     );
     if (recipientRows[0]?.exists) {
-      const ctxRows = await rawQuery<{ is_leader: boolean }>(
-        `SELECT COALESCE(p.is_leader, FALSE) AS is_leader
+      const ctxRows = await rawQuery<{ is_leader: boolean; is_handle_document: boolean }>(
+        `SELECT COALESCE(p.is_leader, FALSE) AS is_leader,
+                COALESCE(p.is_handle_document, FALSE) AS is_handle_document
          FROM public.staff s LEFT JOIN public.positions p ON p.id = s.position_id
          WHERE s.id = $1`,
         [userCtx.staffId],
       );
-      if (ctxRows[0]?.is_leader) {
+      const recip = ctxRows[0];
+      if (recip?.is_leader) {
         perms.canApprove = true;
-        perms.canSend = true;
         perms.canRetract = true;
+      }
+      if (recip?.is_handle_document) {
+        perms.canAssign = true;
+        perms.canSend = true;
+        perms.canRelease = true;
       }
     }
   }
@@ -174,7 +180,8 @@ router.get('/', async (req: Request, res: Response) => {
     } = req.query;
 
     const filterDeptId = department_id ? Number(department_id) : undefined;
-    const deptIds = await resolveDeptSubtree(departmentId, isAdmin, filterDeptId);
+    // v3.2.5: pass staffId -> resolveDeptSubtree se check is_leader va expand to don vi neu lanh dao
+    const deptIds = await resolveDeptSubtree(departmentId, isAdmin, filterDeptId, staffId);
 
     // Phase 35-04: validate source_type whitelist (per edoc.doc_source_type enum)
     const validSourceTypes = ['manual', 'internal', 'external_lgsp'] as const;
@@ -245,7 +252,7 @@ router.get('/', async (req: Request, res: Response) => {
 router.get('/chua-doc/count', async (req: Request, res: Response) => {
   try {
     const { staffId, departmentId, isAdmin } = (req as AuthRequest).user;
-    const deptIds = await resolveDeptSubtree(departmentId, isAdmin);
+    const deptIds = await resolveDeptSubtree(departmentId, isAdmin, undefined, staffId);
     const count = await incomingDocRepository.countUnread(0, staffId, deptIds);
     res.json({ success: true, data: { count } });
   } catch (error) {
@@ -310,7 +317,7 @@ router.get('/xuat-excel', async (req: Request, res: Response) => {
   try {
     const { staffId, departmentId, isAdmin } = (req as AuthRequest).user;
     const { doc_book_id, doc_type_id, from_date, to_date, keyword, ids } = req.query;
-    const deptIds = await resolveDeptSubtree(departmentId, isAdmin);
+    const deptIds = await resolveDeptSubtree(departmentId, isAdmin, undefined, staffId);
 
     // BUG #36/#37: nếu FE gửi `ids` (đã tick checkbox) → chỉ xuất các bản ghi đó.
     // Format: ids=1,2,3 hoặc ids[]=1&ids[]=2
@@ -881,9 +888,15 @@ router.get('/:id/but-phe', async (req: Request, res: Response) => {
 // POST /:id/but-phe — Bút phê (đơn thuần hoặc kết hợp phân công)
 router.post('/:id/but-phe', async (req: Request, res: Response) => {
   try {
-    const { staffId } = (req as AuthRequest).user;
+    const { staffId, departmentId, isAdmin } = (req as AuthRequest).user;
     const docId = Number(req.params.id);
     const { content, expired_date, staff_ids } = req.body;
+
+    // v3.2.5: but phe = y kien chi dao -> chi lanh dao (canApprove).
+    // Truoc: endpoint khong check gi -> ai cung but phe duoc, sai voi nghiep vu.
+    const loaded = await loadDocAndPerms(docId, { staffId, departmentId, isAdmin });
+    if (!loaded) { res.status(404).json({ success: false, message: 'Không tìm thấy văn bản đến' }); return; }
+    if (!loaded.perms.canApprove) { res.status(403).json({ success: false, message: 'Không có quyền bút phê văn bản đến này' }); return; }
 
     if (!content?.trim()) {
       res.status(400).json({ success: false, message: 'Nội dung bút phê là bắt buộc' });
@@ -1107,7 +1120,7 @@ router.post('/:id/giao-viec', async (req: Request, res: Response) => {
     const docId = Number(req.params.id);
     const loaded = await loadDocAndPerms(docId, { staffId, departmentId, isAdmin });
     if (!loaded) { res.status(404).json({ success: false, message: 'Không tìm thấy văn bản đến' }); return; }
-    if (!loaded.perms.canApprove) { res.status(403).json({ success: false, message: 'Không có quyền giao xử lý văn bản đến này' }); return; }
+    if (!loaded.perms.canAssign) { res.status(403).json({ success: false, message: 'Không có quyền giao xử lý văn bản đến này' }); return; }
     const { name, start_date, end_date, curator_ids, note } = req.body;
 
     if (!name?.trim()) {
@@ -1260,7 +1273,7 @@ router.post('/:id/them-vao-hscv', async (req: Request, res: Response) => {
     const docId = Number(req.params.id);
     const loaded = await loadDocAndPerms(docId, { staffId, departmentId, isAdmin });
     if (!loaded) { res.status(404).json({ success: false, message: 'Không tìm thấy văn bản đến' }); return; }
-    if (!loaded.perms.canApprove) { res.status(403).json({ success: false, message: 'Không có quyền thêm vào hồ sơ công việc' }); return; }
+    if (!loaded.perms.canAssign) { res.status(403).json({ success: false, message: 'Không có quyền thêm vào hồ sơ công việc' }); return; }
     const { handling_doc_id } = req.body;
     if (!handling_doc_id) {
       res.status(400).json({ success: false, message: 'Vui lòng chọn hồ sơ công việc' });
@@ -1304,7 +1317,7 @@ router.post('/:id/gui-lien-thong', async (req: Request, res: Response) => {
     const docId = Number(req.params.id);
     const loaded = await loadDocAndPerms(docId, { staffId, departmentId, isAdmin });
     if (!loaded) { res.status(404).json({ success: false, message: 'Không tìm thấy văn bản đến' }); return; }
-    if (!loaded.perms.canApprove) { res.status(403).json({ success: false, message: 'Không có quyền gửi liên thông văn bản đến này' }); return; }
+    if (!loaded.perms.canAssign) { res.status(403).json({ success: false, message: 'Không có quyền gửi liên thông văn bản đến này' }); return; }
     const { org_codes } = req.body;
     if (!Array.isArray(org_codes) || org_codes.length === 0) {
       res.status(400).json({ success: false, message: 'Vui lòng chọn ít nhất một đơn vị' });
@@ -1367,7 +1380,7 @@ router.post('/:id/chuyen-luu-tru', async (req: Request, res: Response) => {
     const docId = Number(req.params.id);
     const loaded = await loadDocAndPerms(docId, { staffId, departmentId, isAdmin });
     if (!loaded) { res.status(404).json({ success: false, message: 'Không tìm thấy văn bản đến' }); return; }
-    if (!loaded.perms.canApprove) { res.status(403).json({ success: false, message: 'Không có quyền chuyển lưu trữ văn bản này' }); return; }
+    if (!loaded.perms.canAssign) { res.status(403).json({ success: false, message: 'Không có quyền chuyển lưu trữ văn bản này' }); return; }
     const result = await incomingDocRepository.createArchive('incoming', docId, { ...req.body, archived_by: staffId });
     if (!result.success) { res.status(400).json({ success: false, message: result.message }); return; }
 

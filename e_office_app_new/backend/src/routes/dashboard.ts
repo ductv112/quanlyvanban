@@ -13,7 +13,7 @@ router.get('/stats', async (req: Request, res: Response) => {
   try {
     const { staffId, departmentId, isAdmin } = (req as AuthRequest).user;
     const filterDeptId = req.query.department_id ? Number(req.query.department_id) : undefined;
-    const deptIds = await resolveDeptSubtree(departmentId, isAdmin, filterDeptId);
+    const deptIds = await resolveDeptSubtree(departmentId, isAdmin, filterDeptId, staffId);
 
     const stats = await dashboardRepository.getStats(staffId, 0, deptIds);
     res.json({
@@ -38,7 +38,7 @@ router.get('/recent-incoming', async (req: Request, res: Response) => {
     const { staffId, departmentId, isAdmin } = (req as AuthRequest).user;
     const { limit } = req.query;
     const filterDeptId = req.query.department_id ? Number(req.query.department_id) : undefined;
-    const deptIds = await resolveDeptSubtree(departmentId, isAdmin, filterDeptId);
+    const deptIds = await resolveDeptSubtree(departmentId, isAdmin, filterDeptId, staffId);
 
     const rows = await dashboardRepository.getRecentIncoming(
       0,
@@ -59,7 +59,7 @@ router.get('/upcoming-tasks', async (req: Request, res: Response) => {
   try {
     const { staffId, departmentId, isAdmin } = (req as AuthRequest).user;
     const { limit } = req.query;
-    const deptIds = await resolveDeptSubtree(departmentId, isAdmin);
+    const deptIds = await resolveDeptSubtree(departmentId, isAdmin, undefined, staffId);
 
     const rows = await dashboardRepository.getUpcomingTasks(
       staffId,
@@ -80,7 +80,7 @@ router.get('/recent-outgoing', async (req: Request, res: Response) => {
     const { staffId, departmentId, isAdmin } = (req as AuthRequest).user;
     const { limit } = req.query;
     const filterDeptId = req.query.department_id ? Number(req.query.department_id) : undefined;
-    const deptIds = await resolveDeptSubtree(departmentId, isAdmin, filterDeptId);
+    const deptIds = await resolveDeptSubtree(departmentId, isAdmin, filterDeptId, staffId);
 
     const rows = await dashboardRepository.getRecentOutgoing(
       0,
@@ -99,7 +99,7 @@ router.get('/recent-outgoing', async (req: Request, res: Response) => {
 router.get('/stats-extra', async (req: Request, res: Response) => {
   try {
     const { staffId, departmentId, isAdmin } = (req as AuthRequest).user;
-    const deptIds = await resolveDeptSubtree(departmentId, isAdmin);
+    const deptIds = await resolveDeptSubtree(departmentId, isAdmin, undefined, staffId);
 
     const data = await dashboardRepository.getStatsExtra(staffId, deptIds);
     res.json({
@@ -117,7 +117,7 @@ router.get('/stats-extra', async (req: Request, res: Response) => {
 router.get('/doc-by-month', async (req: Request, res: Response) => {
   try {
     const { staffId, departmentId, isAdmin } = (req as AuthRequest).user;
-    const deptIds = await resolveDeptSubtree(departmentId, isAdmin);
+    const deptIds = await resolveDeptSubtree(departmentId, isAdmin, undefined, staffId);
     const months = req.query.months ? Number(req.query.months) : 6;
 
     const rows = await dashboardRepository.getDocByMonth(deptIds, months, staffId);
@@ -133,7 +133,7 @@ router.get('/doc-by-month', async (req: Request, res: Response) => {
 router.get('/task-by-status', async (req: Request, res: Response) => {
   try {
     const { staffId, departmentId, isAdmin } = (req as AuthRequest).user;
-    const deptIds = await resolveDeptSubtree(departmentId, isAdmin);
+    const deptIds = await resolveDeptSubtree(departmentId, isAdmin, undefined, staffId);
 
     const rows = await dashboardRepository.getTaskByStatus(staffId, deptIds);
     res.json({ success: true, data: rows });
@@ -147,8 +147,8 @@ router.get('/task-by-status', async (req: Request, res: Response) => {
 // ============================================================
 router.get('/top-departments', async (req: Request, res: Response) => {
   try {
-    const { departmentId, isAdmin } = (req as AuthRequest).user;
-    const deptIds = await resolveDeptSubtree(departmentId, isAdmin);
+    const { staffId, departmentId, isAdmin } = (req as AuthRequest).user;
+    const deptIds = await resolveDeptSubtree(departmentId, isAdmin, undefined, staffId);
     const limit = req.query.limit ? Number(req.query.limit) : 5;
 
     const rows = await dashboardRepository.getTopDepartments(deptIds, limit);
@@ -164,7 +164,7 @@ router.get('/top-departments', async (req: Request, res: Response) => {
 router.get('/recent-notices', async (req: Request, res: Response) => {
   try {
     const { staffId, departmentId, isAdmin } = (req as AuthRequest).user;
-    const deptIds = await resolveDeptSubtree(departmentId, isAdmin);
+    const deptIds = await resolveDeptSubtree(departmentId, isAdmin, undefined, staffId);
     const limit = req.query.limit ? Number(req.query.limit) : 5;
 
     const rows = await dashboardRepository.getRecentNotices(staffId, deptIds, limit);
@@ -180,7 +180,7 @@ router.get('/recent-notices', async (req: Request, res: Response) => {
 router.get('/calendar-today', async (req: Request, res: Response) => {
   try {
     const { staffId, departmentId, isAdmin } = (req as AuthRequest).user;
-    const deptIds = await resolveDeptSubtree(departmentId, isAdmin);
+    const deptIds = await resolveDeptSubtree(departmentId, isAdmin, undefined, staffId);
     const days = req.query.days ? Number(req.query.days) : 7;
 
     const rows = await dashboardRepository.getCalendarToday(staffId, deptIds, days);
@@ -195,8 +195,8 @@ router.get('/calendar-today', async (req: Request, res: Response) => {
 // ============================================================
 router.get('/ontime-rate', async (req: Request, res: Response) => {
   try {
-    const { departmentId, isAdmin } = (req as AuthRequest).user;
-    const deptIds = await resolveDeptSubtree(departmentId, isAdmin);
+    const { staffId, departmentId, isAdmin } = (req as AuthRequest).user;
+    const deptIds = await resolveDeptSubtree(departmentId, isAdmin, undefined, staffId);
 
     const data = await dashboardRepository.getOntimeRate(deptIds);
     res.json({
@@ -213,8 +213,8 @@ router.get('/ontime-rate', async (req: Request, res: Response) => {
 // ============================================================
 router.get('/doc-by-department', async (req: Request, res: Response) => {
   try {
-    const { departmentId, isAdmin } = (req as AuthRequest).user;
-    const deptIds = await resolveDeptSubtree(departmentId, isAdmin);
+    const { staffId, departmentId, isAdmin } = (req as AuthRequest).user;
+    const deptIds = await resolveDeptSubtree(departmentId, isAdmin, undefined, staffId);
 
     const rows = await dashboardRepository.getDocByDepartment(deptIds);
     res.json({ success: true, data: rows });

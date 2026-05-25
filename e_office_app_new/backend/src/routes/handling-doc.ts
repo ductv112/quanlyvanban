@@ -141,7 +141,8 @@ router.get('/', async (req: Request, res: Response) => {
     } = req.query;
 
     const filterDeptId = req.query.department_id ? Number(req.query.department_id) : undefined;
-    const deptIds = await resolveDeptSubtree(departmentId, isAdmin, filterDeptId);
+    // v3.2.5: leader xem toan bo HSCV don vi (pass staffId)
+    const deptIds = await resolveDeptSubtree(departmentId, isAdmin, filterDeptId, staffId);
 
     const rows = await handlingDocRepository.getList(
       0,
@@ -179,7 +180,7 @@ router.get('/', async (req: Request, res: Response) => {
 router.get('/count-by-status', async (req: Request, res: Response) => {
   try {
     const { staffId, departmentId, isAdmin } = (req as AuthRequest).user;
-    const deptIds = await resolveDeptSubtree(departmentId, isAdmin);
+    const deptIds = await resolveDeptSubtree(departmentId, isAdmin, undefined, staffId);
     const rows = await handlingDocRepository.countByStatus(0, staffId, deptIds);
     res.json({ success: true, data: rows });
   } catch (error) {

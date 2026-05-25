@@ -73,6 +73,7 @@ interface DraftingDoc {
     canApprove: boolean;
     canRelease: boolean;
     canSend: boolean;
+    canAssign: boolean;
     canRetract: boolean;
   };
 }

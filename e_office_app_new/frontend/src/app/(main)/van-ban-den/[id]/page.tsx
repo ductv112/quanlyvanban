@@ -50,6 +50,7 @@ interface DocDetail {
     canApprove: boolean;
     canRelease: boolean;
     canSend: boolean;
+    canAssign: boolean;
     canRetract: boolean;
   };
 }
@@ -500,21 +501,24 @@ export default function IncomingDocDetailPage() {
             onClick={handleToggleBookmark}
           />
 
-          {/* Giao việc — always visible */}
-          <Button
-            type="primary"
-            icon={<ThunderboltOutlined />}
-            style={{ backgroundColor: '#0891B2', borderColor: '#0891B2' }}
-            onClick={openGiaoViec}
-          >
-            Giao việc
-          </Button>
+          {/* v3.2.5: 3 nut van thu/chuyen vien thuc thi (canAssign) — an khi khong co quyen, tranh user click roi gap 403 */}
+          {(doc.permissions?.canAssign ?? false) && (
+            <Button
+              type="primary"
+              icon={<ThunderboltOutlined />}
+              style={{ backgroundColor: '#0891B2', borderColor: '#0891B2' }}
+              onClick={openGiaoViec}
+            >
+              Giao việc
+            </Button>
+          )}
 
-          {/* Thêm vào HSCV sẵn có */}
-          <Button onClick={openHscvModal} icon={<InboxOutlined />}>Thêm vào HSCV</Button>
+          {(doc.permissions?.canAssign ?? false) && (
+            <Button onClick={openHscvModal} icon={<InboxOutlined />}>Thêm vào HSCV</Button>
+          )}
 
-          {/* Gửi liên thông LGSP — chỉ khi đã duyệt */}
-          {doc.approved && (
+          {/* Gửi liên thông LGSP — chỉ khi đã duyệt + co quyen assign (van thu/chuyen vien) */}
+          {doc.approved && (doc.permissions?.canAssign ?? false) && (
             <Button onClick={openLgspModal} icon={<SendOutlined />} style={{ backgroundColor: '#059669', borderColor: '#059669', color: '#fff' }}>Gửi liên thông</Button>
           )}
 

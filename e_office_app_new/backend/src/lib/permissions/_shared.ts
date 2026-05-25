@@ -14,10 +14,11 @@ export interface DocOwnershipInfo {
 
 export interface DocPermissions {
   canEdit: boolean;
-  canApprove: boolean;
-  canRelease: boolean;
-  canSend: boolean;
-  canRetract: boolean;
+  canApprove: boolean;     // duyet/huy duyet/but phe (chi lanh dao)
+  canRelease: boolean;     // cap so VB di (sau khi lanh dao duyet) — van thu/chuyen vien thuc thi
+  canSend: boolean;        // gui noi bo cho can bo xu ly
+  canAssign: boolean;      // v3.2.5: giao viec / tao HSCV / them vao HSCV / gui lien thong — van thu/chuyen vien thuc thi
+  canRetract: boolean;     // thu hoi (lanh dao)
 }
 
 interface StaffPositionRow {
@@ -76,12 +77,16 @@ export async function getUserPermissionContext(
 /**
  * Compute permissions pure sync, nhận sẵn isOwner (caller tự tính).
  *
- * Rules (KHÔNG hard-code role/position name — chỉ flag + ownership + admin):
- *   canEdit    = isAdmin || isOwner || (sameUnit && is_handle_document)
- *   canApprove = isAdmin || (sameUnit && is_leader)
- *   canRelease = isAdmin || (sameUnit && is_leader)
- *   canSend    = isAdmin || isOwner || (sameUnit && is_leader)
- *   canRetract = isAdmin || (sameUnit && is_leader)
+ * v3.2.5 redesign — tach quyen theo dung nghiep vu thuc te VN:
+ *   canEdit    = isAdmin || isOwner || (sameUnit && is_handle_document)  // sua metadata
+ *   canApprove = isAdmin || (sameUnit && is_leader)                       // duyet/but phe — CHI lanh dao
+ *   canRelease = isAdmin || isOwner || (sameUnit && is_handle_document)   // cap so VB di — van thu thuc thi sau khi duyet
+ *   canSend    = isAdmin || isOwner || (sameUnit && is_handle_document)   // gui noi bo can bo xu ly
+ *   canAssign  = isAdmin || isOwner || (sameUnit && is_handle_document)   // giao viec/HSCV/lien thong — van thu thuc thi
+ *   canRetract = isAdmin || (sameUnit && is_leader)                       // thu hoi (lanh dao)
+ *
+ * Truoc redesign: tat ca action thao tac deu yeu cau is_leader → chuyen vien xu ly VB bi chan giao viec/cap so/gui lien thong.
+ * Sai voi thuc te: lanh dao chi DUYET/BUT PHE/THU HOI; van thu/chuyen vien thuc thi cac thao tac con lai.
  *
  * Dùng trong loop list để tránh N+1.
  */
@@ -96,6 +101,7 @@ export function computePermsFromContext(
       canApprove: true,
       canRelease: true,
       canSend: true,
+      canAssign: true,
       canRetract: true,
     };
   }
@@ -106,8 +112,9 @@ export function computePermsFromContext(
   return {
     canEdit: isOwner || isHandler,
     canApprove: isLeader,
-    canRelease: isLeader,
-    canSend: isOwner || isLeader,
+    canRelease: isOwner || isHandler,
+    canSend: isOwner || isHandler,
+    canAssign: isOwner || isHandler,
     canRetract: isLeader,
   };
 }

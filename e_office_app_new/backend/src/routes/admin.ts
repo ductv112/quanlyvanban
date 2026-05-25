@@ -10,6 +10,7 @@ import { roleRepository } from '../repositories/role.repository.js';
 import { rightRepository } from '../repositories/right.repository.js';
 import { handleDbError } from '../lib/error-handler.js';
 import { resolveAncestorUnit } from '../lib/department-subtree.js';
+import { rawQuery } from '../lib/db/query.js';
 
 const router = Router();
 
@@ -58,7 +59,14 @@ function buildTree<T extends { id: number; parent_id: number | null }>(flatList:
 // GET /don-vi/tree — trả về cây phân cấp (cho Tree component)
 router.get('/don-vi/tree', async (req: Request, res: Response) => {
   try {
-    const unitId = req.query.unit_id ? Number(req.query.unit_id) : null;
+    const { departmentId, isAdmin } = (req as AuthRequest).user;
+    let unitId = req.query.unit_id ? Number(req.query.unit_id) : null;
+    // v3.2.5 security/UX: non-admin chi thay subtree don vi minh.
+    // Truoc fix: tra full org tree -> non-admin thay het cac So/DN khac + co the click va tu day query API khac
+    // tao request voi department_id cua unit khac -> dataleak (xem fix /nguoi-ky cho example).
+    if (!isAdmin) {
+      unitId = await resolveAncestorUnit(departmentId);
+    }
     const flatList = await departmentRepository.getTree(unitId);
     const tree = buildTree(flatList);
     res.json({ success: true, data: tree });
@@ -374,12 +382,26 @@ router.delete('/chuc-vu/:id', async (req: Request, res: Response) => {
 router.get('/nguoi-dung', async (req: Request, res: Response) => {
   try {
     let unitId = req.query.unit_id ? Number(req.query.unit_id) : null;
-    const departmentId = req.query.department_id ? Number(req.query.department_id) : null;
+    let departmentId = req.query.department_id ? Number(req.query.department_id) : null;
     // Khi co department_id, auto-resolve unit_id tu ancestor cua dept (luon chinh xac).
     // Tranh case page truyen unit_id=admin's unit nhung click dept khac don vi -> SP filter sai.
     // (Note: admin route nay shadow boi public-catalog.ts mount truoc — fix da apply o ca 2 noi.)
+    // Auto-promote: neu caller truyen unit_id=X nhung X la phong con (is_unit=false),
+    // tu nang cap thanh filter ancestor unit + narrow xuong dung phong do — tranh
+    // filter `s.unit_id=phong-id` tra 0 row (vi staff.unit_id luon la ancestor unit).
     if (departmentId) {
       unitId = await resolveAncestorUnit(departmentId);
+    } else if (unitId) {
+      const check = await rawQuery<{ is_unit: boolean; ancestor_unit_id: number }>(
+        `SELECT COALESCE(is_unit, false) AS is_unit,
+                public.fn_get_ancestor_unit(id) AS ancestor_unit_id
+         FROM public.departments WHERE id = $1 AND COALESCE(is_deleted, false) = false`,
+        [unitId],
+      );
+      if (check[0] && !check[0].is_unit) {
+        departmentId = unitId;
+        unitId = check[0].ancestor_unit_id;
+      }
     }
     const keyword = (req.query.keyword as string) || '';
     const isLocked = req.query.is_locked !== undefined ? req.query.is_locked === 'true' : null;

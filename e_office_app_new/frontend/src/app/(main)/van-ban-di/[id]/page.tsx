@@ -48,6 +48,7 @@ interface DocDetail {
     canApprove: boolean;
     canRelease: boolean;
     canSend: boolean;
+    canAssign: boolean;
     canRetract: boolean;
   };
 }
@@ -601,10 +602,10 @@ export default function OutgoingDocDetailPage() {
             icon={isBookmarked ? <StarFilled style={{ color: '#faad14' }} /> : <StarOutlined />}
             onClick={handleToggleBookmark}
           />
-          {(doc.permissions?.canApprove ?? false) && (
+          {(doc.permissions?.canAssign ?? false) && (
             <Button icon={<ThunderboltOutlined />} type="primary" style={{ backgroundColor: '#0891B2', borderColor: '#0891B2' }} onClick={openGiaoViec}>Giao việc</Button>
           )}
-          {(doc.permissions?.canApprove ?? false) && (
+          {(doc.permissions?.canAssign ?? false) && (
             <Button icon={<InboxOutlined />} onClick={openHscvModal}>Thêm vào HSCV</Button>
           )}
           {/* Phase 19 v3.0: ẨN 2 nút legacy v1.0 — recipient ngoài LGSP đã có trong form 'Cơ quan nhận ngoài' khi soạn. Trục CP defer Phase 2 KH. */}
