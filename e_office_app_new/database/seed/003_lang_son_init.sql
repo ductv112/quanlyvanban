@@ -44,7 +44,14 @@ UPDATE public.departments
  WHERE id = 1
    AND code = 'UBND';
 
--- ─── 2. Xoa 4 So demo Lao Cai (chi an toan tren fresh install) ──────────────
+-- ─── 2. Xoa data dependent + 4 So demo Lao Cai (chi an toan tren fresh install) ──
+-- Seed/001 line 204-225 INSERT 15 row doc_books cho 5 unit (3 so/unit).
+-- Row unit_id IN (2,3,4,5) phai DELETE truoc khi DELETE departments (FK constraint).
+-- doc_fields chi reference unit_id=1 (UBND) -> khong can xu ly.
+-- doc_types khong co unit_id -> khong can xu ly.
+DELETE FROM edoc.doc_books
+ WHERE unit_id IN (2, 3, 4, 5);
+
 -- Idempotent: chay lai sau khi da xoa -> 0 row affected
 -- An toan: chi xoa khi code khop chinh xac (tranh xoa nham don vi that)
 -- KHONG xoa cascade: neu admin da tao staff/data thuoc 1 trong 4 So nay,
