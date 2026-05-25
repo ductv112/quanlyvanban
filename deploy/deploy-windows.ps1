@@ -454,7 +454,9 @@ module.exports = {
     {
       name: 'eoffice-web',
       cwd: './frontend',
-      script: 'node_modules/.bin/next',
+      // Windows: KHONG dung 'node_modules/.bin/next' (bash script -> Node parse fail).
+      // Dung entry point JS that cua next CLI.
+      script: 'node_modules/next/dist/bin/next',
       args: 'start',
       instances: 1,
       env: { NODE_ENV: 'production', PORT: 3000 },
