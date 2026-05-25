@@ -278,24 +278,47 @@ if ([string]::IsNullOrEmpty($staffCount) -or $staffCount -eq '0') {
     if ($LASTEXITCODE -ne 0) { Write-Host '[XX] Schema master that bai' -ForegroundColor Red; exit 1 }
 
     # 3. Apply seed 001 - required data + 2 provider config
-    #    Dung JWT_SECRET lam app.signing_secret_key (match backend .env SIGNING_SECRET_KEY)
+    # CRITICAL: psql `-c "SET ..." -f file.sql` KHONG truyen SET context sang -f
+    # (verified bug 2026-05-25). Phai dung WRAPPER FILE: SET + \i seed_file gop trong
+    # cung 1 file -> 1 psql session. Stderr KHONG suppress (2>&1 -> log file) de debug.
     $seed1File = Join-Path $WORK_DIR 'database\seed\001_required_data.sql'
-    Log "  -> seed/001_required_data.sql (admin/Admin@123 + 2 providers)"
-    & $psqlExe -U $PG_USER -d $PG_DB -p 5432 -h 127.0.0.1 -v ON_ERROR_STOP=1 `
-      -c "SET app.signing_secret_key = '$JWT_SECRET';" `
-      -f $seed1File 2>$null
-    if ($LASTEXITCODE -ne 0) { Write-Host '[XX] Seed 001 that bai - kiem tra JWT_SECRET >= 16 ky tu' -ForegroundColor Red; exit 1 }
+    $seed1Wrapper = Join-Path $env:TEMP 'qlvb_seed001_wrapper.sql'
+    $seed1Path = $seed1File -replace '\\', '/'  # \i needs forward slashes
+    $seed1Content = "SET app.signing_secret_key = '$JWT_SECRET';`n\i '$seed1Path'"
+    [System.IO.File]::WriteAllText($seed1Wrapper, $seed1Content, [System.Text.UTF8Encoding]::new($false))
+    Log "  -> seed/001_required_data.sql (admin/Admin@123 + 2 providers, wrapper qua $env:TEMP)"
+    $seed1Log = Join-Path $env:TEMP 'qlvb_seed001.log'
+    & $psqlExe -U $PG_USER -d $PG_DB -p 5432 -h 127.0.0.1 -v ON_ERROR_STOP=1 -f $seed1Wrapper > $seed1Log 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host '---- seed/001 output (50 dong cuoi) ----' -ForegroundColor Yellow
+        Get-Content $seed1Log -Tail 50
+        Write-Host "---- Full log: $seed1Log ----" -ForegroundColor Yellow
+        Write-Host '[XX] Seed 001 that bai' -ForegroundColor Red; exit 1
+    }
+    Remove-Item $seed1Wrapper -ErrorAction SilentlyContinue
+    Remove-Item $seed1Log -ErrorAction SilentlyContinue
 
     Log '  -> Fresh install hoan thanh (admin/Admin@123 san sang)'
 
     # 4. Apply seed 003 - init cay to chuc Lang Son (UBND + 6 DN + 9 lgsp_agency_config)
+    #    Cung dung wrapper pattern voi seed 001.
     $seed3File = Join-Path $WORK_DIR 'database\seed\003_lang_son_init.sql'
     if ((-not $SkipLangSonSeed) -and (Test-Path $seed3File)) {
+        $seed3Wrapper = Join-Path $env:TEMP 'qlvb_seed003_wrapper.sql'
+        $seed3Path = $seed3File -replace '\\', '/'
+        $seed3Content = "SET app.signing_secret_key = '$JWT_SECRET';`n\i '$seed3Path'"
+        [System.IO.File]::WriteAllText($seed3Wrapper, $seed3Content, [System.Text.UTF8Encoding]::new($false))
         Log "  -> seed/003_lang_son_init.sql (UBND tinh Lang Son + 6 DN + 9 lgsp_agency_config)"
-        & $psqlExe -U $PG_USER -d $PG_DB -p 5432 -h 127.0.0.1 -v ON_ERROR_STOP=1 `
-          -c "SET app.signing_secret_key = '$JWT_SECRET';" `
-          -f $seed3File 2>$null
-        if ($LASTEXITCODE -ne 0) { Write-Host '[XX] Seed 003 Lang Son that bai - kiem tra log psql' -ForegroundColor Red; exit 1 }
+        $seed3Log = Join-Path $env:TEMP 'qlvb_seed003.log'
+        & $psqlExe -U $PG_USER -d $PG_DB -p 5432 -h 127.0.0.1 -v ON_ERROR_STOP=1 -f $seed3Wrapper > $seed3Log 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host '---- seed/003 output (50 dong cuoi) ----' -ForegroundColor Yellow
+            Get-Content $seed3Log -Tail 50
+            Write-Host "---- Full log: $seed3Log ----" -ForegroundColor Yellow
+            Write-Host '[XX] Seed 003 Lang Son that bai' -ForegroundColor Red; exit 1
+        }
+        Remove-Item $seed3Wrapper -ErrorAction SilentlyContinue
+        Remove-Item $seed3Log -ErrorAction SilentlyContinue
         Log '  -> Lang Son init done: 6 DN H37.DN.001..006 + 9 lgsp_agency_config (placeholder)'
     } else {
         Log '  -> Skip seed 003 Lang Son (SkipLangSonSeed=true hoac file khong ton tai)'
