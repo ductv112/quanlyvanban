@@ -169,15 +169,31 @@ router.get('/nguoi-dung', async (req: Request, res: Response) => {
   try {
     const { departmentId: callerDeptId, isAdmin } = (req as AuthRequest).user;
     let unitId = req.query.unit_id ? Number(req.query.unit_id) : null;
-    const departmentId = req.query.department_id ? Number(req.query.department_id) : null;
+    let departmentId = req.query.department_id ? Number(req.query.department_id) : null;
     // Resolve unit_id theo thu tu uu tien:
     // 1. Co department_id -> ancestor cua dept (luon chinh xac)
-    // 2. Co unit_id query -> dung
+    // 2. Co unit_id query -> kiem tra is_unit. Neu la phong con (is_unit=false),
+    //    auto-promote: filter theo ancestor unit + narrow xuong dung phong do.
+    //    Ly do: nhieu caller dung `user.departmentId` (raw dept_id, co the la phong con)
+    //    lam unit_id query — `staff.unit_id` cua moi nhan su deu la ancestor unit (trigger
+    //    trg_staff_auto_unit_id auto resolve), nen filter exact `s.unit_id = phong-id`
+    //    se tra 0 row. Tu nang cap o backend de mot fix bao het callers.
     // 3. Non-admin + khong filter -> auto-scope vao don vi cua user (de tranh
     //    pick nhan su cross-unit). Admin -> giu null = thay het.
     if (departmentId) {
       unitId = await resolveAncestorUnit(departmentId);
-    } else if (!unitId && !isAdmin) {
+    } else if (unitId) {
+      const check = await rawQuery<{ is_unit: boolean; ancestor_unit_id: number }>(
+        `SELECT COALESCE(is_unit, false) AS is_unit,
+                public.fn_get_ancestor_unit(id) AS ancestor_unit_id
+         FROM public.departments WHERE id = $1 AND COALESCE(is_deleted, false) = false`,
+        [unitId],
+      );
+      if (check[0] && !check[0].is_unit) {
+        departmentId = unitId;
+        unitId = check[0].ancestor_unit_id;
+      }
+    } else if (!isAdmin) {
       unitId = await resolveAncestorUnit(callerDeptId);
     }
     const keyword = ((req.query.keyword as string) || '').trim();
