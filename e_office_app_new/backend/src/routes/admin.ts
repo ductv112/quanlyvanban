@@ -763,15 +763,33 @@ router.get('/nguoi-dung/:id/nhom-quyen', async (req: Request, res: Response) => 
   }
 });
 
+// Role 5 = "Quan tri he thong" (seed/001 line 109) — co TAT CA rights -> equivalent
+// voi is_admin=true ve mat permission. Chan non-admin gan/giu role 5 cho user khac
+// de tranh privilege escalation (Admin So co the tao user voi role 5 -> user do co
+// quyen full admin).
+const SYSTEM_ADMIN_ROLE_ID = 5;
+
 // PUT /nguoi-dung/:id/nhom-quyen
 router.put('/nguoi-dung/:id/nhom-quyen', async (req: Request, res: Response) => {
   try {
+    const currentUser = (req as AuthRequest).user;
     const staffId = Number(req.params.id);
     // Chan non-admin thay doi quyen tai khoan is_admin=true
     if (await blockIfModifyingAdmin(req, res, staffId)) return;
 
     const { roleIds } = req.body;
-    await roleRepository.assignStaffRoles(staffId, roleIds ?? []);
+    const requestedRoleIds: number[] = Array.isArray(roleIds) ? roleIds.map((id) => Number(id)) : [];
+
+    // Privilege escalation guard: non-admin KHONG duoc gan role "Quan tri he thong" (role 5)
+    if (!currentUser.isAdmin && requestedRoleIds.includes(SYSTEM_ADMIN_ROLE_ID)) {
+      res.status(403).json({
+        success: false,
+        message: 'Không có quyền gán nhóm quyền "Quản trị hệ thống" cho người dùng khác',
+      });
+      return;
+    }
+
+    await roleRepository.assignStaffRoles(staffId, requestedRoleIds);
     res.json({ success: true, data: { assigned: true } });
   } catch (error) {
     handleDbError(error, res);
@@ -788,11 +806,15 @@ router.put('/nguoi-dung/:id/nhom-quyen', async (req: Request, res: Response) => 
 // ============================================================
 
 // GET /lookup/roles
+// An role 5 (Quan tri he thong) khoi dropdown cho non-admin -> UX defense.
+// Backend PUT /nguoi-dung/:id/nhom-quyen van check lai (chot chan cung).
 router.get('/lookup/roles', async (req: Request, res: Response) => {
   try {
+    const currentUser = (req as AuthRequest).user;
     const unitId = req.query.unit_id ? Number(req.query.unit_id) : null;
     const all = await roleRepository.getList(unitId, '');
-    res.json({ success: true, data: all });
+    const filtered = currentUser.isAdmin ? all : all.filter((r) => r.id !== SYSTEM_ADMIN_ROLE_ID);
+    res.json({ success: true, data: filtered });
   } catch (error) {
     handleDbError(error, res);
   }
