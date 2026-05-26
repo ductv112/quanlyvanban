@@ -15,6 +15,55 @@ import { rawQuery } from '../lib/db/query.js';
 const router = Router();
 
 // ============================================================
+// MULTI-TENANT SCOPE (2026-05-26)
+// ----------------------------------------------------------
+// Rule: Scope theo VI TRI user trong cay to chuc (user.unit_id).
+//   - is_admin=TRUE (system admin) -> KHONG scope, full access
+//   - user.unit la ROOT unit (parent_id NULL, vd UBND tinh) -> KHONG scope, cross-DN
+//   - else -> scope = user.unit_id (staff.unit_id luon la ancestor root unit cua dept,
+//             nen filter exact match unit_id se match toan bo staff cua DN do)
+//
+// User dat o UBND (root, parent_id NULL) -> no scope -> cross-DN (adminso).
+// User dat o DN.001 (parent_id=UBND) -> scope = 101 (admindn001).
+// Cung 1 role "ADMIN Don vi" dung duoc cho ca 2 case — scope tu dong theo vi tri user.
+//
+// Returns:
+//   - null = no scope (system admin OR user o root unit)
+//   - number = unit_id phai scope vao
+// ============================================================
+async function getUserUnitScope(req: Request): Promise<number | null> {
+  const user = (req as AuthRequest).user;
+  if (user.isAdmin) return null;
+  const rows = await rawQuery<{ parent_id: number | null }>(
+    'SELECT parent_id FROM public.departments WHERE id = $1 AND is_deleted = FALSE',
+    [user.unitId],
+  );
+  // Root unit (parent_id NULL hoac unit khong ton tai) -> no scope
+  if (!rows[0] || rows[0].parent_id == null) return null;
+  return user.unitId;
+}
+
+/**
+ * Check deptId co nam trong subtree cua ancestorId khong (recursive parent walk).
+ * Return TRUE neu deptId === ancestorId hoac la descendant cua ancestorId.
+ */
+async function isInSubtree(deptId: number, ancestorId: number): Promise<boolean> {
+  if (deptId === ancestorId) return true;
+  const rows = await rawQuery<{ ok: number }>(
+    `WITH RECURSIVE ancestors AS (
+       SELECT id, parent_id FROM public.departments WHERE id = $1 AND is_deleted = FALSE
+       UNION ALL
+       SELECT d.id, d.parent_id FROM public.departments d
+       JOIN ancestors a ON d.id = a.parent_id
+       WHERE d.is_deleted = FALSE
+     )
+     SELECT 1 AS ok FROM ancestors WHERE id = $2 LIMIT 1`,
+    [deptId, ancestorId],
+  );
+  return rows.length > 0;
+}
+
+// ============================================================
 // UTILITY: Build tree from flat list
 // ============================================================
 function buildTree<T extends { id: number; parent_id: number | null }>(flatList: T[]): (T & { children?: T[] })[] {
@@ -59,14 +108,12 @@ function buildTree<T extends { id: number; parent_id: number | null }>(flatList:
 // GET /don-vi/tree — trả về cây phân cấp (cho Tree component)
 router.get('/don-vi/tree', async (req: Request, res: Response) => {
   try {
-    const { departmentId, isAdmin } = (req as AuthRequest).user;
+    // Multi-tenant scope: neu user thuoc DN co lap (lgsp_org_code) -> force scope vao subtree DN do.
+    // Admin + adminso (UBND/So, khong lgsp_org_code) -> no scope, respect query.unit_id.
+    const scope = await getUserUnitScope(req);
     let unitId = req.query.unit_id ? Number(req.query.unit_id) : null;
-    // v3.2.5 security/UX: non-admin chi thay subtree don vi minh.
-    // Truoc fix: tra full org tree -> non-admin thay het cac So/DN khac + co the click va tu day query API khac
-    // tao request voi department_id cua unit khac -> dataleak (xem fix /nguoi-ky cho example).
-    if (!isAdmin) {
-      unitId = await resolveAncestorUnit(departmentId);
-    }
+    if (scope !== null) unitId = scope;
+
     const flatList = await departmentRepository.getTree(unitId);
     const tree = buildTree(flatList);
     res.json({ success: true, data: tree });
@@ -78,7 +125,11 @@ router.get('/don-vi/tree', async (req: Request, res: Response) => {
 // GET /don-vi — trả về flat list (cho Table component)
 router.get('/don-vi', async (req: Request, res: Response) => {
   try {
-    const unitId = req.query.unit_id ? Number(req.query.unit_id) : null;
+    // Multi-tenant scope: same logic nhu /don-vi/tree
+    const scope = await getUserUnitScope(req);
+    let unitId = req.query.unit_id ? Number(req.query.unit_id) : null;
+    if (scope !== null) unitId = scope;
+
     const data = await departmentRepository.getTree(unitId);
     // Filter by parent_id if provided
     const parentId = req.query.parent_id ? Number(req.query.parent_id) : null;
@@ -98,6 +149,12 @@ router.get('/don-vi/:id', async (req: Request, res: Response) => {
       res.status(404).json({ success: false, message: 'Không tìm thấy đơn vị' });
       return;
     }
+    // Multi-tenant scope: chan user DN co lap xem don vi ngoai subtree minh
+    const scope = await getUserUnitScope(req);
+    if (scope !== null && !(await isInSubtree(id, scope))) {
+      res.status(403).json({ success: false, message: 'Không có quyền xem đơn vị ngoài phạm vi quản lý' });
+      return;
+    }
     res.json({ success: true, data });
   } catch (error) {
     handleDbError(error, res);
@@ -115,6 +172,20 @@ router.post('/don-vi', async (req: Request, res: Response) => {
       // BUG-F-001: tránh silent drop LGSP fields
       lgsp_system_id, lgsp_secret_key,
     } = req.body;
+
+    // Multi-tenant scope: user DN co lap chi duoc tao phong ban CON cua subtree minh.
+    // parent_id phai nam trong subtree (= scope unit_id hoac descendant).
+    const scope = await getUserUnitScope(req);
+    if (scope !== null) {
+      if (parent_id == null) {
+        res.status(403).json({ success: false, message: 'Phải chọn đơn vị cha trong phạm vi quản lý' });
+        return;
+      }
+      if (!(await isInSubtree(Number(parent_id), scope))) {
+        res.status(403).json({ success: false, message: 'Đơn vị cha nằm ngoài phạm vi quản lý' });
+        return;
+      }
+    }
 
     if (!name?.trim()) {
       res.status(400).json({ success: false, message: 'Tên đơn vị là bắt buộc' });
@@ -192,6 +263,24 @@ router.put('/don-vi/:id', async (req: Request, res: Response) => {
       lgsp_system_id, lgsp_secret_key,
     } = req.body;
 
+    // Multi-tenant scope: target id + parent_id moi (neu doi) deu phai trong subtree.
+    const scope = await getUserUnitScope(req);
+    if (scope !== null) {
+      if (!(await isInSubtree(id, scope))) {
+        res.status(403).json({ success: false, message: 'Không có quyền sửa đơn vị ngoài phạm vi quản lý' });
+        return;
+      }
+      if (parent_id != null && !(await isInSubtree(Number(parent_id), scope))) {
+        res.status(403).json({ success: false, message: 'Đơn vị cha mới nằm ngoài phạm vi quản lý' });
+        return;
+      }
+      // KHONG cho user DN tu giai phong khoi subtree (set parent_id NULL = thanh root)
+      if (parent_id == null) {
+        res.status(403).json({ success: false, message: 'Không thể bỏ trống đơn vị cha' });
+        return;
+      }
+    }
+
     if (!name?.trim()) {
       res.status(400).json({ success: false, message: 'Tên đơn vị là bắt buộc' });
       return;
@@ -247,6 +336,19 @@ router.put('/don-vi/:id', async (req: Request, res: Response) => {
 router.delete('/don-vi/:id', async (req: Request, res: Response) => {
   try {
     const id = Number(req.params.id);
+    // Multi-tenant scope: chi xoa duoc don vi trong subtree minh.
+    // Cung chan xoa don vi LA scope unit (id === scope) -> tu pha goc cua minh.
+    const scope = await getUserUnitScope(req);
+    if (scope !== null) {
+      if (id === scope) {
+        res.status(403).json({ success: false, message: 'Không thể xóa đơn vị gốc của doanh nghiệp' });
+        return;
+      }
+      if (!(await isInSubtree(id, scope))) {
+        res.status(403).json({ success: false, message: 'Không có quyền xóa đơn vị ngoài phạm vi quản lý' });
+        return;
+      }
+    }
     const result = await departmentRepository.delete(id);
     if (!result.success) {
       res.status(400).json({ success: false, message: result.message });
@@ -262,6 +364,12 @@ router.delete('/don-vi/:id', async (req: Request, res: Response) => {
 router.patch('/don-vi/:id/lock', async (req: Request, res: Response) => {
   try {
     const id = Number(req.params.id);
+    // Multi-tenant scope: chi khoa/mo duoc don vi trong subtree minh
+    const scope = await getUserUnitScope(req);
+    if (scope !== null && !(await isInSubtree(id, scope))) {
+      res.status(403).json({ success: false, message: 'Không có quyền thao tác đơn vị ngoài phạm vi quản lý' });
+      return;
+    }
     const toggled = await departmentRepository.toggleLock(id);
     if (!toggled) {
       res.status(404).json({ success: false, message: 'Không tìm thấy đơn vị' });
@@ -379,9 +487,8 @@ router.delete('/chuc-vu/:id', async (req: Request, res: Response) => {
 // ============================================================
 
 // GET /nguoi-dung
-// Helper: chan non-admin sua/xoa user co is_admin=true.
+// Helper: chan non-admin sua/xoa user co is_admin=true HOAC user ngoai scope subtree.
 // Tra ve true neu BLOCK (caller phai return ngay), false neu OK tiep tuc.
-// Logic: chi cho phep neu (current_user.isAdmin) OR (target.is_admin=false).
 async function blockIfModifyingAdmin(req: Request, res: Response, targetId: number): Promise<boolean> {
   const currentUser = (req as AuthRequest).user;
   if (currentUser.isAdmin) return false; // admin co quyen sua/xoa moi user
@@ -392,6 +499,12 @@ async function blockIfModifyingAdmin(req: Request, res: Response, targetId: numb
   }
   if (target.is_admin) {
     res.status(403).json({ success: false, message: 'Không có quyền thao tác với tài khoản quản trị hệ thống' });
+    return true;
+  }
+  // Multi-tenant scope check: non-admin chi sua/xoa duoc user trong subtree minh
+  const scope = await getUserUnitScope(req);
+  if (scope !== null && target.unit_id !== scope) {
+    res.status(403).json({ success: false, message: 'Không có quyền thao tác người dùng ngoài phạm vi quản lý' });
     return true;
   }
   return false;
@@ -421,6 +534,20 @@ router.get('/nguoi-dung', async (req: Request, res: Response) => {
         unitId = check[0].ancestor_unit_id;
       }
     }
+
+    // Multi-tenant scope: force unit_id = user.unit_id neu user khong o root.
+    // adminso (UBND root) -> scope=null -> respect query.unit_id (cross-DN).
+    // admindn001 (DN.001) -> scope=101 -> force unitId=101, ignore query.
+    const scope = await getUserUnitScope(req);
+    if (scope !== null) {
+      unitId = scope;
+      // Neu query co department_id, validate dept thuoc scope subtree
+      if (departmentId && !(await isInSubtree(departmentId, scope))) {
+        // Dept khong thuoc scope -> reset ve null, tra ket qua rong
+        departmentId = null;
+      }
+    }
+
     const keyword = (req.query.keyword as string) || '';
     const isLocked = req.query.is_locked !== undefined ? req.query.is_locked === 'true' : null;
     const page = Number(req.query.page) || 1;
@@ -477,6 +604,20 @@ router.post('/nguoi-dung', async (req: Request, res: Response) => {
     if (is_admin && !currentUser.isAdmin) {
       res.status(403).json({ success: false, message: 'Không có quyền tạo tài khoản quản trị hệ thống' });
       return;
+    }
+
+    // Multi-tenant scope: validate unit_id moi phai khop scope (subtree user.unit)
+    const scope = await getUserUnitScope(req);
+    if (scope !== null) {
+      if (Number(unit_id) !== scope) {
+        res.status(403).json({ success: false, message: 'Không có quyền tạo người dùng ngoài phạm vi quản lý' });
+        return;
+      }
+      // Department phai trong subtree cua scope
+      if (department_id && !(await isInSubtree(Number(department_id), scope))) {
+        res.status(403).json({ success: false, message: 'Phòng ban nằm ngoài phạm vi quản lý' });
+        return;
+      }
     }
 
     // Password policy (only on create, when password is provided)
@@ -580,6 +721,19 @@ router.put('/nguoi-dung/:id', async (req: Request, res: Response) => {
       address, id_card, id_card_date, id_card_place,
       is_admin, is_represent_unit, is_represent_department,
     } = req.body;
+
+    // Multi-tenant scope: KHONG cho doi unit_id/department_id ra ngoai scope
+    const putScope = await getUserUnitScope(req);
+    if (putScope !== null) {
+      if (Number(unit_id) !== putScope) {
+        res.status(403).json({ success: false, message: 'Không thể chuyển người dùng ra ngoài phạm vi quản lý' });
+        return;
+      }
+      if (department_id && !(await isInSubtree(Number(department_id), putScope))) {
+        res.status(403).json({ success: false, message: 'Phòng ban nằm ngoài phạm vi quản lý' });
+        return;
+      }
+    }
 
     // Chan non-admin nang quyen 1 user thanh is_admin=true (escalation)
     if (is_admin && !currentUser.isAdmin) {

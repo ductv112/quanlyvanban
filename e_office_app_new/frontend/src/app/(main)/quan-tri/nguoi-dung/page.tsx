@@ -156,8 +156,19 @@ export default function StaffPage() {
 
   const fetchDeptsByUnit = useCallback(async (unitId: number) => {
     try {
-      const { data: res } = await api.get('/quan-tri/don-vi', { params: { parent_id: unitId } });
-      setDepartments(res.data || []);
+      // Fetch children cua unit + tu them unit chinh vao dau dropdown (cho phep tao user
+      // truc tiep trong don vi cha, khong bat buoc qua phong ban con). Vd: tao adminso
+      // trong UBND tinh truc tiep, khong can tao 1 "So" gia.
+      const [childrenRes, unitRes] = await Promise.all([
+        api.get('/quan-tri/don-vi', { params: { parent_id: unitId } }),
+        api.get(`/quan-tri/don-vi/${unitId}`),
+      ]);
+      const children: DeptOption[] = childrenRes.data?.data || [];
+      const parentUnit = unitRes.data?.data;
+      const merged: DeptOption[] = parentUnit
+        ? [{ id: parentUnit.id, name: parentUnit.name }, ...children.filter((c) => c.id !== parentUnit.id)]
+        : children;
+      setDepartments(merged);
     } catch { /* ignore */ }
   }, []);
 

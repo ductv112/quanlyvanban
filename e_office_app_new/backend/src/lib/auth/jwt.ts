@@ -5,6 +5,7 @@ const secret = new TextEncoder().encode(process.env.JWT_SECRET || 'fallback-secr
 export interface TokenPayload extends JWTPayload {
   staffId: number;
   departmentId: number;
+  unitId: number;
   username: string;
   roles: string[];
   isAdmin: boolean;

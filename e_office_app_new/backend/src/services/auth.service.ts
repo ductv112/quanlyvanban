@@ -69,6 +69,7 @@ export const authService = {
     const accessToken = await signAccessToken({
       staffId: staff.staff_id,
       departmentId: staff.department_id,
+      unitId: staff.unit_id,
       username: staff.username,
       roles,
       isAdmin: staff.is_admin,
@@ -134,6 +135,7 @@ export const authService = {
     const accessToken = await signAccessToken({
       staffId: staff.staff_id,
       departmentId: staff.department_id,
+      unitId: staff.unit_id,
       username: staff.username,
       roles,
       isAdmin: staff.is_admin,
