@@ -81,6 +81,7 @@ const ADMIN_PATH_RIGHT_MAP: { prefix: string; rightId: number }[] = [
   { prefix: '/chuc-vu', rightId: 17 },        // Chức vụ
   { prefix: '/nguoi-dung', rightId: 15 },     // Người dùng
   { prefix: '/nhom-quyen', rightId: 16 },     // Nhóm quyền
+  { prefix: '/lookup', rightId: 15 },         // Lookup endpoints (dropdown role/position khi tao user — gan voi right Nguoi dung de Admin So co right 15 goi duoc, KHONG can right Phan quyen/Chuc vu)
   { prefix: '/chuc-nang', rightId: 13 },      // Quản trị (root)
   // admin-catalog.ts — tất cả thuộc nhóm "Danh mục" (right 18)
   { prefix: '/loai-van-ban', rightId: 18 },
