@@ -379,6 +379,24 @@ router.delete('/chuc-vu/:id', async (req: Request, res: Response) => {
 // ============================================================
 
 // GET /nguoi-dung
+// Helper: chan non-admin sua/xoa user co is_admin=true.
+// Tra ve true neu BLOCK (caller phai return ngay), false neu OK tiep tuc.
+// Logic: chi cho phep neu (current_user.isAdmin) OR (target.is_admin=false).
+async function blockIfModifyingAdmin(req: Request, res: Response, targetId: number): Promise<boolean> {
+  const currentUser = (req as AuthRequest).user;
+  if (currentUser.isAdmin) return false; // admin co quyen sua/xoa moi user
+  const target = await staffRepository.getById(targetId);
+  if (!target) {
+    res.status(404).json({ success: false, message: 'Không tìm thấy người dùng' });
+    return true;
+  }
+  if (target.is_admin) {
+    res.status(403).json({ success: false, message: 'Không có quyền thao tác với tài khoản quản trị hệ thống' });
+    return true;
+  }
+  return false;
+}
+
 router.get('/nguoi-dung', async (req: Request, res: Response) => {
   try {
     let unitId = req.query.unit_id ? Number(req.query.unit_id) : null;
@@ -409,10 +427,14 @@ router.get('/nguoi-dung', async (req: Request, res: Response) => {
     const pageSize = Number(req.query.pageSize) || 20;
 
     const rows = await staffRepository.getList(unitId, departmentId, keyword, isLocked, page, pageSize);
-    const total = rows.length > 0 ? Number(rows[0].total_count) : 0;
+    // An tai khoan is_admin=true khoi danh sach cho non-admin (vd Admin So) — bao ve khoi
+    // viec xoa/sua nham admin. Admin tu thay duoc TAT CA user (KHONG filter).
+    const currentUser = (req as AuthRequest).user;
+    const filteredRows = currentUser.isAdmin ? rows : rows.filter((r) => !r.is_admin);
+    const total = filteredRows.length > 0 ? Number(filteredRows[0].total_count) : 0;
     const totalPages = Math.ceil(total / pageSize);
 
-    res.json({ success: true, data: rows, total, page, pageSize, totalPages });
+    res.json({ success: true, data: filteredRows, total, page, pageSize, totalPages });
   } catch (error) {
     handleDbError(error, res);
   }
@@ -427,6 +449,12 @@ router.get('/nguoi-dung/:id', async (req: Request, res: Response) => {
       res.status(404).json({ success: false, message: 'Không tìm thấy người dùng' });
       return;
     }
+    // Chan non-admin xem chi tiet tai khoan admin (defense in depth)
+    const currentUser = (req as AuthRequest).user;
+    if (data.is_admin && !currentUser.isAdmin) {
+      res.status(403).json({ success: false, message: 'Không có quyền xem tài khoản quản trị hệ thống' });
+      return;
+    }
     res.json({ success: true, data });
   } catch (error) {
     handleDbError(error, res);
@@ -436,13 +464,20 @@ router.get('/nguoi-dung/:id', async (req: Request, res: Response) => {
 // POST /nguoi-dung
 router.post('/nguoi-dung', async (req: Request, res: Response) => {
   try {
-    const { staffId } = (req as AuthRequest).user;
+    const currentUser = (req as AuthRequest).user;
+    const { staffId } = currentUser;
     const {
       department_id, unit_id, position_id, username, password,
       first_name, last_name, gender, birth_date, email, phone, mobile,
       address, id_card, id_card_date, id_card_place,
       is_admin, is_represent_unit, is_represent_department,
     } = req.body;
+
+    // Chan non-admin tao tai khoan voi flag is_admin=true
+    if (is_admin && !currentUser.isAdmin) {
+      res.status(403).json({ success: false, message: 'Không có quyền tạo tài khoản quản trị hệ thống' });
+      return;
+    }
 
     // Password policy (only on create, when password is provided)
     if (password) {
@@ -532,14 +567,25 @@ router.post('/nguoi-dung', async (req: Request, res: Response) => {
 // PUT /nguoi-dung/:id
 router.put('/nguoi-dung/:id', async (req: Request, res: Response) => {
   try {
-    const { staffId } = (req as AuthRequest).user;
+    const currentUser = (req as AuthRequest).user;
+    const { staffId } = currentUser;
     const id = Number(req.params.id);
+
+    // Chan non-admin sua tai khoan is_admin=true
+    if (await blockIfModifyingAdmin(req, res, id)) return;
+
     const {
       department_id, unit_id, position_id,
       first_name, last_name, gender, birth_date, email, phone, mobile,
       address, id_card, id_card_date, id_card_place,
       is_admin, is_represent_unit, is_represent_department,
     } = req.body;
+
+    // Chan non-admin nang quyen 1 user thanh is_admin=true (escalation)
+    if (is_admin && !currentUser.isAdmin) {
+      res.status(403).json({ success: false, message: 'Không có quyền cấp quyền quản trị hệ thống' });
+      return;
+    }
 
     // Required fields
     if (!last_name?.trim() || !first_name?.trim()) {
@@ -609,6 +655,9 @@ router.put('/nguoi-dung/:id', async (req: Request, res: Response) => {
 router.delete('/nguoi-dung/:id', async (req: Request, res: Response) => {
   try {
     const id = Number(req.params.id);
+    // Chan non-admin xoa tai khoan is_admin=true
+    if (await blockIfModifyingAdmin(req, res, id)) return;
+
     const deleted = await staffRepository.delete(id);
     if (!deleted) {
       res.status(404).json({ success: false, message: 'Không tìm thấy người dùng' });
@@ -624,6 +673,9 @@ router.delete('/nguoi-dung/:id', async (req: Request, res: Response) => {
 router.patch('/nguoi-dung/:id/lock', async (req: Request, res: Response) => {
   try {
     const id = Number(req.params.id);
+    // Chan non-admin khoa/mo khoa tai khoan is_admin=true
+    if (await blockIfModifyingAdmin(req, res, id)) return;
+
     const toggled = await staffRepository.toggleLock(id);
     if (!toggled) {
       res.status(404).json({ success: false, message: 'Không tìm thấy người dùng' });
@@ -639,6 +691,8 @@ router.patch('/nguoi-dung/:id/lock', async (req: Request, res: Response) => {
 router.patch('/nguoi-dung/:id/reset-password', async (req: Request, res: Response) => {
   try {
     const id = Number(req.params.id);
+    // Chan non-admin reset password tai khoan is_admin=true
+    if (await blockIfModifyingAdmin(req, res, id)) return;
 
     const passwordHash = hashPassword('Admin@123');
     const reset = await staffRepository.resetPassword(id, passwordHash);
@@ -713,9 +767,42 @@ router.get('/nguoi-dung/:id/nhom-quyen', async (req: Request, res: Response) => 
 router.put('/nguoi-dung/:id/nhom-quyen', async (req: Request, res: Response) => {
   try {
     const staffId = Number(req.params.id);
+    // Chan non-admin thay doi quyen tai khoan is_admin=true
+    if (await blockIfModifyingAdmin(req, res, staffId)) return;
+
     const { roleIds } = req.body;
     await roleRepository.assignStaffRoles(staffId, roleIds ?? []);
     res.json({ success: true, data: { assigned: true } });
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
+
+// ============================================================
+// LOOKUP endpoints (cho dropdown trong form tao/sua user)
+// ----------------------------------------------------------
+// Tach khoi /nhom-quyen + /chuc-vu (require right "Phan quyen" / "Chuc vu") ->
+// chi can authenticated + co right "Nguoi dung" goi 2 dropdown nay.
+// Admin So co right "Nguoi dung" nhung KHONG can right "Phan quyen"/"Chuc vu"
+// (de menu 2 muc do an khoi UI) van chon duoc role + position khi tao user.
+// ============================================================
+
+// GET /lookup/roles
+router.get('/lookup/roles', async (req: Request, res: Response) => {
+  try {
+    const unitId = req.query.unit_id ? Number(req.query.unit_id) : null;
+    const all = await roleRepository.getList(unitId, '');
+    res.json({ success: true, data: all });
+  } catch (error) {
+    handleDbError(error, res);
+  }
+});
+
+// GET /lookup/positions — pageSize lon de lay tat ca (it record ~10-20)
+router.get('/lookup/positions', async (_req: Request, res: Response) => {
+  try {
+    const data = await positionRepository.getList('', 1, 500);
+    res.json({ success: true, data });
   } catch (error) {
     handleDbError(error, res);
   }

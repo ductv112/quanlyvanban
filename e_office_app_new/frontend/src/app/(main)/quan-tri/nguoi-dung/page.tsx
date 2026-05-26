@@ -17,6 +17,7 @@ import { api } from '@/lib/api';
 import dayjs from 'dayjs';
 import type { TreeNode } from '@/types/tree';
 import { filterTree, flattenTreeForSelect } from '@/lib/tree-utils';
+import { useAuthStore } from '@/stores/auth.store';
 
 interface Staff {
   id: number;
@@ -57,6 +58,9 @@ interface DeptOption {
 
 export default function StaffPage() {
   const { message, modal } = App.useApp();
+  // Defense in depth: an Dropdown actions cho row is_admin neu current user khong la admin
+  // (backend cung filter tu list response, nhung neu ai do call API truc tiep van bi 403)
+  const currentUser = useAuthStore((s) => s.user);
   const [loading, setLoading] = useState(false);
   const [treeData, setTreeData] = useState<TreeNode[]>([]);
   const [treeLoading, setTreeLoading] = useState(false);
@@ -143,7 +147,9 @@ export default function StaffPage() {
 
   const fetchPositions = useCallback(async () => {
     try {
-      const { data: res } = await api.get('/quan-tri/chuc-vu', { params: { pageSize: 100 } });
+      // Dung lookup endpoint (chi can right Nguoi dung) thay vi /chuc-vu (require right Chuc vu).
+      // Cho phep Admin So tao user ma KHONG can quyen quan ly Chuc vu o danh muc.
+      const { data: res } = await api.get('/quan-tri/lookup/positions');
       setPositions(res.data || []);
     } catch { /* ignore */ }
   }, []);
@@ -161,8 +167,9 @@ export default function StaffPage() {
     setRoleDrawerOpen(true);
     setRoleLoading(true);
     try {
+      // Dung lookup endpoint (chi can right Nguoi dung) thay vi /nhom-quyen (require right Phan quyen)
       const [rolesRes, staffRolesRes] = await Promise.all([
-        api.get('/quan-tri/nhom-quyen'),
+        api.get('/quan-tri/lookup/roles'),
         api.get(`/quan-tri/nguoi-dung/${record.id}/nhom-quyen`),
       ]);
       setAllRoles(rolesRes.data?.data || []);
@@ -454,7 +461,13 @@ export default function StaffPage() {
       width: 50,
       align: 'center',
       fixed: 'right',
-      render: (_, record) => (
+      render: (_, record) => {
+        // An toan bo actions cho row is_admin neu current user khong phai admin.
+        // Admin van thay full actions cho moi user (ke ca admin khac neu co).
+        if (record.is_admin && !currentUser?.isAdmin) {
+          return null;
+        }
+        return (
         <Dropdown
           trigger={['click']}
           menu={{
@@ -518,7 +531,8 @@ export default function StaffPage() {
             style={{ color: '#64748b' }}
           />
         </Dropdown>
-      ),
+        );
+      },
     },
   ];
 
