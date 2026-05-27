@@ -39,15 +39,20 @@ export interface LgspSendResult {
 }
 
 interface SendEdocResponse {
-  success: boolean;
-  message: string;
-  docId?: string;
+  /** Phase 37.7: real LGSP response KHONG co 'success' field o root — chi co 'code' + 'data.status' */
+  code?: number;
+  message?: string;
   data?: {
     docId?: string | null;
     status?: string;
-    errorCode?: string;
-    errorDesc?: string;
+    errorCode?: string | null;
+    errorDesc?: string | null;
+    filePath?: string;
   };
+  /** Old shape compat — neu LGSP doi schema sau */
+  success?: boolean;
+  docId?: string;
+  errorDetail?: Array<{ exception?: string }>;
 }
 
 interface LgspCredentialsRow {
@@ -207,22 +212,35 @@ export async function sendDocument(
         );
       }
 
-      const docId = json.docId || json.data?.docId || '';
-      const errorCode = json.data?.errorCode;
+      const docId = json.data?.docId || json.docId || '';
+      const errorCode = json.data?.errorCode ?? undefined;
       const rawMessage = json.message || json.data?.errorDesc || 'unknown';
 
-      if (!json.success) {
-        // Phase 37.5: log raw response de debug XML format reject (errorCode=undefined kem rawMessage XmlSerializer)
+      // Phase 37.7: parse LGSP response shape thuc te.
+      // Success khi: HTTP 200 + code 200 + data.status="OK" + KHONG co errorDetail.
+      // Field 'success' o root KHONG ton tai trong response thuc te — chi co 'code' + 'data.status'.
+      const dataStatus = (json.data?.status || '').toUpperCase();
+      const hasErrorDetail = Array.isArray(json.errorDetail) && json.errorDetail.length > 0;
+      const isSuccess =
+        res.status === 200 &&
+        (json.code === 200 || json.code === 0) &&
+        (dataStatus === 'OK' || dataStatus === 'SUCCESS') &&
+        !hasErrorDetail;
+
+      if (!isSuccess) {
+        // Phase 37.5: log raw response de debug XML format reject + classification fail
         logger.warn(
           {
             docCode,
             destOrgCode,
             httpStatus: res.status,
+            jsonCode: json.code,
+            dataStatus: json.data?.status,
             errorCode: errorCode || 'undefined',
             rawMessage,
             rawBody: text.slice(0, 500),
           },
-          'LGSP /v1/sendEdoc response success=false',
+          'LGSP /v1/sendEdoc response classified as FAIL',
         );
         return {
           success: false,
@@ -233,8 +251,8 @@ export async function sendDocument(
       }
 
       logger.info(
-        { docCode, destOrgCode, lgspDocId: docId, bytes: edxmlBuffer.length },
-        'LGSP /v1/sendEdoc success',
+        { docCode, destOrgCode, lgspDocId: docId, bytes: edxmlBuffer.length, dataStatus },
+        'LGSP /v1/sendEdoc SUCCESS',
       );
       return {
         success: true,

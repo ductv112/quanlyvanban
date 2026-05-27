@@ -38,21 +38,29 @@ interface LoginResponse {
 }
 
 /**
- * Phase 34: response shape 2 variants (Postman 03.sendEdoc + sandbox real test):
- *   Success: { success: true, message: 'OK', docId: '<uuid>' }
- *   Error:   { success: false, message: 'Loi', data: { docId: null, status: 'error', errorCode, errorDesc } }
- * All fields trong `data` optional vi server co the omit khi success.
+ * Phase 37.7: real LGSP response shape (test prod 2026-05-27):
+ *   Success: { code: 200, message: "Success", data: { status: "OK", docId: "<uuid>", errorCode: null, errorDesc: null, filePath: "/app/..." } }
+ *   Error (XML/business): { code: 500, message: "...", errorDetail: [{exception:"..."}], data: ... }
+ *
+ * Field 'success' o root KHONG ton tai trong response thuc te. Worker check:
+ *   isSuccess = HTTP 200 && json.code===200 && data.status==="OK" && KHONG co errorDetail.
+ *
+ * Old shape (success/message at root) ket compat phong khi LGSP doi schema.
  */
 interface SendEdocResponse {
-  success: boolean;
-  message: string;
-  docId?: string;
+  code?: number;
+  message?: string;
   data?: {
     docId?: string | null;
     status?: string;
-    errorCode?: string;
-    errorDesc?: string;
+    errorCode?: string | null;
+    errorDesc?: string | null;
+    filePath?: string;
   };
+  /** Old shape compat */
+  success?: boolean;
+  docId?: string;
+  errorDetail?: Array<{ exception?: string }>;
 }
 
 interface ReceivedEdocItem {
@@ -315,14 +323,21 @@ export class LGSPRealService implements ILgspService {
         );
       }
 
-      // Parse 2 shape variants (Postman docs)
-      const docId = json.docId || json.data?.docId || '';
-      const errorCode = json.data?.errorCode;
+      // Phase 37.7: real response shape parse (KHONG dung field 'success' o root)
+      const docId = json.data?.docId || json.docId || '';
+      const errorCode = json.data?.errorCode ?? undefined;
       const rawMessage = json.message || json.data?.errorDesc || 'unknown';
 
-      if (!json.success) {
+      const dataStatus = (json.data?.status || '').toUpperCase();
+      const hasErrorDetail = Array.isArray(json.errorDetail) && json.errorDetail.length > 0;
+      const isSuccess =
+        res.status === 200 &&
+        (json.code === 200 || json.code === 0) &&
+        (dataStatus === 'OK' || dataStatus === 'SUCCESS') &&
+        !hasErrorDetail;
+
+      if (!isSuccess) {
         // No-throw - return result de worker biet update tracking status='error'
-        // (no-retry per D-11 vi 4xx LGSP error la business error, retry vo nghia)
         return {
           success: false,
           lgsp_doc_id: docId || '',
