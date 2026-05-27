@@ -212,6 +212,18 @@ export async function sendDocument(
       const rawMessage = json.message || json.data?.errorDesc || 'unknown';
 
       if (!json.success) {
+        // Phase 37.5: log raw response de debug XML format reject (errorCode=undefined kem rawMessage XmlSerializer)
+        logger.warn(
+          {
+            docCode,
+            destOrgCode,
+            httpStatus: res.status,
+            errorCode: errorCode || 'undefined',
+            rawMessage,
+            rawBody: text.slice(0, 500),
+          },
+          'LGSP /v1/sendEdoc response success=false',
+        );
         return {
           success: false,
           lgsp_doc_id: docId || '',

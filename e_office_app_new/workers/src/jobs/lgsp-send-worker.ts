@@ -402,27 +402,32 @@ async function handleSendJob(data: LgspSendJobData): Promise<void> {
       return;
     }
 
-    // 7. result.success=false — LGSP error (Vietnamese mapped in result.message)
-    if (isLgspNonRetryableError(result.errorCode)) {
-      // 4xx LGSP — UPDATE tracking + return (KHONG throw -> BullMQ ko retry per D-11)
-      await updateTrackingStatus(
-        tracking_id,
-        'error',
-        result.lgsp_doc_id || null,
-        result.message,
-      );
-      logger.warn(
-        { ...logCtx, errorCode: result.errorCode, message: result.message },
-        'LGSP send FAIL (4xx — no retry per D-11)',
-      );
-      return;
-    }
-
-    // Unknown errorCode -> throw to retry (defensive — server tra ve shape la)
-    throw new LgspSendError(
-      `LGSP returned success=false unknown errorCode=${result.errorCode}: ${result.message}`,
-      result.errorCode,
+    // 7. result.success=false — LGSP server da reject deterministic.
+    //    Dump 200 byte dau cua edXML buffer de debug (UTF-8 + base64 fallback).
+    //    success=false LUON = no-retry kể cả errorCode unknown — server reject co chu y,
+    //    retry chi ton 16 phut backoff vo nghia (Phase 37.5 fix sau khi gap XML format reject
+    //    voi errorCode=undefined hop le tu LGSP Lang Son).
+    const xmlHead = edxml.buffer.subarray(0, 200).toString('utf8');
+    const xmlHeadB64 = edxml.buffer.subarray(0, 200).toString('base64');
+    logger.warn(
+      {
+        ...logCtx,
+        errorCode: result.errorCode || 'undefined',
+        message: result.message,
+        lgsp_doc_id: result.lgsp_doc_id,
+        edxml_bytes: edxml.buffer.length,
+        edxml_head_utf8: xmlHead,
+        edxml_head_base64: xmlHeadB64,
+      },
+      'LGSP send FAIL (success=false — no retry, deterministic reject)',
     );
+    await updateTrackingStatus(
+      tracking_id,
+      'error',
+      result.lgsp_doc_id || null,
+      result.message,
+    );
+    return;
   } catch (err: unknown) {
     // 8. Error path — classify retry vs no-retry
     if (
