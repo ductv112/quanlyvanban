@@ -155,22 +155,41 @@ export default function StaffPage() {
   }, []);
 
   const fetchDeptsByUnit = useCallback(async (unitId: number) => {
-    try {
-      // Fetch children cua unit + tu them unit chinh vao dau dropdown (cho phep tao user
-      // truc tiep trong don vi cha, khong bat buoc qua phong ban con). Vd: tao adminso
-      // trong UBND tinh truc tiep, khong can tao 1 "So" gia.
-      const [childrenRes, unitRes] = await Promise.all([
-        api.get('/quan-tri/don-vi', { params: { parent_id: unitId } }),
-        api.get(`/quan-tri/don-vi/${unitId}`),
-      ]);
-      const children: DeptOption[] = childrenRes.data?.data || [];
-      const parentUnit = unitRes.data?.data;
-      const merged: DeptOption[] = parentUnit
-        ? [{ id: parentUnit.id, name: parentUnit.name }, ...children.filter((c) => c.id !== parentUnit.id)]
-        : children;
-      setDepartments(merged);
-    } catch { /* ignore */ }
-  }, []);
+    // Fetch children cua unit + tu them unit chinh vao dau dropdown.
+    // Dung Promise.allSettled de neu 1 trong 2 fetch fail thi van setDepartments
+    // voi data fetch duoc — KHONG de dropdown trong rong gay confusion.
+    const [childrenRes, unitRes] = await Promise.allSettled([
+      api.get('/quan-tri/don-vi', { params: { parent_id: unitId } }),
+      api.get(`/quan-tri/don-vi/${unitId}`),
+    ]);
+    const children: DeptOption[] =
+      childrenRes.status === 'fulfilled' ? childrenRes.value.data?.data || [] : [];
+    const parentUnit =
+      unitRes.status === 'fulfilled' ? unitRes.value.data?.data : null;
+    // Fallback: neu unitRes fail, tim parent trong treeData state
+    const parentFromTree = parentUnit
+      ? null
+      : findNodeInTree(treeData, unitId);
+    const parent = parentUnit ?? parentFromTree;
+    const merged: DeptOption[] = parent
+      ? [{ id: parent.id, name: parent.name }, ...children.filter((c) => c.id !== parent.id)]
+      : children;
+    setDepartments(merged);
+  }, [treeData]);
+
+  // Helper: tim node trong cay treeData (recursive). Dung lam fallback khi
+  // /don-vi/:id fail (vd permission).
+  function findNodeInTree(nodes: TreeNode[], targetId: number): { id: number; name: string } | null {
+    for (const n of nodes) {
+      const nodeId = (n.key ?? n.id) as number;
+      if (nodeId === targetId) return { id: nodeId, name: (n.title ?? n.name ?? '') as string };
+      if (n.children) {
+        const found = findNodeInTree(n.children, targetId);
+        if (found) return found;
+      }
+    }
+    return null;
+  }
 
   // Phân quyền handlers
   const handleOpenRoles = async (record: Staff) => {
