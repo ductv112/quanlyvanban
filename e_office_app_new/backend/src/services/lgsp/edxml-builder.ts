@@ -1,15 +1,17 @@
 // ============================================================
-// edXML Builder (Phase 34 - CONTEXT D-05, D-06, D-08, D-09)
-// Source spec: docs/Truc EDOC Lang Son/HuongDanKetNoiLienThongVB_v2.2.pdf section 3
-// Library: xmlbuilder2 (type-safe, escape XML auto)
+// edXML Builder (Phase 37.5 — rewrite theo spec QD 28/2018/QD-TTg v2.2)
 //
-// Output: Buffer chua edXML envelope theo chuan QD 28/2018/QD-TTg
-//         + DocumentId UUID generated (luu vao lgsp_tracking.lgsp_doc_id PLACEHOLDER
-//           se overwrite bang docId LGSP tra ve sau send thanh cong)
+// Spec: docs/Trục EDOC Lạng Sơn - QLVB Doanh nghiệp/HuongDanKetNoiLienThongVB_v2.2.pdf
+//   - Root: <edXMLEnvelope> (e thuong, KHONG E hoa)
+//   - Children co prefix edXML: voi namespace declaration xmlns:edXML="http://www.go.vn/eDoc"
+//   - Date format: PromulgationDate "YYYY/MM/DD", Timestamp "yyyy/MM/dd HH:mm:ss"
 //
-// Caller: Worker (Plan 34-02) load data tu DB + MinIO, build BuildEdxmlInput,
-//         goi buildEdxml() de co Buffer + docId + destOrgCode + docCode,
-//         truyen vao LGSPRealService.sendDocument(buffer, destOrgCode, docCode).
+// Bug truoc Phase 37.5: root "EdXMLEnvelope" (E hoa) + KHONG co prefix edXML: tren element con
+//   -> LGSP server .NET XmlSerializer reject "There is an error in XML document (1, 40)"
+//   (line 1 col 40 = E cua EdXMLEnvelope).
+//
+// MIRROR cho workers/src/lgsp/edxml-builder.ts (APPROACH B duplication).
+// KEEP IN SYNC khi sua — checksum verify Plan 34-05.
 // ============================================================
 
 import { create } from 'xmlbuilder2';
@@ -18,25 +20,13 @@ import pino from 'pino';
 
 const logger = pino({ name: 'edxml-builder' });
 
-/**
- * Input data cho builder. Caller (Plan 34-02 worker) build object nay tu:
- *   - lgsp_agency_config (sender systemId/lgsp_org_code)
- *   - departments (sender name)
- *   - inter_organizations (recipient code + name)
- *   - outgoing_docs (notation, document_code, abstract, signer, ...)
- *   - doc_types (docTypeName via lookup)
- *   - attachment_outgoing_docs + MinIO buffer (base64)
- */
+const EDXML_NS = 'http://www.go.vn/eDoc';
+
 export interface BuildEdxmlInput {
-  // Sender (DN gui) - tu lgsp_agency_config + departments
-  senderOrgCode: string;        // departments.lgsp_org_code (VD 'H37.DN.001')
-  senderOrgName: string;        // departments.name
-
-  // Recipient (don vi ngoai) - tu inter_organizations
-  destOrgCode: string;          // inter_organizations.code (VD 'H37.DN.002')
-  destOrgName: string;          // inter_organizations.name
-
-  // Document fields (outgoing_docs - schema v3.0)
+  senderOrgCode: string;
+  senderOrgName: string;
+  destOrgCode: string;
+  destOrgName: string;
   notation: string | null;
   documentCode: string | null;
   abstract: string | null;
@@ -47,28 +37,20 @@ export interface BuildEdxmlInput {
   docTypeName: string | null;
   numberPaper: number | null;
   appendix: string | null;
-
-  // Attachments (already loaded from MinIO + base64 encoded by caller)
   attachments: Array<{
     fileName: string;
-    fileType: string;        // VD 'application/pdf'
+    fileType: string;
     contentBase64: string;
   }>;
 }
 
 export interface BuildEdxmlResult {
-  buffer: Buffer;           // UTF-8 edXML bytes
-  docId: string;            // UUID generated (DocumentId in MessageHeader)
-  destOrgCode: string;      // for log + downstream
-  docCode: string;          // notation || documentCode || 'EDOC-<docId>'
+  buffer: Buffer;
+  docId: string;
+  destOrgCode: string;
+  docCode: string;
 }
 
-/**
- * Fallback string cho field null/empty (CONTEXT D-09).
- *
- * Log warning de dev biet - KHONG reject voi UX nhe nhang
- * (KH chua quen field bat buoc spec QD 28, va nhieu VB cu khong day du).
- */
 function strOrNa(
   value: string | null | undefined,
   fieldName: string,
@@ -82,70 +64,85 @@ function strOrNa(
   return 'N/A';
 }
 
-function numOrZero(
+function numOrDefault(
   value: number | null | undefined,
+  fallback: number,
   fieldName: string,
   ctx: { docCode: string },
 ): number {
   if (typeof value === 'number' && !isNaN(value)) return value;
   logger.warn(
-    { field: fieldName, docCode: ctx.docCode },
-    'edXML so field rong, fallback 0',
+    { field: fieldName, docCode: ctx.docCode, fallback },
+    'edXML so field rong',
   );
-  return 0;
+  return fallback;
 }
 
-function toIsoDateString(
+/** Format YYYY/MM/DD theo spec PromulgationDate. Fallback NOW neu null. */
+function toPromulgationDate(
   value: Date | string | null | undefined,
   fieldName: string,
   ctx: { docCode: string },
 ): string {
+  let d: Date;
   if (!value) {
     logger.warn(
       { field: fieldName, docCode: ctx.docCode },
       'edXML date field rong, fallback NOW',
     );
-    return new Date().toISOString();
+    d = new Date();
+  } else if (value instanceof Date) {
+    d = value;
+  } else {
+    d = new Date(value);
+    if (isNaN(d.getTime())) {
+      logger.warn(
+        { field: fieldName, docCode: ctx.docCode, value },
+        'edXML date parse fail, fallback NOW',
+      );
+      d = new Date();
+    }
   }
-  if (value instanceof Date) return value.toISOString();
-  // String (tu pg driver TIMESTAMP -> ISO string)
-  return value;
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}/${m}/${day}`;
+}
+
+/** Format yyyy/MM/dd HH:mm:ss theo spec Timestamp (TraceHeader). */
+function toTimestamp(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mm = String(d.getMinutes()).padStart(2, '0');
+  const ss = String(d.getSeconds()).padStart(2, '0');
+  return `${y}/${m}/${day} ${hh}:${mm}:${ss}`;
 }
 
 /**
- * Build edXML envelope dung spec QD 28/2018/QD-TTg.
+ * Build edXML envelope theo spec QD 28/2018/QD-TTg v2.2.
  *
- * Structure (theo HDSD v2.2 section 3):
- *   <EdXMLEnvelope xmlns="http://www.go.vn/eDoc">
- *     <MessageHeader>
- *       <From><OrganId/><OrganName/></From>
- *       <To><OrganId/><OrganName/></To>
- *       <Code><CodeNumber/><CodeNotation/></Code>
- *       <PromulgationInfo><Promulgator/><PromulgationDate/></PromulgationInfo>
- *       <DocumentType>{docTypeName}</DocumentType>
- *       <Subject>{abstract}</Subject>
- *       <SignerInfo><Signer/><Position/><Competence/></SignerInfo>
- *       <OtherInfo><PageAmount/><Appendix/></OtherInfo>
- *       <DocumentId>{uuid}</DocumentId>
- *       <TraceHeaderList>
- *         <TraceHeader>
- *           <Time/>
- *           <Path><From/><To/></Path>
- *         </TraceHeader>
- *       </TraceHeaderList>
- *     </MessageHeader>
- *     <Manifest>
- *       <Attachment>
- *         <Content>{base64}</Content>
- *         <FileName>{name}</FileName>
- *         <FileType>{mime}</FileType>
- *       </Attachment>
- *     </Manifest>
- *   </EdXMLEnvelope>
- *
- * @param input All fields needed - caller load tu DB + MinIO truoc khi goi.
- * @returns Result voi buffer (Buffer UTF-8), docId (UUID), destOrgCode (cho log),
- *          docCode (cho multipart filename)
+ * Structure:
+ *   <?xml version="1.0" encoding="UTF-8"?>
+ *   <edXMLEnvelope xmlns:edXML="http://www.go.vn/eDoc">
+ *     <edXML:MessageHeader>
+ *       <edXML:From> <edXML:OrganId/> <edXML:OrganName/> </edXML:From>
+ *       <edXML:To> <edXML:OrganId/> <edXML:OrganName/> </edXML:To>
+ *       <edXML:Code> <edXML:CodeNumber/> <edXML:CodeNotation/> </edXML:Code>
+ *       <edXML:PromulgationInfo> <edXML:PromulgationDate/> </edXML:PromulgationInfo>
+ *       <edXML:DocumentType> <edXML:Type/> <edXML:TypeName/> </edXML:DocumentType>
+ *       <edXML:Subject/>
+ *       <edXML:SignerInfo> <edXML:Competence/> <edXML:Position/> <edXML:FullName/> </edXML:SignerInfo>
+ *       <edXML:OtherInfo> <edXML:Priority/> <edXML:PageAmount/> </edXML:OtherInfo>
+ *       <edXML:SteeringType/>
+ *       <edXML:DocumentId/>
+ *     </edXML:MessageHeader>
+ *     <edXML:TraceHeaderList>
+ *       <edXML:TraceHeader> <edXML:OrganId/> <edXML:Timestamp/> </edXML:TraceHeader>
+ *     </edXML:TraceHeaderList>
+ *     <edXML:Attachment> <edXML:FileName/> <edXML:FileType/> <edXML:Content/> </edXML:Attachment>
+ *   </edXMLEnvelope>
  */
 export function buildEdxml(input: BuildEdxmlInput): BuildEdxmlResult {
   const docId = randomUUID();
@@ -154,88 +151,88 @@ export function buildEdxml(input: BuildEdxmlInput): BuildEdxmlResult {
     input.documentCode?.trim() ||
     `EDOC-${docId}`;
   const ctx = { docCode };
-  const nowIso = new Date().toISOString();
+  const nowTimestamp = toTimestamp(new Date());
 
-  // xmlbuilder2 chain - tao envelope + MessageHeader 9 thanh phan
   const root = create({ version: '1.0', encoding: 'UTF-8' })
-    .ele('EdXMLEnvelope', { xmlns: 'http://www.go.vn/eDoc' });
+    .ele('edXMLEnvelope', { 'xmlns:edXML': EDXML_NS });
 
-  const messageHeader = root.ele('MessageHeader');
+  const messageHeader = root.ele('edXML:MessageHeader');
 
-  // 1. From
+  // 1.1 From
   messageHeader
-    .ele('From')
-      .ele('OrganId').txt(input.senderOrgCode).up()
-      .ele('OrganName').txt(strOrNa(input.senderOrgName, 'senderOrgName', ctx)).up()
+    .ele('edXML:From')
+      .ele('edXML:OrganId').txt(input.senderOrgCode).up()
+      .ele('edXML:OrganName').txt(strOrNa(input.senderOrgName, 'senderOrgName', ctx)).up()
     .up();
 
-  // 2. To
+  // 1.2 To
   messageHeader
-    .ele('To')
-      .ele('OrganId').txt(input.destOrgCode).up()
-      .ele('OrganName').txt(strOrNa(input.destOrgName, 'destOrgName', ctx)).up()
+    .ele('edXML:To')
+      .ele('edXML:OrganId').txt(input.destOrgCode).up()
+      .ele('edXML:OrganName').txt(strOrNa(input.destOrgName, 'destOrgName', ctx)).up()
     .up();
 
-  // 3. Code (Number + Notation)
+  // 1.3 Code
   messageHeader
-    .ele('Code')
-      .ele('CodeNumber').txt(strOrNa(input.notation, 'notation', ctx)).up()
-      .ele('CodeNotation').txt(strOrNa(input.documentCode, 'documentCode', ctx)).up()
+    .ele('edXML:Code')
+      .ele('edXML:CodeNumber').txt(strOrNa(input.notation, 'notation', ctx)).up()
+      .ele('edXML:CodeNotation').txt(strOrNa(input.documentCode, 'documentCode', ctx)).up()
     .up();
 
-  // 4. PromulgationInfo
+  // 1.4 PromulgationInfo (Place optional - bo qua)
   messageHeader
-    .ele('PromulgationInfo')
-      .ele('Promulgator').txt(strOrNa(input.signer, 'signer/promulgator', ctx)).up()
-      .ele('PromulgationDate').txt(toIsoDateString(input.publishDate, 'publishDate', ctx)).up()
+    .ele('edXML:PromulgationInfo')
+      .ele('edXML:PromulgationDate').txt(toPromulgationDate(input.publishDate, 'publishDate', ctx)).up()
     .up();
 
-  // 5. DocumentType
+  // 1.5 DocumentType: Type=2 (van ban hanh chinh, mac dinh) + TypeName
   messageHeader
-    .ele('DocumentType').txt(strOrNa(input.docTypeName, 'docTypeName', ctx)).up();
-
-  // 6. Subject
-  messageHeader
-    .ele('Subject').txt(strOrNa(input.abstract, 'abstract/subject', ctx)).up();
-
-  // 7. SignerInfo
-  messageHeader
-    .ele('SignerInfo')
-      .ele('Signer').txt(strOrNa(input.signer, 'signer', ctx)).up()
-      .ele('Position').txt(strOrNa(input.signerPosition, 'signerPosition', ctx)).up()
-      .ele('Competence').txt('Truc tiep').up()
+    .ele('edXML:DocumentType')
+      .ele('edXML:Type').txt('2').up()
+      .ele('edXML:TypeName').txt(strOrNa(input.docTypeName, 'docTypeName', ctx)).up()
     .up();
 
-  // 8. OtherInfo
+  // 1.6 Subject (trich yeu)
   messageHeader
-    .ele('OtherInfo')
-      .ele('PageAmount').txt(String(numOrZero(input.numberPaper, 'numberPaper', ctx))).up()
-      .ele('Appendix').txt(input.appendix?.trim() || '').up()
+    .ele('edXML:Subject').txt(strOrNa(input.abstract, 'abstract/subject', ctx)).up();
+
+  // 1.8 SignerInfo
+  messageHeader
+    .ele('edXML:SignerInfo')
+      .ele('edXML:Competence').txt('Truc tiep').up()
+      .ele('edXML:Position').txt(strOrNa(input.signerPosition, 'signerPosition', ctx)).up()
+      .ele('edXML:FullName').txt(strOrNa(input.signer, 'signer', ctx)).up()
     .up();
 
-  // 9. DocumentId (UUID generated)
-  messageHeader.ele('DocumentId').txt(docId).up();
-
-  // 10. TraceHeaderList (1 entry initial)
+  // 1.11 OtherInfo: Priority + PageAmount (toi thieu)
   messageHeader
-    .ele('TraceHeaderList')
-      .ele('TraceHeader')
-        .ele('Time').txt(nowIso).up()
-        .ele('Path')
-          .ele('From').txt(input.senderOrgCode).up()
-          .ele('To').txt(input.destOrgCode).up()
-        .up()
+    .ele('edXML:OtherInfo')
+      .ele('edXML:Priority').txt('0').up()
+      .ele('edXML:PageAmount').txt(String(numOrDefault(input.numberPaper, 1, 'numberPaper', ctx))).up()
+    .up();
+
+  // 1.13 SteeringType: 0 = khong phai chi dao (mac dinh)
+  messageHeader.ele('edXML:SteeringType').txt('0').up();
+
+  // 1.14 DocumentId (UUID duy nhat tren toan he thong lien thong)
+  messageHeader.ele('edXML:DocumentId').txt(docId).up();
+
+  // 2. TraceHeaderList > TraceHeader
+  root
+    .ele('edXML:TraceHeaderList')
+      .ele('edXML:TraceHeader')
+        .ele('edXML:OrganId').txt(input.senderOrgCode).up()
+        .ele('edXML:Timestamp').txt(nowTimestamp).up()
       .up()
     .up();
 
-  // Manifest (attachments)
-  const manifest = root.ele('Manifest');
+  // Attachments — moi file 1 phan tu edXML:Attachment chua FileName + FileType + Content base64
   for (const att of input.attachments) {
-    manifest
-      .ele('Attachment')
-        .ele('Content').txt(att.contentBase64).up()
-        .ele('FileName').txt(att.fileName).up()
-        .ele('FileType').txt(att.fileType || 'application/octet-stream').up()
+    root
+      .ele('edXML:Attachment')
+        .ele('edXML:FileName').txt(att.fileName).up()
+        .ele('edXML:FileType').txt(att.fileType || 'application/octet-stream').up()
+        .ele('edXML:Content').txt(att.contentBase64).up()
       .up();
   }
 
@@ -251,7 +248,7 @@ export function buildEdxml(input: BuildEdxmlInput): BuildEdxmlResult {
       attachmentCount: input.attachments.length,
       bytes: buffer.length,
     },
-    'Built edXML envelope',
+    'Built edXML envelope (Phase 37.5 spec v2.2)',
   );
 
   return {
