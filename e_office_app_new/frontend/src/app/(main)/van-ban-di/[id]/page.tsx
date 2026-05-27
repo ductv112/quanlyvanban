@@ -19,6 +19,7 @@ import {
 } from '@ant-design/icons';
 import { api } from '@/lib/api';
 import { downloadAttachment } from '@/lib/download';
+import { normalizeSearch } from '@/lib/text';
 import { AttachmentPreviewModal } from '@/components/AttachmentPreviewModal';
 import { buildPreviewUrl, buildDownloadUrl, isPreviewable } from '@/lib/preview';
 import { useAuthStore } from '@/stores/auth.store';
@@ -211,7 +212,7 @@ export default function OutgoingDocDetailPage() {
   const [hscvSaving, setHscvSaving] = useState(false);
   // Gửi liên thông
   const [lgspModalOpen, setLgspModalOpen] = useState(false);
-  const [lgspOrgs, setLgspOrgs] = useState<{ id: number; org_code: string; org_name: string }[]>([]);
+  const [lgspOrgs, setLgspOrgs] = useState<{ id: number; org_code: string; org_name: string; search: string }[]>([]);
   const [selectedLgspOrgs, setSelectedLgspOrgs] = useState<number[]>([]);
   const [lgspSending, setLgspSending] = useState(false);
   // Ký số trên VB đi: kế thừa từ dự thảo (qua fn_drafting_doc_release copy 5 fields).
@@ -354,7 +355,19 @@ export default function OutgoingDocDetailPage() {
     finally { setHscvSaving(false); }
   };
   // Gửi liên thông
-  const openLgspModal = async () => { try { const { data: res } = await api.get(`/van-ban-den/1/lgsp/don-vi`); setLgspOrgs(res.data || []); setSelectedLgspOrgs([]); setLgspModalOpen(true); } catch { message.error('Lỗi tải đơn vị LGSP'); } };
+  const openLgspModal = async () => {
+    try {
+      // pageSize=10000: load full list (~5000 LGSP của tỉnh) cho client-side search; nếu KH có >10000 đơn vị → cần switch sang server-side search
+      const { data: res } = await api.get(`/van-ban-den/1/lgsp/don-vi`, { params: { pageSize: 10000 } });
+      const orgs = (res.data || []).map((o: { id: number; org_code: string; org_name: string }) => ({
+        ...o,
+        search: normalizeSearch(`${o.org_name} (${o.org_code})`),
+      }));
+      setLgspOrgs(orgs);
+      setSelectedLgspOrgs([]);
+      setLgspModalOpen(true);
+    } catch { message.error('Lỗi tải đơn vị LGSP'); }
+  };
   const handleSendLgsp = async () => {
     if (selectedLgspOrgs.length === 0) { message.warning('Vui lòng chọn đơn vị'); return; }
     setLgspSending(true);
@@ -1128,7 +1141,20 @@ export default function OutgoingDocDetailPage() {
 
       {/* Modal: Gửi liên thông */}
       <Modal title="Gửi liên thông LGSP" open={lgspModalOpen} onCancel={() => setLgspModalOpen(false)} onOk={handleSendLgsp} confirmLoading={lgspSending} okText="Gửi liên thông" cancelText="Hủy" mask={{ closable: false }}>
-        <Select mode="multiple" style={{ width: '100%', marginTop: 8 }} placeholder="Chọn đơn vị nhận..." showSearch filterOption={(input, opt) => (opt?.label ?? '').toLowerCase().includes(input.toLowerCase())} value={selectedLgspOrgs} onChange={setSelectedLgspOrgs} options={lgspOrgs.map(o => ({ value: o.id, label: `${o.org_name} (${o.org_code})` }))} />
+        <Select
+          mode="multiple"
+          style={{ width: '100%', marginTop: 8 }}
+          placeholder="Chọn đơn vị nhận..."
+          showSearch
+          filterOption={(input, opt) => {
+            const needle = normalizeSearch(input);
+            if (!needle) return true;
+            return ((opt as unknown as { search?: string })?.search || '').includes(needle);
+          }}
+          value={selectedLgspOrgs}
+          onChange={setSelectedLgspOrgs}
+          options={lgspOrgs.map(o => ({ value: o.id, label: `${o.org_name} (${o.org_code})`, search: o.search }))}
+        />
       </Modal>
 
       {/* Drawer: Chuyển lưu trữ VB đi (HDSD II.3.9) */}

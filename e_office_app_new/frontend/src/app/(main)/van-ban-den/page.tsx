@@ -15,6 +15,7 @@ import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth.store';
 import { buildTree, flattenTreeForSelect } from '@/lib/tree-utils';
 import { confirmCloseIfDirty } from '@/lib/form-confirm';
+import { normalizeSearch } from '@/lib/text';
 import { LgspSourceBadge, LgspSourceFilter, type DocSourceType } from '@/lib/lgsp-source-badge';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import dayjs from 'dayjs';
@@ -58,6 +59,8 @@ interface IncomingDoc {
 }
 
 interface SelectOption { value: number; label: string }
+// mode="tags" trong Select "Nơi gửi" → value là tên cơ quan (string), không phải id
+interface InterOrgOption { value: string; label: string; search: string }
 
 interface DepartmentNode {
   id: number;
@@ -106,7 +109,7 @@ export default function IncomingDocPage() {
   const [docFields, setDocFields] = useState<SelectOption[]>([]);
   const [departments, setDepartments] = useState<SelectOption[]>([]);
   // Phase 20: cơ quan ngoài LGSP cho field "Nơi gửi" tự nhập VB đến
-  const [interOrgs, setInterOrgs] = useState<SelectOption[]>([]);
+  const [interOrgs, setInterOrgs] = useState<InterOrgOption[]>([]);
   const [filterDeptId, setFilterDeptId] = useState<number | undefined>();
   const [sourceTypeFilter, setSourceTypeFilter] = useState<DocSourceType | null>(null);  // Phase 35-04
   const [deptTreeData, setDeptTreeData] = useState<{ value: number; title: string; children?: any[] }[]>([]);
@@ -154,7 +157,11 @@ export default function IncomingDocPage() {
       // Cây đơn vị — phẳng hóa cho Select "Cơ quan ban hành" (mọi user dùng được)
       const deptTree: DepartmentNode[] = deptRes.data.data || [];
       setDepartments(flattenDepartments(deptTree));
-      setInterOrgs((orgRes.data.data || []).map((o: { id: number | string; name: string; code: string }) => ({ value: o.name, label: `${o.name} (${o.code})` })));
+      // search: pre-compute normalized string 1 lần để filterOption không phải toLowerCase 5000 label mỗi keystroke
+      setInterOrgs((orgRes.data.data || []).map((o: { id: number | string; name: string; code: string }) => {
+        const label = `${o.name} (${o.code})`;
+        return { value: o.name, label, search: normalizeSearch(label) };
+      }));
       // TreeSelect cho admin filter (dùng chung response, không gọi API lần 2)
       if (user?.isAdmin) {
         const tree = buildTree(deptTree.map((d: any) => ({ id: d.id, parent_id: d.parent_id, name: d.name })));
@@ -529,9 +536,20 @@ export default function IncomingDocPage() {
                   showSearch
                   allowClear
                   placeholder="Chọn hoặc gõ tên cơ quan gửi..."
-                  filterOption={(input, opt) => (opt?.label as string)?.toLowerCase().includes(input.toLowerCase())}
+                  filterOption={(input, opt) => {
+                    const needle = normalizeSearch(input);
+                    if (!needle) return true;
+                    return ((opt as unknown as { search?: string })?.search || '').includes(needle);
+                  }}
                   options={[
-                    { label: 'Đơn vị nội bộ (trong tỉnh)', options: departments.map((d) => ({ value: d.label as string, label: d.label as string })) },
+                    {
+                      label: 'Đơn vị nội bộ (trong tỉnh)',
+                      options: departments.map((d) => ({
+                        value: d.label as string,
+                        label: d.label as string,
+                        search: normalizeSearch(d.label as string),
+                      })),
+                    },
                     { label: 'Cơ quan ngoài LGSP', options: interOrgs },
                   ]}
                   // Cho phép gõ tag mới (cơ quan ngoài cả 2 list)

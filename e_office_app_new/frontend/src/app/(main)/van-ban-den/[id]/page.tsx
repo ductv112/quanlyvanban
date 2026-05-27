@@ -18,6 +18,7 @@ import {
 } from '@ant-design/icons';
 import { api } from '@/lib/api';
 import { downloadAttachment } from '@/lib/download';
+import { normalizeSearch } from '@/lib/text';
 import { AttachmentPreviewModal } from '@/components/AttachmentPreviewModal';
 import { buildPreviewUrl, buildDownloadUrl, isPreviewable } from '@/lib/preview';
 import { useAuthStore } from '@/stores/auth.store';
@@ -139,7 +140,7 @@ export default function IncomingDocDetailPage() {
 
   // Gửi liên thông modal
   const [lgspModalOpen, setLgspModalOpen] = useState(false);
-  const [lgspOrgs, setLgspOrgs] = useState<{ id: number; org_code: string; org_name: string }[]>([]);
+  const [lgspOrgs, setLgspOrgs] = useState<{ id: number; org_code: string; org_name: string; search: string }[]>([]);
   const [selectedLgspOrgs, setSelectedLgspOrgs] = useState<number[]>([]);
   const [lgspSending, setLgspSending] = useState(false);
 
@@ -340,8 +341,13 @@ export default function IncomingDocDetailPage() {
   // Gửi liên thông LGSP
   const openLgspModal = async () => {
     try {
-      const { data: res } = await api.get(`/van-ban-den/${docId}/lgsp/don-vi`);
-      setLgspOrgs(res.data || []);
+      // pageSize=10000: load full list (~5000 LGSP của tỉnh) cho client-side search
+      const { data: res } = await api.get(`/van-ban-den/${docId}/lgsp/don-vi`, { params: { pageSize: 10000 } });
+      const orgs = (res.data || []).map((o: { id: number; org_code: string; org_name: string }) => ({
+        ...o,
+        search: normalizeSearch(`${o.org_name} (${o.org_code})`),
+      }));
+      setLgspOrgs(orgs);
       setSelectedLgspOrgs([]);
       setLgspModalOpen(true);
     } catch { message.error('Lỗi tải danh sách đơn vị liên thông'); }
@@ -1112,10 +1118,14 @@ export default function IncomingDocDetailPage() {
           style={{ width: '100%', marginTop: 8 }}
           placeholder="Chọn đơn vị nhận..."
           showSearch
-          filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
+          filterOption={(input, option) => {
+            const needle = normalizeSearch(input);
+            if (!needle) return true;
+            return ((option as unknown as { search?: string })?.search || '').includes(needle);
+          }}
           value={selectedLgspOrgs}
           onChange={setSelectedLgspOrgs}
-          options={lgspOrgs.map(o => ({ value: o.id, label: `${o.org_name} (${o.org_code})` }))}
+          options={lgspOrgs.map(o => ({ value: o.id, label: `${o.org_name} (${o.org_code})`, search: o.search }))}
         />
       </Modal>
 

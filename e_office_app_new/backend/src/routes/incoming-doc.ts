@@ -1302,8 +1302,9 @@ router.post('/:id/them-vao-hscv', async (req: Request, res: Response) => {
 // GET /lgsp/don-vi — DS đơn vị LGSP
 router.get('/:id/lgsp/don-vi', async (req: Request, res: Response) => {
   try {
-    const { search } = req.query;
-    const rows = await incomingDocRepository.getLgspOrganizations(search as string || undefined);
+    const { search, pageSize } = req.query;
+    const size = Math.min(Math.max(Number(pageSize) || 100, 1), 20000);
+    const rows = await incomingDocRepository.getLgspOrganizations(search as string || undefined, size);
     res.json({ success: true, data: rows });
   } catch (error) {
     handleDbError(error, res);

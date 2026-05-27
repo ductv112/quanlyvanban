@@ -15,6 +15,7 @@ import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth.store';
 import { buildTree, flattenTreeForSelect } from '@/lib/tree-utils';
 import { confirmCloseIfDirty } from '@/lib/form-confirm';
+import { normalizeSearch } from '@/lib/text';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import dayjs from 'dayjs';
 
@@ -55,6 +56,7 @@ interface OutgoingDoc {
 }
 
 interface SelectOption { value: number; label: string }
+interface InterOrgOption { value: number; label: string; search: string }
 
 interface DepartmentNode {
   id: number;
@@ -109,7 +111,7 @@ export default function OutgoingDocPage() {
   // v3.2.13: dropdown nguoi ky (lay tu edoc.signers cua don vi)
   const [signerOptions, setSignerOptions] = useState<SelectOption[]>([]);
   // Phase 18 v3.0: cơ quan ngoài LGSP cho recipient picker
-  const [interOrgs, setInterOrgs] = useState<SelectOption[]>([]);
+  const [interOrgs, setInterOrgs] = useState<InterOrgOption[]>([]);
   const [extraColumns, setExtraColumns] = useState<{ column_name: string; label: string; data_type: string; max_length: number | null; is_mandatory: boolean }[]>([]);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<OutgoingDoc | null>(null);
@@ -154,7 +156,11 @@ export default function OutgoingDocPage() {
       const deptTree: DepartmentNode[] = deptRes.data.data || [];
       setDepartments(flattenDepartments(deptTree));
       // Phase 20 fix: Number(o.id) — pg driver trả BIGINT dạng string, setFieldsValue dùng number → cần convert để Select match đúng option
-      setInterOrgs((orgRes.data.data || []).map((o: { id: number | string; name: string; code: string }) => ({ value: Number(o.id), label: `${o.name} (${o.code})` })));
+      // search: pre-compute normalized string 1 lần để filterOption không phải toLowerCase 5000 label mỗi keystroke
+      setInterOrgs((orgRes.data.data || []).map((o: { id: number | string; name: string; code: string }) => {
+        const label = `${o.name} (${o.code})`;
+        return { value: Number(o.id), label, search: normalizeSearch(label) };
+      }));
       // v3.2.13: signer options - value = staff_id (INT), label = full_name (+ position neu co)
       setSignerOptions((signerRes.data.data || []).map((s: { staff_id: number; staff_name: string; position_name?: string }) => ({
         value: Number(s.staff_id),
@@ -677,7 +683,11 @@ export default function OutgoingDocPage() {
               showSearch
               allowClear
               placeholder="Chọn cơ quan ngoài LGSP..."
-              filterOption={(input, opt) => (opt?.label as string)?.toLowerCase().includes(input.toLowerCase())}
+              filterOption={(input, opt) => {
+                const needle = normalizeSearch(input);
+                if (!needle) return true;
+                return ((opt as unknown as { search?: string })?.search || '').includes(needle);
+              }}
               options={interOrgs}
             />
           </Form.Item>

@@ -422,8 +422,8 @@ export const incomingDocRepository = {
     return row ?? { success: false, message: 'Không thể gửi liên thông', id: 0 };
   },
 
-  async getLgspOrganizations(search?: string): Promise<{ id: number; org_code: string; org_name: string; is_active: boolean }[]> {
-    return callFunction('edoc.fn_lgsp_org_get_list', [search ?? null, 1, 100]);
+  async getLgspOrganizations(search?: string, pageSize: number = 100): Promise<{ id: number; org_code: string; org_name: string; is_active: boolean }[]> {
+    return callFunction('edoc.fn_lgsp_org_get_list', [search ?? null, 1, pageSize]);
   },
 
   // --- Archive ---
