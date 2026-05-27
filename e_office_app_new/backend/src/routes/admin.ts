@@ -173,20 +173,20 @@ router.post('/don-vi', async (req: Request, res: Response) => {
       lgsp_system_id, lgsp_secret_key,
     } = req.body;
 
-    // Multi-tenant scope: user DN co lap chi duoc tao phong ban CON cua subtree minh.
-    // parent_id phai nam trong subtree (= scope unit_id hoac descendant).
+    // Multi-tenant scope: user DN co lap chi duoc tao phong ban TRUC TIEP duoi DN root.
+    // KHONG cho deep hierarchy (phong -> to -> nhom) — chi 1 cap phong ban thoi.
     const scope = await getUserUnitScope(req);
     if (scope !== null) {
       if (parent_id == null) {
         res.status(403).json({ success: false, message: 'Phải chọn đơn vị cha trong phạm vi quản lý' });
         return;
       }
-      if (!(await isInSubtree(Number(parent_id), scope))) {
-        res.status(403).json({ success: false, message: 'Đơn vị cha nằm ngoài phạm vi quản lý' });
+      // parent_id phai EXACTLY = scope (DN root), KHONG cho parent la phong con
+      if (Number(parent_id) !== scope) {
+        res.status(403).json({ success: false, message: 'Chỉ được tạo phòng ban trực tiếp dưới đơn vị của bạn' });
         return;
       }
       // Chan tao cap "Don vi" (is_unit=TRUE) — se tao tenant moi, pha scope semantic.
-      // ADMIN DN chi duoc tao "Phong ban" (is_unit=FALSE) trong subtree DN cua minh.
       if (is_unit === true) {
         res.status(403).json({ success: false, message: 'Không có quyền tạo cấp Đơn vị, chỉ được tạo Phòng ban' });
         return;

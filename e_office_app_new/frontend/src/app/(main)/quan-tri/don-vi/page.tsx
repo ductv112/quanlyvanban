@@ -101,7 +101,11 @@ export default function DepartmentPage() {
   const handleAdd = () => {
     setEditingRecord(null);
     form.resetFields();
-    if (selectedNode) {
+    // Non-admin (admindn): auto-fill parent_id = unit_id cua user, KHONG cho doi.
+    // Admin: respect selectedNode neu co.
+    if (!canCreateUnit && currentUser?.unitId) {
+      form.setFieldsValue({ parent_id: currentUser.unitId });
+    } else if (selectedNode) {
       form.setFieldsValue({ parent_id: selectedNode });
     }
     setDrawerOpen(true);
@@ -375,13 +379,18 @@ export default function DepartmentPage() {
           </Space>
         } mask={{ closable: false }}>
         <Form form={form} layout="vertical" autoComplete="off" validateTrigger="onSubmit">
-          <Form.Item label="Đơn vị cha" name="parent_id">
+          <Form.Item
+            label="Đơn vị cha"
+            name="parent_id"
+            rules={canCreateUnit ? [] : [{ required: true, message: 'Chọn đơn vị cha trong phạm vi quản lý' }]}
+          >
             <TreeSelect
               // Khi sửa, loại chính nó + con cháu khỏi options để tránh cycle (parent_id = id)
               treeData={flattenTreeForSelect(treeData, editingRecord?.id ?? null)}
-              placeholder="Chọn đơn vị cha (bỏ trống nếu là gốc)"
-              allowClear
+              placeholder={canCreateUnit ? 'Chọn đơn vị cha (bỏ trống nếu là gốc)' : 'Đơn vị cha (mặc định = đơn vị của bạn)'}
+              allowClear={canCreateUnit}
               treeDefaultExpandAll
+              disabled={!canCreateUnit}
               style={{ borderRadius: 8 }}
             />
           </Form.Item>
