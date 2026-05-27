@@ -390,6 +390,19 @@ export default function StaffPage() {
 
   const filteredTree = useMemo(() => filterTree(treeData, (searchTree || '').trim()), [treeData, searchTree]);
 
+  // Dropdown "Don vi" trong form tao user chi nen hien node co is_unit=TRUE.
+  // Phong ban (is_unit=FALSE) phai LOAI bo vi staff.unit_id phai point toi 1 unit thuc su.
+  const unitsOnlyTree = useMemo(() => {
+    const filterUnits = (nodes: TreeNode[]): TreeNode[] =>
+      nodes
+        .filter((n) => n.is_unit === true)
+        .map((n) => ({
+          ...n,
+          children: n.children ? filterUnits(n.children) : undefined,
+        }));
+    return filterUnits(treeData);
+  }, [treeData]);
+
   const columns: ColumnsType<Staff> = [
     {
       title: '',
@@ -732,7 +745,7 @@ export default function StaffPage() {
             <Col span={12}>
               <Form.Item label="Đơn vị" name="unit_id" rules={[{ required: true, message: 'Chọn đơn vị' }]}>
                 <TreeSelect
-                  treeData={flattenTreeForSelect(treeData)}
+                  treeData={flattenTreeForSelect(unitsOnlyTree)}
                   placeholder="Chọn đơn vị"
                   allowClear
                   treeDefaultExpandAll
