@@ -346,6 +346,22 @@ async function handleSendJob(data: LgspSendJobData): Promise<void> {
     'edXML envelope built',
   );
 
+  // Phase 37.5 debug: dump XML buffer ra file de forward cho LGSP support inspect.
+  // Toggle bang env LGSP_DUMP_XML=1; mac dinh OFF de tranh I/O thua tren prod.
+  if (process.env.LGSP_DUMP_XML === '1') {
+    try {
+      const { writeFileSync } = await import('fs');
+      const { join } = await import('path');
+      const dumpDir = process.env.LGSP_DUMP_DIR || (process.platform === 'win32' ? 'C:\\Temp' : '/tmp');
+      const dumpPath = join(dumpDir, `lgsp-sent-${tracking_id}-${Date.now()}.xml`);
+      writeFileSync(dumpPath, edxml.buffer);
+      logger.info({ ...logCtx, dumpPath }, 'edXML buffer dumped to file for debug');
+    } catch (dumpErr: unknown) {
+      const msg = dumpErr instanceof Error ? dumpErr.message : String(dumpErr);
+      logger.warn({ ...logCtx, err: msg }, 'edXML dump fail (non-fatal)');
+    }
+  }
+
   // 4. Resolve LGSP credentials (fresh per attempt — CONTEXT D-14 credential rotation)
   //    Worker decrypt qua pg pgp_sym_decrypt INLINE — KHONG cache (per-attempt is fresh
   //    by design, fresh DB read picks up admin rotate giua attempt).
