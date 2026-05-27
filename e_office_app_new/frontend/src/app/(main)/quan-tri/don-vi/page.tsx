@@ -14,6 +14,7 @@ import {
 import { api } from '@/lib/api';
 import type { TreeNode } from '@/types/tree';
 import { filterTree, flattenTreeForSelect } from '@/lib/tree-utils';
+import { useAuthStore } from '@/stores/auth.store';
 
 interface Department {
   id: number;
@@ -35,6 +36,10 @@ interface Department {
 
 export default function DepartmentPage() {
   const { message } = App.useApp();
+  // Non-admin user (vd admindn) chi duoc tao cap Phong ban, KHONG duoc tao Don vi
+  // (vi tao Don vi = tao tenant moi, pha scope multi-tenant). Backend cung chot chan cung.
+  const currentUser = useAuthStore((s) => s.user);
+  const canCreateUnit = currentUser?.isAdmin === true;
   const [loading, setLoading] = useState(false);
   const [treeData, setTreeData] = useState<TreeNode[]>([]);
   const [treeLoading, setTreeLoading] = useState(false);
@@ -409,7 +414,7 @@ export default function DepartmentPage() {
 
           <Form.Item label="Cấp" name="is_unit" initialValue="dept">
             <Radio.Group>
-              <Radio value="unit">Đơn vị</Radio>
+              {canCreateUnit && <Radio value="unit">Đơn vị</Radio>}
               <Radio value="dept">Phòng ban</Radio>
             </Radio.Group>
           </Form.Item>

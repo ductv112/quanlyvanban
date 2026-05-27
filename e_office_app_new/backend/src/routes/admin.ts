@@ -185,6 +185,12 @@ router.post('/don-vi', async (req: Request, res: Response) => {
         res.status(403).json({ success: false, message: 'Đơn vị cha nằm ngoài phạm vi quản lý' });
         return;
       }
+      // Chan tao cap "Don vi" (is_unit=TRUE) — se tao tenant moi, pha scope semantic.
+      // ADMIN DN chi duoc tao "Phong ban" (is_unit=FALSE) trong subtree DN cua minh.
+      if (is_unit === true) {
+        res.status(403).json({ success: false, message: 'Không có quyền tạo cấp Đơn vị, chỉ được tạo Phòng ban' });
+        return;
+      }
     }
 
     if (!name?.trim()) {
@@ -270,6 +276,11 @@ router.put('/don-vi/:id', async (req: Request, res: Response) => {
         res.status(403).json({ success: false, message: 'Không có quyền sửa đơn vị ngoài phạm vi quản lý' });
         return;
       }
+      // Chan sua scope unit (DN goc) — DN tu sua scope cua chinh minh la danger.
+      if (id === scope) {
+        res.status(403).json({ success: false, message: 'Không thể sửa đơn vị gốc của doanh nghiệp' });
+        return;
+      }
       if (parent_id != null && !(await isInSubtree(Number(parent_id), scope))) {
         res.status(403).json({ success: false, message: 'Đơn vị cha mới nằm ngoài phạm vi quản lý' });
         return;
@@ -277,6 +288,11 @@ router.put('/don-vi/:id', async (req: Request, res: Response) => {
       // KHONG cho user DN tu giai phong khoi subtree (set parent_id NULL = thanh root)
       if (parent_id == null) {
         res.status(403).json({ success: false, message: 'Không thể bỏ trống đơn vị cha' });
+        return;
+      }
+      // Chan promote tu Phong ban -> Don vi (tao tenant moi)
+      if (is_unit === true) {
+        res.status(403).json({ success: false, message: 'Không có quyền nâng cấp thành Đơn vị, chỉ được giữ là Phòng ban' });
         return;
       }
     }
