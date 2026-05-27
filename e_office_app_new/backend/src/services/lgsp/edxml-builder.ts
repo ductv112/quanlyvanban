@@ -155,85 +155,85 @@ export function buildEdxml(input: BuildEdxmlInput): BuildEdxmlResult {
   const nowTimestamp = toTimestamp(new Date());
 
   const root = create({ version: '1.0', encoding: 'UTF-8' })
-    .ele('edXMLEnvelope', { xmlns: EDXML_NS });
+    .ele('edXML:edXMLEnvelope', { 'xmlns:edXML': EDXML_NS });
 
-  const messageHeader = root.ele('MessageHeader');
+  const messageHeader = root.ele('edXML:MessageHeader');
 
   // 1.1 From
   messageHeader
-    .ele('From')
-      .ele('OrganId').txt(input.senderOrgCode).up()
-      .ele('OrganName').txt(strOrNa(input.senderOrgName, 'senderOrgName', ctx)).up()
+    .ele('edXML:From')
+      .ele('edXML:OrganId').txt(input.senderOrgCode).up()
+      .ele('edXML:OrganName').txt(strOrNa(input.senderOrgName, 'senderOrgName', ctx)).up()
     .up();
 
   // 1.2 To
   messageHeader
-    .ele('To')
-      .ele('OrganId').txt(input.destOrgCode).up()
-      .ele('OrganName').txt(strOrNa(input.destOrgName, 'destOrgName', ctx)).up()
+    .ele('edXML:To')
+      .ele('edXML:OrganId').txt(input.destOrgCode).up()
+      .ele('edXML:OrganName').txt(strOrNa(input.destOrgName, 'destOrgName', ctx)).up()
     .up();
 
   // 1.3 Code
   messageHeader
-    .ele('Code')
-      .ele('CodeNumber').txt(strOrNa(input.notation, 'notation', ctx)).up()
-      .ele('CodeNotation').txt(strOrNa(input.documentCode, 'documentCode', ctx)).up()
+    .ele('edXML:Code')
+      .ele('edXML:CodeNumber').txt(strOrNa(input.notation, 'notation', ctx)).up()
+      .ele('edXML:CodeNotation').txt(strOrNa(input.documentCode, 'documentCode', ctx)).up()
     .up();
 
   // 1.4 PromulgationInfo (Place optional - bo qua)
   messageHeader
-    .ele('PromulgationInfo')
-      .ele('PromulgationDate').txt(toPromulgationDate(input.publishDate, 'publishDate', ctx)).up()
+    .ele('edXML:PromulgationInfo')
+      .ele('edXML:PromulgationDate').txt(toPromulgationDate(input.publishDate, 'publishDate', ctx)).up()
     .up();
 
   // 1.5 DocumentType: Type=2 (van ban hanh chinh, mac dinh) + TypeName
   messageHeader
-    .ele('DocumentType')
-      .ele('Type').txt('2').up()
-      .ele('TypeName').txt(strOrNa(input.docTypeName, 'docTypeName', ctx)).up()
+    .ele('edXML:DocumentType')
+      .ele('edXML:Type').txt('2').up()
+      .ele('edXML:TypeName').txt(strOrNa(input.docTypeName, 'docTypeName', ctx)).up()
     .up();
 
   // 1.6 Subject (trich yeu)
   messageHeader
-    .ele('Subject').txt(strOrNa(input.abstract, 'abstract/subject', ctx)).up();
+    .ele('edXML:Subject').txt(strOrNa(input.abstract, 'abstract/subject', ctx)).up();
 
   // 1.8 SignerInfo
   messageHeader
-    .ele('SignerInfo')
-      .ele('Competence').txt('Truc tiep').up()
-      .ele('Position').txt(strOrNa(input.signerPosition, 'signerPosition', ctx)).up()
-      .ele('FullName').txt(strOrNa(input.signer, 'signer', ctx)).up()
+    .ele('edXML:SignerInfo')
+      .ele('edXML:Competence').txt('Truc tiep').up()
+      .ele('edXML:Position').txt(strOrNa(input.signerPosition, 'signerPosition', ctx)).up()
+      .ele('edXML:FullName').txt(strOrNa(input.signer, 'signer', ctx)).up()
     .up();
 
   // 1.11 OtherInfo: Priority + PageAmount (toi thieu)
   messageHeader
-    .ele('OtherInfo')
-      .ele('Priority').txt('0').up()
-      .ele('PageAmount').txt(String(numOrDefault(input.numberPaper, 1, 'numberPaper', ctx))).up()
+    .ele('edXML:OtherInfo')
+      .ele('edXML:Priority').txt('0').up()
+      .ele('edXML:PageAmount').txt(String(numOrDefault(input.numberPaper, 1, 'numberPaper', ctx))).up()
     .up();
 
   // 1.13 SteeringType: 0 = khong phai chi dao (mac dinh)
-  messageHeader.ele('SteeringType').txt('0').up();
+  messageHeader.ele('edXML:SteeringType').txt('0').up();
 
   // 1.14 DocumentId (UUID duy nhat tren toan he thong lien thong)
-  messageHeader.ele('DocumentId').txt(docId).up();
+  messageHeader.ele('edXML:DocumentId').txt(docId).up();
 
   // 2. TraceHeaderList > TraceHeader
   root
-    .ele('TraceHeaderList')
-      .ele('TraceHeader')
-        .ele('OrganId').txt(input.senderOrgCode).up()
-        .ele('Timestamp').txt(nowTimestamp).up()
+    .ele('edXML:TraceHeaderList')
+      .ele('edXML:TraceHeader')
+        .ele('edXML:OrganId').txt(input.senderOrgCode).up()
+        .ele('edXML:Timestamp').txt(nowTimestamp).up()
       .up()
     .up();
 
   // Attachments — moi file 1 phan tu Attachment chua FileName + FileType + Content base64
   for (const att of input.attachments) {
     root
-      .ele('Attachment')
-        .ele('FileName').txt(att.fileName).up()
-        .ele('FileType').txt(att.fileType || 'application/octet-stream').up()
-        .ele('Content').txt(att.contentBase64).up()
+      .ele('edXML:Attachment')
+        .ele('edXML:FileName').txt(att.fileName).up()
+        .ele('edXML:FileType').txt(att.fileType || 'application/octet-stream').up()
+        .ele('edXML:Content').txt(att.contentBase64).up()
       .up();
   }
 
