@@ -123,9 +123,10 @@ SELECT 'incoming_remaining', COUNT(*) FROM edoc.incoming_docs
  WHERE id IN (SELECT id FROM _target_incoming_ids);
 
 -- ───────────────────────────────────────────────────────────────────────────
--- BUOC 3: COMMIT (chi go comment khi Buoc 2.4 verify = 0)
--- Neu sai gi do, chay ROLLBACK; thay vi COMMIT;
+-- BUOC 3: COMMIT
+-- Preview da verify 2026-05-27: 16 outgoing + 18 tracking + 8 attach + 0 incoming.
+-- incoming_docs = 0 vi gui NOI TINH Lang Son, Phu Loc thay VB qua recipient
+-- view cua outgoing_doc (perspective inversion), KHONG can duplicate.
 -- ───────────────────────────────────────────────────────────────────────────
 
--- COMMIT;
--- ROLLBACK;
+COMMIT;
