@@ -161,7 +161,13 @@ export async function updateStatus(
         continue;
       }
       const text = await res.text();
-      let json: { success: boolean; message?: string; data?: { errorCode?: string; errorDesc?: string } };
+      let json: {
+        code?: number;
+        message?: string;
+        data?: { status?: string; errorCode?: string; errorDesc?: string };
+        success?: boolean;
+        errorDetail?: Array<{ exception?: string }>;
+      };
       try {
         json = JSON.parse(text);
       } catch {
@@ -173,7 +179,16 @@ export async function updateStatus(
       const errorCode = json.data?.errorCode;
       const rawMessage = json.message || json.data?.errorDesc || 'unknown';
 
-      if (!json.success) {
+      // Phase 37.7: parse real LGSP response shape (KHONG dung json.success)
+      const dataStatus = (json.data?.status || '').toUpperCase();
+      const hasErrorDetail = Array.isArray(json.errorDetail) && json.errorDetail.length > 0;
+      const isSuccess =
+        res.status === 200 &&
+        (json.code === 200 || json.code === 0) &&
+        (dataStatus === '' || dataStatus === 'OK' || dataStatus === 'SUCCESS') &&
+        !hasErrorDetail;
+
+      if (!isSuccess) {
         return {
           success: false,
           message: mapLgspError(errorCode, rawMessage),

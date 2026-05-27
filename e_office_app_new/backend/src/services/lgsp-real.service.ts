@@ -75,16 +75,19 @@ interface ReceivedEdocItem {
   statusDesc: string;
 }
 
+/** Phase 37.7: real LGSP response shape — 'success' KHONG ton tai o root, dung 'code' */
 interface ReceivedEdocsResponse {
-  success: boolean;
-  message: string;
-  count: number;
-  data: ReceivedEdocItem[];
+  code?: number;
+  message?: string;
+  count?: number;
+  data?: ReceivedEdocItem[];
+  success?: boolean; // compat
+  errorDetail?: Array<{ exception?: string }>;
 }
 
 interface GetEdocResponse {
-  success: boolean;
-  message: string;
+  code?: number;
+  message?: string;
   data?: {
     docId: string;
     from: string;
@@ -94,6 +97,8 @@ interface GetEdocResponse {
     edxml: string;
     attachments?: { fileName: string; fileContent: string }[];
   };
+  success?: boolean; // compat
+  errorDetail?: Array<{ exception?: string }>;
 }
 
 // Phase 37.3 fix (2026-05-22): LGSP truc Lang Son /v1/getAgenciesList AUTHORITATIVE shape
@@ -407,7 +412,10 @@ export class LGSPRealService implements ILgspService {
       },
       30000,
     );
-    if (!res.success || !Array.isArray(res.data)) return [];
+    // Phase 37.7: parse real shape (code===200, KHONG dung success field)
+    const hasErrorDetail = Array.isArray(res.errorDetail) && res.errorDetail.length > 0;
+    const isSuccess = (res.code === 200 || res.code === 0) && !hasErrorDetail;
+    if (!isSuccess || !Array.isArray(res.data)) return [];
     return res.data.map((d) => ({
       lgsp_doc_id: d.docId,
       from_org_code: d.from,
@@ -455,7 +463,10 @@ export class LGSPRealService implements ILgspService {
       },
       60000, // bigger timeout — payload may include attachments
     );
-    if (!res.success || !res.data) return null;
+    // Phase 37.7: parse real shape (code===200, KHONG dung success field)
+    const hasErrorDetail = Array.isArray(res.errorDetail) && res.errorDetail.length > 0;
+    const isSuccess = (res.code === 200 || res.code === 0) && !hasErrorDetail;
+    if (!isSuccess || !res.data) return null;
     return {
       lgsp_doc_id: res.data.docId,
       sender_org_code: res.data.from || '',
@@ -526,7 +537,13 @@ export class LGSPRealService implements ILgspService {
       });
 
       const text = await res.text();
-      let json: { success: boolean; message?: string; data?: { errorCode?: string; errorDesc?: string } };
+      let json: {
+        code?: number;
+        message?: string;
+        data?: { status?: string; errorCode?: string; errorDesc?: string };
+        success?: boolean;
+        errorDetail?: Array<{ exception?: string }>;
+      };
       try {
         json = JSON.parse(text);
       } catch {
@@ -538,8 +555,16 @@ export class LGSPRealService implements ILgspService {
       const errorCode = json.data?.errorCode;
       const rawMessage = json.message || json.data?.errorDesc || 'unknown';
 
-      if (!json.success) {
-        // No-throw -- return result de worker biet mark outbox error
+      // Phase 37.7: parse real LGSP response shape (KHONG dung json.success)
+      const dataStatus = (json.data?.status || '').toUpperCase();
+      const hasErrorDetail = Array.isArray(json.errorDetail) && json.errorDetail.length > 0;
+      const isSuccess =
+        res.status === 200 &&
+        (json.code === 200 || json.code === 0) &&
+        (dataStatus === '' || dataStatus === 'OK' || dataStatus === 'SUCCESS') &&
+        !hasErrorDetail;
+
+      if (!isSuccess) {
         return {
           success: false,
           lgsp_doc_id: docId,
