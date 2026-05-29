@@ -353,7 +353,8 @@ async function handleSendJob(data: LgspSendJobData): Promise<void> {
       const { writeFileSync } = await import('fs');
       const { join } = await import('path');
       const dumpDir = process.env.LGSP_DUMP_DIR || (process.platform === 'win32' ? 'C:\\Temp' : '/tmp');
-      const dumpPath = join(dumpDir, `lgsp-sent-${tracking_id}-${Date.now()}.xml`);
+      // Phase 37.8: extension .edxml de nhat quan voi convention LGSP (file mau cua VPCP cung .edxml)
+      const dumpPath = join(dumpDir, `lgsp-sent-${tracking_id}-${Date.now()}.edxml`);
       writeFileSync(dumpPath, edxml.buffer);
       logger.info({ ...logCtx, dumpPath }, 'edXML buffer dumped to file for debug');
     } catch (dumpErr: unknown) {

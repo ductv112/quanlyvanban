@@ -1,26 +1,31 @@
 // ============================================================
-// edXML Builder (Phase 37.6 — rewrite theo SDK chuan QCVN 102:2016)
+// edXML Builder (Phase 37.8 — template literal, full prefix edXML: control)
 //
-// Spec: docs/Trục EDOC Lạng Sơn - QLVB Doanh nghiệp/20190108_net_sdk_example/
-//   - File mau: CodeXamplesEdXML/File_EdXML/edoc_new.edxml
-//   - C# reference: CodeXamplesEdXML/Program.cs (function edoc_new)
+// Phase 37.6 dung xmlbuilder2 nhung library tu optimize bo prefix `edXML:` khi
+// default xmlns tren root cung URI voi xmlns:edXML tren envelope. Output thieu
+// prefix tren children -> .NET XmlSerializer ben VPCP reject schema validation.
+// LGSP Lang Son noi tinh accept nhe nen Phase 37.6 deploy vao da pass nhung
+// cross-tinh qua VDXP (vi du gui Sở KHCN H37.02.02) phai chinh xac prefix.
 //
-// Cau truc chuan:
-//   <edXML xmlns:xsi xmlns:xsd xmlns="http://www.mic.gov.vn/TBT/QCVN_102_2016">
+// Phase 37.8 dung template literal — full control output, KHONG dung xmlbuilder2.
+//
+// Spec: docs/Trục EDOC Lạng Sơn - QLVB Doanh nghiệp/
+//   - File chuan VPCP: edoc_new.edxml
+//   - File chuan LGSP tinh: 3caa7148-90af-4a92-937e-df2e894422db.edxml
+//   - SDK NET: 20190108_net_sdk_example/CodeXamplesEdXML/Program.cs
+//
+// Cau truc literal output:
+//   <?xml version="1.0" encoding="utf-8"?>
+//   <edXML xmlns:xsi="..." xmlns:xsd="..." xmlns="http://www.mic.gov.vn/TBT/QCVN_102_2016">
 //     <edXML:edXMLEnvelope xmlns:edXML="http://www.mic.gov.vn/TBT/QCVN_102_2016">
 //       <edXML:edXMLHeader>
-//         <edXML:MessageHeader>... 14 thanh phan ...</edXML:MessageHeader>
-//         <edXML:TraceHeaderList id="..." version="1.0" mustUnderstand="1" actor="...">
-//           <edXML:TraceHeader> <OrganId/> <Timestamp/> </edXML:TraceHeader>
-//           <edXML:Bussiness> <BussinessDocType/> <BussinessDocReason/> <StaffInfo/> <Paper/> </edXML:Bussiness>
-//         </edXML:TraceHeaderList>
-//         <edXML:DigitalSignature/>
+//         <edXML:MessageHeader> ... </edXML:MessageHeader>
+//         <edXML:TraceHeaderList id version mustUnderstand actor> ... </edXML:TraceHeaderList>
+//         <edXML:DigitalSignature />
 //       </edXML:edXMLHeader>
 //       <edXML:edXMLBody>
 //         <edXML:edXMLManifest version="1.0">
-//           <edXML:Reference xmlns:xlink xlink:href="cid:..." xlink:role="XLinkRole" xlink:type="simple">
-//             ...
-//           </edXML:Reference>
+//           <edXML:Reference xmlns:xlink xlink:href xlink:role xlink:type> ... </edXML:Reference>
 //         </edXML:edXMLManifest>
 //       </edXML:edXMLBody>
 //     </edXML:edXMLEnvelope>
@@ -29,13 +34,9 @@
 //     </AttachmentEncoded>
 //   </edXML>
 //
-// History 4 variants truoc Phase 37.6 dung sai namespace + sai root + thieu wrapper +
-// thieu edXMLHeader/edXMLBody layer + Attachment inline thay vi xlink binding.
-//
 // APPROACH B: duplicated for workers tsconfig isolation. KEEP IN SYNC voi backend.
 // ============================================================
 
-import { create } from 'xmlbuilder2';
 import { randomUUID, randomBytes } from 'crypto';
 import pino from 'pino';
 
@@ -74,6 +75,21 @@ export interface BuildEdxmlResult {
   docId: string;
   destOrgCode: string;
   docCode: string;
+}
+
+/** Escape XML special chars (text content). */
+function xmlEsc(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
+/** Escape XML attribute value. */
+function xmlAttrEsc(s: string): string {
+  return xmlEsc(s);
 }
 
 function strOrNa(
@@ -145,35 +161,26 @@ function toTimestamp(d: Date): string {
   return `${y}/${m}/${day} ${hh}:${mm}:${ss}`;
 }
 
-/** id attribute cho TraceHeaderList — random 8 ky tu alphanumeric. */
+/** id attribute cho TraceHeaderList — random 8 ky tu hex. */
 function genTraceHeaderListId(): string {
   return randomBytes(4).toString('hex');
 }
 
 /**
- * Build edXML envelope theo SDK chuan QCVN 102:2016 (Phase 37.6).
- *
- * Khac biet vs variants 1-4:
- *   - Namespace: http://www.mic.gov.vn/TBT/QCVN_102_2016 (KHONG phai go.vn/eDoc)
- *   - Root <edXML> wrapper voi 3 xmlns (default + xsi + xsd)
- *   - edXMLEnvelope > edXMLHeader > MessageHeader/TraceHeaderList/DigitalSignature
- *   - edXMLEnvelope > edXMLBody > Manifest > Reference (xlink binding)
- *   - Attachment dung xlink+ContentId, base64 trong <AttachmentEncoded> ngoai envelope
- *   - DocumentId format: "{senderOrgCode},{YYYY/MM/DD},{notation}/{documentCode}"
- *   - TraceHeaderList co 4 attributes: id, version, mustUnderstand, actor
+ * Build edXML envelope theo chuan QCVN 102:2016 — Phase 37.8 template literal.
+ * Tat ca element con cua edXMLEnvelope co prefix `edXML:` (TRU `<AttachmentEncoded>` ngoai envelope).
  */
 export function buildEdxml(input: BuildEdxmlInput): BuildEdxmlResult {
-  const internalDocId = randomUUID(); // returned to caller cho tracking
+  const internalDocId = randomUUID();
   const docCode =
     input.notation?.trim() ||
     input.documentCode?.trim() ||
     `EDOC-${internalDocId}`;
   const ctx = { docCode };
   const now = new Date();
-  const nowDate = toDateString(now, '_now', ctx);
   const nowTimestamp = toTimestamp(now);
 
-  // DocumentId format chuan QCVN 102: "{senderOrgCode},{YYYY/MM/DD},{number}/{notation}"
+  // DocumentId format chuan: "{senderOrgCode},{YYYY/MM/DD},{number}/{notation}"
   const docIdValue = `${input.senderOrgCode},${toDateString(input.publishDate, 'publishDate', ctx)},${strOrNa(input.notation, 'notation', ctx)}/${strOrNa(input.documentCode, 'documentCode', ctx)}`;
 
   // Generate cid uuid moi cho moi attachment
@@ -185,186 +192,167 @@ export function buildEdxml(input: BuildEdxmlInput): BuildEdxmlResult {
     contentBase64: att.contentBase64,
   }));
 
-  // Root <edXML> voi 3 namespace declarations
-  const root = create({ version: '1.0', encoding: 'utf-8' })
-    .ele('edXML', {
-      'xmlns:xsi': XSI_NS,
-      'xmlns:xsd': XSD_NS,
-      xmlns: EDXML_NS,
-    });
-
-  // <edXML:edXMLEnvelope>
-  const envelope = root.ele('edXML:edXMLEnvelope', { 'xmlns:edXML': EDXML_NS });
-
-  // ===== edXMLHeader =====
-  const header = envelope.ele('edXML:edXMLHeader');
-
-  // ----- MessageHeader -----
-  const messageHeader = header.ele('edXML:MessageHeader');
-
-  // 1.1 From
-  messageHeader
-    .ele('edXML:From')
-      .ele('edXML:OrganId').txt(input.senderOrgCode).up()
-      .ele('edXML:OrganizationInCharge').txt(strOrNa(input.senderOrgName, 'senderOrgName', ctx)).up()
-      .ele('edXML:OrganName').txt(strOrNa(input.senderOrgName, 'senderOrgName', ctx)).up()
-    .up();
-
-  // 1.2 To
-  messageHeader
-    .ele('edXML:To')
-      .ele('edXML:OrganId').txt(input.destOrgCode).up()
-      .ele('edXML:OrganizationInCharge').txt(strOrNa(input.destOrgName, 'destOrgName', ctx)).up()
-      .ele('edXML:OrganName').txt(strOrNa(input.destOrgName, 'destOrgName', ctx)).up()
-    .up();
-
-  // 1.3 Code
-  messageHeader
-    .ele('edXML:Code')
-      .ele('edXML:CodeNumber').txt(strOrNa(input.notation, 'notation', ctx)).up()
-      .ele('edXML:CodeNotation').txt(strOrNa(input.documentCode, 'documentCode', ctx)).up()
-    .up();
-
-  // 1.4 PromulgationInfo
-  messageHeader
-    .ele('edXML:PromulgationInfo')
-      .ele('edXML:Place').txt('N/A').up()
-      .ele('edXML:PromulgationDate').txt(toDateString(input.publishDate, 'publishDate', ctx)).up()
-    .up();
-
-  // 1.5 DocumentType (Type=18 = Cong van, default theo C# SDK)
-  messageHeader
-    .ele('edXML:DocumentType')
-      .ele('edXML:Type').txt('18').up()
-      .ele('edXML:TypeName').txt(strOrNa(input.docTypeName, 'docTypeName', ctx)).up()
-      .ele('edXML:TypeDetail').txt('0').up()
-    .up();
-
-  // 1.6 Subject + 1.7 Content (cung gia tri = abstract neu khong co Content rieng)
+  const senderName = strOrNa(input.senderOrgName, 'senderOrgName', ctx);
+  const destName = strOrNa(input.destOrgName, 'destOrgName', ctx);
+  const notationVal = strOrNa(input.notation, 'notation', ctx);
+  const documentCodeVal = strOrNa(input.documentCode, 'documentCode', ctx);
+  const promulDate = toDateString(input.publishDate, 'publishDate', ctx);
+  const docTypeNameVal = strOrNa(input.docTypeName, 'docTypeName', ctx);
   const subjectText = strOrNa(input.abstract, 'abstract/subject', ctx);
-  messageHeader.ele('edXML:Subject').txt(subjectText).up();
-  messageHeader.ele('edXML:Content').txt(subjectText).up();
-
-  // 1.8 SignerInfo
-  messageHeader
-    .ele('edXML:SignerInfo')
-      .ele('edXML:Competence').txt('Truc tiep').up()
-      .ele('edXML:Position').txt(strOrNa(input.signerPosition, 'signerPosition', ctx)).up()
-      .ele('edXML:FullName').txt(strOrNa(input.signer, 'signer', ctx)).up()
-    .up();
-
-  // 1.9 DueDate (default = publish + 2 days)
+  const signerPosVal = strOrNa(input.signerPosition, 'signerPosition', ctx);
+  const signerNameVal = strOrNa(input.signer, 'signer', ctx);
   const dueDate = new Date(now);
   dueDate.setDate(dueDate.getDate() + 2);
-  messageHeader.ele('edXML:DueDate').txt(toDateString(dueDate, 'dueDate', ctx)).up();
+  const dueDateStr = toDateString(dueDate, 'dueDate', ctx);
+  const pageAmount = String(numOrDefault(input.numberPaper, 1, 'numberPaper', ctx));
+  const appendixVal = input.appendix?.trim() || '';
+  const traceListId = genTraceHeaderListId();
+
+  // ===== Build XML qua template literal — full control output =====
+  let xml = `<?xml version="1.0" encoding="utf-8"?>\n`;
+  xml += `<edXML xmlns:xsi="${XSI_NS}" xmlns:xsd="${XSD_NS}" xmlns="${EDXML_NS}">\n`;
+  xml += `  <edXML:edXMLEnvelope xmlns:edXML="${EDXML_NS}">\n`;
+  xml += `    <edXML:edXMLHeader>\n`;
+
+  // ----- MessageHeader -----
+  xml += `      <edXML:MessageHeader>\n`;
+
+  // 1.1 From
+  xml += `        <edXML:From>\n`;
+  xml += `          <edXML:OrganId>${xmlEsc(input.senderOrgCode)}</edXML:OrganId>\n`;
+  xml += `          <edXML:OrganizationInCharge>${xmlEsc(senderName)}</edXML:OrganizationInCharge>\n`;
+  xml += `          <edXML:OrganName>${xmlEsc(senderName)}</edXML:OrganName>\n`;
+  xml += `        </edXML:From>\n`;
+
+  // 1.2 To
+  xml += `        <edXML:To>\n`;
+  xml += `          <edXML:OrganId>${xmlEsc(input.destOrgCode)}</edXML:OrganId>\n`;
+  xml += `          <edXML:OrganizationInCharge>${xmlEsc(destName)}</edXML:OrganizationInCharge>\n`;
+  xml += `          <edXML:OrganName>${xmlEsc(destName)}</edXML:OrganName>\n`;
+  xml += `        </edXML:To>\n`;
+
+  // 1.3 Code
+  xml += `        <edXML:Code>\n`;
+  xml += `          <edXML:CodeNumber>${xmlEsc(notationVal)}</edXML:CodeNumber>\n`;
+  xml += `          <edXML:CodeNotation>${xmlEsc(documentCodeVal)}</edXML:CodeNotation>\n`;
+  xml += `        </edXML:Code>\n`;
+
+  // 1.4 PromulgationInfo
+  xml += `        <edXML:PromulgationInfo>\n`;
+  xml += `          <edXML:Place>N/A</edXML:Place>\n`;
+  xml += `          <edXML:PromulgationDate>${xmlEsc(promulDate)}</edXML:PromulgationDate>\n`;
+  xml += `        </edXML:PromulgationInfo>\n`;
+
+  // 1.5 DocumentType (Type=18 = Cong van, theo C# SDK default)
+  xml += `        <edXML:DocumentType>\n`;
+  xml += `          <edXML:Type>18</edXML:Type>\n`;
+  xml += `          <edXML:TypeName>${xmlEsc(docTypeNameVal)}</edXML:TypeName>\n`;
+  xml += `          <edXML:TypeDetail>0</edXML:TypeDetail>\n`;
+  xml += `        </edXML:DocumentType>\n`;
+
+  // 1.6 Subject + 1.7 Content
+  xml += `        <edXML:Subject>${xmlEsc(subjectText)}</edXML:Subject>\n`;
+  xml += `        <edXML:Content>${xmlEsc(subjectText)}</edXML:Content>\n`;
+
+  // 1.8 SignerInfo
+  xml += `        <edXML:SignerInfo>\n`;
+  xml += `          <edXML:Competence>Truc tiep</edXML:Competence>\n`;
+  xml += `          <edXML:Position>${xmlEsc(signerPosVal)}</edXML:Position>\n`;
+  xml += `          <edXML:FullName>${xmlEsc(signerNameVal)}</edXML:FullName>\n`;
+  xml += `        </edXML:SignerInfo>\n`;
+
+  // 1.9 DueDate
+  xml += `        <edXML:DueDate>${xmlEsc(dueDateStr)}</edXML:DueDate>\n`;
 
   // 1.10 ToPlaces
-  messageHeader
-    .ele('edXML:ToPlaces')
-      .ele('edXML:Place').txt(strOrNa(input.destOrgName, 'destOrgName', ctx)).up()
-    .up();
+  xml += `        <edXML:ToPlaces>\n`;
+  xml += `          <edXML:Place>${xmlEsc(destName)}</edXML:Place>\n`;
+  xml += `        </edXML:ToPlaces>\n`;
 
   // 1.11 OtherInfo
-  const otherInfo = messageHeader.ele('edXML:OtherInfo');
-  otherInfo.ele('edXML:Priority').txt('0').up();
-  otherInfo.ele('edXML:SphereOfPromulgation').txt('Lien thong van ban').up();
-  otherInfo.ele('edXML:TyperNotation').txt('TVC').up();
-  otherInfo.ele('edXML:PromulgationAmount').txt('1').up();
-  otherInfo.ele('edXML:PageAmount').txt(String(numOrDefault(input.numberPaper, 1, 'numberPaper', ctx))).up();
-  const appendixes = otherInfo.ele('edXML:Appendixes');
-  if (input.appendix && input.appendix.trim()) {
-    appendixes.ele('edXML:Appendix').txt(input.appendix.trim()).up();
-  } else {
-    appendixes.ele('edXML:Appendix').txt('').up();
-  }
-  appendixes.up();
-  otherInfo.up();
+  xml += `        <edXML:OtherInfo>\n`;
+  xml += `          <edXML:Priority>0</edXML:Priority>\n`;
+  xml += `          <edXML:SphereOfPromulgation>Lien thong van ban</edXML:SphereOfPromulgation>\n`;
+  xml += `          <edXML:TyperNotation>TVC</edXML:TyperNotation>\n`;
+  xml += `          <edXML:PromulgationAmount>1</edXML:PromulgationAmount>\n`;
+  xml += `          <edXML:PageAmount>${pageAmount}</edXML:PageAmount>\n`;
+  xml += `          <edXML:Appendixes>\n`;
+  xml += `            <edXML:Appendix>${xmlEsc(appendixVal)}</edXML:Appendix>\n`;
+  xml += `          </edXML:Appendixes>\n`;
+  xml += `        </edXML:OtherInfo>\n`;
 
   // 1.13 SteeringType
-  messageHeader.ele('edXML:SteeringType').txt('0').up();
+  xml += `        <edXML:SteeringType>0</edXML:SteeringType>\n`;
 
-  // 1.14 DocumentId — format chuan: senderOrgCode,YYYY/MM/DD,number/notation
-  messageHeader.ele('edXML:DocumentId').txt(docIdValue).up();
+  // 1.14 DocumentId
+  xml += `        <edXML:DocumentId>${xmlEsc(docIdValue)}</edXML:DocumentId>\n`;
 
-  messageHeader.up();
+  xml += `      </edXML:MessageHeader>\n`;
 
   // ----- TraceHeaderList (4 attributes) -----
-  const traceHeaderList = header.ele('edXML:TraceHeaderList', {
-    id: genTraceHeaderListId(),
-    version: '1.0',
-    mustUnderstand: '1',
-    actor: SOAP_ACTOR,
-  });
+  xml += `      <edXML:TraceHeaderList id="${xmlAttrEsc(traceListId)}" version="1.0" mustUnderstand="1" actor="${xmlAttrEsc(SOAP_ACTOR)}">\n`;
 
   // TraceHeader
-  traceHeaderList
-    .ele('edXML:TraceHeader')
-      .ele('edXML:OrganId').txt(input.senderOrgCode).up()
-      .ele('edXML:Timestamp').txt(nowTimestamp).up()
-    .up();
+  xml += `        <edXML:TraceHeader>\n`;
+  xml += `          <edXML:OrganId>${xmlEsc(input.senderOrgCode)}</edXML:OrganId>\n`;
+  xml += `          <edXML:Timestamp>${xmlEsc(nowTimestamp)}</edXML:Timestamp>\n`;
+  xml += `        </edXML:TraceHeader>\n`;
 
   // Bussiness (sibling cua TraceHeader)
-  traceHeaderList
-    .ele('edXML:Bussiness')
-      .ele('edXML:BussinessDocType').txt('0').up() // 0 = Van ban moi
-      .ele('edXML:BussinessDocReason').txt('Van ban dien tu moi').up()
-      .ele('edXML:StaffInfo')
-        .ele('edXML:Department').txt('N/A').up()
-        .ele('edXML:Staff').txt(strOrNa(input.signer, 'signer', ctx)).up()
-        .ele('edXML:Mobile').txt('').up()
-        .ele('edXML:Email').txt('').up()
-      .up()
-      .ele('edXML:Paper').txt('0').up() // 0 = khong gui giay
-    .up();
+  xml += `        <edXML:Bussiness>\n`;
+  xml += `          <edXML:BussinessDocType>0</edXML:BussinessDocType>\n`;
+  xml += `          <edXML:BussinessDocReason>Van ban dien tu moi</edXML:BussinessDocReason>\n`;
+  xml += `          <edXML:StaffInfo>\n`;
+  xml += `            <edXML:Department>N/A</edXML:Department>\n`;
+  xml += `            <edXML:Staff>${xmlEsc(signerNameVal)}</edXML:Staff>\n`;
+  xml += `            <edXML:Mobile></edXML:Mobile>\n`;
+  xml += `            <edXML:Email></edXML:Email>\n`;
+  xml += `          </edXML:StaffInfo>\n`;
+  xml += `          <edXML:Paper>0</edXML:Paper>\n`;
+  xml += `        </edXML:Bussiness>\n`;
 
-  traceHeaderList.up();
+  xml += `      </edXML:TraceHeaderList>\n`;
 
   // ----- DigitalSignature (empty self-closing) -----
-  header.ele('edXML:DigitalSignature').up();
+  xml += `      <edXML:DigitalSignature />\n`;
 
-  header.up();
+  xml += `    </edXML:edXMLHeader>\n`;
 
   // ===== edXMLBody (Manifest + References) =====
-  const body = envelope.ele('edXML:edXMLBody');
-  const manifest = body.ele('edXML:edXMLManifest', { version: '1.0' });
+  xml += `    <edXML:edXMLBody>\n`;
+  xml += `      <edXML:edXMLManifest version="1.0">\n`;
 
   for (const ref of attachmentRefs) {
-    manifest
-      .ele('edXML:Reference', {
-        'xmlns:xlink': XLINK_NS,
-        'xlink:href': `cid:${ref.contentId}`,
-        'xlink:role': 'XLinkRole',
-        'xlink:type': 'simple',
-      })
-        .ele('edXML:Description').txt(ref.description).up()
-        .ele('edXML:AttachmentName').txt(ref.fileName).up()
-        .ele('edXML:ContentType').txt(ref.contentType).up()
-        .ele('edXML:ContentId').txt(`cid:${ref.contentId}`).up()
-      .up();
+    xml += `        <edXML:Reference xmlns:xlink="${XLINK_NS}" xlink:href="cid:${xmlAttrEsc(ref.contentId)}" xlink:role="XLinkRole" xlink:type="simple">\n`;
+    xml += `          <edXML:Description>${xmlEsc(ref.description)}</edXML:Description>\n`;
+    xml += `          <edXML:AttachmentName>${xmlEsc(ref.fileName)}</edXML:AttachmentName>\n`;
+    xml += `          <edXML:ContentType>${xmlEsc(ref.contentType)}</edXML:ContentType>\n`;
+    xml += `          <edXML:ContentId>cid:${xmlEsc(ref.contentId)}</edXML:ContentId>\n`;
+    xml += `        </edXML:Reference>\n`;
   }
 
-  manifest.up();
-  body.up();
-  envelope.up();
+  xml += `      </edXML:edXMLManifest>\n`;
+  xml += `    </edXML:edXMLBody>\n`;
+  xml += `  </edXML:edXMLEnvelope>\n`;
 
   // ===== AttachmentEncoded (OUTSIDE envelope, default namespace - KHONG prefix edXML:) =====
   if (attachmentRefs.length > 0) {
-    const attEncoded = root.ele('AttachmentEncoded');
+    xml += `  <AttachmentEncoded>\n`;
     for (const ref of attachmentRefs) {
-      attEncoded
-        .ele('Attachment')
-          .ele('ContentType').txt(ref.contentType).up()
-          .ele('ContentId').txt(ref.contentId).up() // KHONG cid: prefix o day
-          .ele('Description').txt(ref.description).up()
-          .ele('ContentTransferEncoded').txt(ref.contentBase64).up()
-          .ele('AttachmentName').txt(ref.fileName).up()
-        .up();
+      xml += `    <Attachment>\n`;
+      xml += `      <ContentType>${xmlEsc(ref.contentType)}</ContentType>\n`;
+      xml += `      <ContentId>${xmlEsc(ref.contentId)}</ContentId>\n`;
+      xml += `      <Description>${xmlEsc(ref.description)}</Description>\n`;
+      xml += `      <ContentTransferEncoded>${ref.contentBase64}</ContentTransferEncoded>\n`;
+      xml += `      <AttachmentName>${xmlEsc(ref.fileName)}</AttachmentName>\n`;
+      xml += `    </Attachment>\n`;
     }
-    attEncoded.up();
+    xml += `  </AttachmentEncoded>\n`;
   }
 
-  const xmlString = root.end({ prettyPrint: false });
-  const buffer = Buffer.from(xmlString, 'utf8');
+  xml += `</edXML>\n`;
+
+  const buffer = Buffer.from(xml, 'utf8');
 
   logger.info(
     {
@@ -375,7 +363,7 @@ export function buildEdxml(input: BuildEdxmlInput): BuildEdxmlResult {
       attachmentCount: input.attachments.length,
       bytes: buffer.length,
     },
-    'Built edXML envelope (Phase 37.6 SDK QCVN 102:2016)',
+    'Built edXML envelope (Phase 37.8 template literal)',
   );
 
   return {
