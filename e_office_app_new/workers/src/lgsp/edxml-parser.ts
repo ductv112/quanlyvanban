@@ -86,17 +86,34 @@ export function parseEdxml(xml: string): ParsedEdxml {
     throw new Error(`parseEdxml: invalid XML -- ${err?.message ?? err}`);
   }
 
-  // Root element may be EdXML or EdXMLEnvelope (namespace prefix stripped by removeNSPrefix)
-  const rootKey = Object.keys(parsed).find((k) => k === 'EdXML' || k === 'EdXMLEnvelope');
+  // Phase 37.10: support both layered (Phase 37.8 SDK QCVN 102:2016) + flat (older variants).
+  // Root element variants: edXML / EdXML / edXMLEnvelope / EdXMLEnvelope (removeNSPrefix strips edXML:).
+  const rootKey = Object.keys(parsed).find(
+    (k) => k === 'EdXML' || k === 'edXML' || k === 'EdXMLEnvelope' || k === 'edXMLEnvelope',
+  );
   if (!rootKey) {
     throw new Error(
-      `parseEdxml: root element must be <EdXML> or <EdXMLEnvelope>, found: ${Object.keys(parsed).join(',')}`,
+      `parseEdxml: root element must be <edXML>/<EdXML>/<EdXMLEnvelope>, found: ${Object.keys(parsed).join(',')}`,
     );
   }
-  const root = parsed[rootKey] as Record<string, any>;
+  const rootNode = parsed[rootKey] as Record<string, any>;
 
-  const mh = root.MessageHeader as Record<string, any> | undefined;
+  // Layered SDK structure: edXML > edXMLEnvelope > edXMLHeader > MessageHeader
+  // Flat older structure: EdXMLEnvelope > MessageHeader
+  const envelope = (rootNode.edXMLEnvelope ?? rootNode.EdXMLEnvelope ?? rootNode) as Record<string, any>;
+  const header = (envelope.edXMLHeader ?? envelope.EdXMLHeader ?? envelope) as Record<string, any>;
+  const mh = header.MessageHeader as Record<string, any> | undefined;
   if (!mh) throw new Error('parseEdxml: MessageHeader missing');
+
+  // DocumentType: Phase 37.8 nested {Type, TypeName, TypeDetail}, older = flat string
+  const docTypeNode = mh.DocumentType;
+  const documentType =
+    typeof docTypeNode === 'string'
+      ? docTypeNode
+      : s(docTypeNode?.TypeName) || s(docTypeNode?.Type);
+
+  // SignerInfo: Phase 37.8 uses FullName, older uses Signer
+  const signerName = s(mh.SignerInfo?.FullName) || s(mh.SignerInfo?.Signer);
 
   const messageHeader: EdxmlMessageHeader = {
     from: {
@@ -112,32 +129,59 @@ export function parseEdxml(xml: string): ParsedEdxml {
       codeNotation: s(mh.Code?.CodeNotation),
     },
     promulgationInfo: {
-      promulgator: s(mh.PromulgationInfo?.Promulgator),
+      // Phase 37.8 dung Place thay vi Promulgator (signer info da co o SignerInfo)
+      promulgator: s(mh.PromulgationInfo?.Place) || s(mh.PromulgationInfo?.Promulgator),
       promulgationDate: s(mh.PromulgationInfo?.PromulgationDate),
     },
-    documentType: s(mh.DocumentType),
+    documentType,
     subject: s(mh.Subject),
     signerInfo: {
-      signer: s(mh.SignerInfo?.Signer),
+      signer: signerName,
       position: s(mh.SignerInfo?.Position) || undefined,
       competence: s(mh.SignerInfo?.Competence) || undefined,
     },
     otherInfo: {
       pageAmount: num(mh.OtherInfo?.PageAmount),
-      appendix: s(mh.OtherInfo?.Appendix) || undefined,
+      appendix: s(mh.OtherInfo?.Appendixes?.Appendix) || s(mh.OtherInfo?.Appendix) || undefined,
     },
     documentId: s(mh.DocumentId),
-    traceHeaderList: mh.TraceHeaderList,
+    traceHeaderList: header.TraceHeaderList ?? mh.TraceHeaderList,
   };
 
   const attachments: ParsedEdxmlAttachment[] = [];
-  const manifest = root.Manifest as Record<string, any> | undefined;
-  if (manifest && Array.isArray(manifest.Attachment)) {
+
+  // Phase 37.8 SDK QCVN 102:2016: AttachmentEncoded sibling cua envelope (outside)
+  // Cau truc: <AttachmentEncoded> <Attachment> <ContentTransferEncoded/> <AttachmentName/> <ContentType/> </Attachment> </AttachmentEncoded>
+  const attEncoded = rootNode.AttachmentEncoded as Record<string, any> | undefined;
+  if (attEncoded && Array.isArray(attEncoded.Attachment)) {
+    for (const att of attEncoded.Attachment) {
+      const fileName = s(att?.AttachmentName);
+      const contentB64 = s(att?.ContentTransferEncoded);
+      if (!fileName || !contentB64) {
+        logger.warn({ fileName, hasContent: !!contentB64 }, 'Skipping incomplete AttachmentEncoded');
+        continue;
+      }
+      try {
+        const buf = Buffer.from(contentB64, 'base64');
+        attachments.push({
+          fileName,
+          content: buf,
+          mimeType: s(att?.ContentType) || undefined,
+        });
+      } catch (err: any) {
+        logger.warn({ fileName, err: err?.message }, 'Skipping AttachmentEncoded invalid base64');
+      }
+    }
+  }
+
+  // Fallback older format: <Manifest><Attachment><FileName/><Content/></Attachment></Manifest>
+  const manifest = (envelope.Manifest ?? envelope.edXMLManifest) as Record<string, any> | undefined;
+  if (attachments.length === 0 && manifest && Array.isArray(manifest.Attachment)) {
     for (const att of manifest.Attachment) {
       const fileName = s(att?.FileName);
       const contentB64 = s(att?.Content);
       if (!fileName || !contentB64) {
-        logger.warn({ fileName, hasContent: !!contentB64 }, 'Skipping incomplete attachment');
+        logger.warn({ fileName, hasContent: !!contentB64 }, 'Skipping incomplete Manifest attachment');
         continue;
       }
       try {
@@ -148,7 +192,7 @@ export function parseEdxml(xml: string): ParsedEdxml {
           mimeType: s(att?.FileType) || undefined,
         });
       } catch (err: any) {
-        logger.warn({ fileName, err: err?.message }, 'Skipping attachment with invalid base64');
+        logger.warn({ fileName, err: err?.message }, 'Skipping Manifest invalid base64');
       }
     }
   }
