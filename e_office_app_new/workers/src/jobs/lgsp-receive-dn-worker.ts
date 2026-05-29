@@ -397,15 +397,25 @@ async function handleDnSync(job: Job<LgspReceiveDnJobData>): Promise<DnSyncResul
   // Truoc fix: fromDate = exactly last_synced_at -> neu doc co createdTime nam giua
   // 2 lan sync (5 phut) ma LGSP push tre -> bo lo vinh vien khi nho dan ra ngoai 7d.
   const now = new Date();
-  const fallbackFrom = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const oneDayMs = 24 * 60 * 60 * 1000;
+  const fallbackFrom = new Date(now.getTime() - 7 * oneDayMs);
   const overlapMs = 10 * 60 * 1000; // 10 phut overlap
   const fromDate = creds.lastSyncedAt
     ? new Date(new Date(creds.lastSyncedAt).getTime() - overlapMs)
     : fallbackFrom;
   // Guard: if last_synced_at is older than 7 days, still use NOW-7d (LGSP rejects wide windows)
   const effectiveFrom = fromDate < fallbackFrom ? fallbackFrom : fromDate;
-  const fromYmd = formatLgspDate(effectiveFrom);
-  const toYmd = formatLgspDate(now);
+
+  // Phase 37.9: LGSP filter co bug exclusive toDate, query window 1 ngay (fromDate=toDate=today)
+  // return empty kê ca khi VB sent same day. Verified bang direct API test:
+  //   window 2026/05/29 - 2026/05/29 -> data:[]
+  //   window 2026/05/27 - 2026/05/29 -> data:[VB]
+  // Fix: ensure window >= 2 days bang cach push toYmd ahead 1 day, fromYmd luy tieu yesterday.
+  const yesterday = new Date(now.getTime() - oneDayMs);
+  const tomorrow = new Date(now.getTime() + oneDayMs);
+  const fromAdjusted = effectiveFrom > yesterday ? yesterday : effectiveFrom;
+  const fromYmd = formatLgspDate(fromAdjusted);
+  const toYmd = formatLgspDate(tomorrow);
 
   logger.info({ unit_id, environment, fromYmd, toYmd }, 'LGSP DN sync: querying list');
 
