@@ -268,19 +268,31 @@ export async function getEdocFull(
         return null;
       }
       const d = json.data;
+      // Phase 37.10: real LGSP response shape — KHONG co d.edxml/d.attachments rieng.
+      // Server tra ve d.data = base64 cua TOAN BO edXML envelope (gom <AttachmentEncoded>).
+      // Worker phai decode base64 -> raw XML string. parseEdxml downstream se extract
+      // attachments tu <AttachmentEncoded> section trong cung XML.
+      const dataBase64 = String(d.data ?? d.edxml ?? '');
+      let edxmlString = '';
+      if (dataBase64) {
+        try {
+          edxmlString = Buffer.from(dataBase64, 'base64').toString('utf8');
+        } catch (decodeErr) {
+          logger.warn(
+            { lgspDocId, err: (decodeErr as Error).message },
+            'LGSP /v1/getEdoc: failed to decode base64 data.data',
+          );
+        }
+      }
       return {
         lgsp_doc_id: String(d.docId ?? lgspDocId),
         sender_org_code: String(d.from ?? ''),
         sender_org_name: String(d.fromName ?? ''),
         edoc_code: String(d.edocCode ?? ''),
         edoc_abstract: String(d.edocAbstract ?? ''),
-        edxml: String(d.edxml ?? ''),
-        attachments: Array.isArray(d.attachments)
-          ? d.attachments.map((a: any) => ({
-              file_name: String(a.fileName ?? ''),
-              file_content_base64: String(a.fileContent ?? ''),
-            }))
-          : [],
+        edxml: edxmlString,
+        // Attachments duoc extract trong parseEdxml downstream tu <AttachmentEncoded> section.
+        attachments: [],
       };
     } finally {
       clearTimeout(timer);
