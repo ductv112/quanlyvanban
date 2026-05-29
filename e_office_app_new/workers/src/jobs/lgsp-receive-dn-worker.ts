@@ -237,9 +237,12 @@ async function insertAttachmentRow(
   params: { incoming_doc_id: number; file_name: string; file_path: string; file_size: number; content_type: string },
   systemStaffId: number,
 ): Promise<number> {
+  // Phase 37.11: fix table name + column name. Truoc dung "edoc.attachments" (khong ton tai)
+  // + "uploaded_by" (column khong ton tai). Bang chuan la edoc.attachment_incoming_docs voi
+  // column created_by (schema 000_schema_v3.0.sql line 28475+).
   const rs = await p.query<{ id: string }>(
-    `INSERT INTO edoc.attachments
-       (incoming_doc_id, file_name, file_path, file_size, content_type, uploaded_by, created_at)
+    `INSERT INTO edoc.attachment_incoming_docs
+       (incoming_doc_id, file_name, file_path, file_size, content_type, created_by, created_at)
      VALUES ($1, $2, $3, $4, $5, $6, NOW())
      RETURNING id`,
     [
@@ -247,7 +250,7 @@ async function insertAttachmentRow(
       params.file_name.slice(0, 500),
       params.file_path.slice(0, 1000),
       params.file_size,
-      (params.content_type || 'application/octet-stream').slice(0, 200),
+      (params.content_type || 'application/octet-stream').slice(0, 100),
       systemStaffId,
     ],
   );
