@@ -26586,7 +26586,11 @@ EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 -- ----------------------------------------------------------------------------
 CREATE INDEX IF NOT EXISTS idx_incoming_docs_source_type ON edoc.incoming_docs(source_type);
 CREATE INDEX IF NOT EXISTS idx_incoming_docs_previous_outgoing ON edoc.incoming_docs(previous_outgoing_doc_id) WHERE previous_outgoing_doc_id IS NOT NULL;
-CREATE UNIQUE INDEX IF NOT EXISTS idx_incoming_docs_external_dedupe ON edoc.incoming_docs(external_doc_id) WHERE external_doc_id IS NOT NULL AND source_type = 'external_lgsp';
+-- Phase 37.12 (2026-06-01): UNIQUE phai bao gom unit_id de tranh chan multi-recipient broadcast.
+-- 1 VB Sở gửi cho 6 DN qua LGSP có CÙNG lgsp_doc_id (external_doc_id) — mỗi DN cần 1 incoming_doc
+-- riêng. Trước fix: chỉ DN đầu tiên insert được, 5 DN sau bị 23505 unique violation → worker skip
+-- → 5 DN không thấy VB. Sau fix: composite (unit_id, external_doc_id) cho phép cùng VB cho nhiều unit.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_incoming_docs_external_dedupe ON edoc.incoming_docs(unit_id, external_doc_id) WHERE external_doc_id IS NOT NULL AND source_type = 'external_lgsp';
 
 CREATE INDEX IF NOT EXISTS idx_outgoing_docs_status ON edoc.outgoing_docs(unit_id, status, is_released);
 CREATE INDEX IF NOT EXISTS idx_outgoing_docs_previous ON edoc.outgoing_docs(previous_outgoing_doc_id) WHERE previous_outgoing_doc_id IS NOT NULL;
