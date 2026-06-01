@@ -119,12 +119,15 @@ async function resolveSystemStaffId(p: pg.Pool): Promise<number> {
   return cachedSystemStaffId;
 }
 
-async function findExistingByLgspDocId(p: pg.Pool, lgspDocId: string): Promise<number | null> {
+async function findExistingByLgspDocId(p: pg.Pool, lgspDocId: string, unitId: number): Promise<number | null> {
+  // Phase 37.12: them unit_id de match composite UNIQUE (unit_id, external_doc_id).
+  // 1 VB So gui cho 6 DN co cung lgsp_doc_id, moi DN can 1 incoming_doc rieng -> dedup
+  // PHAI scope theo unit_id, neu khong se skip 5/6 DN khi DN dau tien da insert.
   const rs = await p.query<{ id: string }>(
     `SELECT id FROM edoc.incoming_docs
-      WHERE external_doc_id = $1 AND source_type = 'external_lgsp'
+      WHERE external_doc_id = $1 AND unit_id = $2 AND source_type = 'external_lgsp'
       LIMIT 1`,
-    [lgspDocId.slice(0, 200)],
+    [lgspDocId.slice(0, 200), unitId],
   );
   return rs.rowCount ? Number(rs.rows[0].id) : null;
 }
@@ -436,7 +439,8 @@ async function handleDnSync(job: Job<LgspReceiveDnJobData>): Promise<DnSyncResul
   for (const sum of summaries) {
     try {
       // Pre-check: already in DB? (cheap; avoids redundant getEdoc fetch)
-      const existingId = await findExistingByLgspDocId(p, sum.lgsp_doc_id);
+      // Phase 37.12: scope theo unit_id de cho phep cung VB broadcast cho nhieu DN
+      const existingId = await findExistingByLgspDocId(p, sum.lgsp_doc_id, unit_id);
       if (existingId) {
         result.docs_skipped += 1;
         continue;
