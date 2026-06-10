@@ -554,28 +554,13 @@ async function handleDnSync(job: Job<LgspReceiveDnJobData>): Promise<DnSyncResul
     }
   }
 
-  // Phase 37.5 fix M1: KHONG advance last_synced_at neu co docs_failed > 0
-  // (force next tick retry same window de catch transient error: LGSP timeout,
-  // network blip, parseEdxml fail). Doc bi mat truoc -> dedup boi UNIQUE chong duplicate.
-  if (result.docs_failed > 0) {
-    try {
-      await updateLastSyncError(
-        p,
-        unit_id,
-        environment,
-        `Partial sync: ${result.docs_failed} doc fail / ${result.docs_seen} seen (KHONG advance last_synced_at - next tick retry)`,
-      );
-    } catch (err) {
-      logger.warn({ unit_id, err: (err as Error).message }, 'Failed to update last_sync_error');
-    }
-    logger.warn(
-      { unit_id, environment, ...result },
-      'LGSP DN sync PARTIAL — keep last_synced_at for retry',
-    );
-    return result;
-  }
-
-  // SUCCESS path: update last_synced_at + clear error (D-10 + D-11)
+  // Phase 37.13 hardening: window CO DINH 7 ngay -> doc fail VAN duoc retry tick sau du da
+  // advance last_synced_at. Vi vay LUON advance last_synced_at, tranh 1 VB hong phia LGSP
+  // (vd getEdoc HTTP 500 cho VB status=initial chua phat hanh chinh thuc) lam "dong bang"
+  // trang thai sync cua ca DN + spam error moi tick.
+  //
+  // (Thay cho Phase 37.5 M1 cu: truoc day KHONG advance neu docs_failed>0 de force retry same
+  // window. Gio window co dinh 7 ngay nen retry duoc dam bao bat ke last_synced_at -> bo logic do.)
   try {
     await updateLastSyncedSuccess(p, unit_id, environment);
   } catch (err) {
@@ -585,7 +570,25 @@ async function handleDnSync(job: Job<LgspReceiveDnJobData>): Promise<DnSyncResul
     );
   }
 
-  logger.info({ unit_id, environment, ...result }, 'LGSP DN sync complete');
+  if (result.docs_failed > 0) {
+    // Ghi note informational (KHONG chan timestamp) de admin biet con VB chua lay duoc.
+    try {
+      await updateLastSyncError(
+        p,
+        unit_id,
+        environment,
+        `Da sync; ${result.docs_failed}/${result.docs_seen} VB chua lay duoc tu LGSP (se retry tick sau - thuong do getEdoc loi server phia truc)`,
+      );
+    } catch (err) {
+      logger.warn({ unit_id, err: (err as Error).message }, 'Failed to update last_sync_error note');
+    }
+    logger.warn(
+      { unit_id, environment, ...result },
+      'LGSP DN sync PARTIAL (advanced last_synced_at; failed docs retry next tick)',
+    );
+  } else {
+    logger.info({ unit_id, environment, ...result }, 'LGSP DN sync complete');
+  }
   return result;
 }
 
