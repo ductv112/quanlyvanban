@@ -394,34 +394,24 @@ async function handleDnSync(job: Job<LgspReceiveDnJobData>): Promise<DnSyncResul
     return result;
   }
 
-  // Compute date window: fromDate = last_synced_at - 10 phut OVERLAP, OR NOW-7d. toDate = NOW.
+  // Compute date window: LUON [NOW-7d, NOW+1d]. KHONG narrow theo last_synced_at.
   //
-  // Phase 37.4 fix #4: Overlap 10 phut de catch late-arriving doc tu LGSP truc
-  // (truc co the push doc tre vai phut sau khi createdTime). Dedup chong duplicate
-  // INSERT bang UNIQUE (external_doc_id) WHERE source_type='external_lgsp'.
+  // Phase 37.13 fix (2026-06-10): truoc day window bi kep ve [hom qua, ngay mai] (~1-2 ngay)
+  // vi last_synced_at advance = NOW moi tick, overlap chi 10 phut. VB gui rieng / status=initial
+  // thuong toi MUON (doi tac tao roi moi phat hanh sau) -> surface tren LGSP sau khi window hep
+  // da troi qua createdTime -> LGSP filter theo createdTime KHONG tra ve cho worker -> mat vinh vien.
+  // Bang chung: docId ff6be9a4... (H37.07 -> H37.DN.001, created 06-08) co trong LGSP nhung
+  // worker query [06-09, 06-11] nen bo lo. Probe window 7 ngay bat duoc.
   //
-  // Truoc fix: fromDate = exactly last_synced_at -> neu doc co createdTime nam giua
-  // 2 lan sync (5 phut) ma LGSP push tre -> bo lo vinh vien khi nho dan ra ngoai 7d.
+  // Re-scan 7 ngay moi tick AN TOAN: dedup UNIQUE(unit_id, external_doc_id) + pre-check
+  // findExistingByLgspDocId skip VB cu nhanh (1 indexed query), getEdoc chi goi cho VB moi.
+  // last_synced_at van cap nhat de hien thi UI "lan sync cuoi", chi khong dung de thu hep window.
+  //
+  // toDate = NOW+1d: Phase 37.9 LGSP filter co bug exclusive toDate (window 1 ngay tra empty).
   const now = new Date();
   const oneDayMs = 24 * 60 * 60 * 1000;
-  const fallbackFrom = new Date(now.getTime() - 7 * oneDayMs);
-  const overlapMs = 10 * 60 * 1000; // 10 phut overlap
-  const fromDate = creds.lastSyncedAt
-    ? new Date(new Date(creds.lastSyncedAt).getTime() - overlapMs)
-    : fallbackFrom;
-  // Guard: if last_synced_at is older than 7 days, still use NOW-7d (LGSP rejects wide windows)
-  const effectiveFrom = fromDate < fallbackFrom ? fallbackFrom : fromDate;
-
-  // Phase 37.9: LGSP filter co bug exclusive toDate, query window 1 ngay (fromDate=toDate=today)
-  // return empty kê ca khi VB sent same day. Verified bang direct API test:
-  //   window 2026/05/29 - 2026/05/29 -> data:[]
-  //   window 2026/05/27 - 2026/05/29 -> data:[VB]
-  // Fix: ensure window >= 2 days bang cach push toYmd ahead 1 day, fromYmd luy tieu yesterday.
-  const yesterday = new Date(now.getTime() - oneDayMs);
-  const tomorrow = new Date(now.getTime() + oneDayMs);
-  const fromAdjusted = effectiveFrom > yesterday ? yesterday : effectiveFrom;
-  const fromYmd = formatLgspDate(fromAdjusted);
-  const toYmd = formatLgspDate(tomorrow);
+  const fromYmd = formatLgspDate(new Date(now.getTime() - 7 * oneDayMs));
+  const toYmd = formatLgspDate(new Date(now.getTime() + oneDayMs));
 
   logger.info({ unit_id, environment, fromYmd, toYmd }, 'LGSP DN sync: querying list');
 
